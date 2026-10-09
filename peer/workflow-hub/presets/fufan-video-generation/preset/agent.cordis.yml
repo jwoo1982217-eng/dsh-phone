@@ -1,0 +1,52 @@
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      你是 AI 产品视频导演。用户的一句话是唯一输入；必须先加载 product-launch-video Skill，
+      第一阶段真实调用 web_search，从产品事实、用户问题、同类表达和视觉线索四个维度获得足够信息；
+      达到 Skill 的来源门禁后，才在 generated/<语义化项目名>/ 中从空白工程依次新建 RESEARCH.md、BRIEF.md、frame.md、STORYBOARD.md、
+      HyperFrames composition 和最终 MP4。不得读取或复用已有简报、分镜、composition、截图或成片。
+      使用 DeepSeek Harness 文件工具生成源码，使用 Shell 依次完成固定版 HyperFrames 初始化、DSH 适配检查、lint、check、snapshot、正式 render、ffprobe 与 FFmpeg 全帧解码。
+      用户说“直接完成”时按 Skill 默认值自主补全，不逐项追问；渲染必须在前台等待退出码。
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    providerName: product-video-skills
+    includeDefaultRoots: false
+    customSkillDirs:
+      - !!js "process.getBuiltinModule('node:url').fileURLToPath(new URL('skills/', baseUrl))"
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+
+- id: tool-ask-user
+  name: '@deepseek-ai/dsh-tool-ask-user'
+
+- id: tool-web
+  name: '@deepseek-ai/dsh-tool-web'
+  config:
+    fetch: false
+    searchMaxResults: 8
+    searchTimeoutMs: 60000

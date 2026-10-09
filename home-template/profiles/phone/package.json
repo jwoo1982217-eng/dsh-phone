@@ -1,0 +1,22 @@
+{
+  "name": "dsh-profile-phone",
+  "private": true,
+  "dependencies": {
+    "dsh-codearts-auth": "file:./node_modules/dsh-codearts-auth",
+    "dsh-phone-account": "file:./node_modules/dsh-phone-account",
+    "dsh-phone-qq": "file:./node_modules/dsh-phone-qq",
+    "@zseven-w/dsh-noema": "file:./node_modules/@zseven-w/dsh-noema"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dsh-codearts-auth",
+        "dsh-phone-account",
+        "dsh-phone-qq",
+        "@zseven-w/dsh-noema"
+      ]
+    }
+  }
+}

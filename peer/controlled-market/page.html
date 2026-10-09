@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content"><title>插件市场</title><link rel="stylesheet" href="/controlled-market/page.css"></head>
+<body>
+<header><div class="heading"><div><p class="eyebrow">发现更多可能</p><h1>插件市场</h1></div><span id="target" class="target">正在确认安装目标…</span></div><p id="intro">找到适合你的插件，在这里检查并安装。</p></header>
+<nav aria-label="市场导航"><a href="/plugin-center">已安装插件</a><a href="/workflow-hub">Preset 广场</a><a href="https://dshmarket.com/" target="_blank" rel="noopener noreferrer">市场官网 ↗</a><button id="recover" hidden>备份与恢复</button><a id="computer" href="http://127.0.0.1:3081/controlled-market" hidden>已连接电脑的市场</a></nav>
+<p id="builtins" hidden></p>
+<label id="trial-control" hidden><input id="trial" type="checkbox"><span>允许试装未验证插件<small>每次安装前自动备份</small></span></label>
+<div class="filters"><input id="query" type="search" placeholder="搜索插件名称、作者或用途" aria-label="搜索插件"><select id="category" aria-label="插件分类"><option value="">全部分类</option></select><button id="refresh">刷新目录</button></div>
+<div class="directory-status"><p id="meta"></p><p id="notice" role="status" aria-live="polite">正在加载目录…</p></div>
+<main id="plugins" aria-label="社区插件"></main>
+<footer><button id="prev">上一页</button><span id="pages"></span><button id="next">下一页</button></footer>
+<div id="modal" class="modal" hidden><section id="dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1"><div class="dialog-heading"><h2 id="dialog-title"></h2><button id="close-dialog" aria-label="关闭详情">×</button></div><div id="dialog-content"></div><div id="dialog-actions" class="dialog-actions"></div></section></div>
+<script src="/controlled-market/page.js"></script><script src="/appearance/theme-client.js"></script>
+</body></html>

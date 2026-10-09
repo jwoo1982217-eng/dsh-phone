@@ -1,0 +1,399 @@
+{
+  "repository": "https://github.com/fufankeji/deepseek-harness-studio",
+  "commit": "257d429156a243517a2cafdff777125cd3fb6d54",
+  "license": "LICENSE.studio",
+  "files": [
+    {
+      "path": "fufan-ai-report/manifest.json",
+      "sha256": "4e63cd01e008515713fe363de7696284545025852e3e95523ad2bdfdd40c845d"
+    },
+    {
+      "path": "fufan-ai-report/preset/agent.cordis.yml",
+      "sha256": "6dd02e8f78ef692cd44264f245065bed34f2c7567b8e1e037fdcc1252ed6fba4"
+    },
+    {
+      "path": "fufan-ai-report/preset/preset.yml",
+      "sha256": "82286979bed2192e733955ededf1df5d014360ecce6a188226ac09255c8d8af8"
+    },
+    {
+      "path": "fufan-ai-report/preset/skills/build-ai-report/SKILL.md",
+      "sha256": "e827e39052f16afbeefb871fbb03d1625025f6dcc4fc1139848279db300e88af"
+    },
+    {
+      "path": "fufan-ai-report/preset/skills/build-ai-report/references/chart-selection.md",
+      "sha256": "2715323bc7bc3e2775758ccbf55c08c0d404a52935f14428c4199eac2eb6c260"
+    },
+    {
+      "path": "fufan-ai-report/preset/skills/build-ai-report/references/excel-analysis.md",
+      "sha256": "1da220211591713bb9877b58e3cf4826ee25b8b15d050d1c1f787d52c142acfe"
+    },
+    {
+      "path": "fufan-ai-webapp/manifest.json",
+      "sha256": "77c47b8175e94725067f507aeef77d657207edff52710ea02329a699cffe8367"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/agent.cordis.yml",
+      "sha256": "63562b26581d8ce1dd278470ec31f68827f7ee93f6e72b314d2aef057861fc97"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/preset.yml",
+      "sha256": "65d858d14953a3bf90b455f388c41e64fc75d6fbc7d8311a45489fa3c024342b"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/grill-me/LICENSE.txt",
+      "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/grill-me/SKILL.md",
+      "sha256": "300c00c2a7003cc4dd8ed4d404c6bd217186e0272e671a97c096f04f09c47e84"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/tdd/LICENSE.txt",
+      "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/tdd/SKILL.md",
+      "sha256": "e31b8b9ddae6c080e1abd2065eb8f74d0daed4ed0afb68d9fd1129fa9bf08508"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/tdd/mocking.md",
+      "sha256": "21a9ba2634a42811c78222f2873f4dfbe7b0cd87f5d5a4616380163dc1d890ac"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/tdd/tests.md",
+      "sha256": "c45d291a601a665c1eb7cd76a4082c5829165052710d5812d2f59987c97f0976"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/to-spec/LICENSE.txt",
+      "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+    },
+    {
+      "path": "fufan-ai-webapp/preset/skills/to-spec/SKILL.md",
+      "sha256": "7932ec99bedb30cd0c28c5f030d9341e8842a0380cfe3c2fadd5a147396a17d5"
+    },
+    {
+      "path": "fufan-content-factory/manifest.json",
+      "sha256": "e52ca046fc6f52471cd56a2bc1c7a13563f8715d6f876b5d7cab8bb77ed672cd"
+    },
+    {
+      "path": "fufan-content-factory/preset/agent.cordis.yml",
+      "sha256": "8661b334e5042f3642c788c03e276d5be73ebe0f59ac77bd96c1ca5f08d2c4eb"
+    },
+    {
+      "path": "fufan-content-factory/preset/preset.yml",
+      "sha256": "68590bbaaaad46da99d3598b42828c0a02cf27239576337b8abe0d9616195002"
+    },
+    {
+      "path": "fufan-content-factory/preset/runtime/content-imagegen/index.js",
+      "sha256": "b69bca51ccdbca6ac584894df2901a8fe1db20b428ce00b393ecf56b7639c2f5"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/LICENSE.upstream",
+      "sha256": "601839401f6ce68b7a8aec0f7ba247ab8ef0848113378220bec4b2615cc84ee7"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/SKILL.md",
+      "sha256": "3641b36368e8f5dbe47ad0b088d5f90c98f040c22bab507fdf923468559833e2"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/codex-imagegen.md",
+      "sha256": "30a7f87bfb4d8bf2acd5c2fa63e1d2a7c8d9a96510401f48431832ad371f0301"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/config/first-time-setup.md",
+      "sha256": "6b61c3112c2bc07d70b5c5fd847398c1929ffef8d00c481e4bdaeedf95a4ce8e"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/config/preferences-schema.md",
+      "sha256": "a9b5046e0e8fb9744cb5b7babf6e901f38f30fdd8fb6a596b00aef95fe1bba5c"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/config/watermark-guide.md",
+      "sha256": "57ab1013fc86831849361a6f801fac164856af14370764461171e93501b21ad3"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/confirmation.md",
+      "sha256": "078964a77e0af398dcf39b8afc641229888ee65af0987256459f317850781ae3"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/elements/canvas.md",
+      "sha256": "b804574c238b14dd0a756a4771eae2447278180bdd8399039df027c4d50c12e3"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/elements/decorations.md",
+      "sha256": "c721fc1abd2ef566a6fc93e58b76e7e0af9934903e0866419b64b78d75f14f32"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/elements/image-effects.md",
+      "sha256": "0c8a49be47c9a9982e98c8f1c34bdbf6186cb726e8333efad7994a52d219a7b1"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/elements/typography.md",
+      "sha256": "de7cf0963c0544e50d169989c4561752b0de58294cf526d29dfc79c31c9952b7"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/palettes/macaron.md",
+      "sha256": "726a80ff95d041e3e6e2e7004d809dd022255dbc5afeb686d20d45a558ee2160"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/palettes/neon.md",
+      "sha256": "4f2a16b75f10043bcec3d5f224e63d9aa77811dbb0b991cb3c13b0958006b3fc"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/palettes/warm.md",
+      "sha256": "67fb83fa04ddad24538d6ae4a30f63269b40a52da546b286aa9abf1c7d443045"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/bold.md",
+      "sha256": "90a90e0f1d1da54c2725052fc7a9f4a4be35ee0c8e7b15c44aed280012409596"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/chalkboard.md",
+      "sha256": "267859fa9aee5f58a959c683ba2bca503cd91394cf9d2daefa6a57ab4f1ad6ca"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/cute.md",
+      "sha256": "10a5edc289f0d0d5c76d245449f4ca566ebcfda3e974068510a583fc7c2ad52e"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/fresh.md",
+      "sha256": "13d48276abf8d489f8fdc9dd07a6f2a8603e37d66193fe0a955af1e26c66de5f"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/minimal.md",
+      "sha256": "9213d97718596a601ca74fda7b0ebc4cebaa87bf1581a089adabb7cd871f02f0"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/notion.md",
+      "sha256": "83a83078d76567677827d647e8516bde48ff8efa30aaa61a8a45db970d83798e"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/pop.md",
+      "sha256": "1e33d6e49e810f24e6958f883ec918a7f37de995d717b087bd29b411264edae8"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/retro.md",
+      "sha256": "7c10c253ed0230356fd2ce2679e2c6fc973e995c568348a976491df560b5e817"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/screen-print.md",
+      "sha256": "1ae6a570e16aa2cf7720525660c4d14f7dcef9c4da2a638dc216352189c25a91"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/sketch-notes.md",
+      "sha256": "b9577eb6053ebd381e287adf889988ecacdfec2727512cf73bd2754fcf29dd01"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/study-notes.md",
+      "sha256": "777e50d3c7be5be0d3a70350abb76fe19e147f44d3c5b54e329c1efb0fd627e0"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/presets/warm.md",
+      "sha256": "e8f7499c1873f85e71a4ae25a0fa8988f2698e80e8d8cfc3d72b083526def0ef"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/style-presets.md",
+      "sha256": "edd8d0592fbbc4418af09796fbdf7d1b5f4fb38d60eb42af1c063f5ccc594ecb"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/workflows/analysis-framework.md",
+      "sha256": "0ca75e3a09c071dbf53ceceaefd2b12f2d7dbbe3a9eb13a4d7af6825f70b8c5d"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/workflows/outline-template.md",
+      "sha256": "e839c663d02f586e388ebd664df06502a6957604d19cd8cdbdfa1787339cb38f"
+    },
+    {
+      "path": "fufan-content-factory/preset/skills/ai-content-images/references/workflows/prompt-assembly.md",
+      "sha256": "f18801572d46fa011f8f5e94f1a0eeeefa5e2f6c8eb477e28402237ff3d39480"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/manifest.json",
+      "sha256": "8227e92b6308a168058c06a42607e47bb1f9b77b2c336bde25323b7ff1a54ae7"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/preset/agent.cordis.yml",
+      "sha256": "9f5fcb2c67418490c03c4fb4d89123f150a577dbc3f046f8200c3d266ad23422"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/preset/preset.yml",
+      "sha256": "cdc339ae10b86f23deddd0e6e9113a4e9606efd3175724b2af3cddc6f6541766"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/preset/runtime/date-parser.mjs",
+      "sha256": "3887a5b60daf33e6b165f284e8cd21df3d34f0a61ed42821fc98b706f3948892"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/preset/runtime/datetime-mcp.mjs",
+      "sha256": "7df7d11180251e070dff0714091497c421dcceb9bd3af7f9ac8e2f2b8c314d3d"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/preset/runtime/feishu-mcp.mjs",
+      "sha256": "25fc75d0e6d78aaceda45c4c6d906cc09ea8cfb6226f82fc68fa508d4e1dfcfd"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/preset/runtime/mcp-stdio.mjs",
+      "sha256": "baf9e1ad453df047530e5902627ce272de034f3ff56413386873a5642119f30a"
+    },
+    {
+      "path": "fufan-feishu-digital-employee/preset/skills/feishu-digital-employee/SKILL.md",
+      "sha256": "46f789705202af9992116d08af678f571ce44adce2d04ce3a45872331199c4b2"
+    },
+    {
+      "path": "fufan-llm-wiki-producer/manifest.json",
+      "sha256": "1d05f66967cb77e6c84bb00d3d26d64ed5c1297b2f07b32c3630ea05b2c4a443"
+    },
+    {
+      "path": "fufan-llm-wiki-producer/preset/agent.cordis.yml",
+      "sha256": "3014bdde316ce5689abed7231e0c1d4aebf244565b58fdd10ff00c1b9b7a2ddc"
+    },
+    {
+      "path": "fufan-llm-wiki-producer/preset/preset.yml",
+      "sha256": "01a1a8ca74fb51b577e2ba61944db497f7e2f7d08341e2cf1e304c9d42962d58"
+    },
+    {
+      "path": "fufan-llm-wiki-producer/preset/skills/find-plugins/SKILL.md",
+      "sha256": "401f80e9484666f95e798296529804611d6ccfafbb0d47b5082e2cfb6aa0549d"
+    },
+    {
+      "path": "fufan-llm-wiki-producer/preset/skills/find-plugins/agents/openai.yaml",
+      "sha256": "739a79acedbac80f774d82a19d301d4b1ba4817fdd7386d072fd9668e62e3fa0"
+    },
+    {
+      "path": "fufan-llm-wiki-producer/preset/skills/find-plugins/scripts/find-plugins.mjs",
+      "sha256": "7a8b46096842253bbffea34f47fe5ef86f53e82a29e09a1d89bb4db3ec7c7fb7"
+    },
+    {
+      "path": "fufan-ppt-office/manifest.json",
+      "sha256": "7612bf6ed81b8438e732da9235175d856e0eff054fc65943caa9e897d4fe4f56"
+    },
+    {
+      "path": "fufan-ppt-office/preset/agent.cordis.yml",
+      "sha256": "83153868e42114d0ab99af842f6b4a793aae61e30a122d91fbdb051eff4149d5"
+    },
+    {
+      "path": "fufan-ppt-office/preset/preset.yml",
+      "sha256": "043da4af47c0e2ad542ad11cba42cba8695b03b5cfcbd8846cb7f9373d6b5f38"
+    },
+    {
+      "path": "fufan-ppt-office/preset/runtime/motion-deck/index.js",
+      "sha256": "e022429e873441c3715552b4e63791eb17dd7c6eccb71e64e22f69c2f98d4251"
+    },
+    {
+      "path": "fufan-ppt-office/preset/runtime/motion-deck/source/deck-template.html",
+      "sha256": "fdab9d8d03918d07e127eb2ffbf93b255e061c303c05745c28876b7cf03e8874"
+    },
+    {
+      "path": "fufan-ppt-office/preset/runtime/motion-deck/source/generate-deck.mjs",
+      "sha256": "97112d40ccf29a0e4eb12543af279d153a94ae872fcdbef26208c002b4bbda62"
+    },
+    {
+      "path": "fufan-ppt-office/preset/skills/dsh-motion-deck/SKILL.md",
+      "sha256": "9ead026bd93af52f25491724563bab09b929ec62c354a11043b4848ed69059bb"
+    },
+    {
+      "path": "fufan-video-generation/manifest.json",
+      "sha256": "0e9a75e15151e6a654cd326a7cf17dce33d81908b263858f5d423d1d1adec66a"
+    },
+    {
+      "path": "fufan-video-generation/preset/agent.cordis.yml",
+      "sha256": "47760a38bcf5789c9a1e0bc1e6871160b0f85fe1ba8168ba515238ca19e0a8a9"
+    },
+    {
+      "path": "fufan-video-generation/preset/preset.yml",
+      "sha256": "2c9b143a4a48bb4b1ed843241d4e3e54a5aa56e343ddbdfe3fba0e800d598a56"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/SKILL.md",
+      "sha256": "803f8fa8a148c0232587c28b14c922da808e5aaef579b9ecf3a562aed7690f26"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/references/artifact-contract.md",
+      "sha256": "8691b93069edacf82bb168af3bfdd85fe6f0bf677217737a1f691fd684a3f4dd"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/scripts/validate-project.mjs",
+      "sha256": "544b1082f55f6a5781e5f516e38337c45a07376c146276c2132be26c940fad21"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/LICENSE",
+      "sha256": "4259155fb06f127687ee7b0a8a3682d45132db0f2da26cbc0b7a2d1e796436b8"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/UPSTREAM-SKILL.md",
+      "sha256": "48dbfe1d5ab63ff43daa1b59ee1a97594041ac6aad29a5c7ef16367a9bb4131d"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/references/cut-catalog.md",
+      "sha256": "9834bf2f8357771fc519e17c0fd11afa61ea8d1c3faca775804dcc494891d13c"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/references/motion-language.md",
+      "sha256": "8ed8191062abd862edcf1879ef3c39215105b3b337fc7c4b8db5322ba67ebf43"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/references/story-design.md",
+      "sha256": "282f6791f6b3bc4eca7b8f9d18e81ecb269506ee43c9d1c9cb9211d45c9a56dd"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/references/visual-design.md",
+      "sha256": "d8103d178f974009a573e17c54e1781721141492440860fdf880773af3251c5a"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/assemble-index.mjs",
+      "sha256": "d5307211613983581ce38836fadb753a8db1ac0de3721096986ef3d46969e5cb"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/assemble-index.test.mjs",
+      "sha256": "6cb47d62848a827f060d9b3a434ee9f38cf105b00e405608e2d52724018a220b"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/audio.mjs",
+      "sha256": "4443907b5563e1cd17dcded312ac911763130ab2a3f5d2d5a2ee66548fa53510"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/audio.test.mjs",
+      "sha256": "cbe1ce87dc01271d3066758d676e9bb47764a7d7e696fa026443a9cfdf323fbb"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/build-frame.mjs",
+      "sha256": "e0d404bfedbe28fa84660b7d9c0a02d9b028514a6664e3563104d84ee3f69f58"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/captions.mjs",
+      "sha256": "01ebf8d12cd99f3ab47c51c869b366e2a88778f9d39d9b88f95387911b7be5e2"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/captions.test.mjs",
+      "sha256": "4e6bfb3736e928ce1ef3bc9808633f84f997a14462b09f219cdf29404e46f0d5"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/capture-skill-guardrails.test.mjs",
+      "sha256": "98e41b2b055664fd6ea26c04b470622b4c2879f5fc1f4ed771071070eed959e5"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/frame-packets.mjs",
+      "sha256": "6457b3640c04040d5349a190cba31d015544c62dd82969d1ecf055448ea3d7ad"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/frame-packets.test.mjs",
+      "sha256": "009d5cc7f9e0c45ab56ffc664e5b177e833c994767dcbb39b5806029e0804e3d"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/media-contract.test.mjs",
+      "sha256": "6969181b24da19a9dfc5cefae2fb2fc82bef4db9512d875954e79ece228ac0ac"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/stage-assets.mjs",
+      "sha256": "46eb2415c3c95722df16f41c43ac84b41693849682fb4a0e2c20be2d17f16fda"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/scripts/transitions.mjs",
+      "sha256": "0a53387d6c2f3a3d997b6f4003e2d4f905567e3dcae7cf5df9d41cc9d10103da"
+    },
+    {
+      "path": "fufan-video-generation/preset/skills/product-launch-video/upstream/sub-agents/frame-worker.md",
+      "sha256": "0265a4475c226f604e6a7f50f5bbeb564b26d69f25f7d17c8608b5b676e75e39"
+    }
+  ]
+}

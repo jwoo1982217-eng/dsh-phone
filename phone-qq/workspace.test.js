@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { PhoneWorkspace } from './workspace.js';
+test('editor shares real files with the robot, refuses stale changes and link escapes', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'phone-workspace-test-'));
+  const files = new PhoneWorkspace(root);
+  let state = await files.save('scripts/report.mjs', 'console.log("first");', null);
+  assert.ok((await files.list()).files.includes(state.path));
+  await writeFile(path.join(root, state.path), 'console.log("robot edit");');
+  await assert.rejects(files.save(state.path, 'editor edit', state.revision), /已被机器人/);
+  assert.equal((await files.read(state.path)).text, 'console.log("robot edit");');
+  const outside = await mkdtemp(path.join(os.tmpdir(), 'phone-outside-test-'));
+  await symlink(outside, path.join(root, 'outside'));
+  for (const p of ['../x', '/tmp/x', 'outside/x', 'scripts/../x', 'x\\y']) await assert.rejects(files.read(p));
+});
+test('saved Node and Bash code actually execute, write files and report syntax errors', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'phone-workspace-run-'));
+  const files = new PhoneWorkspace(root, '/bin/bash');
+  let s = await files.save('task.mjs', 'import { writeFile } from "node:fs/promises"; await writeFile("result.txt", "done"); console.log("node done");', null);
+  assert.equal((await files.run(s.path, s.revision, 'check')).code, 0);
+  const result = await files.run(s.path, s.revision, 'node'); assert.equal(result.code, 0); assert.match(result.output.map(x=>x.text).join(''), /node done/);
+  assert.equal(await readFile(path.join(root, 'result.txt'), 'utf8'), 'done');
+  await assert.rejects(files.run(s.path, null, 'node'));
+  s = await files.save('task.sh', 'printf "bash done\\n"\nprintf "shell" > bash.txt\n', null);
+  assert.equal((await files.run(s.path, s.revision, 'bash')).code, 0); assert.equal((await files.read('bash.txt')).text, 'shell');
+  s = await files.save('bad.js', 'const = ;', null); assert.notEqual((await files.run(s.path, s.revision, 'check')).code, 0);
+});

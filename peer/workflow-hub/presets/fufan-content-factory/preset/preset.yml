@@ -1,0 +1,3 @@
+name: DSH AI 内容视觉编辑
+description: 加载图文卡片 Skill，确认风格与结构，再用图像 Plugin 生成并验收 PNG 系列。
+order: 40

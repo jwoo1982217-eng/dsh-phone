@@ -1,0 +1,15 @@
+packages:
+  - .
+nodeLinker: hoisted
+# ① codearts 的 peer（cordis/dsh-llm/...）必须实际安装，import 才能解析；
+#    overrides 钉在与宿主 dsh 一致的 rc.8，防止拉到新版导致 CallId 缺失。
+# ② koffi/node-pty/sharp 用本地万能桩替代（Android/Bionic 无其原生变体），
+#    使 subprocess/bash-sandbox/attachment-local 等条目能正常 import 与激活；
+#    桩在被真正调用时抛错——手机 profile 只跑 codearts 网关与 Web 管理页。
+overrides:
+  '@deepseek-ai/dsh-llm': 0.1.0-rc.8
+  '@deepseek-ai/dsh-credentials': 0.1.0-rc.8
+  '@deepseek-ai/dsh-commands': 0.1.0-rc.8
+  'koffi': file:./stubs/koffi
+  'node-pty': file:./stubs/node-pty
+  'sharp': file:./stubs/sharp

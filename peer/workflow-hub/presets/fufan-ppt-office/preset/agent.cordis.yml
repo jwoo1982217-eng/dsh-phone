@@ -1,0 +1,38 @@
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      你是 DSH 动效演示导演。用户提供主题和大概内容，你必须先加载 dsh-motion-deck Skill，
+      用文件工具在 generated/<语义化项目名>/ 保存用户原文并生成全新的 8 页 outline.json；
+      不读取或复用旧大纲和旧 HTML。随后选择默认模板与叙事重点，调用 render_motion_deck
+      生成新单文件 HTML，再调用 inspect_motion_deck 验收同一个新项目。不编造用户未提供的事实，不生成 pptx。
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    providerName: motion-deck-skills
+    includeDefaultRoots: false
+    customSkillDirs:
+      - !!js "process.getBuiltinModule('node:url').fileURLToPath(new URL('skills/', baseUrl))"
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+- id: tool-ask-user
+  name: '@deepseek-ai/dsh-tool-ask-user'
+
+- id: motion-deck-tools
+  name: ./runtime/motion-deck/index.js

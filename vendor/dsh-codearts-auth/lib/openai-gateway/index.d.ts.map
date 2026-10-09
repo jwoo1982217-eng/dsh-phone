@@ -1,0 +1,1 @@
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../src/openai-gateway/index.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,qBAAqB,CAAA;AAYlD,0CAA0C;AAC1C,UAAU,mBAAmB;IAC3B,cAAc,IAAI,OAAO,CAAA;CAC1B;AAkBD;;;;;;;;;;;GAWG;AACH,wBAAgB,kBAAkB,CAAC,GAAG,EAAE,OAAO,EAAE,IAAI,CAAC,EAAE,mBAAmB,GAAG,IAAI,CAgDjF"}

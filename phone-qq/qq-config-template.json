@@ -1,0 +1,29 @@
+{
+  "format": "dsh-phone-qq",
+  "version": 1,
+  "config": {
+    "connection": {
+      "mode": "forward",
+      "url": "ws://127.0.0.1:3001"
+    },
+    "selfId": "填写机器人QQ号",
+    "admins": [
+      "填写管理员QQ号"
+    ],
+    "accessToken": "",
+    "primaryGroup": null,
+    "groupEnabled": true,
+    "requireMention": true,
+    "talkValue": 0,
+    "groupModel": {
+      "provider": null,
+      "model": null
+    },
+    "persona": {
+      "selfName": "助手",
+      "masterName": "管理员",
+      "peerName": "朋友",
+      "pronoun": "我"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+let state;
+async function manage(payload) {
+ const response = await fetch('/appearance/manage',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:crypto.randomUUID(),method:'manage',payload})});
+ const result=(await response.json()).result;if(!result?.ok)throw Error(result?.error?.message||'主题未保存');return result.value;
+}
+function render(){document.getElementById('skins').replaceChildren();for(const skin of state.skins){const article=document.createElement('article'),title=document.createElement('h2'),description=document.createElement('p'),button=document.createElement('button');title.textContent=skin.name;description.textContent=skin.description;button.textContent=skin.id===state.skin?'正在使用':'换上这套';button.disabled=skin.id===state.skin;button.addEventListener('click',async()=>{button.disabled=true;try{state=await manage({action:'select',skin:skin.id,revision:state.revision});document.documentElement.dataset.dshSkin=state.skin;window.parent.postMessage({type:'dsh:appearance',skin:state.skin},location.origin);render();document.getElementById('notice').textContent='新皮肤已应用并保存。';}catch(error){document.getElementById('notice').textContent=error.message;button.disabled=false;}});article.append(title,description,button);document.getElementById('skins').append(article);}}
+manage({action:'status'}).then(value=>{state=value;render();document.getElementById('notice').textContent='当前皮肤已加载。';}).catch(error=>{document.getElementById('notice').textContent=error.message;});

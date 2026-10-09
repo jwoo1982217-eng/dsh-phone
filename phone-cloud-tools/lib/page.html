@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN" translate="no"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>手机工具箱</title><link rel="stylesheet" href="/phone-tools/page.css"><script src="/appearance/theme-client.js" defer></script><script src="/phone-tools/page.js" defer></script></head><body>
+<main><h1>手机工具箱</h1><p>外部 AI 安排任务，这台手机执行你批准的工具并返回结果。</p><p>可接 Codex、桌面 DeepSeek Harness、Hermes 或其他兼容工具接口的助手。</p><p id="notice" role="status"></p>
+<section><h2>连接</h2><p id="connection">正在读取…</p><label>中继地址<input id="relay" type="url" placeholder="wss://你的域名/relay" autocomplete="off"></label><div class="actions"><button id="pair">建立新配对</button><button id="export">显示配对链接</button><button id="revoke" class="danger">撤销配对</button></div><div id="pair-output" hidden><p>此链接包含工具连接密钥。仅粘贴到你自己的 AI 工具连接器，关闭后隐藏。</p><textarea id="pair-link" readonly spellcheck="false"></textarea><button id="hide">隐藏链接</button></div><label class="choice"><input type="checkbox" id="enabled">启用工具连接</label></section>
+<section><h2>共享的技能</h2><p>只共享你选中的正文。技能内容不会自动获得执行权限。</p><div id="skills"></div></section>
+<section><h2>本地工具</h2><p>每次运行前都在手机确认源码、参数和权限。可信脚本拥有 DSH App 的权限。</p><div id="tools"></div><label>导入可信工具 JSON<input id="import-tool" type="file" accept=".json,application/json"></label><button id="save">保存共享范围与连接状态</button></section>
+<section><h2>待确认与当前任务</h2><p>任务批准后只开放该任务独立文件目录，最长 30 分钟。App 另需在「服务 → 手机操作」原生页面批准。断线、暂停或重启会撤销任务授权。</p><div id="tasks"></div></section>
+<section><h2>逐次操作确认</h2><div id="operations"></div></section>
+<section><h2>最近结果与记录</h2><div id="receipts"></div><div id="events"></div><button id="refresh">刷新</button></section>
+</main><dialog id="confirm"><h2 id="confirm-title">确认操作</h2><pre id="confirm-content"></pre><form method="dialog"><button value="cancel">取消</button><button value="ok">我已核对，批准这一次</button></form></dialog></body></html>

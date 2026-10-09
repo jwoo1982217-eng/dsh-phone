@@ -1,0 +1,17 @@
+# Phone-control verification
+
+## Completed checks (2026-10-07)
+
+- Native JVM/Robolectric: 42 passed. Production classes cover the three session modes, direct full-mode click/long press, no extra enable switch, stale foreground/tree/snapshot, lock/password handling, gesture callbacks, stop/restart, mode downgrade, fixed per-UID log arguments, redaction, Termux result routing, duplicate dispatch prevention and revoked results.
+- Node: 48 passed across phone-control, the external-toolbox/remote protocols and presentation viewport checks. The pinned DSH Session, SandboxPolicy, SessionProjections and ToolRuntime supply the real owner and mode. Forged owner/mode, QQ and delegated callers cannot obtain local authority. Full mode makes successive mutations without a native task request; unknown mutation results are never retried.
+- Python packaging: 4 passed; frozen offline lock verification preserves the pinned SDK generation. A clean Android debug build and native tests passed.
+- Isolated physical Android image instrumentation: the actual decoder, attachment store and DSH ToolRuntime return a durable image block, reject a revoked result and recover. The separately named test APK was removed afterward.
+- Physical production bridge, actual pinned SDK, isolated SDK session, zero model calls: opened MT Manager, read its real accessibility tree, captured and re-read a durable screenshot; submitted one Termux diagnostic and retrieved stdout, stderr and the intentional exit code 7. Read-only blocks mutation, workspace mode blocks Termux, full mode recovers, stop invalidates the old intent, and a new permission selection resumes. No user chat or permission preference was modified by that isolated session.
+- Strict host integration: the production phone host now declares the sandbox policy and session projection dependencies used by its helper. A protected Cordis consumer test catches undeclared dependency reads; the installed phone returns all six custom settings pages successfully with visible iframe content.
+- Settings layout: reproduced the collapsed remote Hermes/market/toolbox panel at 149 px using the physical phone's actual web service and settings client at 412 × 810. The installed fix gives every inspected page an 810 px panel and 701 px content area; long content reaches its bottom. A 360 px visible viewport stays bounded; the 1440 px desktop retains its 800 px panel. The actual phone WebView also shows a full-height settings panel. Role cards and all 10 prior experience files are unchanged.
+
+## Scope and remaining device setup
+
+Robolectric Android shadows and native-protocol socket fixtures do not prove every OEM/App action. The physical SDK test used the already enabled accessibility service and an already configured Termux-compatible app. UI setup, runtime log access and HTTPS capture still depend on their actual Android permissions and App configuration. Shizuku was running but DSH log permission was not yet granted during this verification, so reading another App's live logs has not been claimed as verified. Reqable VPN/certificate setup and a real capture were not performed.
+
+Normal local phone sessions use their existing permission selector; no additional phone-mode approval is needed. Legacy external-toolbox native consent remains a separate boundary. Stop and mode downgrade cannot undo an operation already handed to another App or guarantee termination of a detached Termux background job. No paid model request, global Codex registration, cloud pairing or production data clearing was performed.

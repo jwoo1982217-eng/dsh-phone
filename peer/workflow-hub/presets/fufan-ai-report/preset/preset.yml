@@ -1,0 +1,3 @@
+name: AI 数据叙事分析师
+description: 从任意本地 Excel 剖析数据、选择图表，并生成及验收新的离线交互报告。
+order: 50

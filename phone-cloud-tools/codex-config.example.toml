@@ -1,0 +1,9 @@
+# Merge into your Codex config; replace both absolute paths first.
+# Pairing secrets stay in the private file, outside the project/repository.
+[mcp_servers.phone_tools]
+command = "node"
+args = ["/opt/dsh-phone-tools/bin/mcp.mjs", "--pair-file", "/opt/dsh-phone-tools/private/phone-pair.json"]
+startup_timeout_sec = 60
+tool_timeout_sec = 120
+enabled = true
+default_tools_approval_mode = "prompt"

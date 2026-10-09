@@ -1,0 +1,8 @@
+{
+  "format": "dsh-preset",
+  "version": 1,
+  "id": "ai-product-developer",
+  "name": "AI 产品开发工程师",
+  "description": "赋范官方 AI WebApp 工作流：1 套 Agent Preset 与 3 个 Skills。",
+  "sourceDshVersion": "0.1.0-rc.8"
+}

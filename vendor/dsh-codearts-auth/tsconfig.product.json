@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@deepseek-ai/schemastery": [
+        "../../desktop-runtime/node_modules/@deepseek-ai/schemastery/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-llm": [
+        "../../desktop-runtime/node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-credentials": [
+        "../../desktop-runtime/node_modules/@deepseek-ai/dsh-credentials/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/cordis": [
+        "../../desktop-runtime/node_modules/@deepseek-ai/cordis/lib/types/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-agent": [
+        "../../desktop-runtime/node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts"
+      ]
+    }
+  }
+}

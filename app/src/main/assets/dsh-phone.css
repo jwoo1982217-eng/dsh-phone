@@ -1,0 +1,123 @@
+/* Mobile presentation for the bundled dsh 0.2.1-alpha.1 settings shell.
+   Generated VOzbGW_* selectors come from SettingsRoot.module.css. */
+@media (max-width: 700px) {
+  /* The menu is anchored to the composer bounds, rather than the short
+     model trigger. Its original right:0 lets long catalogs cross the sidebar. */
+  ._7KE1Ra_menu { box-sizing:border-box !important; left:var(--dsh-phone-model-left,0px) !important; right:auto !important; width:var(--dsh-phone-model-width,260px) !important; min-width:0 !important; max-width:calc(100vw - 24px) !important; max-height:var(--dsh-phone-model-height,55dvh) !important; overflow-x:hidden !important; }
+  ._7KE1Ra_groups { min-width:0 !important; overflow-x:hidden !important; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+  ._7KE1Ra_option, ._7KE1Ra_cell { width:100% !important; min-width:0 !important; min-height:46px !important; }
+  ._7KE1Ra_modelName, ._7KE1Ra_description { white-space:normal !important; overflow-wrap:anywhere !important; }
+  ._7KE1Ra_groupTitle { overflow-wrap:anywhere; }
+  ._7KE1Ra_cellValue { max-width:65%; }
+  .dim-jh-badgePop { box-sizing:border-box !important; left:var(--dsh-phone-popover-left,0px) !important; right:auto !important; width:var(--dsh-phone-popover-width,calc(100vw - 24px)) !important; min-width:0 !important; max-width:calc(100vw - 24px) !important; max-height:var(--dsh-phone-popover-height,55dvh) !important; overflow-x:hidden !important; overflow-y:auto !important; overscroll-behavior:contain; }
+  /* Settings pages use flex/percentage heights. Give them a definite visible
+     viewport, including while loading, and let only the content area scroll. */
+  .VOzbGW_overlay { bottom:auto !important; height:var(--dsh-phone-viewport-height,100dvh) !important; }
+  .VOzbGW_panel { box-sizing:border-box; width:100vw !important; max-width:100vw !important; height:var(--dsh-phone-viewport-height,100dvh) !important; max-height:var(--dsh-phone-viewport-height,100dvh) !important; border-radius:0 !important; flex-direction:column !important; }
+  .VOzbGW_nav { width:100% !important; min-width:0; padding:12px 12px 8px !important; gap:8px !important; border-bottom:1px solid var(--dsw-alias-border-default,#ddd); }
+  .VOzbGW_navTitle { padding:0 !important; min-height:32px; display:flex; align-items:center; }
+  .VOzbGW_navList { flex-direction:row !important; overflow-x:auto; flex-wrap:nowrap; gap:4px !important; padding-bottom:4px; }
+  .VOzbGW_navCell { flex:none; min-height:44px; padding:8px 12px !important; white-space:nowrap; }
+  .VOzbGW_navIcon { display:none; }
+  .VOzbGW_content { flex:1 1 0 !important; min-height:0; width:100%; }
+  .VOzbGW_header { position:absolute; top:6px; right:8px; height:40px !important; padding:4px !important; align-items:center !important; }
+  .VOzbGW_actions button { white-space:nowrap; font-size:12px; }
+  .VOzbGW_close { min-width:36px; min-height:36px; }
+  .VOzbGW_options { flex:1 1 0 !important; padding:12px !important; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; }
+  .VOzbGW_options iframe[data-dsh-settings-embed] { height:var(--dsh-phone-embed-height,min(72dvh,760px)) !important; min-height:100% !important; }
+  .VOzbGW_options [data-slot="settings.general.item"] > * { flex-wrap:wrap; gap:12px; }
+  .dsh-phone-noema-row { flex-wrap:wrap !important; gap:10px !important; }
+  .dsh-phone-noema-row input[type="text"], .dsh-phone-noema-row input[type="number"] { width:100% !important; max-width:none !important; }
+  .dsh-phone-noema button { min-height:44px; }
+  .dsh-phone-noema pre { max-width:100%; overflow:auto; }
+  .dim-jh-page { height:auto !important; min-height:100%; }
+  .dim-jh-header { flex-direction:column !important; align-items:stretch !important; padding:8px 0 12px !important; gap:10px !important; }
+  .dim-jh-brandName { font-size:18px; }
+  .dim-jh-headerActions { flex-wrap:wrap !important; justify-content:flex-start !important; gap:6px !important; }
+  .dim-jh-btn { min-height:36px; white-space:nowrap; font-size:13px; padding:6px 10px; }
+  .dim-jh-layout { flex-direction:column !important; overflow:visible !important; }
+  body.dsh-phone-mobile .dim-jh-rail { display:none !important; width:100% !important; border:0 !important; padding:12px 0 !important; overflow:visible !important; }
+  body.dsh-phone-mobile .dsh-phone-choosing .dim-jh-rail { display:grid !important; }
+  body.dsh-phone-mobile .dsh-phone-choosing .dim-jh-panel { display:none !important; }
+  .dsh-phone-provider { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px 0; border-bottom:1px solid var(--dsw-alias-border-default,#ddd); }
+  .dsh-phone-selected { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; min-width:0; }
+  .dsh-phone-provider > button { flex:none; }
+  .dim-jh-provider { min-height:72px !important; grid-template-columns:44px minmax(0,1fr) !important; gap:12px !important; padding:12px 14px !important; border-radius:20px !important; }
+  .dim-jh-providerIcon { width:44px !important; height:44px !important; border-radius:13px !important; }
+  .dim-jh-providerIcon img { width:30px !important; height:30px !important; }
+  .dim-jh-providerLabel strong { font-size:17px !important; line-height:24px !important; }
+  .dim-jh-railGroup { gap:12px !important; }
+  .dsh-phone-selected .dim-jh-providerIcon { width:30px !important; height:30px !important; }
+  .dsh-phone-selected .dim-jh-providerIcon img { width:22px !important; height:22px !important; }
+  .dim-jh-panel { padding:16px 0 !important; min-width:0; overflow:visible !important; }
+  .dim-jh-panelHead { display:block !important; }
+  .dim-jh-panelTitle { font-size:17px; margin:0 0 12px; }
+  .dim-jh-accountActions { flex-wrap:wrap !important; }
+  .dim-jh-empty { padding:24px 12px !important; }
+  .dim-jh-modal { max-width:calc(100vw - 24px) !important; max-height:calc(100dvh - 24px) !important; overflow:auto; }
+  .dim-jh-modelFilterBar, .dim-jh-modelBulkBar, .dim-jh-modalHead { flex-wrap:wrap !important; }
+  .dim-jh-modelSearch { min-width:0 !important; width:100% !important; }
+}
+
+/* Mobile navigation is a temporary drawer; chat keeps the full screen width. */
+.dsh-phone-menu,.dsh-phone-sidebar-mask{display:none}
+@media(max-width:700px){
+ html,body,#root{height:var(--dsh-phone-viewport-height,100dvh)!important;min-height:0!important}
+ .pI_x6G_frame{height:var(--dsh-phone-viewport-height,100dvh)!important;min-height:0!important;max-height:var(--dsh-phone-viewport-height,100dvh)!important}
+ .pI_x6G_centerCol,.wSkVaW_root{min-height:0!important}
+ .pI_x6G_frame{grid-template-columns:0px minmax(0,1fr) 0px!important}
+ .pI_x6G_centerCol{grid-column:2;padding-top:0}
+ .pI_x6G_sidebarCol{position:fixed;left:0;top:44px;bottom:0;width:min(280px,86vw)!important;z-index:14;visibility:hidden;transform:translateX(-100%);pointer-events:none;transition:transform .16s ease}
+ .pI_x6G_sidebarCol>.hHd-Xa_root{width:100%!important;height:100%}
+ .dsh-phone-menu-open .pI_x6G_sidebarCol{visibility:visible;transform:translateX(0);pointer-events:auto;box-shadow:8px 0 24px #0002}
+ .pI_x6G_sidebarCol.dsh-phone-dialog-open{visibility:visible;transform:none;pointer-events:auto;transition:none}
+ .dsh-phone-menu{display:block;position:fixed;top:5px;left:8px;z-index:15;min-height:34px;padding:4px 10px;border:1px solid var(--dsw-alias-border-l1,#e2e8f0);border-radius:10px;background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,#18243b);font:14px system-ui}
+ .dsh-phone-menu-open .dsh-phone-sidebar-mask{display:block;position:fixed;inset:44px 0 0;z-index:13;border:0;background:#0004}
+ .pI_x6G_handle[data-side=sidebar]{display:none!important}
+ .pI_x6G_frame:not([data-rightbar-collapsed]) .pI_x6G_rightbarCol{position:absolute;inset:44px 0 0;z-index:16;background:var(--dsw-alias-bg-base,#fff)}
+}
+
+.dsh-phone-upload-actions{display:flex;flex-direction:column;gap:4px;padding:6px;border-bottom:1px solid var(--dsw-alias-border-l2,#dce3ee)}
+.dsh-phone-upload-actions>button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:40px;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,#222);font:inherit;text-align:left;cursor:pointer}
+.dsh-phone-upload-actions>button:hover,.dsh-phone-upload-actions>button:focus-visible{background:var(--dsw-alias-bg-layer-2,#f1f5f9)}
+.dsh-phone-upload-actions small{color:var(--dsw-alias-label-secondary,#555);font-size:11px}
+/* One header row for menu, session name, preset and session-log action. */
+@media(max-width:700px){
+ .wSkVaW_header{position:relative;grid-template-columns:minmax(0,1fr)!important;padding:4px 8px 0!important}
+ .wSkVaW_headerLeading{display:none!important}
+ .wSkVaW_titleRow{grid-column:1!important;box-sizing:border-box;min-width:0;min-height:36px!important;padding-inline:70px 32px!important;gap:4px!important}
+ .wSkVaW_titleCluster{gap:4px!important;min-width:0}
+ .wSkVaW_titleCluster>:first-child{min-width:0;max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .wSkVaW_titleCluster>span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .wSkVaW_headerActions,.wSkVaW_headerUtilities{gap:2px!important;margin-left:2px!important}
+ .wSkVaW_headerUtilities .OMoRSG_menuAnchor{display:none!important}
+ .wSkVaW_headerCorner{grid-area:auto!important;position:absolute;left:auto!important;right:8px;top:8px}
+ .wSkVaW_titleCluster .SVAs4q_label{display:inline-flex!important;max-width:84px;font-size:11px}
+ .dsh-phone-log-button{font-size:0!important;padding:5px!important;width:30px!important;min-width:30px!important;max-width:30px!important;flex:0 0 30px!important;height:30px}
+ .dsh-phone-log-button svg{width:18px;height:18px}
+ .wSkVaW_tabs{grid-column:1!important;gap:24px!important;margin-top:0!important;padding-left:70px!important}
+ .wSkVaW_tab{padding-bottom:6px!important;font-size:12px!important}
+ .wSkVaW_root{--dsh-composer-side-clearance:8px;--dsh-composer-dock-inset:4px}
+ .wSkVaW_composerStack{--dsh-composer-stack-gap:2px}
+ .wSkVaW_composerSeat{--dsh-composer-text-max-height:160px}
+ .uV2eYG_root{padding-bottom:4px!important}
+ .uV2eYG_card{gap:4px!important;padding-top:6px!important;border-radius:16px!important;font-size:14px!important;line-height:20px!important}
+ .uV2eYG_input,.uV2eYG_mirror,.uV2eYG_backdrop{padding:4px 12px!important}
+ .uV2eYG_hero .uV2eYG_mirror{min-height:36px!important}
+ .uV2eYG_row{flex-wrap:nowrap!important;gap:4px!important;padding:0 6px 4px!important}
+ .uV2eYG_tools{gap:4px!important;flex:none}
+ .uV2eYG_trailing{gap:4px!important;flex:1!important;min-width:0!important}
+ .uV2eYG_trailing ._7KE1Ra_root{min-width:0;flex:1}
+ .uV2eYG_trailing ._7KE1Ra_trigger{max-width:100%!important;width:100%;min-width:0;font-size:12px}
+ .uV2eYG_tools>button,.uV2eYG_tools>div>button{min-height:32px;max-width:36px}
+ .uV2eYG_tools>.dsh-phone-upload{max-width:none;padding:4px 6px!important;font-size:11px!important}
+ .uV2eYG_primary{width:32px!important;height:32px!important;transform:none!important}
+ .dsh-phone-composer-more{position:relative;flex:none}
+ .dsh-phone-composer-more>summary{list-style:none;cursor:pointer;display:grid;place-items:center;min-width:28px;min-height:32px;font-size:20px;border-radius:8px;color:var(--dsw-alias-label-secondary,#52627a)}
+ .dsh-phone-composer-more>summary::-webkit-details-marker{display:none}
+ .dsh-phone-composer-options{position:absolute;bottom:38px;left:var(--dsh-phone-popover-left,0px);z-index:20;box-sizing:border-box;width:var(--dsh-phone-popover-width,min(270px,calc(100vw - 24px)));max-height:var(--dsh-phone-popover-height,55dvh);overflow:auto;overscroll-behavior:contain;padding:12px;border:1px solid #dce3ee;border-radius:12px;background:var(--dsw-alias-bg-base,#fff);box-shadow:0 6px 24px #0002}
+ .dsh-phone-composer-options:empty{display:none}
+ .dsh-phone-chatgpt-plan{display:block!important;padding:8px 0 0!important;font-size:12px;white-space:normal}
+ .dsh-peer-badge{position:fixed;top:40px;right:8px;z-index:16;max-width:45vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:8px;background:#eef4ff;color:#2151a4;padding:3px 7px;font:11px system-ui}
+ body.dsh-peer-remote .wSkVaW_titleRow{padding-right:0}
+}

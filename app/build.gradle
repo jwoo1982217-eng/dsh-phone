@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.dshphone'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.dshphone"
+        minSdk 28
+        targetSdk 36
+        versionCode 61
+        versionName "0.1.58"
+        ndk { abiFilters "arm64-v8a" }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // 必须解压 .so 落盘：libnode.so 要作为可执行文件被 ProcessBuilder 直接
+            // exec（墨枢同款模式），extractNativeLibs=false 只支持 dlopen 不支持 exec
+            useLegacyPackaging = true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    testOptions { unitTests { includeAndroidResources = true } }
+}
+
+dependencies {
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+    // ZXing 4.3.0's published POM omits its AndroidX implementation dependencies.
+    // CaptureManager uses these classes when opening the camera or requesting permission.
+    implementation 'androidx.core:core:1.17.0'
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.16'
+}
+
+tasks.register('verifyPocketDebugApk', Exec) {
+    dependsOn 'packageDebug'
+    commandLine 'python3', rootProject.file('scripts/verify-pocket-apk.py'),
+        layout.buildDirectory.file('outputs/apk/debug/app-debug.apk').get().asFile
+}
+tasks.matching { it.name == 'assembleDebug' }.configureEach { dependsOn 'verifyPocketDebugApk' }

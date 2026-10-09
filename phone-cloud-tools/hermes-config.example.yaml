@@ -1,0 +1,19 @@
+# Merge this block into the dedicated Hermes profile's config.yaml.
+# Keep the existing model/provider settings. Replace these two absolute paths.
+mcp_servers:
+  phone_tools:
+    command: node
+    args:
+      - /opt/dsh-phone-tools/bin/mcp.mjs
+      - --pair-file
+      - /opt/dsh-phone-tools/private/phone-pair.json
+    enabled: true
+    protocol: legacy
+    timeout: 120
+    connect_timeout: 60
+    supports_parallel_tool_calls: false
+    trust: full
+    tools:
+      include: ["phone_*"]
+      resources: false
+      prompts: false

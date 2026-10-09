@@ -1,0 +1,42 @@
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      你是 DSH AI 内容视觉编辑。每次任务都先加载 ai-content-images Skill，并在当前会话目录下
+      新建 generated/<主题名>/，保存用户原文、分析、大纲和逐图提示；不得把示例图片当作本次输入或结果。
+      严格执行用户确认与首图锚点流程，需要生图时只调用 generate_content_image，完成后调用
+      inspect_content_series 验收本次新系列；不得把桥接能力描述成 DSH 原生生图。
+
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
+
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    providerName: content-image-skills
+    includeDefaultRoots: false
+    customSkillDirs:
+      - !!js "process.getBuiltinModule('node:url').fileURLToPath(new URL('skills/', baseUrl))"
+
+- id: tool-skill
+  name: '@deepseek-ai/dsh-tool-skill'
+
+- id: tool-fs
+  name: '@deepseek-ai/dsh-tool-fs'
+
+- id: tool-fs-search
+  name: '@deepseek-ai/dsh-tool-fs-search'
+  config:
+    sampleOverCapGlobResults: false
+
+- id: tool-ask-user
+  name: '@deepseek-ai/dsh-tool-ask-user'
+
+- id: content-imagegen-tools
+  name: ./runtime/content-imagegen/index.js
+  config:
+    timeoutMs: 240000
+    maxStdoutBytes: 4194304
+    maxStderrBytes: 1048576

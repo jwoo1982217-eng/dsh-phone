@@ -1,0 +1,13 @@
+测试仍通过。**唯一剩下的差异是 HTTP handler 传入的数据本身**——我怀疑 `bindAddress` 读到的 `ID` 有问题。
+
+course 关键：`editAddress` 里 `a.ID = c.PostForm("id")`，但**先调用 `bindAddress(c)` 已经消费了 body**！Gin 的 `PostForm` 解析后会缓存，理论上可重复读。但 `bindAddress` 里没有读 `id`。
+
+course 我加日志直接看 handler 收到的值。
+
+course 更高效：让我用最直接的方式——在服务端打印实际执行的 SQL。开启 GORM 的 Info 日志。
+
+course 我改用最快路径：直接给 `UpdateAddress` 加临时日志。
+
+course 实际上，我注意到 `editAddress` 中 `a.ID = c.PostForm("id")` 在 `bindAddress(c)` **之后**调用，而 `bindAddress` 内部多次调用 `c.PostForm`。Gin 在首次 `PostForm` 时解析 body 并缓存 `requestPostForm`，后续可重复读——应该没问题。
+
+让我直接看 handler 收到的实际值。

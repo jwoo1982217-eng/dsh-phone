@@ -1,0 +1,8 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>彻底删除聊天记录</title>
+<style>body{font:15px system-ui;max-width:900px;margin:auto;padding:16px;color:CanvasText;background:Canvas;color-scheme:light dark}h1{font-size:21px}p{line-height:1.6}button,select{font:inherit;padding:10px;margin:4px;border:1px solid #8886;border-radius:8px;background:Canvas;color:CanvasText;max-width:100%}button{cursor:pointer}button:disabled{opacity:.5}section{border:1px solid #8885;border-radius:12px;padding:12px;margin:16px 0}.danger{color:#e65360}#message{white-space:pre-wrap}</style>
+<h1>彻底删除聊天记录</h1><p>永久删除消息、聊天缓存、专属附件和关联子聊天。项目中的源码文件、人设卡和 QQ 聊天保留。归档的普通聊天也会列出。独立长期记忆需要另行清空。</p>
+<button id="refresh">刷新</button><button id="retry" hidden>继续完成上次删除</button><p id="message" role="status"></p>
+<section><label for="chat">单个聊天</label><br><select id="chat"></select><br><button id="single" class="danger">彻底删除所选聊天</button></section>
+<section><label for="workspace">项目内聊天</label><br><select id="workspace"></select><br><button id="project" class="danger">彻底删除所选项目的聊天</button></section>
+<section><p>删除此设备全部普通聊天，包括归档记录。</p><button id="all" class="danger">彻底删除全部普通聊天</button></section>
+<script src="/chat-history/page.js"></script></html>

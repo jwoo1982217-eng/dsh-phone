@@ -1,0 +1,27 @@
+{
+  "name": "dsh-desktop-runtime",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.2.1-alpha.1",
+    "@zseven-w/dsh-noema": "file:../vendor/dsh-noema",
+    "dsh-channel-qq": "file:../vendor/dsh-channel-qq",
+    "dsh-codearts-auth": "file:../vendor/dsh-codearts-auth",
+    "dsh-peer": "file:../peer",
+    "dsh-phone-account": "file:../phone-account",
+    "dsh-phone-qq": "file:../phone-qq",
+    "dsh-pocket": "2.10.6"
+  },
+  "optionalDependencies": {
+    "@zseven-w/dsh-noema-darwin-arm64": "0.1.0-rc.1",
+    "@zseven-w/dsh-noema-darwin-x64": "0.1.0-rc.1",
+    "@zseven-w/dsh-noema-linux-arm64": "0.1.0-rc.1",
+    "@zseven-w/dsh-noema-linux-x64": "0.1.0-rc.1",
+    "@zseven-w/dsh-noema-win32-arm64": "0.1.0-rc.1",
+    "@zseven-w/dsh-noema-win32-x64": "0.1.0-rc.1"
+  }
+}

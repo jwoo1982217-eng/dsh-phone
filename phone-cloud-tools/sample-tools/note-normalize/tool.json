@@ -1,0 +1,7 @@
+{
+  "id": "note-normalize",
+  "title": "整理本地笔记",
+  "description": "把输入笔记去掉行尾空格并规范换行，写入当前任务的 note.txt；每次需要手机确认。",
+  "entry": "tool.mjs",
+  "inputSchema": { "type": "object", "properties": { "text": { "type": "string", "maxLength": 32000 } }, "required": ["text"], "additionalProperties": false }
+}

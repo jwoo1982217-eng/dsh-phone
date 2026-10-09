@@ -1,0 +1,8 @@
+{
+  "name": "dsh-desktop-chatgpt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}

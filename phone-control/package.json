@@ -1,0 +1,10 @@
+{
+  "name": "dsh-phone-control",
+  "version": "0.2.0",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": { ".": "./index.mjs", "./bridge": "./bridge.mjs", "./package.json": "./package.json" },
+  "bin": { "cli-anything-phone": "./cli.mjs" },
+  "license": "MIT",
+  "engines": { "dsh": "0.2.1-alpha.1", "node": ">=22" }
+}

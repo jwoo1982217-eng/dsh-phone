@@ -1,0 +1,8 @@
+{
+  "format": "dsh-preset",
+  "version": 1,
+  "id": "product-video-director",
+  "name": "AI 产品视频导演",
+  "description": "赋范官方视频生成工作流：1 套 Agent Preset 与 1 个 Skill。",
+  "sourceDshVersion": "0.1.0-rc.8"
+}

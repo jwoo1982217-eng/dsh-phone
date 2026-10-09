@@ -1,0 +1,8 @@
+{
+  "format": "dsh-preset",
+  "version": 1,
+  "id": "ai-content-image-studio",
+  "name": "DSH AI 内容视觉编辑",
+  "description": "赋范官方内容工厂：1 套 Agent Preset、1 个 Skill 与 1 个图像生成 Plugin。",
+  "sourceDshVersion": "0.1.0-rc.8"
+}

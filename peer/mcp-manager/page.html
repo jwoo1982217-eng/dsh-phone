@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MCP 服务</title><link rel="stylesheet" href="/mcp-manager/page.css"></head><body>
+<main><h1>MCP 服务</h1><p id="notice">正在读取连接…</p><div class="toolbar"><button id="refresh">刷新</button><button id="add">添加服务</button><button id="export">导出排查记录</button></div><p id="message" role="status"></p>
+<section id="servers"></section>
+<form id="editor" hidden><h2 id="editorTitle">连接服务</h2>
+<label>服务标识<input id="id" required pattern="[a-zA-Z0-9_-]{1,32}"></label><label>显示名称<input id="label" maxlength="80"></label>
+<label>连接方式<select id="transport"><option value="streamable-http">HTTP</option><option value="stdio">本机命令（stdio）</option><option value="sse">SSE</option><option value="phone-mt">手机 MT（ADB）</option><option value="phone-local-mt">手机 MT（本机直连）</option></select></label>
+<label>项目范围<input id="scope" value="*" placeholder="* 或项目绝对路径"></label>
+<label>你确认可只读执行的工具名（JSON 数组）<textarea id="readOnlyTools" rows="2">[]</textarea></label>
+<label>服务地址<input id="url" placeholder="https://example.com/mcp"></label>
+<label>启动命令<input id="command" placeholder="node / npx / python"></label><label>参数（JSON 数组）<textarea id="args" rows="2">[]</textarea></label>
+<label>启动目录<input id="cwd" placeholder="可选绝对路径"></label><label>ADB 设备标识<input id="serial" placeholder="手机 USB 序列号或无线 ADB 地址"></label>
+<label>请求头与环境变量（JSON；留空保留已保存凭据）<textarea id="secrets" rows="4" autocomplete="off" spellcheck="false" placeholder='{"headers":{"Authorization":"Bearer …"},"env":{}}'></textarea></label>
+<p>保存前会连接并验证工具目录。已有连接失败时保留原配置。凭据不在此页回显。</p><button type="submit">验证并保存</button><button type="button" id="cancel">取消</button></form>
+<section><h2>计费单价</h2><p>填每百万 token 的金额、币种和出处。未填或用量不完整时费用显示未知；缓存单价单独填写。不会更改模型账号。</p><textarea id="pricing" rows="4" spellcheck="false" placeholder='{"provider/model":{"input":1,"output":2,"currency":"CNY","source":"账号价格页"}}'></textarea><button id="savePricing">保存单价</button></section>
+<section><h2>模型探针与派单记录</h2><p id="limits"></p><div id="windows"></div></section></main><script src="/mcp-manager/page.js"></script></body></html>

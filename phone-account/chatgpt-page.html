@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChatGPT 会员</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:24px 18px;background:#fafbfc;color:#20242b;font:16px/1.65 system-ui,sans-serif}main{max-width:520px;margin:auto}h1{font-size:25px;margin:0 0 10px}.card{padding:20px;background:white;border:1px solid #e7e9ed;border-radius:16px;margin:18px 0}p{margin:8px 0}button,select{width:100%;min-height:48px;padding:10px 14px;border:1px solid #dce1e9;border-radius:10px;background:white;color:inherit;font:inherit;margin-top:10px}button{cursor:pointer}button.primary{background:#20242b;color:white}button:disabled{opacity:.5}small{display:block;color:#626b78}a{color:#1677ff}code{display:block;overflow-wrap:anywhere;font-size:13px}.model{padding:12px 0;border-bottom:1px solid #edf0f3}.model:last-child{border-bottom:0}#message{color:#b45309;overflow-wrap:anywhere}[hidden]{display:none!important}.modal{position:fixed;inset:0;background:#0006;padding:24px;display:grid;place-items:center}.modal .card{max-width:440px;width:100%}#logout{color:#b42318}
+</style></head><body><main>
+<h1>ChatGPT 会员</h1><p>授权 DSH 使用你的 ChatGPT 会员方案。</p>
+<div class="card"><p id="status" role="status">正在读取账号状态…</p><select id="accounts" aria-label="ChatGPT 连接" hidden></select><p id="message" role="status"></p>
+<button id="login" class="primary">Continue with ChatGPT</button><button id="add">添加其他账号或工作区</button><button id="continue" hidden>继续官方授权</button><button id="cancel" hidden>取消本次授权</button><button id="logout" hidden>退出当前连接</button>
+<small>登录将在系统浏览器的 OpenAI 官方页面完成。授权后返回 DSH。</small></div>
+<div class="card"><p><strong>官方可用模型</strong></p><button id="refresh" disabled>刷新模型列表</button><p id="catalogStatus">完成会员授权后可获取模型。</p><div id="models"></div></div>
+<small>在 DSH 的模型选择中找到“ChatGPT 会员”。墨听等程序继续使用网关地址 <code>http://127.0.0.1:8326/v1</code>，模型 ID 见上方列表；网关密钥沿用 Jet Hub 设置中的密钥。</small>
+<p><a id="usage" href="https://chatgpt.com/settings/usage">管理 ChatGPT 用量和应用授权</a></p>
+<small>调用使用你的 ChatGPT 会员方案或可用积分。账号可用模型以官方返回为准；此会员接口目前支持聊天和规定格式的本地工具，不支持生图。</small>
+</main><div id="welcome" class="modal" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle" hidden><div class="card"><h2 id="welcomeTitle">正在使用你的 ChatGPT 会员方案</h2><p>符合条件的模型请求使用你的会员方案或可用积分。你可以在 ChatGPT 设置中管理用量和应用授权。</p><button id="understood" class="primary">知道了</button></div></div>
+<script>
+const $=id=>document.getElementById(id);let state=null,busy=false,loadedAccount=null;
+async function call(action,extra={}){
+ const response=await fetch('/phone-chatgpt/manage',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:crypto.randomUUID(),method:'manage',payload:{action,...extra}})});
+ if(!response.ok)throw Error('账号服务连接失败，请稍后重试');
+ const {result}=await response.json();if(!result?.ok)throw Error(result?.error?.message||'账号操作失败');return result.value;
+}
+function render(value){
+ state=value;const pending=['waiting-browser','exchanging'].includes(state.attempt?.phase);
+ $('status').textContent=state.planEnabled?'正在使用 ChatGPT 会员方案':state.signedIn?'已登录，尚未授权使用会员方案':'尚未登录 ChatGPT';
+ $('message').textContent=state.message||state.attempt?.message||'';
+ $('continue').hidden=state.attempt?.phase!=='waiting-browser';$('cancel').hidden=!pending;
+ $('login').disabled=pending;$('add').disabled=pending;$('logout').hidden=!state.signedIn;$('refresh').disabled=!state.planEnabled||pending;
+ $('accounts').replaceChildren();for(const profile of state.profiles){const option=document.createElement('option');option.value=profile.id;option.textContent=profile.label+(profile.connected?'':' · 待登录');$('accounts').append(option);}
+ $('accounts').hidden=state.profiles.length<1;$('accounts').value=state.active||state.profiles[0]?.id||'';$('accounts').disabled=pending;
+ $('welcome').hidden=!state.welcomeNeeded;
+ if(!state.planEnabled||loadedAccount!==state.active){loadedAccount=null;$('models').replaceChildren();$('catalogStatus').textContent=state.planEnabled?'请刷新当前账号的可用模型。':'完成会员授权后可获取模型。';}
+}
+async function loadModels(force){
+ const id=state?.active;const value=await call('models',{force});if(state?.active!==id)return;
+ loadedAccount=id;$('models').replaceChildren();$('catalogStatus').textContent=value.models.length?`当前账号有 ${value.models.length} 个可用模型。`:'官方暂未返回可用模型，请检查账号权益后重试。';
+ for(const model of value.models){const row=document.createElement('div');row.className='model';const label=document.createElement('strong');label.textContent=model.name;const code=document.createElement('code');code.textContent='chatgpt-plan/'+model.id;row.append(label,code);$('models').append(row);}
+}
+async function act(action,extra={}){
+ if(busy)return;busy=true;
+ try{render(await call(action,extra));if(action==='login'&&state.attempt?.authorizeUrl)location.assign(state.attempt.authorizeUrl);else if(state.planEnabled&&loadedAccount!==state.active)await loadModels(false);}
+ catch(error){$('message').textContent=error.message;}finally{busy=false;}
+}
+$('login').onclick=()=>act('login');$('add').onclick=()=>act('login',{newProfile:true});$('continue').onclick=()=>{if(state?.attempt?.authorizeUrl)location.assign(state.attempt.authorizeUrl);};$('cancel').onclick=()=>act('cancel');
+$('logout').onclick=()=>{if(confirm('退出当前 ChatGPT 连接？其他账号会保留。'))act('logout');};$('accounts').onchange=()=>act('switch',{id:$('accounts').value});$('understood').onclick=()=>act('welcome');
+$('refresh').onclick=async()=>{if(busy)return;busy=true;$('refresh').disabled=true;try{await loadModels(true);}catch(error){$('message').textContent=error.message;}finally{busy=false;$('refresh').disabled=!state?.planEnabled;}};
+async function refresh(){if(busy)return;busy=true;try{render(await call('status'));if(state.planEnabled&&loadedAccount!==state.active)await loadModels(false);}catch(error){$('message').textContent=error.message;}finally{busy=false;}}
+refresh();setInterval(refresh,2000);
+</script></body></html>

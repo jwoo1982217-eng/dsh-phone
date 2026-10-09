@@ -1,0 +1,6 @@
+{
+  "name": "sharp-stub",
+  "version": "0.0.0-stub",
+  "main": "index.js",
+  "description": "DSH Android image adapter: app-private IPC to Android ImageDecoder and Bitmap encoders; supports the image admission, normalization and projection APIs used by the pinned DSH runtime."
+}

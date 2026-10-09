@@ -1,0 +1,16 @@
+packages: ['.']
+nodeLinker: hoisted
+minimumReleaseAge: 1440
+allowBuilds:
+  koffi: true
+  node-pty: true
+  protobufjs: true
+  esbuild: true
+  '@parcel/watcher': true
+  '@deepseek-ai/dsh-subprocess-local': true
+  '@google/genai': true
+overrides:
+  http-cache-semantics: 4.2.0
+  '@deepseek-ai/dsh-llm': 0.2.1-alpha.1
+  '@deepseek-ai/dsh-credentials': 0.2.1-alpha.1
+  '@deepseek-ai/dsh-commands': 0.2.1-alpha.1

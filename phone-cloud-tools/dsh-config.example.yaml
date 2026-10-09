@@ -1,0 +1,16 @@
+# Merge this list item into the dedicated desktop DSH profile's cordis.yml.
+# Keep existing model, account and plugin entries. Replace both absolute paths.
+- id: mcp-phone-tools
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: phone_tools
+    transport: stdio
+    command: node
+    args:
+      - /opt/dsh-phone-tools/bin/mcp.mjs
+      - --pair-file
+      - /opt/dsh-phone-tools/private/phone-pair.json
+    toolCallTimeoutMs: 120000
+    failOnStartupError: true
+    reconnect:
+      enabled: false

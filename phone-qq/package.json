@@ -1,0 +1,1 @@
+{"name":"dsh-phone-qq","version":"0.1.0","private":true,"type":"module","main":"index.js","exports":{".":"./index.js","./client":"./cards-client.js","./package.json":"./package.json"},"dsh":{"bundle":{"patch":"./cordis.patch.yml"},"client":{"inject":["@deepseek-ai/dsh-client-ui-slots","@deepseek-ai/dsh-client-ui-settings"],"platform":"web"}}}

@@ -1,0 +1,8 @@
+{
+  "format": "dsh-preset",
+  "version": 1,
+  "id": "feishu-digital-employee",
+  "name": "飞书数字员工",
+  "description": "赋范官方飞书工作流：1 套 Agent Preset、1 个 Skill、飞书 MCP 与时间解析 MCP。",
+  "sourceDshVersion": "0.1.0-rc.8"
+}

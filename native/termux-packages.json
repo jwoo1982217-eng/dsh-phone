@@ -1,0 +1,44 @@
+[
+  {
+    "Package": "bash",
+    "Version": "5.3.20",
+    "Filename": "pool/main/b/bash/bash_5.3.20_aarch64.deb",
+    "SHA256": "26b5b3ab5b0ac0e3b372ac1e7ddd89270519c1eb25b88fe4175485c2de8086b2"
+  },
+  {
+    "Package": "readline",
+    "Version": "8.3.6",
+    "Filename": "pool/main/r/readline/readline_8.3.6_aarch64.deb",
+    "SHA256": "616cc73009bc0223f61caed8dd09455714455aa5ea5e180126e2f69c4c775136"
+  },
+  {
+    "Package": "libandroid-support",
+    "Version": "29-1",
+    "Filename": "pool/main/liba/libandroid-support/libandroid-support_29-1_aarch64.deb",
+    "SHA256": "f2f145d6135ad4843ac9670153be3e3944dc1e6f1736d46d2306c28f2b86f517"
+  },
+  {
+    "Package": "libiconv",
+    "Version": "1.19",
+    "Filename": "pool/main/libi/libiconv/libiconv_1.19_aarch64.deb",
+    "SHA256": "fe9481b1dc101c6c3552943f25435109fd522aecc615ae49594f9fbee863bb37"
+  },
+  {
+    "Package": "ncurses",
+    "Version": "6.6.20260307+really6.5.20250830",
+    "Filename": "pool/main/n/ncurses/ncurses_6.6.20260307+really6.5.20250830_aarch64.deb",
+    "SHA256": "f44bbfdc3d42ec0217bffa978309390e59cea5a48a9a83226d4a496c42ad0b99"
+  },
+  {
+    "Package": "ripgrep",
+    "Version": "15.2.0",
+    "Filename": "pool/main/r/ripgrep/ripgrep_15.2.0_aarch64.deb",
+    "SHA256": "38e28bc297000517b24702568a483eca7dc3323eb6bdccc9033f031776bdcc6c"
+  },
+  {
+    "Package": "pcre2",
+    "Version": "10.49",
+    "Filename": "pool/main/p/pcre2/pcre2_10.49_aarch64.deb",
+    "SHA256": "c27995e5f52b8ecc9b8b3e662eb08e49f82a18bfd3f34343936acc7b23964724"
+  }
+]

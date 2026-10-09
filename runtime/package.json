@@ -1,0 +1,21 @@
+{
+  "name": "dsh-phone-deploy",
+  "private": true,
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.2.1-alpha.1",
+    "dsh-channel-qq": "file:../vendor/dsh-channel-qq",
+    "dsh-codearts-auth": "file:../vendor/dsh-codearts-auth",
+    "dsh-phone-account": "file:../phone-account",
+    "dsh-phone-qq": "file:../phone-qq",
+    "dsh-phone-control": "file:../phone-control",
+    "@zseven-w/dsh-noema": "file:../vendor/dsh-noema",
+    "dsh-peer": "file:../peer",
+    "dsh-phone-cloud-tools": "file:../phone-cloud-tools"
+  },
+  "devDependencies": {
+    "@types/qrcode": "1.5.6",
+    "@types/ws": "8.5.14",
+    "typescript": "5.9.3"
+  },
+  "type": "module"
+}
