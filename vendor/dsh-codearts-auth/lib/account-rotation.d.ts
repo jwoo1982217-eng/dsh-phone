@@ -4,6 +4,9 @@ export interface RotationRequest {
     model: string;
     signal?: AbortSignal;
     accounts: Map<object, string>;
+    excluded?: Map<object, Set<string>>;
+    failover?: Map<object, (error: unknown) => Promise<boolean>>;
+    sources?: Map<object, Map<string, string>>;
 }
 export declare function rotationRequest(provider: string): RotationRequest | undefined;
 /** 在迭代器的每一步恢复上下文，覆盖准备后的 stream、异常与取消清理。 */

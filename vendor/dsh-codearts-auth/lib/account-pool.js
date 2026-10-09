@@ -135,7 +135,7 @@ export class AccountPool {
     requestEligibility = new Map();
     selectionChains = new Map();
     isRotationRequest(provider) { return rotationRequest(provider) !== undefined; }
-    /** 只串行选号，不串行整个网络请求；并发请求也依次得到不同账号。 */
+    /** 只串行选号，不串行整个网络请求；并发请求沿用当前可用账号。 */
     async withSelection(provider, select) {
         if (!rotationRequest(provider))
             return select();
@@ -156,7 +156,9 @@ export class AccountPool {
             return [...candidates];
         const pinned = request.accounts.get(this);
         // 续期仍使用本次账号；限流或失败排除后则从它的下一位继续。
-        const ring = afterAccount(this.readAccounts().filter(a => a.provider === provider), pinned ?? this.rotationLast.get(provider));
+        const last = pinned ?? this.rotationLast.get(`${provider}:${request.model}`);
+        const all = this.readAccounts().filter(a => a.provider === provider);
+        const ring = last ? [...all.filter(a => a.id === last), ...afterAccount(all, last).filter(a => a.id !== last)] : all;
         const order = new Map(ring.map((a, index) => [a.id, index]));
         const sorted = [...candidates].sort((a, b) => (order.get(a.id) ?? ring.length) - (order.get(b.id) ?? ring.length));
         const current = pinned && sorted.find(a => a.id === pinned);
@@ -164,6 +166,21 @@ export class AccountPool {
     }
     setRequestEligibility(provider, check) {
         this.requestEligibility.set(provider, check);
+    }
+    setRequestSource(provider, accountId, source) {
+        const request = rotationRequest(provider);
+        if (!request)
+            return;
+        request.sources ??= new Map();
+        const sources = request.sources.get(this) ?? new Map();
+        sources.set(accountId, source);
+        request.sources.set(this, sources);
+    }
+    rateLimitKey(entry, model) {
+        if (entry.provider !== 'zcode')
+            return model;
+        const source = rotationRequest(entry.provider)?.sources?.get(this)?.get(entry.id) ?? entry.zcodeSource;
+        return source && source !== 'auto' ? `${model} · ${source}` : model;
     }
     requestAccount(provider) {
         const id = rotationRequest(provider)?.accounts.get(this);
@@ -174,7 +191,22 @@ export class AccountPool {
         if (!request)
             return;
         request.accounts.set(this, id);
-        this.rotationLast.set(provider, id);
+        this.rotationLast.set(`${provider}:${request.model}`, id);
+        request.failover?.set(this, async () => {
+            const failed = request.accounts.get(this);
+            if (!failed)
+                return false;
+            const excluded = request.excluded.get(this) ?? new Set();
+            if (excluded.has(failed))
+                return false;
+            excluded.add(failed);
+            request.excluded.set(this, excluded);
+            const entry = this.findAccount(failed);
+            if (!entry?.modelRateLimits?.[this.rateLimitKey(entry, request.model)] || entry.modelRateLimits[this.rateLimitKey(entry, request.model)] <= Date.now()) {
+                await this.updateModelRateLimit(failed, request.model, Date.now() + 60_000);
+            }
+            return (await this.getAvailableAccount(provider, request.model, excluded)) !== null;
+        });
     }
     /**
      * 状态文档落盘的**串行链**（见 {@link queueStoreSave}）。
@@ -1204,13 +1236,14 @@ export class AccountPool {
                 .filter(a => a.provider === provider && a.enabled)
                 .filter(a => !request || !a.expiresAt || a.refreshable || a.expiresAt > Date.now())
                 .filter(a => excludeAccountIds === undefined || !excludeAccountIds.has(a.id))
+                .filter(a => !request?.excluded?.get(this)?.has(a.id))
                 .filter(a => {
                 // 空 modelId（未知目标模型）：无可比对的键，保持候选不变。
                 if (targetModel.length === 0)
                     return true;
                 if (!a.modelRateLimits)
                     return true;
-                const resetAt = a.modelRateLimits[targetModel];
+                const resetAt = a.modelRateLimits[this.rateLimitKey(a, targetModel)];
                 return resetAt === undefined || resetAt === 0 || Date.now() >= resetAt;
             }));
             if (candidates.length === 0)
@@ -1346,6 +1379,7 @@ export class AccountPool {
                 + `${String(resetAtMs)}，已忽略（否则该模型会被永久限流）`);
             return;
         }
+        modelId = this.rateLimitKey(accounts[idx], modelId);
         const current = accounts[idx].modelRateLimits?.[modelId];
         // ⚠️ 判据用 `>=`：相等时无需写盘（省一次 IO），语义上也无差别。
         // 现值非有限（旧数据损坏）时**允许**被新值修掉 —— 那正是写它的机会。

@@ -66,6 +66,8 @@ export function describeChannels(credential) {
  * （保守：那是已验证可用的一条腿），**不抛错**。
  */
 export function resolveChannelFor(credential, model) {
+    if (credential.source_selection)
+        return credential.source_selection.kind === 'start-plan' ? 'start-plan' : 'coding-plan';
     const key = model.trim().toLowerCase();
     const inChannel = (channel) => CHANNEL_MODELS[channel].includes(key);
     if (inChannel('start-plan') && available(credential, 'start-plan'))
@@ -98,15 +100,21 @@ export function buildChannelRequest(credential, channel, body) {
     // ⚠ 每次都新建（`buildZcodeHeaders` 内部即新建对象），调用方改返回值
     //   不会污染下一次调用。
     const headers = buildZcodeHeaders(credential, { json: true });
-    const token = channel === 'coding-plan'
+    const token = credential.source_selection?.key ?? (channel === 'coding-plan'
         ? (credential.coding_plan_key_zai ?? credential.coding_plan_key_bigmodel)
-        : credential.zcode_jwt;
+        : credential.zcode_jwt);
     if (typeof token === 'string' && token.length > 0)
         headers.Authorization = `Bearer ${token}`;
     if (channel === 'coding-plan')
         delete headers['HTTP-Referer'];
     void body;
-    return { url: zcodeMessagesUrl(channel), headers };
+    const selection = credential.source_selection;
+    if (selection?.organizationId && selection.projectId) {
+        headers['bigmodel-organization'] = selection.organizationId;
+        headers['bigmodel-project'] = selection.projectId;
+    }
+    const domestic = !credential.zai_access_token && Boolean(credential.bigmodel_access_token || credential.coding_plan_key_bigmodel);
+    return { url: selection?.url ?? (channel === 'coding-plan' && domestic ? 'https://open.bigmodel.cn/api/anthropic/v1/messages' : zcodeMessagesUrl(channel)), headers };
 }
 /**
  * 官方写死取用的那个 key 名。
@@ -217,24 +225,27 @@ export async function fetchCodingPlanApiKey(credential, fetchImpl = fetch) {
     if (typeof token !== 'string' || token.length === 0)
         return { key: undefined, reason: 'no-oauth-token' };
     const headers = bizHeaders(token, credential);
+    const origin = credential.zai_access_token ? ZCODE_BIZ_ORIGIN : 'https://bigmodel.cn';
     // ① 组织与项目
-    const info = await getJson(`${ZCODE_BIZ_ORIGIN}/api/biz/customer/getCustomerInfo`, headers, fetchImpl);
+    const info = await getJson(`${origin}/api/biz/customer/getCustomerInfo`, headers, fetchImpl);
     const picked = pickOrgAndProject(info?.data);
     if (picked === undefined)
         return { key: undefined, reason: 'no-org' };
     const { organizationId: org, projectId: proj } = picked;
     // ② 列出 api_keys（★ 只 GET，不建）
-    const listUrl = `${ZCODE_BIZ_ORIGIN}/api/biz/v1/organization/${encodeURIComponent(org)}`
+    const listUrl = `${origin}/api/biz/v1/organization/${encodeURIComponent(org)}`
         + `/projects/${encodeURIComponent(proj)}/api_keys`;
     const list = await getJson(listUrl, headers, fetchImpl);
-    const entries = Array.isArray(list) ? list : [];
+    const values = list?.data ?? list;
+    const entries = Array.isArray(values) ? values : [];
     const apiKeyRaw = entries.find((e) => e.name === API_KEY_NAME)?.apiKey;
     const apiKey = typeof apiKeyRaw === 'string' ? apiKeyRaw.trim() : '';
     if (apiKey.length === 0)
         return { key: undefined, reason: 'no-key' };
     // ③ copy 取 secretKey
     const copied = await getJson(`${listUrl}/copy/${encodeURIComponent(apiKey)}`, headers, fetchImpl);
-    const secret = typeof copied?.secretKey === 'string' ? copied.secretKey.trim() : '';
+    const copyValue = copied?.data ?? copied;
+    const secret = typeof copyValue?.secretKey === 'string' ? copyValue.secretKey.trim() : '';
     if (secret.length === 0)
         return { key: undefined, reason: 'no-secret' };
     return { key: `${apiKey}.${secret}` };

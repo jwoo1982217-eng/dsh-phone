@@ -111,7 +111,8 @@
  .uV2eYG_trailing ._7KE1Ra_trigger{max-width:100%!important;width:100%;min-width:0;font-size:12px}
  .uV2eYG_tools>button,.uV2eYG_tools>div>button{min-height:32px;max-width:36px}
  .uV2eYG_tools>.dsh-phone-upload{max-width:none;padding:4px 6px!important;font-size:11px!important}
- .uV2eYG_primary{width:32px!important;height:32px!important;transform:none!important}
+ .uV2eYG_primary{height:32px!important;transform:none!important}
+ .uV2eYG_primary:not([data-composer-send]){width:32px!important}
  .dsh-phone-composer-more{position:relative;flex:none}
  .dsh-phone-composer-more>summary{list-style:none;cursor:pointer;display:grid;place-items:center;min-width:28px;min-height:32px;font-size:20px;border-radius:8px;color:var(--dsw-alias-label-secondary,#52627a)}
  .dsh-phone-composer-more>summary::-webkit-details-marker{display:none}

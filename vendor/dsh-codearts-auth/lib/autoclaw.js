@@ -6,6 +6,7 @@ import { providerCatalogVisible } from './account-pool.js';
 import { AUTOCLAW, AutoclawApi, autoclawHeaders, autoclawExpiry, parseAutoclawCredential } from './autoclaw-api.js';
 import { registerAdapterIdempotent } from './llm-register-compat.js';
 import { collectImages, consumeOpenAiSse, serializeMessages } from './openai-compat.js';
+import { accountQuotaError } from './account-failover.js';
 import { consumeAnthropicSse, toAnthropicMessages, toAnthropicTools } from './zcode-anthropic.js';
 // AutoClaw 对话接口要求客户端身份和 Tooling 段；缺少时实机会返回 HTTP 406。
 // 仅补充协议前缀，调用方的提示词、工具和消息保持原文。
@@ -248,9 +249,21 @@ export class AutoclawAdapter extends LlmAdapter {
             response = await send();
         }
         if (!response.ok || !response.body) {
-            if (response.status === 429)
-                await this.integration.pool.updateModelRateLimit(selected.entry.id, options.model, Date.now() + 60_000);
-            throw new LlmError(`AutoClaw 模型请求失败（HTTP ${response.status}）`, response.status === 401 ? 'MISSING_CREDENTIAL' : response.status === 429 ? 'RATE_LIMITED' : `HTTP_${response.status}`);
+            const text = (await response.text()).slice(0, 8192);
+            let upstream;
+            try {
+                upstream = JSON.parse(text);
+            }
+            catch { /* 非JSON只用于额度关键词判定。 */ }
+            const detail = upstream?.error ?? upstream;
+            const message = typeof detail?.message === 'string' ? detail.message : typeof detail?.msg === 'string' ? detail.msg : text;
+            const quota = ![401, 403].includes(response.status) && (response.status === 402 || accountQuotaError({ code: detail?.code, message }));
+            const code = response.status === 401 ? 'MISSING_CREDENTIAL' : quota ? 'QUOTA_EXCEEDED' : response.status === 429 ? 'RATE_LIMITED' : `HTTP_${response.status}`;
+            if (quota || response.status === 429) {
+                const retry = Number(response.headers.get('Retry-After'));
+                await this.integration.pool.updateModelRateLimit(selected.entry.id, options.model, Date.now() + (Number.isFinite(retry) && retry > 0 ? Math.min(retry, 86400) * 1000 : 60_000));
+            }
+            throw new LlmError(`AutoClaw 模型请求失败（HTTP ${response.status}）${quota ? '：当前账号额度不足' : ''}`, code);
         }
         if (anthropic)
             yield* consumeAnthropicSse(response.body, { label: AUTOCLAW.id, model: options.model, signal: options.signal });

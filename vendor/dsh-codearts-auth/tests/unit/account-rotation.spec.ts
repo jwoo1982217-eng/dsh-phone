@@ -36,20 +36,20 @@ async function fixture(provider = 'autoclaw') {
 }
 async function collect<T>(stream: AsyncIterable<T>): Promise<T[]> { const result: T[] = []; for await (const item of stream) result.push(item); return result }
 
-describe('Jet Hub 正常请求账号轮换', () => {
-  it('目录读取不占顺位，正常请求 A B C A；不同模型共享厂牌顺位', async () => {
+describe('Jet Hub 账号耗尽接续', () => {
+  it('目录读取不选号，正常请求保持A；不同模型独立', async () => {
     const f = await fixture()
     expect((await f.pool.getAvailableAccount('autoclaw', ''))?.entry.id).toBe('A')
     expect(await collect(f.call())).toEqual(['A'])
     expect((await f.pool.getAvailableAccount('autoclaw', ''))?.entry.id).toBe('A')
-    expect(await collect(f.call('autoclaw', 'another-model'))).toEqual(['B'])
-    expect(await collect(f.call())).toEqual(['C'])
+    expect(await collect(f.call('autoclaw', 'another-model'))).toEqual(['A'])
+    expect(await collect(f.call())).toEqual(['A'])
     expect(await collect(f.call())).toEqual(['A'])
   })
-  it('并发选号依次分配，网络请求可以同时运行', async () => {
+  it('并发请求保持当前账号，网络请求可以同时运行', async () => {
     const f = await fixture()
     const result = await Promise.all(Array.from({ length: 9 }, () => collect(f.call())))
-    expect(result.flat()).toEqual(['A', 'B', 'C', 'A', 'B', 'C', 'A', 'B', 'C'])
+    expect(result.flat()).toEqual(Array(9).fill('A'))
   })
   it('停用、目标模型限流、损坏凭据跳过；恢复后重新入环', async () => {
     const f = await fixture()
@@ -60,8 +60,8 @@ describe('Jet Hub 正常请求账号轮换', () => {
     f.values.set(JSON.stringify(credentialRef('A')), 'broken-json')
     expect(await collect(f.call())).toEqual(['C'])
     f.values.set(JSON.stringify(credentialRef('A')), '{}')
-    expect(await collect(f.call())).toEqual(['A'])
-    expect(await collect(f.call('autoclaw', 'other'))).toEqual(['B'])
+    expect(await collect(f.call())).toEqual(['C'])
+    expect(await collect(f.call('autoclaw', 'other'))).toEqual(['A'])
   })
   it('同请求续期保持账号，限流排除后换下一位，下一请求接着走', async () => {
     const { pool, call } = await fixture()
@@ -71,7 +71,7 @@ describe('Jet Hub 正常请求账号轮换', () => {
       yield (await pool.getAvailableAccount('autoclaw', ''))?.entry.id
       yield (await pool.getAvailableAccount('autoclaw', 'model', new Set(['A'])))?.entry.id
     }))).toEqual(['A', 'A', 'B'])
-    expect(await collect(call())).toEqual(['C'])
+    expect(await collect(call())).toEqual(['B'])
   })
   it('失败换号也不能绕过余额资格；失败的选择不会堵住后续请求', async () => {
     const f = await fixture('buddy')
@@ -83,7 +83,7 @@ describe('Jet Hub 正常请求账号轮换', () => {
     f.pool.setRequestEligibility('buddy', async () => { throw Error('balance failed') })
     await expect(collect(f.call())).rejects.toThrow('balance failed')
     f.pool.setRequestEligibility('buddy', async () => true)
-    expect(await collect(f.call())).toEqual(['A'])
+    expect(await collect(f.call())).toEqual(['C'])
   })
   it('真实 AutoClaw 适配器的请求头随账号轮换，浏览目录保持顺位', async () => {
     const f = await fixture()
@@ -103,7 +103,7 @@ describe('Jet Hub 正常请求账号轮换', () => {
       await integration.adapter.listModels('autoclaw')
       await collect(prepared.stream({ model: 'model', messages: [{ role: 'user', content: [{ type: 'text', text: 'fixture' }] }] } as any))
     }
-    expect(seen).toEqual(['Bearer token-A', 'Bearer token-B', 'Bearer token-C', 'Bearer token-A'])
+    expect(seen).toEqual(Array(4).fill('Bearer token-A'))
   })
   it('真实 ZCode 请求轮换独立凭据，额度错误只标记本次账号再换号', async () => {
     const f = await fixture('zcode')
@@ -116,7 +116,7 @@ describe('Jet Hub 正常请求账号轮换', () => {
       refresh: async () => {}, mintCaptcha: async () => 'fixture-param', gate: new ModelGate({ sleep: async () => {} }),
       fetchImpl: (async (_url: any, init: any) => {
         const token = new Headers(init.headers).get('authorization')!; seen.push(token)
-        if (limitB && token === 'Bearer jwt-B') return new Response('{"code":1005,"msg":"exceed quota limit"}', { status: 429 })
+        if (limitB && token !== 'Bearer jwt-C') return new Response('{"code":1005,"msg":"exceed quota limit"}', { status: 429 })
         return new Response([
           'event: message_start\ndata: {"type":"message_start","message":{"id":"fixture","type":"message","role":"assistant"}}',
           'event: content_block_start\ndata: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}',
@@ -130,24 +130,24 @@ describe('Jet Hub 正常请求账号轮换', () => {
     const prepared = await registered.prepareCall('zcode', 'GLM-5.3-Flash')
     const request = { model: 'GLM-5.3-Flash', messages: [{ role: 'user', content: [{ type: 'text', text: 'fixture' }] }] } as any
     for (let i = 0; i < 4; i++) await collect(prepared.stream(request))
-    expect(seen).toEqual(['Bearer jwt-A', 'Bearer jwt-B', 'Bearer jwt-C', 'Bearer jwt-A'])
+    expect(seen).toEqual(Array(4).fill('Bearer jwt-A'))
     limitB = true
     await collect(prepared.stream(request))
-    expect(seen.slice(4)).toEqual(['Bearer jwt-B', 'Bearer jwt-C'])
+    expect(seen.slice(4)).toEqual(['Bearer jwt-A', 'Bearer jwt-B', 'Bearer jwt-C'])
     expect(f.pool.findAccount('B')?.modelRateLimits?.[request.model]).toBeGreaterThan(Date.now())
-    expect(f.pool.findAccount('A')?.modelRateLimits?.[request.model]).toBeUndefined()
+    expect(f.pool.findAccount('A')?.modelRateLimits?.[request.model]).toBeGreaterThan(Date.now())
     expect(f.pool.findAccount('C')?.modelRateLimits?.[request.model]).toBeUndefined()
-    await collect(prepared.stream(request)); expect(seen.at(-1)).toBe('Bearer jwt-A')
+    await collect(prepared.stream(request)); expect(seen.at(-1)).toBe('Bearer jwt-C')
   })
   it('厂牌隔离，删除与重新排列仍沿真实列表循环', async () => {
     const f = await fixture(); await f.add('X', 'qoder'); await f.add('Y', 'qoder')
     expect(await collect(f.call('qoder'))).toEqual(['X'])
     expect(await collect(f.call())).toEqual(['A'])
-    expect(await collect(f.call('qoder'))).toEqual(['Y'])
+    expect(await collect(f.call('qoder'))).toEqual(['X'])
     await f.pool.removeAccount('A')
     expect(await collect(f.call())).toEqual(['B'])
     await f.pool.reorderAccounts('autoclaw', ['C', 'B'])
-    expect(await collect(f.call())).toEqual(['C'])
+    expect(await collect(f.call())).toEqual(['B'])
   })
   it('取消清理保留本次上下文，随后错误和新请求均可恢复', async () => {
     const f = await fixture(); const cleanup: unknown[] = []
@@ -160,7 +160,7 @@ describe('Jet Hub 正常请求账号轮换', () => {
     await expect(collect(rotatingStream('autoclaw', 'model', async function* () {
       await f.pool.getAvailableAccount('autoclaw', 'model'); throw Error('request failed'); yield ''
     }))).rejects.toThrow('request failed')
-    expect(await collect(f.call())).toEqual(['C'])
+    expect(await collect(f.call())).toEqual(['A'])
     expect((await f.pool.getAvailableAccount('autoclaw', ''))?.entry.id).toBe('A')
   })
   it('真实注册包装覆盖 prepareCall 返回的请求，并保留 SDK 原生工具历史', async () => {
@@ -172,7 +172,7 @@ describe('Jet Hub 正常请求账号轮换', () => {
     const prepared = await registered.prepareCall()
     const options = { model: 'model', messages: [{ role: 'tool', toolCallId: 'tool-1', content: [], isError: false }] }
     expect(await collect(prepared.stream(options))).toEqual(['A'])
-    expect(await collect(prepared.stream(options))).toEqual(['B'])
+    expect(await collect(prepared.stream(options))).toEqual(['A'])
     expect(histories[0][0].role).toBe('tool')
     expect(histories[0][0].toolCallId).toBe('tool-1')
     expect(options.messages[0].role).toBe('tool')
@@ -181,7 +181,7 @@ describe('Jet Hub 正常请求账号轮换', () => {
     const f = await fixture()
     const nested = () => rotatingStream('autoclaw', 'model', () => f.call())
     expect(await collect(nested())).toEqual(['A'])
-    expect(await collect(nested())).toEqual(['B'])
+    expect(await collect(nested())).toEqual(['A'])
     await expect(collect(rotatingStream('autoclaw', 'model', async function* () {
       yield* f.call()
       throw Error('nested failed')
@@ -206,8 +206,8 @@ describe('Jet Hub 正常请求账号轮换', () => {
     class LocalAdapter extends OpencodeAdapter { protected async *streamVia(slot: any, _options: any): AsyncIterable<any> { yield slot.id } }
     const adapter = new LocalAdapter({ identitySlots: async () => slots } as any)
     expect(await collect(adapter.stream({ model: 'big-pickle' } as any))).toEqual(['A'])
-    expect(await collect(adapter.stream({ model: 'big-pickle' } as any))).toEqual(['B'])
-    expect(await collect(adapter.stream({ model: 'big-pickle' } as any))).toEqual(['anonymous'])
+    expect(await collect(adapter.stream({ model: 'big-pickle' } as any))).toEqual(['A'])
+    expect(await collect(adapter.stream({ model: 'big-pickle' } as any))).toEqual(['A'])
     expect(await collect(adapter.stream({ model: 'paid-model' } as any))).toEqual(['A'])
   })
 })

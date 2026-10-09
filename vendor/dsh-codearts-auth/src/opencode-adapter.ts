@@ -1,3 +1,4 @@
+import { accountQuotaError, hasStreamOutput, streamError } from './account-failover.js'
 import { afterAccount } from './account-rotation.js'
 /**
  * 某模型的输入模态（`LlmModelInfo` / `LlmResolvedModelInfo` 共用）。
@@ -209,7 +210,7 @@ export function opencodeRetryAfterMs(
 }
 
 export class OpencodeAdapter extends LlmAdapter {
-  private lastSlot?: string
+  private readonly lastSlots = new Map<string, string>()
   constructor(private readonly options: OpencodeAdapterOptions) {
     super()
   }
@@ -393,7 +394,9 @@ export class OpencodeAdapter extends LlmAdapter {
     const limited: string[] = []
 
     for (;;) {
-      const slot = pickSlot(afterAccount(slots, this.lastSlot), options.model, tried)
+      const last = this.lastSlots.get(options.model)
+      const ordered = last ? [...slots.filter(s => s.id === last), ...afterAccount(slots, last).filter(s => s.id !== last)] : slots
+      const slot = pickSlot(ordered, options.model, tried)
       if (slot === undefined) {
         // 全 tried ⇒ 每个槽都试过一次。收费模型走到这里通常是「没有账号槽」。
         throw new LlmError(
@@ -401,27 +404,31 @@ export class OpencodeAdapter extends LlmAdapter {
           'QUOTA_EXCEEDED',
         )
       }
-      this.lastSlot = slot.id
+      this.lastSlots.set(options.model, slot.id)
       tried.add(slot.id)
       // Token 账本（第 2 期）：回报「本笔请求实际使用的槽」（匿名槽 = 'anonymous'）。
       reportLedgerAccount(OPENCODE.id, slot.id)
 
       let delivered = false
+      const buffered: StreamChunk[] = []
       try {
         for await (const chunk of this.streamVia(slot, options)) {
-          // ⚠️ **任何 chunk 产出都算「已交付」**：本仓库的 `StreamChunk` 联合
-          // （`block-start` / `*-delta` / `block-end` / `usage` / `finish`）里
-          // **没有**「内容之前的前置事件」—— 原设计假设有个 `start` 事件，
-          // 实际类型里不存在（tsc 直接报 TS2367 点破了它）。既然不存在，
-          // 区分「前置」与「内容」就无从谈起，保守取「一律算交付」：
-          // 宁可漏掉一次可切换的机会，也绝不重放（重放会让用户看到重复输出）。
-          delivered = true
-          yield chunk
+          const error = streamError(chunk)
+          if (!delivered && error && accountQuotaError(error)) throw error
+          delivered ||= hasStreamOutput(chunk)
+          if (delivered || error) { yield* buffered.splice(0); yield chunk }
+          else buffered.push(chunk)
         }
+        yield* buffered
         return
       } catch (error) {
         if (delivered) throw error
-        if (error instanceof LlmError && error.code === 'QUOTA_EXCEEDED') throw error
+        if (error instanceof LlmError && error.code === 'QUOTA_EXCEEDED') {
+          if (!accountQuotaError(error)) throw error
+          await this.options.markLimited?.(slot.id, options.model, Date.now() + 24 * 60 * 60_000)
+          limited.push(`${slot.id}(额度耗尽)`)
+          continue
+        }
 
         const info = classifyOpencodeFailure(error)
         if (info.kind === 'free_tier') {

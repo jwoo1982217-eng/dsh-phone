@@ -79,7 +79,7 @@ export declare function pickSlot(slots: readonly IdentitySlot[], modelId: string
 export declare function opencodeRetryAfterMs(kind: OpencodeErrorKind, retryAfterMs: number | undefined, attempt: number): number;
 export declare class OpencodeAdapter extends LlmAdapter {
     private readonly options;
-    private lastSlot?;
+    private readonly lastSlots;
     constructor(options: OpencodeAdapterOptions);
     providerInfo(provider: string): LlmProviderInfo;
     private catalog;

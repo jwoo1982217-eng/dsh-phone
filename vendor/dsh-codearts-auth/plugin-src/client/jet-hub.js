@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { AutoclawLogin } from './autoclaw-login.js';
+import { ZcodeSourcePanel } from './zcode-sources.js';
 import { ChatGptPlanPanel } from './chatgpt-plan-panel.js';
 
 import {
@@ -723,7 +724,7 @@ function isAnonymousAccountId(accountId) {
 function AccountCard({ account, index, order, provider, onToggle, onDelete, onRetest, onReset, onTest, onClaimOnboarding, onboardingBusy, busy, credits, creditsLoading, showCredits, showPackageList, windowDays, showRateLimitActions, drag,
   // ⚠️ opencode 专属：传了才渲染「代理」「指纹」两个按钮（见按钮区注释）。
   // 前者额外需要 current 代理串，故签名与 onRetest 略有不同。
-  onOpenProxy, onRotateFingerprint }) {
+  onOpenProxy, onRotateFingerprint, rpcCall, onSourceChanged }) {
   const rateLimits = account.modelRateLimits
     ? Object.entries(account.modelRateLimits).filter(([, v]) => v > Date.now())
     : [];
@@ -861,6 +862,7 @@ function AccountCard({ account, index, order, provider, onToggle, onDelete, onRe
             provider,
           })
         : null),
+    provider === 'zcode' ? React.createElement(ZcodeSourcePanel, { account, rpcCall, onChanged: onSourceChanged }) : null,
     rateLimits.length > 0
       ? React.createElement('div', { className: 'dim-jh-rateLimits' },
           React.createElement('span', { className: 'dim-jh-rateLimitsLabel' }, '限额重置'),
@@ -3462,7 +3464,7 @@ function ProviderPanel({ provider, rpcCall }) {
                 }, '确定并打开认证页'))),
         )),
     React.createElement('p', { className: 'dim-jh-muted', role: 'status' },
-      accounts.length > 1 ? `已添加 ${accounts.length} 个账号 · 按列表顺序自动轮换，不可用账号自动跳过。` : '支持同厂牌添加多个账号；添加后按列表顺序自动轮换。'),
+      accounts.length > 1 ? `已添加 ${accounts.length} 个账号 · 按列表顺序自动轮换，不可用账号自动跳过。` : '支持同厂牌添加多个账号；同一模型沿用当前账号，额度耗尽后按列表顺序接续。'),
     probeNotice
       ? React.createElement('div', {
           className: 'dim-jh-probeNotice',
@@ -3602,6 +3604,8 @@ function ProviderPanel({ provider, rpcCall }) {
                 windowDays: expiryWindowDays,
                 // 卡片级「重测 / 重置」：只对会返回限流错误的 provider 渲染。
                 showRateLimitActions: supportsRateLimit(provider),
+                rpcCall,
+                onSourceChanged: loadAccounts,
                 onToggle: toggleAccount,
                 onDelete: deleteAccount,
                 onRetest: (id) => void runLimitAction('retest', id),

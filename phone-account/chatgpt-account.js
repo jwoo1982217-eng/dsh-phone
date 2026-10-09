@@ -16,7 +16,7 @@ export class ChatGptAccount {
     }
     Object.assign(this, { store, network, timeoutMs, agentName, callbackUri: callback.origin + CALLBACK_PATH });
     this.identity = identity ?? new ChatGptIdentity(network);
-    this.selectionChain = Promise.resolve(); this.rotationLast = null; this.cooldowns = new Map();
+    this.selectionChain = Promise.resolve(); this.rotationLast = new Map(); this.cooldowns = new Map();
     this.mutations = Promise.resolve(); this.cache = new Map(); this.attempt = null; this.disposed = false;
     this.ready = this.mutate(async () => {
       const raw = await store.get(CONNECTION_REF);
@@ -53,9 +53,9 @@ export class ChatGptAccount {
       await this.ready;
       signal?.throwIfAborted();
       const all = this.state.profiles;
-      const last = all.findIndex(p => p.id === this.rotationLast);
+      const last = all.findIndex(p => p.id === this.rotationLast.get(modelId));
       const active = all.findIndex(p => p.id === this.state.active);
-      const start = last >= 0 ? (last + 1) % all.length : Math.max(0, active);
+      const start = last >= 0 ? last : Math.max(0, active);
       const ordered = [...all.slice(start), ...all.slice(0, start)];
       let failure;
       for (const candidate of ordered) {
@@ -67,7 +67,7 @@ export class ChatGptAccount {
           const model = models.find(row => row.id === modelId);
           if (!model) continue;
           const profile = await this.session(candidate.id);
-          this.rotationLast = candidate.id;
+          this.rotationLast.set(modelId, candidate.id);
           return { profile, model };
         } catch (error) { signal?.throwIfAborted(); failure = error; }
       }
@@ -264,7 +264,7 @@ export class ChatGptAccount {
     await this.ready;
     await this.mutate(async () => {
       if (!this.find(id)) throw accountError('ACCOUNT_NOT_FOUND', '所选 ChatGPT 连接不存在。');
-      this.cancel(); this.attempt = null; this.state.active = id; this.rotationLast = null; await this.save();
+      this.cancel(); this.attempt = null; this.state.active = id; this.rotationLast.clear(); await this.save();
     });
     return this.status();
   }

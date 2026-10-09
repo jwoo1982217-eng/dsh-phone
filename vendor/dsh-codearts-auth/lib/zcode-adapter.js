@@ -55,6 +55,8 @@ import { EMPTY_RESPONSE_CODE, LlmAdapter, LlmError, ReasoningEffortId } from '@d
 import { providerCatalogVisible } from './account-pool.js';
 import { RemoteCatalogGate } from './remote-catalog-gate.js';
 import { collectImages, serializeMessages } from './openai-compat.js';
+import { rotationRequest } from './account-rotation.js';
+import { streamZcodeOrganization } from './zcode-source-stream.js';
 import { projectRequestImage } from './image-budget.js';
 import { ZCODE } from './zcode-product.js';
 import { buildChannelRequest, describeChannels, resolveChannelFor, shouldFallbackToOtherChannel, } from './zcode-transport.js';
@@ -567,6 +569,10 @@ export class ZcodeAdapter extends LlmAdapter {
          * 故必须直接断言「首次切号时 `tried` 含失败账号、且标记已写下」。
          */
         let credential = await this.resolveCredentialOrThrow(options);
+        if (credential.source_selection?.kind === 'organization-flow') {
+            yield* streamZcodeOrganization(options, credential, imageUrls ?? new Map(), this.fetchImpl);
+            return;
+        }
         let activeAccountId = this.options.currentAccountId?.();
         if (activeAccountId !== undefined && activeAccountId.length > 0)
             tried.add(activeAccountId);
@@ -894,7 +900,8 @@ export class ZcodeAdapter extends LlmAdapter {
                 //   上一发已被上游消费；重发必须**现产新的**。这里保守起见只在
                 //   `captchaParam === undefined`（上游当下不索要验证）时换腿 ——
                 //   带了 param 的那一发被拒属于另一类问题，走 ③ 的 3007 分支。
-                if (shouldFallbackToOtherChannel(response.status, text)
+                if (!credential.source_selection
+                    && shouldFallbackToOtherChannel(response.status, text)
                     && !switchedAccount
                     && captchaParam === undefined
                     && attempt < this.product.concurrencyRetryMax) {
@@ -1210,6 +1217,9 @@ export class ZcodeAdapter extends LlmAdapter {
     async switchAccountOnQuota(options, tried, activeAccountId) {
         const pool = this.options.accountPool;
         if (pool === undefined)
+            return undefined;
+        // 注册包装统一换号，重新进入完整请求准备，保证下一账号的额度来源也被投影。
+        if (rotationRequest(this.product.id))
             return undefined;
         if (activeAccountId !== undefined && activeAccountId.length > 0) {
             await pool.updateModelRateLimit(activeAccountId, options.model, nextUtc8DayStartMs());

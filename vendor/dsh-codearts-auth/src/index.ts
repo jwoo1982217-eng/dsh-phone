@@ -28,6 +28,7 @@ import { ZCODE_CAPTCHA_FALLBACK } from './zcode-captcha.js'
 import type { CarrierOutcome } from './captcha-carrier.js'
 import type { ZcodeCredential } from './zcode.js'
 import { registerAutoclaw } from './autoclaw.js'
+import { zcodeSources } from './zcode-sources.js'
 import { AccountPool, allAccountsRateLimitedForModel } from './account-pool.js'
 import { MultiAccountRefreshScheduler } from './refresh-scheduler.js'
 import { hasLegacyNamespaceRegistration, settingsOf, suppressAutoSettingsPage } from './settings-compat.js'
@@ -557,11 +558,7 @@ export function apply(ctx: Context): void {
    * ⚠️ 这里**只改错误语义，不改可用性**：没有账号可用就是没有，压缩该失败
    * 仍然失败；修的是「用户看到的原因」。绝不静默换模型、也绝不绕过限流标记。
    *
-   * ⚠️ **但「不改可用性」对 zcode 不成立** —— 正因如此，zcode **刻意不接**这条：
-   * 其余各家的兜底读的是 Jet Hub 登录路径下**从不被写入**的 `*_ACCESS_TOKEN`，
-   * 判定抛错时那条路本就取不到东西；而 zcode 的兜底 `zcode.current()` 会**再读
-   * 一次账号池**且不看 `enabled`、仍能返回凭据 —— 加判定会把本来能跑通的一发
-   * 变成硬失败。完整实测见 zcode 注册处那条注释。
+   * ZCode显式额度来源使用同一判据，但按来源区分冷却。
    *
    * @param product - 目标 provider（用其 `id` 与 `displayName`）。**只要求这两个字段**：
    *   除 buddy / workbuddy 外，cline 也接这条（它同样会因模型级限流被挡住，
@@ -1639,34 +1636,17 @@ const zcodeAdapter = registerZcodeLlm(ctx, {
       activeZcodeAccountId.set(ZCODE.id, available.entry.id)
       // Token 账本（第 2 期）：回报「本笔请求解析出的账号」。
       reportLedgerAccount(ZCODE.id, available.entry.id)
-      return available.credential as unknown as ZcodeCredential
+      pool.setRequestSource(ZCODE.id, available.entry.id, available.entry.zcodeSource ?? 'auto')
+      return await zcodeSources(ctx, pool).resolve(available.entry, available.credential as unknown as ZcodeCredential)
     }
-    /**
-     * 账号池里没有条目时，落到 `ZcodeAuth.current()` ——
-     * 它已经实现了「账号池 → 单凭据 ref」的解析顺序。
-     * ⚠ 不要在这里重复实现那条优先级（重复必然漂移）。
-     *
-     * ⚠ 同时**清空**记录：没有账号条目可标记，留着旧 id 会误伤一个无辜账号。
-     */
+    // 池里已有账号时不得再经current()读取停用或已冷却的账号。
     activeZcodeAccountId.set(ZCODE.id, undefined)
-    // ⚠️⚠️ **刻意不接 `throwIfAllAccountsRateLimited`** —— 与 IKJOZ9 修好的那 8 家相反。
-    //
-    // 其余各家的兜底是读一个在 Jet Hub 登录路径下**从不被写入**的 `*_ACCESS_TOKEN`，
-    // 于是「池被限流筛空」必然一路退化成 `undefined` → 适配器误报「请先登录」
-    // —— 那才是 IKJOZ9 的症状。
-    //
-    // zcode 的兜底 `zcode.current()` 却会**再读一次账号池**
-    // （`zcode-auth.ts` 的 `readStoredCredential` → `readCredentialFromPool`），
-    // 且既不看 `enabled`、也不看 `modelRateLimits` ⇒ 池被筛空时它**照样返回凭据**。
-    //
-    // 实测（2026-10-06，真实 `apply()` + 真账号池，临时探针）：
-    //   · 唯一启用账号被限流、凭据合法 → **返回该凭据**，不抛「未登录」；
-    //   · 池里还有一个「停用但健康」的账号且**排在前面**（`readCredentialFromPool`
-    //     取数组序第一个能解析的）→ **返回那个停用账号的凭据**，请求能跑通。
-    //
-    // ⇒ ① zcode 没有 IKJOZ9 的症状，不该被"顺手修"；② 在第二种组合下，
-    // 加判定反而会把本来能跑通的一发变成硬失败。故保持原样。
-    // 回归断言见 `buddy-ratelimit-misreport.spec.ts` 的「zcode 同型缺陷判定」段。
+    const accounts = pool.listAccountsByProvider(ZCODE.id)
+    const limited = allAccountsRateLimitedForModel(accounts.filter(entry => entry.enabled).map(entry => ({ ...entry,
+      modelRateLimits: { [modelId ?? '']: entry.modelRateLimits?.[pool.rateLimitKey(entry, modelId ?? '')] ?? 0 },
+    })), modelId ?? '')
+    if (limited) throw new LlmError(`ZCode：所有启用账号的所选额度来源已受限，最早恢复时间 ${new Date(limited.resetAtMs).toLocaleString()}，无需重新登录`, 'QUOTA_EXCEEDED')
+    if (accounts.length) return undefined
     return await zcode.current()
   },
   refresh: async () => {

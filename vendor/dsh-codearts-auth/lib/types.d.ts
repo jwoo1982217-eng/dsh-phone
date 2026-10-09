@@ -56,6 +56,8 @@ export interface ProviderAccountEntry {
     refreshable: boolean;
     /** 每个模型的重置时间，key=模型ID（毫秒时间戳） */
     modelRateLimits?: Record<string, number>;
+    /** ZCode当前账号明确选择的额度来源；未设置保留旧自动策略。 */
+    zcodeSource?: string;
     /**
      * TRAE 签到设备轮换代次（仅 `trae` provider 使用）。
      *

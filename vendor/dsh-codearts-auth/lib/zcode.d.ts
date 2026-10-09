@@ -87,6 +87,8 @@ export interface ZcodeCredential {
     coding_plan_key_zai?: string;
     /** Coding Plan api-key（bigmodel 侧），仅 ultra 通道需要。保留理由同上。 */
     coding_plan_key_bigmodel?: string;
+    /** 本次请求投影，只留在内存，不写回登录凭据。 */
+    source_selection?: import('./zcode-sources.js').ZcodeSourceProjection;
     /** 展示用标签（脱敏手机号 / 用户名）。 */
     account_label?: string;
     /**

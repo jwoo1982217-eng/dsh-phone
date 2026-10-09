@@ -22,6 +22,7 @@ import { LOOMY } from './loomy-product.js';
 import { buddyExpiringWindowDays } from './buddy-balance-rank.js';
 import { RACCOON } from './raccoon-product.js';
 import { ZCODE } from './zcode-product.js';
+import { zcodeSources } from './zcode-sources.js';
 import { phoneFromUserId, isUsableZcodeCredential } from './zcode.js';
 import { ZCODE_LOGIN_PROVIDER } from './zcode-login.js';
 import { MINIMAX } from './minimax-product.js';
@@ -1154,6 +1155,17 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
         if (autoclawResult !== undefined)
             return autoclawResult;
         switch (method) {
+            case 'zcode.sources': {
+                const req = payload;
+                return { ok: true, value: await zcodeSources(ctx, pool).list(req.accountId, req.refresh === true) };
+            }
+            case 'zcode.selectSource': {
+                const req = payload;
+                if (typeof req.sourceId !== 'string')
+                    throw new Error('额度来源参数无效');
+                await zcodeSources(ctx, pool).select(req.accountId, req.sourceId);
+                return { ok: true, value: { selected: req.sourceId } };
+            }
             case 'account.list': {
                 const req = payload;
                 const accounts = await pool.listAccounts(req.provider);

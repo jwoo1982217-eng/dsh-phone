@@ -125,12 +125,14 @@ export declare class AccountPool {
     private readonly requestEligibility;
     private readonly selectionChains;
     isRotationRequest(provider: string): boolean;
-    /** 只串行选号，不串行整个网络请求；并发请求也依次得到不同账号。 */
+    /** 只串行选号，不串行整个网络请求；并发请求沿用当前可用账号。 */
     withSelection<T>(provider: string, select: () => Promise<T>): Promise<T>;
     orderForRequest<T extends {
         id: string;
     }>(provider: string, candidates: readonly T[]): T[];
     setRequestEligibility(provider: string, check: (entry: ProviderAccountEntry, model: string) => Promise<boolean>): void;
+    setRequestSource(provider: string, accountId: string, source: string): void;
+    rateLimitKey(entry: ProviderAccountEntry, model: string): string;
     requestAccount(provider: string): ProviderAccountEntry | undefined;
     rememberSelection(provider: string, id: string): void;
     /**
@@ -465,7 +467,7 @@ export declare class AccountPool {
      */
     private notifyAccountAdded;
     /** 更新账号部分字段 */
-    updateAccount(id: string, patch: Partial<Pick<ProviderAccountEntry, 'nickname' | 'enabled' | 'expiresAt' | 'refreshable'>>): Promise<void>;
+    updateAccount(id: string, patch: Partial<Pick<ProviderAccountEntry, 'nickname' | 'enabled' | 'expiresAt' | 'refreshable' | 'zcodeSource'>>): Promise<void>;
     /** 删除账号（同时清理凭据） */
     removeAccount(id: string): Promise<void>;
     /**

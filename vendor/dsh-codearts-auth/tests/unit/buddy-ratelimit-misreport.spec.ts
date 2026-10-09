@@ -432,29 +432,12 @@ describe('全部账号被模型限流时，报限流而非「未登录」', () =
       expect(listSlots, 'listIdentitySlots 开始处没找到').not.toContain('modelRateLimits')
     })
 
-    /**
-     * **zcode 是唯一「不接判定也算对」的一家**（2026-10-06 对抗性审计推翻了我最初的接线）。
-     *
-     * 我最初把 zcode 也接上了，理由是「池取不到号就该判限流」。审计指出这会收窄
-     * 可用性，我用临时探针（真实 `apply()` + 真账号池）实测确认**审计是对的**：
-     * `zcode.current()` 的兜底会**再读一次账号池**（`readStoredCredential` →
-     * `readCredentialFromPool`），且既不看 `enabled`、也不看 `modelRateLimits`：
-     *
-     * | 场景（账号池状态） | `zcode.current()` 返回 |
-     * |---|---|
-     * | 唯一启用账号被该模型限流、凭据合法 | **那份凭据** ⇒ 不会误报「未登录」 |
-     * | 池里另有「停用但健康」账号且排在前面 | **那个停用账号的凭据** ⇒ 请求能跑通 |
-     *
-     * ⇒ ① IKJOZ9 的症状在 zcode 身上**不存在**（它不报「未登录」）；② 加判定会把
-     * 上表第二行那发**能跑通的请求变成硬失败**。故 zcode 刻意不接 —— 这条断言
-     * 防止后来者「看到别人都接了，顺手也给 zcode 补上」。
-     */
-    it('zcode 刻意不接限流判定：它的兜底会再读池，本就不会误报「未登录」', () => {
-      const at = indexCode.indexOf('throwIfAllAccountsRateLimited(ZCODE, modelId)')
-      expect(at, 'zcode 又被接上判定了 —— 它的兜底 current() 会再读池，加判定会收窄可用性（见本用例注释）').toBe(-1)
-      // 且必须确认 zcode 的取号点仍在（否则这条会因为「整段被删」而假绿）。
-      expect(indexCode, 'zcode 的取号点不见了，兜底 current() 也应一并复核').toContain('getAvailableAccount(ZCODE.id, modelId')
-      expect(indexCode, 'zcode 的兜底应仍是 zcode.current()').toContain('await zcode.current()')
+    it('ZCode有账号池时不能绕回停用或冷却账号，冷却按所选来源读取', () => {
+      const section = indexCode.slice(indexCode.indexOf('const activeZcodeAccountId'), indexCode.indexOf('currentAccountId:', indexCode.indexOf('const activeZcodeAccountId')))
+      expect(section).toContain('pool.rateLimitKey(entry, modelId')
+      expect(section).toContain('allAccountsRateLimitedForModel')
+      expect(section.indexOf('if (accounts.length) return undefined')).toBeLessThan(section.indexOf('await zcode.current()'))
+      expect(section.indexOf('if (accounts.length) return undefined')).toBeGreaterThan(-1)
     })
   })
 })

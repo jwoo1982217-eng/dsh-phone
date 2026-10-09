@@ -10,8 +10,8 @@ android {
         applicationId "com.dshphone"
         minSdk 28
         targetSdk 36
-        versionCode 61
-        versionName "0.1.58"
+        versionCode 63
+        versionName "0.1.60"
         ndk { abiFilters "arm64-v8a" }
     }
 

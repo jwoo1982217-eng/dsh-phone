@@ -42,6 +42,7 @@ import { RACCOON } from './raccoon-product.js'
 import type { RaccoonAuth } from './raccoon-auth.js'
 import type { ZcodeAuth } from './zcode-auth.js'
 import { ZCODE } from './zcode-product.js'
+import { zcodeSources } from './zcode-sources.js'
 import type { ZcodeCredential } from './zcode.js'
 import { phoneFromUserId, isUsableZcodeCredential } from './zcode.js'
 import type { ZcodeBalanceResult } from './zcode-upstream.js'
@@ -1610,6 +1611,16 @@ function registerJetHubEndpoints(
     const autoclawResult = await modelAdapters?.autoclaw?.handleRpc?.(method, payload)
     if (autoclawResult !== undefined) return autoclawResult
     switch (method) {
+      case 'zcode.sources': {
+        const req = payload as { accountId: string; refresh?: boolean }
+        return { ok: true, value: await zcodeSources(ctx, pool).list(req.accountId, req.refresh === true) }
+      }
+      case 'zcode.selectSource': {
+        const req = payload as { accountId: string; sourceId: string }
+        if (typeof req.sourceId !== 'string') throw new Error('额度来源参数无效')
+        await zcodeSources(ctx, pool).select(req.accountId, req.sourceId)
+        return { ok: true, value: { selected: req.sourceId } }
+      }
       case 'account.list': {
         const req = payload as RpcListAccountsRequest
         const accounts = await pool.listAccounts(req.provider)

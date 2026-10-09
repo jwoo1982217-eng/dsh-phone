@@ -66,6 +66,8 @@ import { AccountPool, providerCatalogVisible } from './account-pool.js'
 import { RemoteCatalogGate } from './remote-catalog-gate.js'
 import { settingsNamespaceFor } from './settings-compat.js'
 import { collectImages, serializeMessages } from './openai-compat.js'
+import { rotationRequest } from './account-rotation.js'
+import { streamZcodeOrganization } from './zcode-source-stream.js'
 import { projectRequestImage, type ImageRequestTarget } from './image-budget.js'
 import type { ZcodeCredential } from './zcode.js'
 import { ZCODE, type ZcodeFallbackModel, type ZcodeProduct, type ZcodeRemoteModelLike } from './zcode-product.js'
@@ -785,6 +787,10 @@ export class ZcodeAdapter extends LlmAdapter {
      * 故必须直接断言「首次切号时 `tried` 含失败账号、且标记已写下」。
      */
     let credential = await this.resolveCredentialOrThrow(options)
+    if (credential.source_selection?.kind === 'organization-flow') {
+      yield* streamZcodeOrganization(options, credential, imageUrls ?? new Map(), this.fetchImpl)
+      return
+    }
     let activeAccountId = this.options.currentAccountId?.()
     if (activeAccountId !== undefined && activeAccountId.length > 0) tried.add(activeAccountId)
 
@@ -1134,7 +1140,8 @@ export class ZcodeAdapter extends LlmAdapter {
         //   `captchaParam === undefined`（上游当下不索要验证）时换腿 ——
         //   带了 param 的那一发被拒属于另一类问题，走 ③ 的 3007 分支。
         if (
-          shouldFallbackToOtherChannel(response.status, text)
+          !credential.source_selection
+          && shouldFallbackToOtherChannel(response.status, text)
           && !switchedAccount
           && captchaParam === undefined
           && attempt < this.product.concurrencyRetryMax
@@ -1499,6 +1506,8 @@ export class ZcodeAdapter extends LlmAdapter {
   ): Promise<{ credential: ZcodeCredential; accountId: string } | undefined> {
     const pool = this.options.accountPool
     if (pool === undefined) return undefined
+    // 注册包装统一换号，重新进入完整请求准备，保证下一账号的额度来源也被投影。
+    if (rotationRequest(this.product.id)) return undefined
 
     if (activeAccountId !== undefined && activeAccountId.length > 0) {
       await pool.updateModelRateLimit(activeAccountId, options.model, nextUtc8DayStartMs())
