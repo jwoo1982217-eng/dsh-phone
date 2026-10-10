@@ -33,13 +33,13 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // plugin-src/client/index.js
-var client_exports = {};
-__export(client_exports, {
+var index_exports = {};
+__export(index_exports, {
   apply: () => apply,
   inject: () => inject,
   name: () => name
 });
-module.exports = __toCommonJS(client_exports);
+module.exports = __toCommonJS(index_exports);
 
 // plugin-src/management-rpc.mjs
 var ENDPOINT = "manage";
@@ -3027,28 +3027,8 @@ function formatQuotaPercent(percent) {
 }
 
 // plugin-src/client/account-login-window.js
-async function openAccountLoginWindow({ provider, loginUrl, isolatedLoginCall, browserWindow = window }) {
-  if (provider !== "workbuddy") return browserWindow.open(loginUrl, "_blank", "width=800,height=600");
-  if (!isolatedLoginCall) throw Error("请启用桌面独立登录组件后，再添加 WorkBuddy 账号。");
-  const result = await isolatedLoginCall({ action: "open", url: loginUrl });
-  if (!result?.isolated || !result.sessionId) throw Error("未能创建独立登录窗口，请重试。");
-  if (result.browserMode !== "system") {
-    await isolatedLoginCall({ action: "close", sessionId: result.sessionId }).catch(() => {
-    });
-    throw Error("登录组件需要更新为普通浏览器模式，请关闭旧登录窗口后重试。");
-  }
-  let closed = false;
-  return {
-    get closed() {
-      return closed;
-    },
-    close() {
-      if (closed) return;
-      closed = true;
-      void isolatedLoginCall({ action: "close", sessionId: result.sessionId }).catch(() => {
-      });
-    }
-  };
+async function openAccountLoginWindow({ loginUrl, browserWindow = window }) {
+  return browserWindow.open(loginUrl, "_blank", "width=800,height=600");
 }
 
 // plugin-src/client/jet-hub.js
@@ -5189,6 +5169,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
       if (res.reused) {
         setLoginUrlForManual(null);
         await loadAccounts();
+        if (canLoadCredits) await loadCredits();
         setProbeNotice({ tone: "ok", text: "已复用本机已有的账号凭据，未新建账号。", details: [] });
         return;
       }
@@ -5199,7 +5180,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
           return;
         }
         loginWindowRef.current = loginWindow;
-        if (provider === "workbuddy") setProbeNotice({ tone: "ok", text: "已打开独立的普通 Chrome/Edge 窗口，请在新窗口登录要添加的账号。", details: [] });
+        if (provider === "workbuddy") setProbeNotice({ tone: "ok", text: "请在手机系统浏览器完成 WorkBuddy 授权，然后返回 DSH 查看账号与积分。", details: [] });
         if (!loginWindow || loginWindow.closed) {
           setLoginUrlForManual(loginUrl);
           setLoginLinkCopied(null);
@@ -5211,8 +5192,11 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
             return;
           }
           if (Date.now() > deadline) {
-            if (loginWindow && !loginWindow.closed) loginWindow.close();
             stopPoll();
+            setLoginUrlForManual(null);
+            await loadAccounts();
+            if (canLoadCredits) await loadCredits();
+            if (mounted.current) setProbeNotice({ tone: "error", text: "授权未完成或已超时，请重新点击「添加账号」完成授权。", details: [] });
             return;
           }
           try {
@@ -5222,6 +5206,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
             if (loginWindow && !loginWindow.closed) loginWindow.close();
             setLoginUrlForManual(null);
             await loadAccounts();
+            if (canLoadCredits) await loadCredits();
             stopPoll();
           } catch {
           }
@@ -9089,16 +9074,13 @@ function apply(ctx) {
     return unwrapRpcResult(raw);
   };
   const chatGptCall = createChatGptCall(ctx.connection);
-  const isolatedLoginCall = async (payload) => unwrapRpcResult(
-    await ctx.connection.rpc.call("/desktop-isolated-login", "manage", payload)
-  );
   ctx.effect(() => startCarrierContribution({ rpcCall }), "jet-hub: zcode 内部载体贡献循环");
   ctx.slots.inject("settings.section", () => ctx.slots.register({
     name: "settings.section",
     id: "jet-hub",
     order: 50,
     label: () => "Jet Hub",
-    inject: () => ({ rpcCall, chatGptCall, isolatedLoginCall })
+    inject: () => ({ rpcCall, chatGptCall })
   }, JetHubPage));
   ctx.slots.inject("conversation.input.right", () => ctx.slots.register({
     name: "conversation.input.right",

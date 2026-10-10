@@ -6,9 +6,12 @@
 
 **特别感谢 Jet／iJetLi 开源 [deepseek-harness-codearts（dsh-codearts-auth / Jet Hub）](https://gitee.com/iJetLi/deepseek-harness-codearts#dsh-codearts-auth)**，为多供应商账号登录、模型接入和本机模型网关提供了基础。完整来源及许可见下方 [开源来源与致谢](#开源来源与致谢)。
 
-当前应用版本为 **0.1.61 / versionCode 64**，包名 `com.dshphone`，支持 **Android 9 及以上、arm64**。
+当前应用版本为 **0.1.62 / versionCode 65**，包名 `com.dshphone`，支持 **Android 9 及以上、arm64**。
 
 桌面和手机聊天回车用于换行，点击「发送」按钮发送；保留 Ctrl/Cmd+Enter 快捷发送。Jet Hub 同一模型连续使用当前账号，额度不足或账号限流时由下一个可用账号接续；ZCode 账号卡片可选择每日赠送、个人套餐和机构流量来源。
+
+
+WorkBuddy 国际版在手机系统浏览器完成授权；DSH 保留本机页面等待授权结果，成功后自动刷新积分。授权超时会重读账号列表并提示重试，避免继续显示失效的待登录卡片。手机端不再调用电脑版独立登录组件。
 
 手机版设置窗口撑满可见区域；插件市场和 Agent 人设共用设置窗口的滚动区域。
 目录在后台载入时也会更新嵌入页高度；已有本机缓存立即显示并在后台刷新，网络失败仍可搜索和浏览缓存。

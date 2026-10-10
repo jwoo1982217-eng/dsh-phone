@@ -278,7 +278,7 @@ class MainActivity : Activity() {
                 override fun onCreateWindow(view: WebView, isDialog: Boolean,
                     isUserGesture: Boolean, resultMsg: Message): Boolean {
                     if (!isUserGesture) return false
-                    val login = openLoginWindow()
+                    val login = openLoginWindow(sourceUrl = view.url)
                     (resultMsg.obj as WebView.WebViewTransport).webView = login
                     resultMsg.sendToTarget()
                     return true
@@ -459,7 +459,7 @@ class MainActivity : Activity() {
 
     /** 保留主界面，用独立 WebView 承接 Jet Hub 的 window.open 登录窗口。 */
     @SuppressLint("SetJavaScriptEnabled")
-    private fun openLoginWindow(title: String = "账号登录"): WebView {
+    private fun openLoginWindow(title: String = "账号登录", sourceUrl: String? = null): WebView {
         closeLoginWindow()
         val overlay = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -483,7 +483,15 @@ class MainActivity : Activity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView, url: String) { installJsonFileExport(view) }
                 override fun shouldOverrideUrlLoading(view: WebView,
-                    request: WebResourceRequest) = handlePhoneAction(view, request)
+                    request: WebResourceRequest): Boolean {
+                    // 新弹窗首个请求的 view.url 可能为空，使用创建它的本机页面作为来源。
+                    if (ProviderLoginNavigation.shouldOpenWorkBuddyExternally(
+                            sourceUrl, request.url.toString(), request.isForMainFrame)) {
+                        openWorkBuddyBrowser(request.url)
+                        return true
+                    }
+                    return handlePhoneAction(view, request)
+                }
             }
             webChromeClient = object : WebChromeClient() {
                 override fun onCloseWindow(window: WebView) { closeLoginWindow() }
@@ -508,10 +516,27 @@ class MainActivity : Activity() {
         return login
     }
 
+    private fun openWorkBuddyBrowser(uri: Uri) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
+            loginWebView?.loadData("""
+                <meta name="viewport" content="width=device-width,initial-scale=1">
+                <p style="font:18px sans-serif;padding:24px">请在系统浏览器完成 WorkBuddy 授权，然后点击上方「返回 DSH」查看账号和积分。</p>
+            """.trimIndent(), "text/html", "UTF-8")
+        } catch (_: android.content.ActivityNotFoundException) {
+            Toast.makeText(this, "请安装手机浏览器后继续 WorkBuddy 授权", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun handlePhoneAction(view: WebView, request: WebResourceRequest): Boolean {
         val uri = request.url
         val source = Uri.parse(view.url.orEmpty())
         val local = request.isForMainFrame && source.scheme == "http" && source.host == "127.0.0.1" && source.port == NodeRunner.WEB_PORT
+        if (ProviderLoginNavigation.shouldOpenWorkBuddyExternally(
+                view.url, uri.toString(), request.isForMainFrame)) {
+            openWorkBuddyBrowser(uri)
+            return true
+        }
         if (uri.scheme == "dsh-phone" && uri.host == "files" && uri.path == "/save") {
             if (request.isForMainFrame && JsonFileExport.trusted(view.url)) jsonFileExport.request(view, uri.getQueryParameter("ticket").orEmpty())
             return true

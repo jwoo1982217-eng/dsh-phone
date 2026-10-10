@@ -22,7 +22,7 @@ import org.json.JSONArray
  */
 object NodeRunner {
     private const val TAG = "dsh-phone"
-    const val ASSET_VERSION = "64"
+    const val ASSET_VERSION = "65"
     const val GATEWAY_PORT = 8326
     const val WEB_PORT = 3080
 

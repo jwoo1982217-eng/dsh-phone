@@ -2967,6 +2967,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
       if (res.reused) {
         setLoginUrlForManual(null);
         await loadAccounts();
+        if (canLoadCredits) await loadCredits();
         // 复用提示借用 probeNotice 区块渲染（本面板没有独立的 create 提示位）。
         setProbeNotice({ tone: 'ok', text: '已复用本机已有的账号凭据，未新建账号。', details: [] });
         return;
@@ -2994,7 +2995,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
         const loginWindow = await openAccountLoginWindow({ provider, loginUrl, isolatedLoginCall });
         if (!mounted.current) { loginWindow?.close(); return; }
         loginWindowRef.current = loginWindow;
-        if (provider === 'workbuddy') setProbeNotice({ tone: 'ok', text: '已打开独立的普通 Chrome/Edge 窗口，请在新窗口登录要添加的账号。', details: [] });
+        if (provider === 'workbuddy') setProbeNotice({ tone: 'ok', text: '请在手机系统浏览器完成 WorkBuddy 授权，然后返回 DSH 查看账号与积分。', details: [] });
         if (!loginWindow || loginWindow.closed) {
           // 弹窗被拦截：展示可点击链接让用户自行打开，而不是劫持当前页面。
           // 轮询照常进行，用户手动打开也能完成登录。
@@ -3014,8 +3015,11 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
         pollRef.current = setInterval(async () => {
           if (!mounted.current) { stopPoll(); return; }
           if (Date.now() > deadline) {
-            if (loginWindow && !loginWindow.closed) loginWindow.close();
             stopPoll();
+            setLoginUrlForManual(null);
+            await loadAccounts();
+            if (canLoadCredits) await loadCredits();
+            if (mounted.current) setProbeNotice({ tone: 'error', text: '授权未完成或已超时，请重新点击「添加账号」完成授权。', details: [] });
             return;
           }
           try {
@@ -3025,6 +3029,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
             if (loginWindow && !loginWindow.closed) loginWindow.close();
             setLoginUrlForManual(null);
             await loadAccounts();
+            if (canLoadCredits) await loadCredits();
             stopPoll();
           } catch { /* 继续轮询 */ }
         }, 1000);

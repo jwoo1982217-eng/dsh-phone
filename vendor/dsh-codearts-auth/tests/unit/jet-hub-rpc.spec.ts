@@ -954,7 +954,9 @@ describe('account.create 必须立即返回 loginUrl（两步式登录回归）'
       + '必须展示可点击链接，而不是把整个设置页导航走。',
     ).not.toMatch(/window\.location\.(href|assign|replace)\s*=/)
     // 必须仍然尝试弹出新窗口（两步式的前提）。
-    expect(normalized).toContain('window.open(loginUrl')
+    expect(normalized).toContain('openAccountLoginWindow({ provider, loginUrl')
+    const popupHelper = readFileSync(resolve(here, '../../plugin-src/client/account-login-window.js'), 'utf8')
+    expect(popupHelper).toContain("browserWindow.open(loginUrl, '_blank'")
     // 弹窗失败时要有手动链接兜底。
     expect(normalized).toContain('setLoginUrlForManual(loginUrl)')
   })
