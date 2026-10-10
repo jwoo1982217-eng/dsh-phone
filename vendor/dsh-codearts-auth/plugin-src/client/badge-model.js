@@ -236,6 +236,13 @@ export function creditGroupsOf(accounts) {
       continue;
     }
     okCount += 1;
+    if (balance.sourceQuota) {
+      const group = byUnit.get('source-quota') ?? { unit: 'source-quota', label: '额度', total: 0, accountCount: 0, sourceLines: [] };
+      group.accountCount += 1;
+      group.sourceLines.push(balance.sourceQuota.text);
+      byUnit.set('source-quota', group);
+      continue;
+    }
     // 单位从**包**上取（ZCode 是 token，其余是积分）；一个包都没有时按空串走
     // `normalizeUnit` 的默认（积分）——与账号卡片的口径一致。
     // ⚠️ 取到原值后**必须**归一：同义异拼（credit / credits / ''）不能各成一组。
@@ -563,7 +570,7 @@ function readingOf({ mode, windows, planGroups, groups, accounts, failedCount })
       return { detail: '', reading: lines.join(' · ') };
     }
     // `group.label` 就是 unitLabel(unit)（'积分' / 'Token'），故直接贴紧数值。
-    const parts = groups.map((group) => `${formatUnits(group.total, group.unit) ?? '?'}${group.label}`);
+    const parts = groups.map((group) => group.sourceLines ? group.sourceLines.join(' · ') : `${formatUnits(group.total, group.unit) ?? '?'}${group.label}`);
     return { detail: '', reading: parts.join(' · ') };
   }
   // empty：区分「没有启用账号」与「全部读取失败」——两者给用户的下一步完全不同。
@@ -586,6 +593,7 @@ function toneOf({ mode, windows, planGroups, groups, accounts }) {
       const remainings = quotaGroup.quotaRemainings ?? [];
       return remainings.length === 0 ? 'warn' : quotaTone(100 - Math.min(...remainings));
     }
+    if (groups.some(group => group.sourceLines)) return 'muted';
     return groups.some((group) => group.total > 0) ? 'ok' : 'warn';
   }
   return accounts.length > 0 ? 'error' : 'muted';
@@ -683,6 +691,7 @@ export function orderCreditRows(rows, options = {}) {
  */
 export function creditSectionLabel(groups) {
   const list = Array.isArray(groups) ? groups.filter((g) => g && typeof g.unit === 'string') : [];
+  if (list.some(g => g.unit === 'source-quota')) return '额度';
   const quotaGroup = list.find((g) => g.unit === QUOTA_UNIT);
   if (quotaGroup !== undefined) return unitLabel(quotaGroup.unit);
   // ⚠️ 没有配额组时也**不能**硬编码「积分」—— 见上面的 ZCode 反例。

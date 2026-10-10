@@ -1012,9 +1012,9 @@ function UsageBadgeActive(props) {
      * 本身已经是两个窗口剩余比例的平均值 —— 上游根本没有那个数。
      * 这类单位改为逐账号列出窗口行（见 {@link balanceLine}）。
      */
-    const quotaGroup = view.groups.find((group) => group.unit === QUOTA_UNIT);
+    const quotaGroup = view.groups.find((group) => group.unit === QUOTA_UNIT || group.unit === 'source-quota');
     const sum = quotaGroup !== undefined
-      ? (quotaGroup.quotaLines ?? []).join(' · ')
+      ? (quotaGroup.sourceLines ?? quotaGroup.quotaLines ?? []).join(' · ')
       : view.groups.map((group) => `${formatUnits(group.total, group.unit) ?? '?'}${group.label}`).join(' · ');
     // 排序与折叠是**纯逻辑**（含「读不到数的排最后」「稳定排序」两条不变量），
     // 放在 badge-model.js 里由单测锁死 —— 组件里看不见 react 的测试跑不起来。
@@ -1207,6 +1207,7 @@ function UsageBadgeActive(props) {
 
 /** 一个账号的余额行（数值 + 单位）。 */
 function balanceLine(balance) {
+  if (balance.sourceQuota) return balance.sourceQuota.text;
   const packages = balance.packages || [];
   const unit = packages.find((pkg) => pkg && pkg.unit)?.unit;
   /**
@@ -1233,6 +1234,8 @@ function balanceLine(balance) {
  * `now` 在渲染这一刻现取 —— 分桶是时间的函数，缓存它会让越线的包继续算长期。
  */
 function splitLine(balance, windowDays, provider) {
+  if (balance.sourceQuota) return balance.sourceQuota.label;
+  if (balance.pendingNote) return balance.pendingNote;
   const packages = balance.packages || [];
   const unit = packages.find((pkg) => pkg && pkg.unit)?.unit;
   /**

@@ -102,7 +102,7 @@ export function badgePlanSelectorFor(provider) {
  * @returns 套餐读数；该渠道无订阅形态、余额查不到、无有效套餐包时为 `null`。
  */
 export function badgePlanFor(provider, balance) {
-    if (balance === null)
+    if (balance === null || balance.sourceQuota)
         return null;
     const selector = badgePlanSelectorFor(provider);
     if (selector === undefined)

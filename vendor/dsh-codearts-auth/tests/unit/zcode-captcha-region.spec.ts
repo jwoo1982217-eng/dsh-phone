@@ -333,7 +333,8 @@ describe('★ 源码级防回归', () => {
      * 全局 `not.toContain` 会误伤它 —— 本仓库在 Qoder 那次就吃过
      * 「用一个过宽的源码断言把合法代码判成违规」的亏。
      */
-    const start = rpcSource.indexOf('if (req.provider === ZCODE.id) {')
+    const claimStart = rpcSource.indexOf("case 'credits.claimAll':")
+    const start = rpcSource.indexOf('if (req.provider === ZCODE.id) {', claimStart)
     expect(start).toBeGreaterThan(-1)
     const end = rpcSource.indexOf('const product = productById(req.provider)', start)
     expect(end).toBeGreaterThan(start)

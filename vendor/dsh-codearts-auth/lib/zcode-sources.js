@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { LlmError } from '@deepseek-ai/dsh-llm';
-import { fetchZcodeBalance } from './zcode-upstream.js';
+import { fetchZcodeBalance, describeZcodePendingGrants } from './zcode-upstream.js';
 const services = new WeakMap();
 export function zcodeSources(ctx, pool) {
     let service = services.get(pool);
@@ -53,20 +53,22 @@ export class ZcodeSources {
         return typeof copied?.secretKey === 'string' && copied.secretKey.trim() ? `${key.apiKey}.${copied.secretKey}` : key.apiKey;
     }
     async quota(host, key, org, project) {
-        const data = await this.get(`${host}/api/monitor/usage/quota/limit`, {
+        // 团队额度必须同时带 type=2 与组织/项目；仅加请求头仍会返回个人配额。
+        const data = await this.get(`${host}/api/monitor/usage/quota/limit${org && project ? '?type=2' : ''}`, {
             Authorization: key, ...(org && project ? { 'bigmodel-organization': org, 'bigmodel-project': project } : {}),
         });
         const limits = Array.isArray(data?.limits) ? data.limits : [];
         const rows = limits.filter((v) => typeof v.remaining === 'number' || typeof v.percentage === 'number').map((v, index) => {
             // 数字unit是上游周期枚举，不能拼到remaining后面当数量单位。
-            const label = v.type === 'TIME_LIMIT' ? '5小时' : v.type === 'WEEKLY_LIMIT' ? '每周' : `套餐配额${index + 1}`;
+            const label = v.unit === 3 ? '5小时' : v.unit === 6 ? '每周' : v.type === 'TIME_LIMIT' ? '5小时' : v.type === 'WEEKLY_LIMIT' ? '每周' : `套餐配额${index + 1}`;
             const unit = typeof v.unit === 'string' ? v.unit : '';
             const reset = typeof v.nextResetTime === 'number' && v.nextResetTime > 0
                 ? `（重置：${new Date(v.nextResetTime < 1e12 ? v.nextResetTime * 1000 : v.nextResetTime).toLocaleString('zh-CN')}）` : '';
             // 官方percentage表示已用比例，不擅自倒算成积分数。
             return label + (typeof v.remaining === 'number' ? `：剩余 ${v.remaining}${unit}` : `：已用 ${v.percentage}%`) + reset;
         });
-        return rows.join('；') || '未取得余量，以平台用量页为准';
+        const tier = typeof data?.level === 'string' && /^(lite|pro|max|ultra)$/i.test(data.level) ? data.level[0].toUpperCase() + data.level.slice(1).toLowerCase() + ' · ' : '';
+        return rows.length ? tier + rows.join('；') : '未取得余量，以平台用量页为准';
     }
     async discover(c) {
         const international = Boolean(c.zai_access_token);
@@ -76,7 +78,7 @@ export class ZcodeSources {
         const sources = [{ id: 'start-plan', label: 'Start Plan · 每日赠送', kind: 'start-plan', available: Boolean(c.zcode_jwt), projection: { id: 'start-plan', kind: 'start-plan', url: 'https://zcode.z.ai/api/v1/zcode-plan/anthropic/v1/messages', key: c.zcode_jwt } }];
         try {
             const b = await fetchZcodeBalance(c, this.fetchImpl);
-            sources[0].quota = b && !b.enterprise ? b.buckets.map(bucket => `${bucket.showName ?? '赠送额度'}：剩余 ${bucket.availableUnits ?? bucket.remainingUnits ?? '未知'} ${bucket.unitType ?? '积分'}`).join('；') || '余额见本账号 Start Plan 积分行' : '赠送额度查询失败';
+            sources[0].quota = b && !b.enterprise ? [b.buckets.map(bucket => `${bucket.showName ?? '赠送额度'}：剩余 ${bucket.availableUnits ?? bucket.remainingUnits ?? '未知'} ${bucket.unitType ?? 'token'}`).join('；'), describeZcodePendingGrants(b.pendingGrants)].filter(Boolean).join('；') || '当前可用赠送 Token：0' : '赠送额度查询失败';
         }
         catch {
             sources[0].quota = '赠送额度查询失败';

@@ -225,6 +225,13 @@ export interface CreditPackage {
 }
 /** 账号的积分余额汇总。 */
 export interface CreditBalance {
+    /** 非可累加的来源配额如实展示；不把不同周期配额折算为 Token 总数。 */
+    sourceQuota?: {
+        label: string;
+        text: string;
+    };
+    /** 已领取的待生效额度说明，不计入 total。 */
+    pendingNote?: string;
     /**
      * 当前可用总余额（各**有效**包的本周期剩余之和）。
      *

@@ -18,16 +18,16 @@ async function fixture() {
   const ctx = { get: () => undefined, logger: { warn: vi.fn() }, credentials: { resolve: async (ref: any) => ({ value: values.get(JSON.stringify(ref)) }), unset: async () => {} } } as any
   const pool = new AccountPool(ctx); await pool.addAccount({ id: 'A', provider: 'zcode', credentialRef: 'A', nickname: 'fixture', enabled: true, refreshable: false, createdAt: 1 })
   let fail = false, teamUnassigned = false, numericUnit = false
-  const requests: { url: string; method: string }[] = []
+  const requests: { url: string; method: string; headers: Headers }[] = []
   const fetcher = vi.fn(async (url: any, init: any) => {
-    const pathname = new URL(url).pathname; requests.push({ url: String(url), method: init.method })
+    const pathname = new URL(url).pathname; requests.push({ url: String(url), method: init.method, headers: new Headers(init.headers) })
     const json = (data: any) => new Response(JSON.stringify({ code: 0, data }))
     if (fail) return new Response('', { status: 503 })
     if (pathname.endsWith('getCustomerInfo')) return json({ organizations: [{ organizationId: 'org', organizationName: '默认机构', projects: [{ projectId: 'proj', projectName: '默认项目', projectType: 1 }, { projectId: 'team', projectName: '团队', projectType: 2 }] }] })
     if (pathname.endsWith('api_keys')) return json(pathname.includes('/team/') ? [{ name: 'zcode-team-api-key', keyType: 2, apiKey: 'team-key' }] : [{ name: 'zcode-api-key', keyType: 1, apiKey: 'personal-key' }])
     if (pathname.includes('/copy/')) return json({ secretKey: 'secret-fixture' })
     if (pathname.endsWith('querySubscribeDetail')) return json({ hasSubscription: true, status: 'EFFECTIVE', memberGrantStatus: teamUnassigned ? 'UNASSIGNED' : 'VALID' })
-    if (pathname.endsWith('quota/limit') && numericUnit) return json({limits:[{type:'CREDIT_LIMIT',unit:3,number:5,remaining:2000},{type:'CREDIT_LIMIT',unit:6,number:1,remaining:8262}]})
+    if (pathname.endsWith('quota/limit') && numericUnit) { const team = new URL(url).searchParams.get('type') === '2'; return json({limits:[{type:'CREDIT_LIMIT',unit:3,number:5,remaining:team ? 14998 : 2000},{type:'CREDIT_LIMIT',unit:6,number:1,remaining:team ? 63931 : 8262}]}) }
     if (pathname.endsWith('quota/limit')) return json({ limits: [{ type: 'TIME_LIMIT', remaining: 20, unit: '积分' }, { type: 'WEEKLY_LIMIT', percentage: 30 }] })
     if (pathname.endsWith('/balance')) return json({ balances: [{ show_name: 'GLM', remaining_units: 123, unit_type: 'token' }] })
     return json({ plans: [] })
@@ -98,8 +98,20 @@ describe('ZCode独立额度来源', () => {
   it('真实平台的数字周期枚举不改变剩余额度数量', async () => {
     const f = await fixture();f.numeric();const result = await f.service.list('A',true)
     const quota = result.sources.find(s=>s.kind==='individual')!.quota
-    expect(quota).toBe('套餐配额1：剩余 2000；套餐配额2：剩余 8262')
+    expect(quota).toBe('5小时：剩余 2000；每周：剩余 8262')
     expect(quota).not.toContain('CREDIT_LIMIT')
+  })
+
+  it('团队查询必须同时携带type=2与组织/项目，个人查询保持独立', async () => {
+    const f = await fixture(); f.numeric(); const result = await f.service.list('A', true)
+    const quota = f.requests.filter(r => new URL(r.url).pathname.endsWith('quota/limit'))
+    expect(quota.some(r => new URL(r.url).searchParams.get('type') === '2')).toBe(true)
+    expect(quota.some(r => !new URL(r.url).searchParams.has('type'))).toBe(true)
+    const team = quota.find(r => new URL(r.url).searchParams.get('type') === '2')!
+    expect(team.headers.get('bigmodel-organization')).toBe('org')
+    expect(team.headers.get('bigmodel-project')).toBe('team')
+    expect(result.sources.find(s => s.kind === 'individual')?.quota).toContain('剩余 2000')
+    expect(result.sources.find(s => s.kind === 'team')?.quota).toBe('5小时：剩余 14998；每周：剩余 63931')
   })
 
 })

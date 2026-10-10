@@ -7,7 +7,7 @@ export function ZcodeSourcePanel({ account, rpcCall, onChanged }) {
   const alive = React.useRef(true);
   const load = async (refresh = false) => {
     setBusy(true); setError(null);
-    try { const data = await rpcCall('zcode.sources', { accountId: account.id, refresh }); if (alive.current) setSnapshot(data); }
+    try { const data = await rpcCall('zcode.sources', { accountId: account.id, refresh }); if (alive.current) { setSnapshot(data); if (refresh) await onChanged?.(); } }
     catch (caught) { if (alive.current) setError(caught?.message || '额度来源读取失败'); }
     finally { if (alive.current) setBusy(false); }
   };

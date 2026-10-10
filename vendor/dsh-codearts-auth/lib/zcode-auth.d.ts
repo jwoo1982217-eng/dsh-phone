@@ -637,6 +637,8 @@ export declare class ZcodeAuth extends Service {
      * 故本方法**先补激活信号再查**，否则会稳定误报「今日已领」。
      */
     fetchCheckinStatus(): Promise<CheckinStatus>;
+    /** 逐账号使用自己的凭据，已拥有的待生效活动也属于已领取。 */
+    fetchCheckinStatusFor(credential: ZcodeCredential): Promise<CheckinStatus>;
     /**
      * 领取每日额度。
      *

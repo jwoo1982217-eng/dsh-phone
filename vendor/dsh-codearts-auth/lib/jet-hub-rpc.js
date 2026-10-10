@@ -23,6 +23,7 @@ import { buddyExpiringWindowDays } from './buddy-balance-rank.js';
 import { RACCOON } from './raccoon-product.js';
 import { ZCODE } from './zcode-product.js';
 import { zcodeSources } from './zcode-sources.js';
+import { describeZcodePendingGrants } from './zcode-upstream.js';
 import { phoneFromUserId, isUsableZcodeCredential } from './zcode.js';
 import { ZCODE_LOGIN_PROVIDER } from './zcode-login.js';
 import { MINIMAX } from './minimax-product.js';
@@ -1125,6 +1126,7 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
             // 仍是**全桶汇总**，与 `packages` 逐项之和一致（`fetchZcodeBalance` 的
             // `:251-260` 就是这么累加的）。
             total: result.remaining,
+            ...(result.pendingGrants?.length ? { pendingNote: describeZcodePendingGrants(result.pendingGrants) } : {}),
             // ZCode 不在同一响应里区分「已失效包」，故为 0。
             expiredTotal: 0,
             packages,
@@ -1164,6 +1166,7 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
                 if (typeof req.sourceId !== 'string')
                     throw new Error('额度来源参数无效');
                 await zcodeSources(ctx, pool).select(req.accountId, req.sourceId);
+                usageBadge.clear();
                 return { ok: true, value: { selected: req.sourceId } };
             }
             case 'account.list': {
@@ -2387,6 +2390,15 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
                         },
                     };
                 }
+                if (req.provider === ZCODE.id) {
+                    const accounts = await pool.listAccounts(req.provider);
+                    const value = await collectCreditsStatus(accounts, undefined, {
+                        resolve: ref => ctx.credentials.resolve(ref),
+                        fetchStatus: credential => zcode.fetchCheckinStatusFor(credential),
+                        warn: msg => ctx.logger?.warn?.(msg),
+                    });
+                    return { ok: true, value: { accounts: value } };
+                }
                 if (req.provider === MINIMAX.id) {
                     // ⚠️ MiniMax **有**独立的签到状态端点（`/minimax-cloud/api/v1/signin/status`），
                     // 与 LobsterAI/TRAE/Cline 那几个「如实返回 null」的 provider 不同 ——
@@ -3044,6 +3056,27 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
                                 accountId: account.id, nickname: account.nickname,
                                 balance: null, error: '凭据解析失败',
                             });
+                            continue;
+                        }
+                        // 明确选择的个人/机构配额与 Start Plan 的 token 池是不同来源。
+                        if (account.zcodeSource && !['auto', 'start-plan'].includes(account.zcodeSource)) {
+                            try {
+                                const snapshot = await zcodeSources(ctx, pool).list(account.id, true);
+                                const source = snapshot.sources.find(s => s.id === snapshot.selected);
+                                const text = source?.quota;
+                                if (!source?.available || !text || text.includes('查询失败')) {
+                                    values.push({ accountId: account.id, nickname: account.nickname, balance: null,
+                                        error: source?.reason ?? text ?? '所选额度来源查询失败' });
+                                }
+                                else {
+                                    values.push({ accountId: account.id, nickname: account.nickname,
+                                        balance: { total: 0, packages: [], expiredTotal: 0,
+                                            sourceQuota: { label: source.label, text } } });
+                                }
+                            }
+                            catch {
+                                values.push({ accountId: account.id, nickname: account.nickname, balance: null, error: '所选额度来源查询失败，请刷新' });
+                            }
                             continue;
                         }
                         const result = await zcode.fetchBalanceFor(credential);

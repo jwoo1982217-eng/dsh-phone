@@ -439,7 +439,8 @@ describe('ZCode 客户端接入（缺口 3 / 4 / 5）', () => {
     // 提交流程里不应有 zcode 专属分支。
     expect(source).not.toMatch(/else if \(provider === 'zcode'\)/)
     // 通用路径仍在：拿到 loginUrl 就弹窗。
-    expect(source).toMatch(/const loginWindow = window\.open\(loginUrl/)
+    expect(source).toMatch(/const loginWindow = await openAccountLoginWindow\(\{ provider, loginUrl/)
+    expect(readClient('account-login-window.js')).toMatch(/browserWindow\.open\(loginUrl/)
     // 空 loginUrl 的通用错误分支也要保留（它是所有 provider 的兜底）。
     expect(source).toMatch(/后端未返回登录地址/)
   })

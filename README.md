@@ -6,7 +6,7 @@
 
 **特别感谢 Jet／iJetLi 开源 [deepseek-harness-codearts（dsh-codearts-auth / Jet Hub）](https://gitee.com/iJetLi/deepseek-harness-codearts#dsh-codearts-auth)**，为多供应商账号登录、模型接入和本机模型网关提供了基础。完整来源及许可见下方 [开源来源与致谢](#开源来源与致谢)。
 
-当前应用版本为 **0.1.60 / versionCode 63**，包名 `com.dshphone`，支持 **Android 9 及以上、arm64**。
+当前应用版本为 **0.1.61 / versionCode 64**，包名 `com.dshphone`，支持 **Android 9 及以上、arm64**。
 
 桌面和手机聊天回车用于换行，点击「发送」按钮发送；保留 Ctrl/Cmd+Enter 快捷发送。Jet Hub 同一模型连续使用当前账号，额度不足或账号限流时由下一个可用账号接续；ZCode 账号卡片可选择每日赠送、个人套餐和机构流量来源。
 
@@ -349,3 +349,11 @@ ZCode 账号卡片支持自动、每日赠送 Start Plan、个人 BigModel 套�
 ## GitHub 公开版的 Gemini OAuth 配置
 
 本公开版本移除了内置 Google OAuth 客户端 ID 和密钥。使用 Gemini 浏览器授权前，请在启动环境配置自己的 `CMDC_PAK_GOOGLE_CLIENT_ID` 与 `CMDC_PAK_GOOGLE_CLIENT_SECRET`；其他供应商不受此配置影响。不要将实际值提交到仓库。配置方式见 [公开版配置说明](docs/github-public-config.md)。
+
+## 2026-10-10：ZCode 额度与领取状态修复
+
+ZCode 账号卡片和用量徽标跟随已选的额度来源。个人套餐与团队套餐分别读取所属账号、组织及项目的配额，显示上游套餐等级、5 小时窗口和每周窗口的剩余额度；不同窗口不相加，也不作为 Start Plan Token 余额。查询失败显示错误，避免误报余额为零。
+
+每日赠送状态使用每个账号自己的凭据查询。已经领取但尚未生效的额度单独显示北京时间和待生效数量，不计入当前可用 Token；刷新来源会同时更新账号卡片和徽标。验证码及人工领取要求保留。
+
+手机版源码为 0.1.61，versionCode 与资源版本均为 64；本次修复包尚未完成 Android 真机验收。

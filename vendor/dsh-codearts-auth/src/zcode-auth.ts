@@ -1240,9 +1240,16 @@ export class ZcodeAuth extends Service {
     if (credential === undefined) {
       return emptyCheckinStatus(false, true)
     }
-    // 补活跃信号 —— 不补则 preview 恒为空。
+    return this.fetchCheckinStatusFor(credential)
+  }
+
+  /** 逐账号使用自己的凭据，已拥有的待生效活动也属于已领取。 */
+  async fetchCheckinStatusFor(credential: ZcodeCredential): Promise<CheckinStatus> {
     await reportZcodeActivation(credential, this.fetchImpl)
-    const plans = await fetchZcodeClaimablePlans(credential, this.fetchImpl)
+    const balance = await fetchZcodeBalance(credential, this.fetchImpl)
+    if (!balance || balance.enterprise || !balance.claimablePlansKnown) throw new Error('ZCode 领取状态查询失败，请刷新或重新登录')
+    const owned = new Set(balance.ownedPlanIds ?? [])
+    const plans = balance.claimablePlans.filter(plan => !owned.has(plan.planId))
     /**
      * ⚠ `active` 恒为 `true`（拿到凭据即 true）—— 与 Qoder 的同款约定：
      * 若按「列表非空」判 `active:false`，`collectClaimResults` 会先命中

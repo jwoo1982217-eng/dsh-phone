@@ -167,6 +167,24 @@ export interface ZcodeBalanceResult {
    * 绝不能让它影响 `remaining`/`total` 本身。
    */
   claimablePlans: ZcodeClaimablePlanSummary[]
+  /** preview 查询成功；失败不能推断为已领取。 */
+  claimablePlansKnown?: boolean
+  /** 已领取且未过期的活动，包括待生效权益。 */
+  ownedPlanIds?: readonly string[]
+  /** 已领取但尚未生效；不计入当前可用余额。 */
+  pendingGrants?: readonly ZcodePendingGrant[]
+}
+
+export interface ZcodePendingGrant {
+  planId: string
+  name: string
+  amount: number
+  unit: string
+  effectiveAt: number
+}
+
+export function describeZcodePendingGrants(grants: readonly ZcodePendingGrant[] = []): string {
+  return grants.map(g => `已领取 · 待生效 ${g.amount.toLocaleString('en-US')} ${g.unit}（${new Date(g.effectiveAt * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })} 生效，北京时间）`).join('；')
 }
 
 /** 一次可领活动。 */
@@ -272,6 +290,7 @@ export async function fetchZcodeBalance(
     code?: unknown
     data?: {
       displayMode?: unknown
+      server_time?: unknown
       balances?: unknown
       plans?: unknown
     }
@@ -282,12 +301,31 @@ export async function fetchZcodeBalance(
     return undefined
   }
   const data = parsed.data
-  if (data === undefined) return undefined
+  if (data === undefined || (typeof parsed.code === 'number' && parsed.code !== 0)) return undefined
   if (typeof data.displayMode === 'string' && data.displayMode === 'enterprise') {
     // ⚠ 企业版**不下发额度数字**，也就没有可领活动 ⇒ 不发 preview 请求。
     return { enterprise: true, buckets: [], remaining: 0, total: 0, claimablePlans: [] }
   }
 
+  // 使用上游时钟，避免设备时间不准把待生效额度算成可用。
+  const now = num(data.server_time) ?? Date.now() / 1000
+  const ownedPlanIds: string[] = []
+  const pendingGrants: ZcodePendingGrant[] = []
+  for (const plan of Array.isArray(data.plans) ? data.plans : []) {
+    if (!plan || typeof plan !== 'object' || typeof plan.plan_id !== 'string') continue
+    const endsAt = num(plan.ends_at)
+    if (endsAt !== undefined && endsAt <= now) continue
+    ownedPlanIds.push(plan.plan_id)
+    for (const entitlement of Array.isArray(plan.entitlements) ? plan.entitlements : []) {
+      if (!entitlement || typeof entitlement !== 'object') continue
+      const amount = num(entitlement.grant_units), effectiveAt = num(entitlement.effective_at)
+      if (amount === undefined || amount <= 0 || effectiveAt === undefined || effectiveAt <= now) continue
+      if (endsAt !== undefined && effectiveAt >= endsAt) continue
+      pendingGrants.push({ planId: plan.plan_id,
+        name: typeof entitlement.show_name === 'string' ? entitlement.show_name : 'Start Plan 每日赠送',
+        amount, unit: typeof entitlement.unit_type === 'string' ? entitlement.unit_type : 'token', effectiveAt })
+    }
+  }
   const rawBuckets = Array.isArray(data.balances) ? data.balances : []
   const buckets: ZcodeBalanceBucket[] = []
   for (const item of rawBuckets) {
@@ -318,13 +356,17 @@ export async function fetchZcodeBalance(
     if (exp !== undefined && (expiresAt === undefined || exp < expiresAt)) expiresAt = exp
   }
 
+  const preview = await fetchClaimablePlans(credential, fetchImpl)
   return {
+    ownedPlanIds,
+    pendingGrants,
+    claimablePlansKnown: preview !== undefined,
     buckets,
     remaining,
     total,
     expiresAt,
     planName: buckets[0]?.showName,
-    claimablePlans: await fetchClaimablePlans(credential, fetchImpl),
+    claimablePlans: preview ?? [],
   }
 }
 
@@ -357,7 +399,7 @@ export interface ZcodeClaimablePlanSummary {
 async function fetchClaimablePlans(
   credential: ZcodeCredential,
   fetchImpl: typeof fetch,
-): Promise<ZcodeClaimablePlanSummary[]> {
+): Promise<ZcodeClaimablePlanSummary[] | undefined> {
   try {
     const appVersion = credential.app_version ?? ZCODE_APP_VERSION_FALLBACK
     const response = await fetchWithTimeout(
@@ -366,8 +408,9 @@ async function fetchClaimablePlans(
       { method: 'GET', headers: buildZcodeHeaders(credential, { json: false }) },
       15_000,
     )
-    if (!response.ok) return []
-    const parsed = await response.json() as { data?: { plans?: unknown } }
+    if (!response.ok) return undefined
+    const parsed = await response.json() as { code?: number; data?: { plans?: unknown } }
+    if (!parsed.data || (typeof parsed.code === 'number' && parsed.code !== 0)) return undefined
     const raw = Array.isArray(parsed.data?.plans) ? parsed.data.plans : []
     const out: ZcodeClaimablePlanSummary[] = []
     for (const item of raw as Array<Record<string, unknown>>) {
@@ -382,7 +425,7 @@ async function fetchClaimablePlans(
     }
     return out
   } catch {
-    return []
+    return undefined
   }
 }
 

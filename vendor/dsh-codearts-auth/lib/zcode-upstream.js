@@ -93,6 +93,9 @@ export function buildZcodeHeaders(credential, options = {}) {
     }
     return headers;
 }
+export function describeZcodePendingGrants(grants = []) {
+    return grants.map(g => `已领取 · 待生效 ${g.amount.toLocaleString('en-US')} ${g.unit}（${new Date(g.effectiveAt * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })} 生效，北京时间）`).join('；');
+}
 /**
  * 从数字字段安全取值（上游可能给 `null`）。
  *
@@ -158,11 +161,35 @@ export async function fetchZcodeBalance(credential, fetchImpl = fetch) {
         return undefined;
     }
     const data = parsed.data;
-    if (data === undefined)
+    if (data === undefined || (typeof parsed.code === 'number' && parsed.code !== 0))
         return undefined;
     if (typeof data.displayMode === 'string' && data.displayMode === 'enterprise') {
         // ⚠ 企业版**不下发额度数字**，也就没有可领活动 ⇒ 不发 preview 请求。
         return { enterprise: true, buckets: [], remaining: 0, total: 0, claimablePlans: [] };
+    }
+    // 使用上游时钟，避免设备时间不准把待生效额度算成可用。
+    const now = num(data.server_time) ?? Date.now() / 1000;
+    const ownedPlanIds = [];
+    const pendingGrants = [];
+    for (const plan of Array.isArray(data.plans) ? data.plans : []) {
+        if (!plan || typeof plan !== 'object' || typeof plan.plan_id !== 'string')
+            continue;
+        const endsAt = num(plan.ends_at);
+        if (endsAt !== undefined && endsAt <= now)
+            continue;
+        ownedPlanIds.push(plan.plan_id);
+        for (const entitlement of Array.isArray(plan.entitlements) ? plan.entitlements : []) {
+            if (!entitlement || typeof entitlement !== 'object')
+                continue;
+            const amount = num(entitlement.grant_units), effectiveAt = num(entitlement.effective_at);
+            if (amount === undefined || amount <= 0 || effectiveAt === undefined || effectiveAt <= now)
+                continue;
+            if (endsAt !== undefined && effectiveAt >= endsAt)
+                continue;
+            pendingGrants.push({ planId: plan.plan_id,
+                name: typeof entitlement.show_name === 'string' ? entitlement.show_name : 'Start Plan 每日赠送',
+                amount, unit: typeof entitlement.unit_type === 'string' ? entitlement.unit_type : 'token', effectiveAt });
+        }
     }
     const rawBuckets = Array.isArray(data.balances) ? data.balances : [];
     const buckets = [];
@@ -194,13 +221,17 @@ export async function fetchZcodeBalance(credential, fetchImpl = fetch) {
         if (exp !== undefined && (expiresAt === undefined || exp < expiresAt))
             expiresAt = exp;
     }
+    const preview = await fetchClaimablePlans(credential, fetchImpl);
     return {
+        ownedPlanIds,
+        pendingGrants,
+        claimablePlansKnown: preview !== undefined,
         buckets,
         remaining,
         total,
         expiresAt,
         planName: buckets[0]?.showName,
-        claimablePlans: await fetchClaimablePlans(credential, fetchImpl),
+        claimablePlans: preview ?? [],
     };
 }
 /**
@@ -227,8 +258,10 @@ async function fetchClaimablePlans(credential, fetchImpl) {
         const appVersion = credential.app_version ?? ZCODE_APP_VERSION_FALLBACK;
         const response = await fetchWithTimeout(fetchImpl, `${ZCODE_BILLING_PREVIEW_URL}?app_version=${encodeURIComponent(appVersion)}&platform=win32`, { method: 'GET', headers: buildZcodeHeaders(credential, { json: false }) }, 15_000);
         if (!response.ok)
-            return [];
+            return undefined;
         const parsed = await response.json();
+        if (!parsed.data || (typeof parsed.code === 'number' && parsed.code !== 0))
+            return undefined;
         const raw = Array.isArray(parsed.data?.plans) ? parsed.data.plans : [];
         const out = [];
         for (const item of raw) {
@@ -246,7 +279,7 @@ async function fetchClaimablePlans(credential, fetchImpl) {
         return out;
     }
     catch {
-        return [];
+        return undefined;
     }
 }
 /**

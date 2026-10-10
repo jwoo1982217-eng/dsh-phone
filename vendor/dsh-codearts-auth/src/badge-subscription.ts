@@ -119,7 +119,7 @@ export function badgePlanSelectorFor(provider: string): BadgePlanSelector | unde
  * @returns 套餐读数；该渠道无订阅形态、余额查不到、无有效套餐包时为 `null`。
  */
 export function badgePlanFor(provider: string, balance: CreditBalance | null): RpcUsageBadgePlanReading | null {
-  if (balance === null) return null
+  if (balance === null || balance.sourceQuota) return null
   const selector = badgePlanSelectorFor(provider)
   if (selector === undefined) return null
 

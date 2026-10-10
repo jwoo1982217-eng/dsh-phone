@@ -129,6 +129,8 @@ import {
 
 const AUTOCLAW_ICON = 'data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiB2aWV3Qm94PSIwIDAgMTYgMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgaWQ9ImF1dG9jbGF3IiBjbGlwLXBhdGg9InVybCgjY2xpcDBfMF84ODYpIj48cmVjdCBpZD0iUmVjdGFuZ2xlIDI3OTMzNjEwNyIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiByeD0iOCIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzBfODg2KSIvPjxwYXRoIGlkPSJWZWN0b3IiIGQ9Ik02LjkwODM2IDEyLjE3MTlMNy4xNzgwNSAxMi42MjFMNy4xNzgwNSAxMi42MjFMNi45MDgzNiAxMi4xNzE5Wk00LjAxODMyIDguNzE1MTFMMy42MDY3NSA4LjM5MTFMMy42MDY3NSA4LjM5MTFMNC4wMTgzMiA4LjcxNTExWk00LjQwNjQ2IDcuODE5MjNMMy44ODM1OSA3Ljg1MDY3VjcuODUwNjdMNC40MDY0NiA3LjgxOTIzWk00LjA4MTY5IDExLjgyNDVMMy43MTEzIDEyLjE5NDlIMy43MTEzTDQuMDgxNjkgMTEuODI0NVpNMy40OTkwMiA5LjUzMjY1TDIuOTk2NzYgOS4zODM5NUgyLjk5Njc2TDMuNDk5MDIgOS41MzI2NVpNNS42MDU1NyA0LjY4OTMyTDUuMjM1MTkgNC4zMTg5M0w1LjIzNTE4IDQuMzE4OTNMNS42MDU1NyA0LjY4OTMyWk04LjIwNzQ4IDMuNDkzMzVMOC4yNDQ5NiA0LjAxNTgyVjQuMDE1ODJMOC4yMDc0OCAzLjQ5MzM1Wk04LjQ2NTYxIDQuMTU3NDRMOC44MzYwMiA0LjUyNzgxTDguODM2MDIgNC41Mjc4MUw4LjQ2NTYxIDQuMTU3NDRaTTcuODkxNDYgNC43MzE2NUw4LjI2MTg2IDUuMTAyMDNMOC4yNjE4NyA1LjEwMjAyTDcuODkxNDYgNC43MzE2NVpNOC4xNzE1NCA2LjQzMTQ5TDguNDE3MDIgNS45Njg3NlY1Ljk2ODc2TDguMTcxNTQgNi40MzE0OVpNOS40MjQ4NiA2LjI2NTA1TDkuNzk1MjQgNi42MzU0NUw5Ljc5NTI2IDYuNjM1NDNMOS40MjQ4NiA2LjI2NTA1Wk0xMS40MDA1IDQuMjg5MjVMMTEuNzcwOSA0LjY1OTYyTDExLjc3MDkgNC42NTk2MkwxMS40MDA1IDQuMjg5MjVaTTExLjU3MzcgNC4yODc3NkwxMS45NDQxIDMuOTE3MzhMMTEuOTQ0MSAzLjkxNzM4TDExLjU3MzcgNC4yODc3NlpNMTEuNTczNyAxMC4zMzA5TDExLjk0NDEgMTAuNzAxM0wxMS45NDQxIDEwLjcwMTNMMTEuNTczNyAxMC4zMzA5Wk01LjUzMDQzIDEwLjMzMDlMNS4xNjAwMyAxMC43MDEzTDUuMTYwMDQgMTAuNzAxM0w1LjUzMDQzIDEwLjMzMDlaTTcuMTIyNSA2LjAyOTRDNy4xOTI1NyA2LjMxMDA4IDcuNDc2OTEgNi40ODA4MSA3Ljc1NzU4IDYuNDEwNzRDOC4wMzgyNiA2LjM0MDY3IDguMjA4OTkgNi4wNTYzMyA4LjEzODkyIDUuNzc1NjVMNy42MzA3MSA1LjkwMjUzTDcuMTIyNSA2LjAyOTRaTTUuNzc4MjIgNi40NzY5OEM1LjYwNDMzIDYuNzA4MTcgNS42NTA3OCA3LjAzNjU2IDUuODgxOTcgNy4yMTA0NUM2LjExMzE3IDcuMzg0MzUgNi40NDE1NiA3LjMzNzkgNi42MTU0NSA3LjEwNjdMNi4xOTY4NCA2Ljc5MTg0TDUuNzc4MjIgNi40NzY5OFpNNS42NzQ2NSA5LjcxMDQ0QzUuNDkxNjQgOS40ODYzOSA1LjE2MTY2IDkuNDUzMTIgNC45Mzc2MSA5LjYzNjEzQzQuNzEzNTYgOS44MTkxMyA0LjY4MDI5IDEwLjE0OTEgNC44NjMyOSAxMC4zNzMyTDUuMjY4OTcgMTAuMDQxOEw1LjY3NDY1IDkuNzEwNDRaTTguMTczOTggMTEuNDExOEw3LjkwNDI5IDEwLjk2MjhMNy43OTk4NSAxMS4wMjU1TDguMDY5NTQgMTEuNDc0NUw4LjMzOTIzIDExLjkyMzZMOC40NDM2NyAxMS44NjA4TDguMTczOTggMTEuNDExOFpNOC4wNjk1NCAxMS40NzQ1TDcuNzk5ODUgMTEuMDI1NUw2LjYzODY3IDExLjcyMjlMNi45MDgzNiAxMi4xNzE5TDcuMTc4MDUgMTIuNjIxTDguMzM5MjMgMTEuOTIzNkw4LjA2OTU0IDExLjQ3NDVaTTQuMDE4MzIgOC43MTUxMUw0LjQyOTkgOS4wMzkxMUM0LjU0MjE4IDguODk2NSA0LjY2ODA3IDguNzE1NTggNC43NjQ5NCA4LjUxNDkyQzQuODU5MjQgOC4zMTk1OSA0Ljk0NTk4IDguMDY0ODUgNC45MjkzMiA3Ljc4NzhMNC40MDY0NiA3LjgxOTIzTDMuODgzNTkgNy44NTA2N0MzLjg4NTIxIDcuODc3NTkgMy44NzY1MyA3Ljk0NTQ5IDMuODIxNTEgOC4wNTk0NkMzLjc2OTA3IDguMTY4MDggMy42OTE3NiA4LjI4MzEyIDMuNjA2NzUgOC4zOTExTDQuMDE4MzIgOC43MTUxMVpNNC4wODE2OSAxMS44MjQ1TDQuNDUyMDggMTEuNDU0MkMzLjk4MTcxIDEwLjk4MzggMy44MTc5NyAxMC4zMDA1IDQuMDAxMjggOS42ODEzNUwzLjQ5OTAyIDkuNTMyNjVMMi45OTY3NiA5LjM4Mzk1QzIuNzA2MTYgMTAuMzY1NSAyLjk2NTA5IDExLjQ0ODcgMy43MTEzIDEyLjE5NDlMNC4wODE2OSAxMS44MjQ1Wk02LjkwODM2IDEyLjE3MTlMNi42Mzg2NyAxMS43MjI5QzUuOTM0NTIgMTIuMTQ1OCA1LjAzMjg5IDEyLjAzNSA0LjQ1MjA4IDExLjQ1NDJMNC4wODE2OSAxMS44MjQ1TDMuNzExMyAxMi4xOTQ5QzQuNjMyMTUgMTMuMTE1OCA2LjA2MTY1IDEzLjI5MTQgNy4xNzgwNSAxMi42MjFMNi45MDgzNiAxMi4xNzE5Wk01LjYwNTU3IDQuNjg5MzJMNS45NzU5NiA1LjA1OTcxQzYuNjEzNTMgNC40MjIxNSA3LjQyNTIgNC4wNzQ2MSA4LjI0NDk2IDQuMDE1ODJMOC4yMDc0OCAzLjQ5MzM1TDguMTcwMDEgMi45NzA4OEM3LjEwNTM3IDMuMDQ3MjQgNi4wNTU0IDMuNDk4NzIgNS4yMzUxOSA0LjMxODkzTDUuNjA1NTcgNC42ODkzMlpNOC40NjU2MSA0LjE1NzQ0TDguMDk1MTkgMy43ODcwN0w3LjUyMTA1IDQuMzYxMjlMNy44OTE0NiA0LjczMTY1TDguMjYxODcgNS4xMDIwMkw4LjgzNjAyIDQuNTI3ODFMOC40NjU2MSA0LjE1NzQ0Wk04LjE3MTU0IDYuNDMxNDlMNy45MjYwNiA2Ljg5NDIyQzguMTkzMDQgNy4wMzU4NSA4LjUwNjk0IDcuMTQ5NjggOC44NTUyIDcuMTE4MTRDOS4yMTUxNCA3LjA4NTU2IDkuNTI0MTQgNi45MDY1MyA5Ljc5NTI0IDYuNjM1NDVMOS40MjQ4NiA2LjI2NTA1TDkuMDU0NDggNS44OTQ2NUM4LjkwMjE0IDYuMDQ2OTggOC44MDkyMyA2LjA3MDQgOC43NjA3NCA2LjA3NDc5QzguNzAwNTcgNi4wODAyNCA4LjU5OTUzIDYuMDY1NTggOC40MTcwMiA1Ljk2ODc2TDguMTcxNTQgNi40MzE0OVpNOS40MjQ4NiA2LjI2NTA1TDkuNzk1MjYgNi42MzU0M0wxMS43NzA5IDQuNjU5NjJMMTEuNDAwNSA0LjI4OTI1TDExLjAzMDEgMy45MTg4N0w5LjA1NDQ2IDUuODk0NjhMOS40MjQ4NiA2LjI2NTA1Wk0xMS41NzM3IDQuMjg3NzZMMTEuMjAzMyA0LjY1ODE1QzExLjg1NzUgNS4zMTIzOCAxMi4yMTM2IDYuMjg3NCAxMi4yMTgzIDcuMjk2MjFDMTIuMjIyOSA4LjMwNDA3IDExLjg3NjYgOS4yODcyIDExLjIwMzMgOS45NjA0OEwxMS41NzM3IDEwLjMzMDlMMTEuOTQ0MSAxMC43MDEzQzEyLjg0OTQgOS43OTU5NyAxMy4yNzE2IDguNTI2MTIgMTMuMjY1OSA3LjI5MTM2QzEzLjI2MDIgNi4wNTc1NSAxMi44MjcgNC44MDAzIDExLjk0NDEgMy45MTczOEwxMS41NzM3IDQuMjg3NzZaTTExLjU3MzcgMTAuMzMwOUwxMS4yMDMzIDkuOTYwNDhDMTAuNDM1NSAxMC43MjgyIDkuMjY0NzggMTEuMDY5NiA4LjEyMjU3IDEwLjk1MzRMOC4wNjk1NCAxMS40NzQ1TDguMDE2NTEgMTEuOTk1NkM5LjQxMDcyIDEyLjEzNzUgMTAuOTEzNSAxMS43MzE4IDExLjk0NDEgMTAuNzAxM0wxMS41NzM3IDEwLjMzMDlaTTguMDY5NTQgMTEuNDc0NUw4LjEyMjU3IDEwLjk1MzRDNy4yNjMzMSAxMC44NjYgNi40NjMzOCAxMC41MjMgNS45MDA4MiA5Ljk2MDQ4TDUuNTMwNDMgMTAuMzMwOUw1LjE2MDA0IDEwLjcwMTNDNS45MjA3IDExLjQ2MTkgNi45NTkxMiAxMS44ODggOC4wMTY1MSAxMS45OTU2TDguMDY5NTQgMTEuNDc0NVpNNy44OTE0NiA0LjczMTY1TDcuNTIxMDYgNC4zNjEyOEM3LjI4Mzc2IDQuNTk4NiA3LjE2MjQ2IDQuOTExMzggNy4xMDg3MSA1LjE4Nzk0QzcuMDU0MyA1LjQ2Nzk0IDcuMDU3NDIgNS43Njg3NSA3LjEyMjUgNi4wMjk0TDcuNjMwNzEgNS45MDI1M0w4LjEzODkyIDUuNzc1NjVDOC4xMTQ4IDUuNjc5MDUgOC4xMDg2NiA1LjUzNDA5IDguMTM3MDkgNS4zODc4QzguMTY2MTkgNS4yMzgwNiA4LjIxOTg3IDUuMTQ0MDMgOC4yNjE4NiA1LjEwMjAzTDcuODkxNDYgNC43MzE2NVpNNC40MDY0NiA3LjgxOTIzTDQuOTI5MzIgNy43ODc4QzQuODcxMDMgNi44MTgyOSA1LjIxOTQ4IDUuODE2MTkgNS45NzU5NiA1LjA1OTcxTDUuNjA1NTcgNC42ODkzMkw1LjIzNTE4IDQuMzE4OTNDNC4yNjE1NyA1LjI5MjU0IDMuODA3NzYgNi41ODk0MiAzLjg4MzU5IDcuODUwNjdMNC40MDY0NiA3LjgxOTIzWk04LjE3MTU0IDYuNDMxNDlMOC40MTcwMiA1Ljk2ODc2QzguMjM4NjggNS44NzQxNSA4LjAxOTY5IDUuODI2MjUgNy44MTk0NyA1LjgwMzc2QzcuNjA4OTEgNS43ODAxIDcuMzczMjQgNS43Nzk1NyA3LjEzNzQ4IDUuODA3MDNDNi42OTc0OCA1Ljg1ODI4IDYuMTE4MTggNi4wMjUwMSA1Ljc3ODIyIDYuNDc2OThMNi4xOTY4NCA2Ljc5MTg0TDYuNjE1NDUgNy4xMDY3QzYuNjkzNzEgNy4wMDI2NSA2LjkxMTE3IDYuODg4MSA3LjI1ODY4IDYuODQ3NjJDNy40MTY2NyA2LjgyOTIyIDcuNTcyNDMgNi44MzAyMSA3LjcwMjUyIDYuODQ0ODNDNy43NjcxOCA2Ljg1MjA5IDcuODIwOTYgNi44NjIyMiA3Ljg2MjM2IDYuODczQzcuODgyODMgNi44NzgzNCA3Ljg5ODYxIDYuODgzNCA3LjkxMDA1IDYuODg3NjFDNy45MjE3MiA2Ljg5MTkxIDcuOTI2NTcgNi44OTQ0OCA3LjkyNjA2IDYuODk0MjJMOC4xNzE1NCA2LjQzMTQ5Wk01LjUzMDQzIDEwLjMzMDlMNS45MDA4MiA5Ljk2MDQ5QzUuODIwMzcgOS44ODAwMyA1Ljc0NDk5IDkuNzk2NTYgNS42NzQ2NSA5LjcxMDQ0TDUuMjY4OTcgMTAuMDQxOEw0Ljg2MzI5IDEwLjM3MzJDNC45NTU3OSAxMC40ODY0IDUuMDU0NzIgMTAuNTk1OSA1LjE2MDAzIDEwLjcwMTNMNS41MzA0MyAxMC4zMzA5Wk0xMS40MDA1IDQuMjg5MjVMMTEuNzcwOSA0LjY1OTYyQzExLjYyMjUgNC44MDgwNSAxMS4zNjgyIDQuODIzMDggMTEuMjAzMyA0LjY1ODE1TDExLjU3MzcgNC4yODc3NkwxMS45NDQxIDMuOTE3MzhDMTEuNjgzNSAzLjY1Njc2IDExLjI3NDIgMy42NzQ3NiAxMS4wMzAxIDMuOTE4ODdMMTEuNDAwNSA0LjI4OTI1Wk04LjIwNzQ4IDMuNDkzMzVMOC4yNDQ5NiA0LjAxNTgyQzguMjI5MjIgNC4wMTY5NCA4LjE5MjA3IDQuMDEzMzQgOC4xNTIgMy45ODdDOC4xMTQ1IDMuOTYyMzUgOC4wOTIzMiAzLjkyOTQ4IDguMDgxNzQgMy45MDExOUM4LjA2MDM4IDMuODQ0MDggOC4wODE3IDMuODAwNTcgOC4wOTUxOSAzLjc4NzA3TDguNDY1NjEgNC4xNTc0NEw4LjgzNjAyIDQuNTI3ODFDOS4xMTAzNiA0LjI1MzQzIDkuMTg2NiAzLjg2NDY4IDkuMDYyOTUgMy41MzQxNUM4LjkzMzc4IDMuMTg4ODIgOC41OTUxMiAyLjk0MDM5IDguMTcwMDEgMi45NzA4OEw4LjIwNzQ4IDMuNDkzMzVaTTQuMDE4MzIgOC43MTUxMUwzLjYwNjc1IDguMzkxMUMzLjQ0MTk2IDguNjAwNDMgMy4xMjU1NSA4Ljk0ODkzIDIuOTk2NzYgOS4zODM5NUwzLjQ5OTAyIDkuNTMyNjVMNC4wMDEyOCA5LjY4MTM1QzQuMDU3NTQgOS40OTEzMiA0LjE5MTQ2IDkuMzQyIDQuNDI5OSA5LjAzOTExTDQuMDE4MzIgOC43MTUxMVoiIGZpbGw9IndoaXRlIi8+PGcgaWQ9Ik1hc2sgZ3JvdXAiPjxtYXNrIGlkPSJtYXNrMF8wXzg4NiIgc3R5bGU9Im1hc2stdHlwZTphbHBoYSIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iMjQiIHk9IjciIHdpZHRoPSI2IiBoZWlnaHQ9IjciPjxwYXRoIGlkPSJSZWN0YW5nbGUgMjc5MzM2MDgzIiBkPSJNMjUuNjg3MSA3LjY4OTY0TDI0LjkyNiA5LjA4MTU4QzI0LjQzMzIgOS45ODI3MSAyNC41OTM2IDExLjEwMDggMjUuMzE5OSAxMS44MjcxQzI2LjA3MDcgMTIuNTc3OSAyNy4yMzYzIDEyLjcyMTEgMjguMTQ2NSAxMi4xNzQ0TDI5LjQxMjEgMTEuNDE0MyIgc3Ryb2tlPSIjRkM1RDFFIiBzdHJva2Utd2lkdGg9IjEuMTQyODYiLz48L21hc2s+PGcgbWFzaz0idXJsKCNtYXNrMF8wXzg4NikiPjxwYXRoIGlkPSJWZWN0b3IgODE1MyIgZD0iTTcuNzM0OTggMTAuMzg2Nkw0Ljk2NDYxIDExLjM1MDlMNS4yMDk1NSAxMy43MjMzTDkuMzI2NzYgMTIuMTYyMUw3LjczNDk4IDEwLjM4NjZaIiBmaWxsPSJ1cmwoI3BhaW50MV9saW5lYXJfMF84ODYpIi8+PC9nPjwvZz48ZyBpZD0iTWFzayBncm91cF8yIj48bWFzayBpZD0ibWFzazFfMF84ODYiIHN0eWxlPSJtYXNrLXR5cGU6YWxwaGEiIG1hc2tVbml0cz0idXNlclNwYWNlT25Vc2UiIHg9IjIiIHk9IjIiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHBhdGggaWQ9IlZlY3Rvcl8yIiBkPSJNNi45MDgxOCAxMi4xNzE5TDcuMTc3ODcgMTIuNjIxVjEyLjYyMUw2LjkwODE4IDEyLjE3MTlaTTQuMDE4MTQgOC43MTUxMUw0LjQyOTcyIDkuMDM5MTJINC40Mjk3Mkw0LjAxODE0IDguNzE1MTFaTTQuNDA2MjcgNy44MTkyM0wzLjg4MzQxIDcuODUwNjdMNC40MDYyNyA3LjgxOTIzWk00LjA4MTUxIDExLjgyNDVMMy43MTExMiAxMi4xOTQ5SDMuNzExMTJMNC4wODE1MSAxMS44MjQ1Wk0zLjQ5ODg0IDkuNTMyNjVMMi45OTY1OCA5LjM4Mzk1SDIuOTk2NThMMy40OTg4NCA5LjUzMjY1Wk01LjYwNTM5IDQuNjg5MzJMNS4yMzUgNC4zMTg5M0w1LjIzNSA0LjMxODkzTDUuNjA1MzkgNC42ODkzMlpNOC4yMDczIDMuNDkzMzVMOC4yNDQ3NyA0LjAxNTgyVjQuMDE1ODJMOC4yMDczIDMuNDkzMzVaTTguNDY1NDIgNC4xNTc0NEw4LjgzNTgzIDQuNTI3ODFWNC41Mjc4MUw4LjQ2NTQyIDQuMTU3NDRaTTcuODkxMjggNC43MzE2NUw4LjI2MTY4IDUuMTAyMDNMOC4yNjE2OSA1LjEwMjAyTDcuODkxMjggNC43MzE2NVpNOC4xNzEzNiA2LjQzMTQ5TDguNDE2ODMgNS45Njg3Nkg4LjQxNjgzTDguMTcxMzYgNi40MzE0OVpNOS40MjQ2OCA2LjI2NTA1TDkuNzk1MDUgNi42MzU0NUw5Ljc5NTA4IDYuNjM1NDNMOS40MjQ2OCA2LjI2NTA1Wk0xMS40MDAzIDQuMjg5MjVMMTEuMDI5OSAzLjkxODg3TDExLjAyOTkgMy45MTg4N0wxMS40MDAzIDQuMjg5MjVaTTExLjU3MzUgNC4yODc3NkwxMS45NDM5IDMuOTE3MzhMMTEuOTQzOSAzLjkxNzM4TDExLjU3MzUgNC4yODc3NlpNMTEuNTczNSAxMC4zMzA5TDExLjk0MzkgMTAuNzAxM0wxMS45NDM5IDEwLjcwMTNMMTEuNTczNSAxMC4zMzA5Wk01LjUzMDI0IDEwLjMzMDlMNS4xNTk4NSAxMC43MDEzTDUuMTU5ODUgMTAuNzAxM0w1LjUzMDI0IDEwLjMzMDlaTTcuMTIyMzEgNi4wMjk0MUM3LjE5MjM4IDYuMzEwMDggNy40NzY3MiA2LjQ4MDgxIDcuNzU3NCA2LjQxMDc0QzguMDM4MDggNi4zNDA2NyA4LjIwODgxIDYuMDU2MzMgOC4xMzg3NCA1Ljc3NTY1TDcuNjMwNTMgNS45MDI1M0w3LjEyMjMxIDYuMDI5NDFaTTUuNzc4MDQgNi40NzY5OEM1LjYwNDE1IDYuNzA4MTcgNS42NTA2IDcuMDM2NTYgNS44ODE3OSA3LjIxMDQ1QzYuMTEyOTkgNy4zODQzNSA2LjQ0MTM3IDcuMzM3OSA2LjYxNTI3IDcuMTA2N0w2LjE5NjY1IDYuNzkxODRMNS43NzgwNCA2LjQ3Njk4Wk01LjY3NDQ3IDkuNzEwNDRDNS40OTE0NiA5LjQ4NjM5IDUuMTYxNDggOS40NTMxMiA0LjkzNzQzIDkuNjM2MTNDNC43MTMzOCA5LjgxOTEzIDQuNjgwMSAxMC4xNDkxIDQuODYzMTEgMTAuMzczMkw1LjI2ODc5IDEwLjA0MThMNS42NzQ0NyA5LjcxMDQ0Wk04LjE3MzggMTEuNDExOEw3LjkwNDExIDEwLjk2MjhMNy43OTk2NyAxMS4wMjU1TDguMDY5MzYgMTEuNDc0NUw4LjMzOTA1IDExLjkyMzZMOC40NDM0OSAxMS44NjA4TDguMTczOCAxMS40MTE4Wk04LjA2OTM2IDExLjQ3NDVMNy43OTk2NyAxMS4wMjU1TDYuNjM4NDkgMTEuNzIyOUw2LjkwODE4IDEyLjE3MTlMNy4xNzc4NyAxMi42MjFMOC4zMzkwNSAxMS45MjM2TDguMDY5MzYgMTEuNDc0NVpNNC4wMTgxNCA4LjcxNTExTDQuNDI5NzIgOS4wMzkxMkM0LjU0MTk5IDguODk2NSA0LjY2Nzg4IDguNzE1NTggNC43NjQ3NiA4LjUxNDkyQzQuODU5MDUgOC4zMTk1OSA0Ljk0NTggOC4wNjQ4NSA0LjkyOTE0IDcuNzg3OEw0LjQwNjI3IDcuODE5MjNMMy44ODM0MSA3Ljg1MDY3QzMuODg1MDMgNy44Nzc1OSAzLjg3NjM1IDcuOTQ1NDkgMy44MjEzMyA4LjA1OTQ2QzMuNzY4ODkgOC4xNjgwOCAzLjY5MTU3IDguMjgzMTIgMy42MDY1NiA4LjM5MTFMNC4wMTgxNCA4LjcxNTExWk00LjA4MTUxIDExLjgyNDVMNC40NTE5IDExLjQ1NDJDMy45ODE1MiAxMC45ODM4IDMuODE3NzkgMTAuMzAwNSA0LjAwMTEgOS42ODEzNUwzLjQ5ODg0IDkuNTMyNjVMMi45OTY1OCA5LjM4Mzk1QzIuNzA1OTcgMTAuMzY1NSAyLjk2NDkxIDExLjQ0ODcgMy43MTExMiAxMi4xOTQ5TDQuMDgxNTEgMTEuODI0NVpNNi45MDgxOCAxMi4xNzE5TDYuNjM4NDkgMTEuNzIyOUM1LjkzNDM0IDEyLjE0NTggNS4wMzI3IDEyLjAzNSA0LjQ1MTkgMTEuNDU0Mkw0LjA4MTUxIDExLjgyNDVMMy43MTExMiAxMi4xOTQ5QzQuNjMxOTYgMTMuMTE1OCA2LjA2MTQ3IDEzLjI5MTQgNy4xNzc4NyAxMi42MjFMNi45MDgxOCAxMi4xNzE5Wk01LjYwNTM5IDQuNjg5MzJMNS45NzU3OCA1LjA1OTcxQzYuNjEzMzUgNC40MjIxNSA3LjQyNTAxIDQuMDc0NjEgOC4yNDQ3NyA0LjAxNTgyTDguMjA3MyAzLjQ5MzM1TDguMTY5ODMgMi45NzA4OEM3LjEwNTE5IDMuMDQ3MjQgNi4wNTUyMiAzLjQ5ODcyIDUuMjM1IDQuMzE4OTNMNS42MDUzOSA0LjY4OTMyWk04LjQ2NTQyIDQuMTU3NDRMOC4wOTUwMSAzLjc4NzA3TDcuNTIwODcgNC4zNjEyOUw3Ljg5MTI4IDQuNzMxNjVMOC4yNjE2OSA1LjEwMjAyTDguODM1ODMgNC41Mjc4MUw4LjQ2NTQyIDQuMTU3NDRaTTguMTcxMzYgNi40MzE0OUw3LjkyNTg4IDYuODk0MjJDOC4xOTI4NSA3LjAzNTg1IDguNTA2NzYgNy4xNDk2OCA4Ljg1NTAyIDcuMTE4MTRDOS4yMTQ5NSA3LjA4NTU2IDkuNTIzOTYgNi45MDY1MyA5Ljc5NTA1IDYuNjM1NDVMOS40MjQ2OCA2LjI2NTA1TDkuMDU0MyA1Ljg5NDY1QzguOTAxOTYgNi4wNDY5OCA4LjgwOTA1IDYuMDcwNCA4Ljc2MDU1IDYuMDc0NzlDOC43MDAzOSA2LjA4MDI0IDguNTk5MzUgNi4wNjU1OCA4LjQxNjgzIDUuOTY4NzZMOC4xNzEzNiA2LjQzMTQ5Wk05LjQyNDY4IDYuMjY1MDVMOS43OTUwOCA2LjYzNTQzTDExLjc3MDcgNC42NTk2MkwxMS40MDAzIDQuMjg5MjVMMTEuMDI5OSAzLjkxODg3TDkuMDU0MjggNS44OTQ2OEw5LjQyNDY4IDYuMjY1MDVaTTExLjU3MzUgNC4yODc3NkwxMS4yMDMxIDQuNjU4MTVDMTEuODU3MyA1LjMxMjM4IDEyLjIxMzQgNi4yODc0IDEyLjIxODEgNy4yOTYyMUMxMi4yMjI3IDguMzA0MDcgMTEuODc2NCA5LjI4NzIgMTEuMjAzMSA5Ljk2MDQ4TDExLjU3MzUgMTAuMzMwOUwxMS45NDM5IDEwLjcwMTNDMTIuODQ5MiA5Ljc5NTk3IDEzLjI3MTQgOC41MjYxMiAxMy4yNjU3IDcuMjkxMzZDMTMuMjYgNi4wNTc1NCAxMi44MjY4IDQuODAwMyAxMS45NDM5IDMuOTE3MzhMMTEuNTczNSA0LjI4Nzc2Wk0xMS41NzM1IDEwLjMzMDlMMTEuMjAzMSA5Ljk2MDQ4QzEwLjQzNTQgMTAuNzI4MiA5LjI2NDYgMTEuMDY5NiA4LjEyMjM5IDEwLjk1MzRMOC4wNjkzNiAxMS40NzQ1TDguMDE2MzMgMTEuOTk1NkM5LjQxMDU0IDEyLjEzNzUgMTAuOTEzMyAxMS43MzE4IDExLjk0MzkgMTAuNzAxM0wxMS41NzM1IDEwLjMzMDlaTTguMDY5MzYgMTEuNDc0NUw4LjEyMjM5IDEwLjk1MzRDNy4yNjMxMiAxMC44NjYgNi40NjMxOSAxMC41MjMgNS45MDA2MyA5Ljk2MDQ4TDUuNTMwMjQgMTAuMzMwOUw1LjE1OTg1IDEwLjcwMTNDNS45MjA1MSAxMS40NjE5IDYuOTU4OTMgMTEuODg4IDguMDE2MzMgMTEuOTk1Nkw4LjA2OTM2IDExLjQ3NDVaTTcuODkxMjggNC43MzE2NUw3LjUyMDg4IDQuMzYxMjhDNy4yODM1NyA0LjU5ODYgNy4xNjIyOCA0LjkxMTM4IDcuMTA4NTMgNS4xODc5NEM3LjA1NDExIDUuNDY3OTQgNy4wNTcyNCA1Ljc2ODc1IDcuMTIyMzEgNi4wMjk0MUw3LjYzMDUzIDUuOTAyNTNMOC4xMzg3NCA1Ljc3NTY1QzguMTE0NjIgNS42NzkwNSA4LjEwODQ4IDUuNTM0MDkgOC4xMzY5MSA1LjM4NzhDOC4xNjYwMSA1LjIzODA2IDguMjE5NjggNS4xNDQwMyA4LjI2MTY4IDUuMTAyMDNMNy44OTEyOCA0LjczMTY1Wk00LjQwNjI3IDcuODE5MjNMNC45MjkxNCA3Ljc4NzhDNC44NzA4NSA2LjgxODI5IDUuMjE5MyA1LjgxNjE5IDUuOTc1NzggNS4wNTk3MUw1LjYwNTM5IDQuNjg5MzJMNS4yMzUgNC4zMTg5M0M0LjI2MTM5IDUuMjkyNTQgMy44MDc1OCA2LjU4OTQyIDMuODgzNDEgNy44NTA2N0w0LjQwNjI3IDcuODE5MjNaTTguMTcxMzYgNi40MzE0OUw4LjQxNjgzIDUuOTY4NzZDOC4yMzg1IDUuODc0MTUgOC4wMTk1IDUuODI2MjUgNy44MTkyOSA1LjgwMzc2QzcuNjA4NzMgNS43ODAxIDcuMzczMDYgNS43Nzk1NyA3LjEzNzI5IDUuODA3MDNDNi42OTczIDUuODU4MjggNi4xMTc5OSA2LjAyNTAxIDUuNzc4MDQgNi40NzY5OEw2LjE5NjY1IDYuNzkxODRMNi42MTUyNyA3LjEwNjdDNi42OTM1MyA3LjAwMjY1IDYuOTEwOTggNi44ODgxIDcuMjU4NDkgNi44NDc2MkM3LjQxNjQ4IDYuODI5MjIgNy41NzIyNSA2LjgzMDIxIDcuNzAyMzMgNi44NDQ4M0M3Ljc2NyA2Ljg1MjA5IDcuODIwNzggNi44NjIyMiA3Ljg2MjE4IDYuODczQzcuODgyNjUgNi44NzgzNCA3Ljg5ODQzIDYuODgzNCA3LjkwOTg2IDYuODg3NjFDNy45MjE1NCA2Ljg5MTkxIDcuOTI2MzggNi44OTQ0OCA3LjkyNTg4IDYuODk0MjJMOC4xNzEzNiA2LjQzMTQ5Wk01LjUzMDI0IDEwLjMzMDlMNS45MDA2NCA5Ljk2MDQ5QzUuODIwMTggOS44ODAwMyA1Ljc0NDgxIDkuNzk2NTYgNS42NzQ0NyA5LjcxMDQ0TDUuMjY4NzkgMTAuMDQxOEw0Ljg2MzExIDEwLjM3MzJDNC45NTU2MSAxMC40ODY0IDUuMDU0NTMgMTAuNTk1OSA1LjE1OTg1IDEwLjcwMTNMNS41MzAyNCAxMC4zMzA5Wk0xMS40MDAzIDQuMjg5MjVMMTEuNzcwNyA0LjY1OTYzQzExLjYyMjMgNC44MDgwNSAxMS4zNjggNC44MjMwOCAxMS4yMDMxIDQuNjU4MTVMMTEuNTczNSA0LjI4Nzc2TDExLjk0MzkgMy45MTczOEMxMS42ODMzIDMuNjU2NzYgMTEuMjc0IDMuNjc0NzYgMTEuMDI5OSAzLjkxODg3TDExLjQwMDMgNC4yODkyNVpNOC4yMDczIDMuNDkzMzVMOC4yNDQ3NyA0LjAxNTgyQzguMjI5MDQgNC4wMTY5NCA4LjE5MTg4IDQuMDEzMzQgOC4xNTE4MiAzLjk4N0M4LjExNDMxIDMuOTYyMzUgOC4wOTIxNCAzLjkyOTQ4IDguMDgxNTYgMy45MDExOUM4LjA2MDE5IDMuODQ0MDggOC4wODE1MSAzLjgwMDU3IDguMDk1MDEgMy43ODcwN0w4LjQ2NTQyIDQuMTU3NDRMOC44MzU4MyA0LjUyNzgxQzkuMTEwMTcgNC4yNTM0MyA5LjE4NjQxIDMuODY0NjggOS4wNjI3NyAzLjUzNDE1QzguOTMzNiAzLjE4ODgyIDguNTk0OTQgMi45NDAzOSA4LjE2OTgzIDIuOTcwODhMOC4yMDczIDMuNDkzMzVaTTQuMDE4MTQgOC43MTUxMUwzLjYwNjU2IDguMzkxMUMzLjQ0MTc4IDguNjAwNDMgMy4xMjUzNyA4Ljk0ODkzIDIuOTk2NTggOS4zODM5NUwzLjQ5ODg0IDkuNTMyNjVMNC4wMDExIDkuNjgxMzVDNC4wNTczNiA5LjQ5MTMyIDQuMTkxMjggOS4zNDIgNC40Mjk3MiA5LjAzOTEyTDQuMDE4MTQgOC43MTUxMVoiIGZpbGw9IndoaXRlIi8+PC9tYXNrPjxnIG1hc2s9InVybCgjbWFzazFfMF84ODYpIj48cGF0aCBpZD0iVmVjdG9yIDgxNTIiIGQ9Ik04LjE4ODY5IDUuODc2NjlDNy43Nzk3IDUuNzQyODEgNy4zODA4MSA1LjczNDA1IDcuMDYyODYgNS44MTU5Mkw2Ljc3NzQ0IDUuMTk3MzVMNy4yMDc2IDQuMzg1NzFMOS4zMDk3NCA0LjI1NTg2QzkuMDE4NzggNC42OTk0NyA4LjMzMTAxIDUuNjcxOTggOC4xODg2OSA1Ljg3NjY5WiIgZmlsbD0idXJsKCNwYWludDJfbGluZWFyXzBfODg2KSIvPjwvZz48L2c+PC9nPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQwX2xpbmVhcl8wXzg4NiIgeDE9IjgiIHkxPSIwIiB4Mj0iOCIgeTI9IjE2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1jb2xvcj0iIzM4MzgzOCIvPjxzdG9wIG9mZnNldD0iMSIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJwYWludDFfbGluZWFyXzBfODg2IiB4MT0iNS4xMzY4NiIgeTE9IjEyLjQ5MDMiIHgyPSI3Ljg3OTI4IiB5Mj0iMTEuODMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSJ3aGl0ZSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI0UxRTFFMSIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJwYWludDJfbGluZWFyXzBfODg2IiB4MT0iOC4wNDM1OSIgeTE9IjQuMjU1ODYiIHgyPSI4LjA0MzU5IiB5Mj0iNS44NDI1NyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIHN0b3AtY29sb3I9IndoaXRlIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRTFFMUUxIi8+PC9saW5lYXJHcmFkaWVudD48Y2xpcFBhdGggaWQ9ImNsaXAwXzBfODg2Ij48cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9IndoaXRlIi8+PC9jbGlwUGF0aD48L2RlZnM+PC9zdmc+Cg==';
 
+import { openAccountLoginWindow } from './account-login-window.js';
+
 export const JET_HUB_RPC_CHANNEL = '/jet-hub';
 
 // 内联图标 base64
@@ -594,7 +596,7 @@ function CreditBalanceRow({ balance, error, loading, windowDays, provider }) {
   const all = balance?.packages || [];
   // ⚠ 单位从**包**上取（ZCode 是 token，其余是积分），标签与格式化都按它走。
   const unit = all.find(p => p && p.unit)?.unit;
-  const label = unitLabel(unit);
+  const label = balance?.sourceQuota?.label ?? (provider === 'zcode' ? 'Start Plan Token' : unitLabel(unit));
   if (loading) {
     return React.createElement('div', { className: 'dim-jh-metaRow' },
       React.createElement('dt', null, label),
@@ -605,6 +607,11 @@ function CreditBalanceRow({ balance, error, loading, windowDays, provider }) {
       React.createElement('dt', null, label),
       React.createElement('dd', { 'data-tone': 'warn', title: error || '查询失败' },
         error || '查询失败'));
+  }
+  if (balance.sourceQuota) {
+    return React.createElement('div', { className: 'dim-jh-metaRow' },
+      React.createElement('dt', null, label),
+      React.createElement('dd', { style: { overflowWrap: 'anywhere' } }, balance.sourceQuota.text));
   }
   const total = formatUnits(balance.total, unit) ?? '0';
   const activeCount = all.filter(p => p.active).length;
@@ -673,6 +680,7 @@ function CreditBalanceRow({ balance, error, loading, windowDays, provider }) {
     // ⚠️ 配额窗口显示**逐窗口百分比**而不是均值：均值（94.5）既不是上游给的数，
     // 在「额度」这个标签下更会被读成 94.5 个积分。见 quotaText 的注释。
     React.createElement('strong', { className: 'dim-jh-creditTotal' }, quotaText ?? total),
+    balance.pendingNote ? React.createElement('span', { className: 'dim-jh-creditPools' }, balance.pendingNote) : null,
     // 当日池分桶（loomy / raccoon）：`formatPoolSplitLine` 已覆盖原先硬编码的
     // loomy 两池判据，且对 Raccoon 的「每日积分」同样成立（用户 2026-09-29 要求）。
     // ⚠ 数字按**包自身的单位**格式化（remote 的单位支持）：池可能来自
@@ -2341,7 +2349,7 @@ function TokenLedgerPanel({ rpcCall, onClose }) {
         renderEntries())));
 }
 
-function ProviderPanel({ provider, rpcCall }) {
+function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
   const [accounts, setAccounts] = React.useState([]);
   const [phase, setPhase] = React.useState('loading');
   const [error, setError] = React.useState(null);
@@ -2444,6 +2452,8 @@ function ProviderPanel({ provider, rpcCall }) {
    * 存进 ref 后可在卸载清理里一并清掉，并用它做重入闸门。
    */
   const pollRef = React.useRef(0);
+  const loginWindowRef = React.useRef(null);
+  const loginStartingRef = React.useRef(false);
   /**
    * 「一键领取积分」的重入闸门。
    *
@@ -2559,6 +2569,8 @@ function ProviderPanel({ provider, rpcCall }) {
       mounted.current = false;
       // 卸载时必须掐掉未结束的登录轮询（否则它会在 5 分钟里持续打 RPC）
       if (pollRef.current !== 0) { clearInterval(pollRef.current); pollRef.current = 0; }
+      loginWindowRef.current?.close();
+      loginWindowRef.current = null;
       // ⚠️ 领取闸门也要清：本 effect 依赖 `provider`，切 provider 会重跑
       // （清理后重新 `mounted.current = true`）。若闸门残留 true，新 provider
       // 面板上的首次点击会被误判成「上一次仍在进行中」而永远点不动。
@@ -2853,6 +2865,8 @@ function ProviderPanel({ provider, rpcCall }) {
    */
   const stopPoll = () => {
     if (pollRef.current !== 0) { clearInterval(pollRef.current); pollRef.current = 0; }
+    loginWindowRef.current?.close();
+    loginWindowRef.current = null;
     if (mounted.current) setCreating(false);
   };
 
@@ -2915,6 +2929,10 @@ function ProviderPanel({ provider, rpcCall }) {
       setProbeNotice({ tone: 'warn', text: '上一次登录仍在进行中，请先完成或等待它结束。', details: [] })
       return
     }
+    if (loginStartingRef.current) {
+      setProbeNotice({ tone: 'warn', text: '登录窗口正在打开，请稍候。', details: [] });
+      return;
+    }
     // ⚠️ opencode 的登录**不跳浏览器**，而是开自绘弹窗粘贴 API key；
     // 走 `setKeyModal` 而不是下面的 `account.create` 流程。
     // 弹窗里另有两个入口：粘贴 key（submitOpencodeKey）与添加匿名通道（submitAnonymous）。
@@ -2925,6 +2943,7 @@ function ProviderPanel({ provider, rpcCall }) {
     }
 
     setCreating(true);
+    loginStartingRef.current = true;
     let accountId = '';
     let loginUrl = '';
     try {
@@ -2972,7 +2991,10 @@ function ProviderPanel({ provider, rpcCall }) {
         // 授权完成才返回），拿到 URL 时手势早已过期、window.open 必被拦截，
         // 于是每次都命中那个跳转兜底。根因已在后端修掉（改为两步式），
         // 这里也不再保留那条破坏性兜底。
-        const loginWindow = window.open(loginUrl, '_blank', 'width=800,height=600');
+        const loginWindow = await openAccountLoginWindow({ provider, loginUrl, isolatedLoginCall });
+        if (!mounted.current) { loginWindow?.close(); return; }
+        loginWindowRef.current = loginWindow;
+        if (provider === 'workbuddy') setProbeNotice({ tone: 'ok', text: '已打开独立的普通 Chrome/Edge 窗口，请在新窗口登录要添加的账号。', details: [] });
         if (!loginWindow || loginWindow.closed) {
           // 弹窗被拦截：展示可点击链接让用户自行打开，而不是劫持当前页面。
           // 轮询照常进行，用户手动打开也能完成登录。
@@ -3015,6 +3037,7 @@ function ProviderPanel({ provider, rpcCall }) {
       setError('新建账号失败：' + (caught?.message || '未知错误'));
       setPhase('error');
     } finally {
+      loginStartingRef.current = false;
       // ⚠ 只在**没有**轮询在跑时释放「新建中」。登录未完成期间按钮必须保持禁用，
       // 否则用户再点一次就是「叠加第二个轮询 + 宿主再插一条占位账号」的缺陷。
       if (pollRef.current === 0) setCreating(false);
@@ -3411,6 +3434,12 @@ function ProviderPanel({ provider, rpcCall }) {
           },
           disabled: creating,
         }, creating ? '正在登录…' : '+ 添加账号'),
+        provider === 'workbuddy' && creating && pollRef.current !== 0
+          ? React.createElement('button', {
+              type: 'button', className: 'dim-jh-btn',
+              onClick: () => { stopPoll(); setLoginUrlForManual(null); setProbeNotice(null); },
+            }, '取消登录')
+          : null,
         // ★ 渠道选择对话框（用户 2026-10-03：从按钮旁搬到弹窗里）
         //
         // ⚠ `newAccountAsksChannel(provider)` 这道是**防御性**的：按钮已经分支过，
@@ -3605,7 +3634,7 @@ function ProviderPanel({ provider, rpcCall }) {
                 // 卡片级「重测 / 重置」：只对会返回限流错误的 provider 渲染。
                 showRateLimitActions: supportsRateLimit(provider),
                 rpcCall,
-                onSourceChanged: loadAccounts,
+                onSourceChanged: async () => { await loadAccounts(); await loadCredits(); },
                 onToggle: toggleAccount,
                 onDelete: deleteAccount,
                 onRetest: (id) => void runLimitAction('retest', id),
@@ -5210,7 +5239,7 @@ function AggregatePanel({ rpcCall }) {
       '如何核查：展开任一模型，逐条看渠道与真实 modelId；不同意就关掉那一行。')));
 }
 
-export function JetHubPage({ close, rpcCall, chatGptCall }) {
+export function JetHubPage({ close, rpcCall, chatGptCall, isolatedLoginCall }) {
   const [selected, setSelected] = React.useState(PROVIDERS[0].id);
   // 每次切换 provider 时递增版号，强制重新挂载 ProviderPanel 触发 loadAccounts
   const [version, setVersion] = React.useState(0);
@@ -5862,7 +5891,7 @@ export function JetHubPage({ close, rpcCall, chatGptCall }) {
             ? React.createElement(AggregatePanel, { key: p.id + '-' + version, rpcCall })
             : p.externalAccount
               ? React.createElement(ChatGptPlanPanel, { key: p.id + '-' + version, chatGptCall })
-              : React.createElement(ProviderPanel, { key: p.id + '-' + version, provider: p.id, rpcCall }))
+              : React.createElement(ProviderPanel, { key: p.id + '-' + version, provider: p.id, rpcCall, isolatedLoginCall }))
         : null))),
     // 「供应商开关」以 modal 渲染：它是覆盖层，放在布局之后只是组件树的书写顺序
     // （与账号面板里的模型列表同款做法）。关闭即不挂载，避免常驻一份开关列表。

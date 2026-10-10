@@ -128,7 +128,21 @@ export interface ZcodeBalanceResult {
      * 绝不能让它影响 `remaining`/`total` 本身。
      */
     claimablePlans: ZcodeClaimablePlanSummary[];
+    /** preview 查询成功；失败不能推断为已领取。 */
+    claimablePlansKnown?: boolean;
+    /** 已领取且未过期的活动，包括待生效权益。 */
+    ownedPlanIds?: readonly string[];
+    /** 已领取但尚未生效；不计入当前可用余额。 */
+    pendingGrants?: readonly ZcodePendingGrant[];
 }
+export interface ZcodePendingGrant {
+    planId: string;
+    name: string;
+    amount: number;
+    unit: string;
+    effectiveAt: number;
+}
+export declare function describeZcodePendingGrants(grants?: readonly ZcodePendingGrant[]): string;
 /** 一次可领活动。 */
 export interface ZcodeClaimablePlan {
     planId: string;
