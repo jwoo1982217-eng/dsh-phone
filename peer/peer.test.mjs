@@ -187,6 +187,16 @@ async function proxyFixture(t, { computerHeaders, computerReusableScripts = [], 
   return { ...f, ui, gateway, uiProxyPort, remoteGatewayPort, webPort, phoneProxy, computerProxy, denyGateway() { allowed = false; } };
 }
 
+test('ordinary file uploads above the old 16 MB proxy cap preserve all bytes through the encrypted relay', async t => {
+  const f = await proxyFixture(t), bytes = Buffer.alloc(20*1024*1024, 65); let received;
+  f.ui.on('request', async (req,res) => {
+    const chunks=[];for await (const chunk of req) chunks.push(chunk);
+    received=Buffer.concat(chunks);res.writeHead(200,{'content-type':'application/json'});res.end('{"ok":true}');
+  });
+  const response=await fetch(`http://127.0.0.1:${f.uiProxyPort}/phone-chat-files/upload`,{method:'POST',headers:{'content-type':'application/octet-stream','x-dsh-file-name':'large.json'},body:bytes});
+  assert.equal(response.status,200);assert.deepEqual(received,bytes);
+});
+
 test('phone reuses only immutable matching UI assets; different SDK revisions and computer APIs stay remote', async t => {
   const localRequests = [], remoteRequests = [];
   const sdk = '/plugins/@deepseek-ai/dsh-client-runtime/client.js?rev=0123456789ab';

@@ -80,7 +80,7 @@ export async function normalizeChatImage(file) {
 // Only explicit skill formats are routed to the validated skill importer.
 // Ordinary documents remain task material, including other Markdown files.
 export async function prepareChatFiles(files) {
-  const documents = [], images = [], skillFiles = [];
+  const documents = [], images = [], skillFiles = [], documentFiles = [];
   if (!files.length || files.length > 8) throw Error('一次请选择 1 到 8 个文件');
   let total = 0;
   for (const file of files) {
@@ -94,7 +94,16 @@ export async function prepareChatFiles(files) {
       throw Error('目前支持文本、表格 CSV、代码、图片和技能 ZIP');
     }
     total += file.size;
-    if (file.size > 128 * 1024 || total > 256 * 1024) throw Error('单个文档最多 128 KB，一次文档合计最多 256 KB');
+    if (file.size > 64 * 1024 * 1024 || total > 128 * 1024 * 1024) throw Error('单个分析文件最多 64 MB，一次文档合计最多 128 MB');
+    documentFiles.push(file);
+  }
+  // Keep small notes in the draft; large material stays as its complete file.
+  // Decide before reading so neither a large file nor a multi-file batch is
+  // loaded into the input box or silently shortened.
+  for (const file of documentFiles) {
+    if (file.size > 128 * 1024 || total > 256 * 1024) {
+      documents.push({ name: file.name, file }); continue;
+    }
     let bytes, text;
     try { bytes = await file.arrayBuffer(); }
     catch { throw Error('无法读取文件，请在系统选择器中重新选择；云端文件请先下载到手机'); }
@@ -106,6 +115,19 @@ export async function prepareChatFiles(files) {
   return { documents, images, skillFiles };
 }
 
+export async function uploadChatDocuments(documents, { upload }) {
+  const result = [];
+  for (const document of documents) {
+    if (!document.file) { result.push(document); continue; }
+    const stored = await upload(document.file);
+    if (!stored || typeof stored.path !== 'string' || !stored.path.startsWith('/') || stored.size !== document.file.size) throw Error('文件上传未完成，请重新选择');
+    result.push({ name: document.name, stored });
+  }
+  return result;
+}
+
 export function chatDocumentText(documents) {
-  return documents.map(file => `【上传文件：${file.name}】\n以下是文件原文，作为本次分析材料：\n${file.text}\n【文件结束】`).join('\n\n');
+  return documents.map(file => file.stored
+    ? `【上传文件：${file.name}】\n文件位置：${file.stored.path}\n大小：${file.stored.size} 字节\n请读取这个完整文件，作为本次分析材料。`
+    : `【上传文件：${file.name}】\n以下是文件原文，作为本次分析材料：\n${file.text}\n【文件结束】`).join('\n\n');
 }

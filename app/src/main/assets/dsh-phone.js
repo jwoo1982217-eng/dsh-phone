@@ -162,6 +162,13 @@
       uploadButton.onclick = event => { event.stopPropagation(); card.querySelector('.uV2eYG_add')?.click(); };
       imageButton.onclick = event => { event.stopPropagation(); selectFile(imagePicker); };
       fileButton.onclick = event => { event.stopPropagation(); selectFile(uploadPicker); };
+      // A pending ordinary-file upload must not submit the existing draft.
+      card.addEventListener('click', event => {
+        if (card.dataset.dshFileUploadPending && event.target.closest?.('[data-composer-send]')) { event.preventDefault(); event.stopImmediatePropagation(); }
+      }, true);
+      card.addEventListener('keydown', event => {
+        if (card.dataset.dshFileUploadPending && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); event.stopImmediatePropagation(); }
+      }, true);
       const importSkillFile = async file => {
         const { prepareSkillFile, importPreparedSkill, skillImportDraft } = await import('/phone-skill-import.js');
         const rpc = async (action, extra = {}) => {
@@ -185,22 +192,29 @@
       };
       const receiveFiles = async picker => {
         const files = Array.from(picker.files); if (!files.length) return;
-        uploadButton.disabled = fileButton.disabled = imageButton.disabled = button.disabled = true; notice.style.display = 'block'; notice.textContent = '正在读取文件…';
+        uploadButton.disabled = fileButton.disabled = imageButton.disabled = button.disabled = true; card.dataset.dshFileUploadPending = 'true'; notice.style.display = 'block'; notice.textContent = '正在读取文件…';
         try {
-          const { prepareChatFiles, chatDocumentText } = await import('/phone-skill-import.js');
+          const { prepareChatFiles, uploadChatDocuments, chatDocumentText } = await import('/phone-skill-import.js');
           const prepared = await prepareChatFiles(files);
           if (!input.isConnected || input.disabled || input.readOnly) throw Error('会话状态已变化，请等任务结束后重新上传');
+          const documents = await uploadChatDocuments(prepared.documents, { upload: async file => {
+            notice.textContent = `正在上传 ${file.name}…`;
+            let response;try { response = await fetch('/phone-chat-files/upload', { method:'POST', headers:{ 'content-type':'application/octet-stream', 'x-dsh-file-name':encodeURIComponent(file.name) }, body:file }); }
+            catch { throw Error('文件上传中断，请重新选择；云端文件请先下载到手机'); }
+            const result = await response.json();if (!response.ok || !result.ok) throw Error(result.error || '文件未上传完成');return result.file;
+          } });
+          if (!input.isConnected || input.disabled || input.readOnly) throw Error('会话状态已变化，文件尚未加入草稿，请重新选择');
           const imported = [];
           for (const file of prepared.skillFiles) imported.push(await importSkillFile(file));
-          if (prepared.documents.length) appendDraft(chatDocumentText(prepared.documents));
+          if (documents.length) appendDraft(chatDocumentText(documents));
           if (prepared.images.length) {
             const transfer = new DataTransfer(); prepared.images.forEach(file => transfer.items.add(file));
             input.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: transfer }));
           }
-          notice.textContent = [...imported, prepared.images.length ? '图片已加入草稿，可预览或移除；请选支持看图的模型后发送。' : prepared.documents.length ? '文件原文已加入草稿，写下分析要求后发送。' : ''].filter(Boolean).join(' ');
+          notice.textContent = [...imported, prepared.images.length ? '图片已加入草稿，可预览或移除；请选支持看图的模型后发送。' : documents.some(file => file.stored) ? '完整文件已上传并加入草稿，写下分析要求后发送。' : documents.length ? '文件原文已加入草稿，写下分析要求后发送。' : ''].filter(Boolean).join(' ');
           input.focus();
         } catch (error) { notice.textContent = error.message; }
-        finally { uploadButton.disabled = fileButton.disabled = imageButton.disabled = button.disabled = false; picker.value = ''; }
+        finally { delete card.dataset.dshFileUploadPending; uploadButton.disabled = fileButton.disabled = imageButton.disabled = button.disabled = false; picker.value = ''; }
       };
       uploadPicker.onchange = () => receiveFiles(uploadPicker);
       imagePicker.onchange = () => receiveFiles(imagePicker);

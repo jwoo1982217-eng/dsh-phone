@@ -18,6 +18,7 @@ import { applyControlledMarket } from './controlled-market/index.mjs';
 import { applyWorkflowHub } from './workflow-hub/index.mjs';
 import { applyChatHistory } from './chat-history/index.mjs';
 import { applyMcpManager } from './mcp-manager/index.mjs';
+import { applyChatFiles } from './chat-files/index.mjs';
 
 export const name = 'dsh-peer';
 export const inject = ['webServer', 'connection', 'credentials', 'settings', 'llm', 'systemPrompt', 'tools'];
@@ -25,6 +26,7 @@ export const Config = Schema.object({ role: Schema.union(['phone', 'computer']),
 const REF = credentialRef('DSH_PEER_PAIR_V1');
 const loopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
 export async function apply(ctx, options = {}) {
+  if (ctx.get('tools')) applyChatFiles(ctx);
   const role = options.role ?? (process.env.DSH_PHONE_ANDROID === '1' ? 'phone' : 'computer');
   applyChatHistory(ctx);
   applyControlledMarket(ctx, role);

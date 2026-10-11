@@ -17,6 +17,7 @@ function safePath(value) {
 }
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const comboPath = path => path.startsWith('/plugins/??') && /&rev=[a-f0-9]{12}$/.test(path) && path.length <= 8192;
+const requestLimit = (service,method,url) => service === 'ui' && method === 'POST' && url.split('?')[0] === '/phone-chat-files/upload' ? 64*1024*1024 : MAX_BODY;
 export function createPeerProxy(tunnel, { role, webPort = 3080, localWebPort, uiHeaders = async () => ({}), gatewayPort = 8326, gatewayKey = async () => undefined, allowGateway = () => true, transformHtml = html => html, assets = new Map(), reusableScripts = [] } = {}) {
   const reusable = new Map(reusableScripts.filter(bytes => Buffer.isBuffer(bytes) && bytes.length > 0 && bytes.length <= MAX_BODY / 2).slice(0, 1).map(bytes => [digest(bytes), bytes]));
   const outgoing = new Map(), incoming = new Map(), localWs = new Map(), remoteWs = new Map();
@@ -159,7 +160,7 @@ export function createPeerProxy(tunnel, { role, webPort = 3080, localWebPort, ui
       const req = request({ hostname: '127.0.0.1', port, path: url, method: value.method, headers });
       // New DSH combines scripts at /plugins/??a/client.js,b/client.js&rev=…
       // MIME verification in finishHttp decides which responses may compress.
-      const stream = { req, response: null, size: 0, wait: null, inline: value.service === 'ui' && value.method === 'GET' && value.fast === true && value.inline === true, compress: value.service === 'ui' && value.method === 'GET' && value.compress === true };
+      const stream = { req, response: null, size: 0, maxBody: requestLimit(value.service,value.method,url), wait: null, inline: value.service === 'ui' && value.method === 'GET' && value.fast === true && value.inline === true, compress: value.service === 'ui' && value.method === 'GET' && value.compress === true };
       if (value.service === 'ui' && value.method === 'GET' && value.fast === true && comboPath(url) &&
           typeof value.reuse?.hash === 'string' && reusable.get(value.reuse.hash)?.length === value.reuse.size) {
         stream.reuse = { hash: value.reuse.hash, bytes: reusable.get(value.reuse.hash) };
@@ -188,7 +189,7 @@ export function createPeerProxy(tunnel, { role, webPort = 3080, localWebPort, ui
     if (action === 'http.cancel') { incoming.delete(id); stream.req.destroy(); stream.response?.destroy(); return {}; }
     if (action === 'http.upload') {
       const bytes = Buffer.from(value.data, 'base64'); stream.size += bytes.length;
-      if (bytes.length > 65536 || stream.size > MAX_BODY) { incoming.delete(id); stream.req.destroy(); throw Error('Request body too large'); }
+      if (bytes.length > 65536 || stream.size > stream.maxBody) { incoming.delete(id); stream.req.destroy(); throw Error('Request body too large'); }
       if (!stream.req.write(bytes)) await Promise.race([once(stream.req, 'drain'), once(stream.req, 'close')]);
       return {};
     }
@@ -281,7 +282,8 @@ export function createPeerProxy(tunnel, { role, webPort = 3080, localWebPort, ui
         let length = 0;
         for await (const bytes of req) {
           length += bytes.length;
-          if (length > MAX_BODY) { const e = Error('远程上传最多 16 MB'); e.status = 413; throw e; }
+          const maxBody=requestLimit(service,req.method,req.url);
+          if (length > maxBody) { const e = Error(`远程上传最多 ${maxBody/1024/1024} MB`); e.status = 413; throw e; }
           for (let i = 0; i < bytes.length; i += 49152) await tunnel.call('http.upload', { id, data: bytes.subarray(i, i + 49152).toString('base64') });
         }
         // Older peers return an empty begin reply; retain compatibility.

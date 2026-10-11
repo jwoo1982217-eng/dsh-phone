@@ -28,11 +28,11 @@ class PlatformPackagingTests(unittest.TestCase):
             root = Path(temporary)
             source = root / 'source'; source.mkdir()
             (source / 'package.json').write_text('{"name":"dsh-peer"}')
-            for name in ('mcp-manager', 'memory-isolation', 'agent-cards'):
+            for name in ('mcp-manager', 'memory-isolation', 'agent-cards', 'chat-files'):
                 (source / name).mkdir()
                 (source / name / 'index.mjs').write_text('export const ok = true;')
             assets.copy_bundle('dsh-peer', root / 'peer', source)
-            for name in ('mcp-manager', 'memory-isolation', 'agent-cards'):
+            for name in ('mcp-manager', 'memory-isolation', 'agent-cards', 'chat-files'):
                 self.assertEqual((root / 'peer' / name / 'index.mjs').read_text(), 'export const ok = true;')
             (source / 'src').mkdir()
             (source / 'src/isolation.ts').write_text('export const guard = true;')

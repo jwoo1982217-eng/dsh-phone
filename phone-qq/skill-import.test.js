@@ -173,8 +173,24 @@ test('Android screenshot MIME repair preserves bytes for generic, empty, and inc
 
 test('chat file intake rejects unsupported binary, oversized, invalid UTF-8, and revoked document access', async () => {
   const { prepareChatFiles } = await import('./skill-import.js');
-  for (const file of [new File(['x'], '软件.apk'), new File(['x'.repeat(131073)], 'large.txt'),
+  for (const file of [new File(['x'], '软件.apk'), {name:'large.txt',size:64*1024*1024+1,type:'text/plain'},
     new File([new Uint8Array([0xff])], 'bad.txt'), new File(['a\0b'], 'binary.txt')]) await assert.rejects(prepareChatFiles([file]));
   await assert.rejects(prepareChatFiles([{ name: 'lost.txt', size: 10, arrayBuffer: async () => { throw Error('Permission'); } }]), /系统选择器/);
   await assert.rejects(prepareChatFiles(Array(9).fill(new File(['x'], 'x.txt'))), /1 到 8/);
+});
+
+test('large ordinary JSON and document batches keep original files without reading them into a draft', async () => {
+  const {prepareChatFiles,uploadChatDocuments,chatDocumentText}=await import('./skill-import.js');
+  const original=JSON.stringify({name:'中文数据',values:Array.from({length:30000},(_,i)=>({id:i,label:'完整条目'}))});
+  const file=new File([original],'分析数据.json',{type:'application/json'});
+  assert.ok(file.size>128*1024);
+  const prepared=await prepareChatFiles([file]);assert.equal(prepared.documents[0].file,file);assert.equal(prepared.skillFiles.length,0);
+  let received;const documents=await uploadChatDocuments(prepared.documents,{upload:async f=>{received=Buffer.from(await f.arrayBuffer());return {path:'/private/uploads/data.json',size:f.size};}});
+  assert.equal(received.toString('utf8'),original);const draft=chatDocumentText(documents);
+  assert.match(draft,/分析数据\.json/);assert.match(draft,/\/private\/uploads\/data\.json/);assert.ok(draft.length<1024);assert.ok(!draft.includes('完整条目'));
+  const batch=await prepareChatFiles([new File(['a'.repeat(100000)],'a.txt'),new File(['b'.repeat(100000)],'b.txt'),new File(['c'.repeat(100000)],'c.txt')]);
+  assert.equal(batch.documents.length,3);assert.ok(batch.documents.every(d=>d.file));
+  let read=false;await prepareChatFiles([{name:'allowed.json',size:64*1024*1024,type:'application/json',arrayBuffer(){read=true;throw Error('Must not read');}}]);assert.equal(read,false);
+  await assert.rejects(prepareChatFiles([{name:'a.json',size:64*1024*1024,type:'application/json'},{name:'b.json',size:64*1024*1024,type:'application/json'},{name:'c.json',size:1,type:'application/json'}]),/128 MB/);
+  await assert.rejects(uploadChatDocuments(prepared.documents,{upload:async()=>{throw Error('连接中断');}}),/连接中断/);
 });

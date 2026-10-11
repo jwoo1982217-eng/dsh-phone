@@ -19,7 +19,7 @@ def copy_bundle(name, destination, source=None):
     manifest = json.loads((source / 'package.json').read_text())
     destination.mkdir(parents=True)
     (destination / 'package.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    entries = ('LICENSE', 'LICENSE.openclaw', 'bin', 'sample-tools', 'lib', 'locale', 'vendor', 'agent-cards', 'chat-history', 'memory-isolation', 'mcp-manager', 'controlled-market', 'workflow-hub', 'cards-client.js', 'index.js', 'config.js', 'manager.js', 'bridge.mjs', 'cli.mjs', 'skills',
+    entries = ('LICENSE', 'LICENSE.openclaw', 'bin', 'sample-tools', 'lib', 'locale', 'vendor', 'agent-cards', 'chat-files', 'chat-history', 'memory-isolation', 'mcp-manager', 'controlled-market', 'workflow-hub', 'cards-client.js', 'index.js', 'config.js', 'manager.js', 'bridge.mjs', 'cli.mjs', 'skills',
                   'index.mjs', 'protocol.mjs', 'relay.mjs', 'tunnel.mjs', 'proxy.mjs', 'ui-reuse.mjs', 'browser-session.mjs', 'config-sync.mjs', 'skill-import.js',
                   'account.js', 'messages-adapter.js', 'core-migration.js', 'plugin-compat.js', 'chatgpt.js', 'chatgpt-account.js', 'chatgpt-protocol.js',
                   'chatgpt-adapter.js', 'chatgpt-page.html', 'persona.js', 'skills.js', 'phone-home.js', 'setup.js', 'qq-login.js', 'qq-download.py', 'code-access.js', 'workspace.js', 'skills.html', 'workspace.html', 'packs.js', 'replace-skills.js', 'bundled-packs', 'packs.html', 'skill-import.js', 'browser-compat.js', 'zip.js', 'runtime.js', 'runtime-catalog.json', 'runtime-preflight.js', 'web-fetch.js', 'runtime-upstream-MIT.txt', 'presentation.css', 'presentation.js', 'platforms.json', 'page.html', 'cordis.patch.yml')
