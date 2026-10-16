@@ -1,0 +1,773 @@
+/* game-portal — 传送门 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-game-portal], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-game-portal] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #23272f;
+  background-color: #f4f6f8;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] {
+  color: #edf1f6;
+  background-color: #0c1015;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-game-portal] {
+  --color-primary: #e07800;
+  --primary: #e07800;
+  --primary-rgb: 224, 120, 0;
+  --color-primary-light-1: #f08f26;
+  --color-primary-light-2: #f8ab58;
+  --color-primary-light-3: #fbc98c;
+  --color-primary-dark-1: #b35c00;
+  --brand: #e07800;
+  --brand-light: #fdf1e0;
+  --brand-hover: #c4660a;
+  --color-brand-fill: #e07800;
+  --color-brand-bg: #fbe8d0;
+  --aou-1: #fdf1e0;
+  --aou-2: #fbddb0;
+  --aou-3: #f8c47d;
+  --aou-4: #f3a64a;
+  --aou-5: #ea8d1e;
+  --aou-6: #e07800;
+  --aou-7: #b35c00;
+  --aou-8: #8f4800;
+  --aou-9: #6d3700;
+  --aou-10: #4a2500;
+  --bg-base: #f4f6f8;
+  --bg-1: #eceef1;
+  --bg-2: #e2e5ea;
+  --bg-3: #d6dae0;
+  --bg-4: #c8cdd5;
+  --bg-5: #b6bcc7;
+  --bg-6: #a0a8b5;
+  --bg-8: #7d8695;
+  --bg-9: #5b6473;
+  --bg-10: #3a4150;
+  --color-bg-1: #eceef1;
+  --color-bg-2: #e2e5ea;
+  --color-bg-3: #d6dae0;
+  --color-bg-4: #c8cdd5;
+  --bg-hover: #e4e7ec;
+  --bg-active: #d9dde3;
+  --text-primary: #23272f;
+  --text-secondary: #565e6b;
+  --text-disabled: #9aa2ae;
+  --text-0: #13161c;
+  --text-white: #ffffff;
+  --color-text-1: #23272f;
+  --color-text-2: #565e6b;
+  --color-text-3: #7c8491;
+  --color-text-4: #9aa2ae;
+  --border-base: #ccd1da;
+  --border-light: #dde1e8;
+  --border-special: #f0b26a;
+  --color-border: #ccd1da;
+  --color-border-1: #ccd1da;
+  --color-border-2: #dde1e8;
+  --fill: #e2e5ea;
+  --color-fill: #e2e5ea;
+  --fill-0: #eceef1;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fafbfc;
+  --inverse: #23272f;
+  --success: #2e9e66;
+  --warning: #d08a1d;
+  --danger: #d3382c;
+  --info: #1f8fe0;
+  --message-user-bg: #14507e;
+  --message-tips-bg: #e3edf5;
+  --workspace-btn-bg: #fbe8d0;
+  --color-guid-agent-bar: #eaedf1;
+  --portal-orange: #f7941e;
+  --portal-orange-hi: #e07800;
+  --portal-blue: #2d9cdb;
+  --portal-blue-hi: #1f8fe0;
+  --aperture-white: #fafbfc;
+  --companion-pink: #e05c9a;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-game-portal][data-ds-dark-theme] {
+  --color-primary: #ff9a26;
+  --primary: #ff9a26;
+  --primary-rgb: 255, 154, 38;
+  --color-primary-light-1: #ffb154;
+  --color-primary-light-2: #ffc580;
+  --color-primary-light-3: #ffdcb3;
+  --color-primary-dark-1: #d97706;
+  --brand: #ff9a26;
+  --brand-light: #3a2410;
+  --brand-hover: #ffab42;
+  --color-brand-fill: #ff9a26;
+  --color-brand-bg: #2e1c0a;
+  --aou-1: #2e1a06;
+  --aou-2: #4a2908;
+  --aou-3: #66390b;
+  --aou-4: #8a4d0e;
+  --aou-5: #b36510;
+  --aou-6: #ff9a26;
+  --aou-7: #ffb154;
+  --aou-8: #ffc580;
+  --aou-9: #ffdcb3;
+  --aou-10: #fff1e0;
+  --bg-base: #0c1015;
+  --bg-1: #12171f;
+  --bg-2: #192029;
+  --bg-3: #212a35;
+  --bg-4: #2a3542;
+  --bg-5: #354253;
+  --bg-6: #445267;
+  --bg-8: #63748c;
+  --bg-9: #8d9aac;
+  --bg-10: #c2cad6;
+  --color-bg-1: #12171f;
+  --color-bg-2: #192029;
+  --color-bg-3: #212a35;
+  --color-bg-4: #2a3542;
+  --bg-hover: #1c2430;
+  --bg-active: #252f3d;
+  --text-primary: #edf1f6;
+  --text-secondary: #aab3c0;
+  --text-disabled: #57626f;
+  --text-0: #f7f9fc;
+  --text-white: #ffffff;
+  --color-text-1: #edf1f6;
+  --color-text-2: #aab3c0;
+  --color-text-3: #7f8996;
+  --color-text-4: #57626f;
+  --border-base: #2c3644;
+  --border-light: #222b37;
+  --border-special: #6b4a1e;
+  --color-border: #2c3644;
+  --color-border-1: #2c3644;
+  --color-border-2: #222b37;
+  --fill: #192029;
+  --color-fill: #192029;
+  --fill-0: #12171f;
+  --fill-white-to-black: #0c1015;
+  --dialog-fill-0: #151b24;
+  --inverse: #edf1f6;
+  --success: #4caf7d;
+  --warning: #e8a33d;
+  --danger: #e5533d;
+  --info: #42a7e8;
+  --message-user-bg: #123f5f;
+  --message-tips-bg: #1a2430;
+  --workspace-btn-bg: #2e1c0a;
+  --color-guid-agent-bar: #161d27;
+  --portal-orange: #ff9a26;
+  --portal-orange-hi: #ffab42;
+  --portal-blue: #42a7e8;
+  --portal-blue-hi: #63bcf0;
+  --aperture-white: #edf1f6;
+  --companion-pink: #e05c9a;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-game-portal] {
+  --dsw-static-deepseek-50: #fdf1e0;
+  --dsw-static-blue-50: #fdf1e0;
+  --dsw-static-deepseek-50p: #fbddb0;
+  --dsw-static-blue-50p: #fbddb0;
+  --dsw-static-deepseek-75: #fbddb0;
+  --dsw-static-blue-75: #fbddb0;
+  --dsw-static-deepseek-100: #fbddb0;
+  --dsw-static-blue-100: #fbddb0;
+  --dsw-static-deepseek-200: #f8c47d;
+  --dsw-static-blue-200: #f8c47d;
+  --dsw-static-deepseek-300: #f3a64a;
+  --dsw-static-blue-300: #f3a64a;
+  --dsw-static-deepseek-400: #ea8d1e;
+  --dsw-static-blue-400: #ea8d1e;
+  --dsw-static-deepseek-450: #ea8d1e;
+  --dsw-static-blue-450: #ea8d1e;
+  --dsw-static-deepseek-500: #e07800;
+  --dsw-static-blue-500: #e07800;
+  --dsw-static-deepseek-600: #b35c00;
+  --dsw-static-blue-600: #b35c00;
+  --dsw-static-deepseek-700-delete: #8f4800;
+  --dsw-static-deepseek-800: #8f4800;
+  --dsw-static-blue-800: #8f4800;
+  --dsw-static-deepseek-900: #6d3700;
+  --dsw-static-blue-900: #6d3700;
+  --dsw-static-deepseek-950: #4a2500;
+  --dsw-static-blue-950: #4a2500;
+  --dsw-static-neutral-bluish-00: #eceef1;
+  --dsw-static-neutral-00: #eceef1;
+  --dsw-static-neutral-bluish-50: #eceef1;
+  --dsw-static-neutral-50: #eceef1;
+  --dsw-static-neutral-bluish-60: #eceef1;
+  --dsw-static-neutral-60: #eceef1;
+  --dsw-static-neutral-bluish-75: #e2e5ea;
+  --dsw-static-neutral-75: #e2e5ea;
+  --dsw-static-neutral-bluish-100: #e2e5ea;
+  --dsw-static-neutral-100: #e2e5ea;
+  --dsw-static-neutral-bluish-150: #d6dae0;
+  --dsw-static-neutral-150: #d6dae0;
+  --dsw-static-neutral-bluish-200: #d6dae0;
+  --dsw-static-neutral-200: #d6dae0;
+  --dsw-static-neutral-bluish-250: #c8cdd5;
+  --dsw-static-neutral-250: #c8cdd5;
+  --dsw-static-neutral-bluish-300: #c8cdd5;
+  --dsw-static-neutral-300: #c8cdd5;
+  --dsw-static-neutral-bluish-400: #b6bcc7;
+  --dsw-static-neutral-400: #b6bcc7;
+  --dsw-static-neutral-bluish-500: #a0a8b5;
+  --dsw-static-neutral-500: #a0a8b5;
+  --dsw-static-neutral-bluish-550: #a0a8b5;
+  --dsw-static-neutral-550: #a0a8b5;
+  --dsw-static-neutral-bluish-600: #7d8695;
+  --dsw-static-neutral-600: #7d8695;
+  --dsw-static-neutral-bluish-700: #7d8695;
+  --dsw-static-neutral-700: #7d8695;
+  --dsw-static-neutral-bluish-750: #5b6473;
+  --dsw-static-neutral-750: #5b6473;
+  --dsw-static-neutral-bluish-800: #5b6473;
+  --dsw-static-neutral-800: #5b6473;
+  --dsw-static-neutral-bluish-850: #5b6473;
+  --dsw-static-neutral-850: #5b6473;
+  --dsw-static-neutral-bluish-875: #3a4150;
+  --dsw-static-neutral-875: #3a4150;
+  --dsw-static-neutral-bluish-900: #3a4150;
+  --dsw-static-neutral-900: #3a4150;
+  --dsw-static-neutral-bluish-950: #3a4150;
+  --dsw-static-neutral-950: #3a4150;
+  --dsw-static-neutral-bluish-1000: #23272f;
+  --dsw-static-neutral-1000: #23272f;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e66 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e66 20%, white);
+  --dsw-static-green-400: #2e9e66;
+  --dsw-static-green-500: #2e9e66;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e66 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e66 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d3382c 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d3382c 20%, white);
+  --dsw-static-red-400: #d3382c;
+  --dsw-static-red-500: #d3382c;
+  --dsw-static-red-600: color-mix(in srgb, #d3382c 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d3382c 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-game-portal][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2e1a06;
+  --dsw-static-blue-50: #2e1a06;
+  --dsw-static-deepseek-50p: #4a2908;
+  --dsw-static-blue-50p: #4a2908;
+  --dsw-static-deepseek-75: #4a2908;
+  --dsw-static-blue-75: #4a2908;
+  --dsw-static-deepseek-100: #4a2908;
+  --dsw-static-blue-100: #4a2908;
+  --dsw-static-deepseek-200: #66390b;
+  --dsw-static-blue-200: #66390b;
+  --dsw-static-deepseek-300: #8a4d0e;
+  --dsw-static-blue-300: #8a4d0e;
+  --dsw-static-deepseek-400: #b36510;
+  --dsw-static-blue-400: #b36510;
+  --dsw-static-deepseek-450: #b36510;
+  --dsw-static-blue-450: #b36510;
+  --dsw-static-deepseek-500: #ff9a26;
+  --dsw-static-blue-500: #ff9a26;
+  --dsw-static-deepseek-600: #ffb154;
+  --dsw-static-blue-600: #ffb154;
+  --dsw-static-deepseek-700-delete: #ffc580;
+  --dsw-static-deepseek-800: #ffc580;
+  --dsw-static-blue-800: #ffc580;
+  --dsw-static-deepseek-900: #ffdcb3;
+  --dsw-static-blue-900: #ffdcb3;
+  --dsw-static-deepseek-950: #fff1e0;
+  --dsw-static-blue-950: #fff1e0;
+  --dsw-static-neutral-bluish-00: #12171f;
+  --dsw-static-neutral-00: #12171f;
+  --dsw-static-neutral-bluish-50: #12171f;
+  --dsw-static-neutral-50: #12171f;
+  --dsw-static-neutral-bluish-60: #12171f;
+  --dsw-static-neutral-60: #12171f;
+  --dsw-static-neutral-bluish-75: #192029;
+  --dsw-static-neutral-75: #192029;
+  --dsw-static-neutral-bluish-100: #192029;
+  --dsw-static-neutral-100: #192029;
+  --dsw-static-neutral-bluish-150: #212a35;
+  --dsw-static-neutral-150: #212a35;
+  --dsw-static-neutral-bluish-200: #212a35;
+  --dsw-static-neutral-200: #212a35;
+  --dsw-static-neutral-bluish-250: #2a3542;
+  --dsw-static-neutral-250: #2a3542;
+  --dsw-static-neutral-bluish-300: #2a3542;
+  --dsw-static-neutral-300: #2a3542;
+  --dsw-static-neutral-bluish-400: #354253;
+  --dsw-static-neutral-400: #354253;
+  --dsw-static-neutral-bluish-500: #445267;
+  --dsw-static-neutral-500: #445267;
+  --dsw-static-neutral-bluish-550: #445267;
+  --dsw-static-neutral-550: #445267;
+  --dsw-static-neutral-bluish-600: #63748c;
+  --dsw-static-neutral-600: #63748c;
+  --dsw-static-neutral-bluish-700: #63748c;
+  --dsw-static-neutral-700: #63748c;
+  --dsw-static-neutral-bluish-750: #8d9aac;
+  --dsw-static-neutral-750: #8d9aac;
+  --dsw-static-neutral-bluish-800: #8d9aac;
+  --dsw-static-neutral-800: #8d9aac;
+  --dsw-static-neutral-bluish-850: #8d9aac;
+  --dsw-static-neutral-850: #8d9aac;
+  --dsw-static-neutral-bluish-875: #c2cad6;
+  --dsw-static-neutral-875: #c2cad6;
+  --dsw-static-neutral-bluish-900: #c2cad6;
+  --dsw-static-neutral-900: #c2cad6;
+  --dsw-static-neutral-bluish-950: #c2cad6;
+  --dsw-static-neutral-950: #c2cad6;
+  --dsw-static-neutral-bluish-1000: #edf1f6;
+  --dsw-static-neutral-1000: #edf1f6;
+  --dsw-static-green-50: color-mix(in srgb, #4caf7d 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4caf7d 20%, black);
+  --dsw-static-green-400: #4caf7d;
+  --dsw-static-green-500: #4caf7d;
+  --dsw-static-green-600: color-mix(in srgb, #4caf7d 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf7d 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8a33d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8a33d 20%, black);
+  --dsw-static-amber-400: #e8a33d;
+  --dsw-static-amber-500: #e8a33d;
+  --dsw-static-amber-600: color-mix(in srgb, #e8a33d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8a33d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e5533d 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e5533d 20%, black);
+  --dsw-static-red-400: #e5533d;
+  --dsw-static-red-500: #e5533d;
+  --dsw-static-red-600: color-mix(in srgb, #e5533d 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e5533d 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-game-portal] {
+  --dsw-alias-button-primary-fill: #e07800;
+  --dsw-alias-button-primary-hover: #c4660a;
+  --dsw-alias-button-primary-dimmed: #fbddb0;
+  --dsw-alias-button-info-fill: #e07800;
+  --dsw-alias-button-info-hover: #c4660a;
+  --dsw-alias-button-contrast-fill: #b35c00;
+  --dsw-alias-button-ghost-active-fill: #fdf1e0;
+  --dsw-alias-button-ghost-active-hover: #fbddb0;
+  --dsw-alias-button-ghost-active-border: #f3a64a;
+  --dsw-alias-button-elevated-fill: #eceef1;
+  --dsw-alias-button-floating-fill: #eceef1;
+  --dsw-alias-button-floating-hover: #e4e7ec;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(224, 120, 0, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(224, 120, 0, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(224, 120, 0, 0.6);
+  --dsw-specific-bubble: #14507e;
+  --dsw-specific-bubble-highlight: #f8c47d;
+  --dsw-specific-input-major: #eceef1;
+  --dsw-specific-login-input: #eceef1;
+  --dsw-specific-sidebar-fill: #e07800;
+  --dsw-specific-sidebar-nav-item-active: #fbddb0;
+  --dsw-specific-sidebar-nav-item-hover: #e4e7ec;
+  --dsw-specific-sidebar-nav-item-active-accent: #f3a64a;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-game-portal][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #ff9a26;
+  --dsw-alias-button-primary-hover: #ffab42;
+  --dsw-alias-button-primary-dimmed: #4a2908;
+  --dsw-alias-button-info-fill: #ff9a26;
+  --dsw-alias-button-info-hover: #ffab42;
+  --dsw-alias-button-contrast-fill: #ffb154;
+  --dsw-alias-button-ghost-active-fill: #3a2410;
+  --dsw-alias-button-ghost-active-hover: #4a2908;
+  --dsw-alias-button-ghost-active-border: #8a4d0e;
+  --dsw-alias-button-elevated-fill: #12171f;
+  --dsw-alias-button-floating-fill: #12171f;
+  --dsw-alias-button-floating-hover: #1c2430;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(255, 154, 38, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(255, 154, 38, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(255, 154, 38, 0.6);
+  --dsw-specific-bubble: #123f5f;
+  --dsw-specific-bubble-highlight: #66390b;
+  --dsw-specific-input-major: #12171f;
+  --dsw-specific-login-input: #12171f;
+  --dsw-specific-sidebar-fill: #ff9a26;
+  --dsw-specific-sidebar-nav-item-active: #4a2908;
+  --dsw-specific-sidebar-nav-item-hover: #1c2430;
+  --dsw-specific-sidebar-nav-item-active-accent: #8a4d0e;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-game-portal] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-portal]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(45, 156, 219, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 80% 14%, rgba(247, 148, 30, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 58% 70%, rgba(45, 156, 219, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 88% 88%, rgba(247, 148, 30, 0.10) 0%, transparent 42%),
+      radial-gradient(ellipse at 6% 88%, rgba(45, 156, 219, 0.10) 0%, transparent 42%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.8;
+}
+
+body[data-dsh-game-portal]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 50%, transparent 0 7px, rgba(45, 156, 219, 0.6) 7px 8px, transparent 8px 12px, rgba(45, 156, 219, 0.35) 12px 13px, transparent 14px),
+      radial-gradient(circle at 50% 50%, transparent 0 7px, rgba(247, 148, 30, 0.55) 7px 8px, transparent 8px 12px, rgba(247, 148, 30, 0.3) 12px 13px, transparent 14px);
+    background-size: 64px 64px, 64px 64px;
+    background-position: 0 0, 32px 32px;
+    opacity: 0.06;
+    animation: game-portal-portal-ring-drift 30s linear infinite;
+}
+
+body[data-dsh-game-portal] [class*='sider'] [class*='session'],
+body[data-dsh-game-portal] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-portal] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(45, 156, 219, 0.14);
+    box-shadow: inset 3px 0 0 0 rgba(31, 143, 224, 0.85);
+}
+
+body[data-dsh-game-portal] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-portal] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(224, 120, 0, 0.2), rgba(224, 120, 0, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #e07800;
+}
+
+body[data-dsh-game-portal] button[class*='primary'],
+body[data-dsh-game-portal] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #b35c00 0%, #e07800 55%, #f7941e 100%) !important;
+    border: 1px solid #f8c47d !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(224, 120, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(109, 55, 0, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-portal] button[class*='primary']:hover,
+body[data-dsh-game-portal] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.06);
+    box-shadow: 0 3px 14px rgba(224, 120, 0, 0.45), 0 0 10px rgba(45, 156, 219, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: game-portal-portal-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-portal] pre,
+body[data-dsh-game-portal] .markdown-body pre {
+  background: linear-gradient(180deg, #262c35 0%, #1e232b 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #2d9cdb !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(45, 156, 219, 0.12);
+}
+
+body[data-dsh-game-portal] pre code,
+body[data-dsh-game-portal] .markdown-body pre code {
+  background: transparent !important;
+    color: #dfe6ee !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-portal] code,
+body[data-dsh-game-portal] .markdown-body code {
+  background: rgba(45, 156, 219, 0.12);
+    color: #b35c00;
+    border: 1px solid rgba(224, 120, 0, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-portal]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-game-portal] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(35, 39, 47, 0.06), 0 0 0 1px rgba(45, 156, 219, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-portal] [class*='guidInputCard']:hover {
+  border-color: var(--portal-blue) !important;
+}
+
+body[data-dsh-game-portal] [class*='agent-bar'],
+body[data-dsh-game-portal] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid transparent;
+    border-image: linear-gradient(90deg, rgba(45, 156, 219, 0.5), rgba(224, 120, 0, 0.5)) 1;
+}
+
+body[data-dsh-game-portal]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-portal]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2d9cdb, #e07800);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-portal]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1f8fe0, #f7941e);
+}
+
+body[data-dsh-game-portal]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-portal] .markdown-body a,
+body[data-dsh-game-portal] a {
+  color: #1670ad;
+}
+
+body[data-dsh-game-portal] .markdown-body a:hover,
+body[data-dsh-game-portal] a:hover {
+  color: #b35c00;
+}
+
+body[data-dsh-game-portal] .markdown-body blockquote {
+  border-left: 3px solid #e07800;
+    background: rgba(45, 156, 219, 0.08);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-portal] .markdown-body hr,
+body[data-dsh-game-portal] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 5px 5px, rgba(224, 92, 154, 0.7) 0 1.8px, transparent 2.6px),
+      linear-gradient(90deg, rgba(120, 128, 140, 0.35) 0 1px, transparent 1px);
+    background-size: 18px 10px, 18px 10px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-game-portal] .arco-btn:not(button[class*='primary']):hover {
+  color: #b35c00 !important;
+    border-color: rgba(224, 120, 0, 0.5) !important;
+    background-color: rgba(224, 120, 0, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-game-portal][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(66, 167, 232, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 80% 14%, rgba(255, 154, 38, 0.09) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 58% 70%, rgba(66, 167, 232, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 88% 88%, rgba(255, 154, 38, 0.09) 0%, transparent 42%),
+      radial-gradient(ellipse at 6% 88%, rgba(66, 167, 232, 0.09) 0%, transparent 42%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 50%, transparent 0 7px, rgba(66, 167, 232, 0.6) 7px 8px, transparent 8px 12px, rgba(66, 167, 232, 0.35) 12px 13px, transparent 14px),
+      radial-gradient(circle at 50% 50%, transparent 0 7px, rgba(255, 154, 38, 0.55) 7px 8px, transparent 8px 12px, rgba(255, 154, 38, 0.3) 12px 13px, transparent 14px);
+    background-size: 64px 64px, 64px 64px;
+    background-position: 0 0, 32px 32px;
+    opacity: 0.08;
+    animation: game-portal-portal-ring-drift 30s linear infinite;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(66, 167, 232, 0.18);
+    box-shadow: inset 3px 0 0 0 rgba(66, 167, 232, 0.9);
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(255, 154, 38, 0.28), rgba(255, 154, 38, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #ff9a26;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-game-portal][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #ff9a26 55%, #ffab42 100%) !important;
+    border: 1px solid #ffc580 !important;
+    color: #fff7ec !important;
+    box-shadow: 0 2px 8px rgba(255, 154, 38, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(74, 37, 0, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-game-portal][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(255, 154, 38, 0.55), 0 0 12px rgba(66, 167, 232, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: game-portal-portal-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] pre,
+body[data-dsh-game-portal][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #10161d 0%, #0c1117 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #42a7e8 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(66, 167, 232, 0.12);
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] pre code,
+body[data-dsh-game-portal][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d6e4f0 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] code,
+body[data-dsh-game-portal][data-ds-dark-theme] .markdown-body code {
+  background: rgba(66, 167, 232, 0.18);
+    color: #ffb154;
+    border: 1px solid rgba(255, 154, 38, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(4, 8, 12, 0.5), 0 0 0 1px rgba(66, 167, 232, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--portal-blue) !important;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-game-portal][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid transparent;
+    border-image: linear-gradient(90deg, rgba(66, 167, 232, 0.55), rgba(255, 154, 38, 0.55)) 1;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #42a7e8, #ff9a26);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #63bcf0, #ffab42);
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-game-portal][data-ds-dark-theme] a {
+  color: #63bcf0;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-game-portal][data-ds-dark-theme] a:hover {
+  color: #ffb154;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #ff9a26;
+    background: rgba(66, 167, 232, 0.12);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-game-portal][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 5px 5px, rgba(224, 92, 154, 0.8) 0 1.8px, transparent 2.6px),
+      linear-gradient(90deg, rgba(160, 170, 184, 0.4) 0 1px, transparent 1px);
+    background-size: 18px 10px, 18px 10px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-game-portal][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #ffb154 !important;
+    border-color: rgba(255, 154, 38, 0.5) !important;
+    background-color: rgba(255, 154, 38, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes game-portal-portal-ring-drift {
+  0% { background-position: 0 0, 32px 32px; }
+  100% { background-position: 64px 64px, 96px 96px; }
+}
+
+@keyframes game-portal-portal-gate-pulse {
+  0%, 100% { opacity: 0.75; filter: saturate(0.9); }
+  50% { opacity: 1; filter: saturate(1.3); }
+}
+
+@keyframes game-portal-portal-btn-sheen {
+  0%, 100% { box-shadow: 0 3px 12px rgba(224, 120, 0, 0.4), 0 0 8px rgba(45, 156, 219, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 18px rgba(224, 120, 0, 0.55), 0 0 16px rgba(45, 156, 219, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes game-portal-portal-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

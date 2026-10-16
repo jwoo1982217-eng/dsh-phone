@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>外观设置</title><link rel="stylesheet" href="/appearance-center/page.css"><script type="module" src="/appearance-center/page.js"></script></head>
+<body><main>
+  <header><div><p class="eyebrow">APPEARANCE</p><h1>让界面更像你</h1><p class="subtle">皮肤、配色和字体，在同一个地方调整。</p></div><button id="restore" type="button">恢复原版</button></header>
+  <section class="current"><div class="current-mark" aria-hidden="true">◌</div><div><span class="subtle">正在使用</span><strong id="current-name">正在读取…</strong><span id="current-source" class="subtle"></span></div></section>
+  <div class="search-row"><label for="search">查找主题</label><input id="search" type="search" placeholder="主题名称、来源或风格" autocomplete="off"></div>
+  <p id="notice" role="status" aria-live="polite">正在加载外观设置…</p>
+  <div id="providers"></div>
+  <section id="custom" class="adjustments" aria-labelledby="custom-title" hidden>
+    <h2 id="custom-title">调整当前方案</h2><p class="subtle">这些调整只保存在当前主题来源下，切换其他来源时各自保留。</p>
+    <form id="options"><div class="fields">
+      <label>深浅色<select name="mode"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select><small id="mode-hint"></small></label>
+      <label>正文大小<select name="uiSize"><option value="">沿用原设置</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>18</option><option>20</option><option>22</option></select></label>
+      <label>界面字体<select name="uiFont"><option value="">主题默认</option><option value="system">系统字体</option><option value="serif">宋体 / 衬线</option><option value="rounded">圆体</option><option value="mono">等宽</option><option value="jetbrains">JetBrains Mono</option><option value="fira">Fira Code</option></select></label>
+      <label>代码字体<select name="codeFont"><option value="">主题默认</option><option value="mono">系统等宽</option><option value="jetbrains">JetBrains Mono</option><option value="fira">Fira Code</option></select></label>
+      <label>代码大小<select name="codeSize"><option value="">主题默认</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>16</option><option>18</option><option>20</option><option>24</option></select></label>
+      <label>对话宽度<select name="width"><option value="default">原设置</option><option value="comfortable">适中</option><option value="wide">宽屏</option></select></label>
+      <label>强调色<input name="accent" type="text" placeholder="主题默认 / #267660" maxlength="7" pattern="#[0-9a-fA-F]{6}"></label>
+      <label>背景色<input name="background" type="text" placeholder="主题默认 / #f3fbf8" maxlength="7" pattern="#[0-9a-fA-F]{6}"></label>
+      <label>文字色<input name="foreground" type="text" placeholder="主题默认 / #24483f" maxlength="7" pattern="#[0-9a-fA-F]{6}"></label>
+      <label>壁纸透明度<input name="wallpaperOpacity" type="range" min="0" max="0.7" step="0.01"></label>
+      <label>玻璃模糊<input name="blur" type="range" min="0" max="20" step="1"></label>
+      <div class="toggles"><label><input name="translucent" type="checkbox"> 玻璃输入框</label><label><input name="reduceMotion" type="checkbox"> 减少动态效果</label></div>
+    </div><div class="wallpaper-row"><label class="file-button">选择本机壁纸<input id="wallpaper-file" type="file" accept="image/png,image/jpeg,image/webp"></label><button id="remove-wallpaper" type="button">移除壁纸</button><span id="wallpaper-info" class="subtle"></span></div>
+    <div class="form-actions"><button type="submit" class="primary">保存调整</button><button id="reset-options" type="button">清除本来源调整</button></div></form>
+  </section><footer>其他插件仍可在插件管理中使用。字体名称会优先使用设备已安装字体，缺少时自动回退。</footer>
+</main></body></html>

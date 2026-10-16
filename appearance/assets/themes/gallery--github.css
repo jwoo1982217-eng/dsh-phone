@@ -1,0 +1,709 @@
+/* github — GitHub Light | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-github], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-github] {
+  --dsw-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  color: #1f2328;
+  background-color: #ffffff;
+}
+
+body[data-dsh-github][data-ds-dark-theme] {
+  color: #f0f6fc;
+  background-color: #0d1117;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-github] {
+  --color-primary: #0969da;
+  --primary: #0969da;
+  --primary-rgb: 9, 105, 218;
+  --color-primary-light-1: #218bff;
+  --color-primary-light-2: #54aeff;
+  --color-primary-light-3: #80ccff;
+  --color-primary-dark-1: #0550ae;
+  --brand: #0969da;
+  --brand-light: #ddf4ff;
+  --brand-hover: #218bff;
+  --color-brand-fill: #0969da;
+  --color-brand-bg: #ddf4ff;
+  --aou-1: #ddf4ff;
+  --aou-2: #b6e3ff;
+  --aou-3: #80ccff;
+  --aou-4: #54aeff;
+  --aou-5: #218bff;
+  --aou-6: #0969da;
+  --aou-7: #0550ae;
+  --aou-8: #033d8b;
+  --aou-9: #0a3069;
+  --aou-10: #002155;
+  --bg-base: #ffffff;
+  --bg-1: #f6f8fa;
+  --bg-2: #eff2f5;
+  --bg-3: #e8ecf0;
+  --bg-4: #dde3e9;
+  --bg-5: #cfd6dd;
+  --bg-6: #b9c1ca;
+  --bg-8: #818b98;
+  --bg-9: #59636e;
+  --bg-10: #1f2328;
+  --color-bg-1: #f6f8fa;
+  --color-bg-2: #eff2f5;
+  --color-bg-3: #e8ecf0;
+  --color-bg-4: #dde3e9;
+  --bg-hover: #eef2f5;
+  --bg-active: #e2e8ee;
+  --text-primary: #1f2328;
+  --text-secondary: #59636e;
+  --text-disabled: #818b98;
+  --text-0: #0e1116;
+  --text-white: #ffffff;
+  --color-text-1: #1f2328;
+  --color-text-2: #59636e;
+  --color-text-3: #6e7781;
+  --color-text-4: #818b98;
+  --border-base: #d1d9e0;
+  --border-light: #dee4ea;
+  --border-special: #aeb8c2;
+  --color-border: #d1d9e0;
+  --color-border-1: #d1d9e0;
+  --color-border-2: #dee4ea;
+  --fill: #f6f8fa;
+  --color-fill: #f6f8fa;
+  --fill-0: #ffffff;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #ffffff;
+  --inverse: #1f2328;
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --danger: #cf222e;
+  --info: #0969da;
+  --message-user-bg: #ddf4ff;
+  --message-tips-bg: #fff8c5;
+  --workspace-btn-bg: #ddf4ff;
+  --color-guid-agent-bar: #f6f8fa;
+  --gh-green-1: #9be9a8;
+  --gh-green-2: #40c463;
+  --gh-green-3: #30a14e;
+  --gh-green-4: #216e39;
+  --gh-btn-green: #1f883d;
+  --gh-btn-green-hover: #1a7f37;
+  --gh-header: #1f2328;
+  --gh-syntax-red: #cf222e;
+  --gh-syntax-orange: #953800;
+  --gh-syntax-purple: #8250df;
+  --gh-syntax-blue: #0550ae;
+  --gh-syntax-green: #116329;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-github][data-ds-dark-theme] {
+  --color-primary: #4493f8;
+  --primary: #4493f8;
+  --primary-rgb: 68, 147, 248;
+  --color-primary-light-1: #58a6ff;
+  --color-primary-light-2: #79c0ff;
+  --color-primary-light-3: #a5d6ff;
+  --color-primary-dark-1: #1f6feb;
+  --brand: #4493f8;
+  --brand-light: #0c2d6b;
+  --brand-hover: #58a6ff;
+  --color-brand-fill: #4493f8;
+  --color-brand-bg: #0c2d6b;
+  --aou-1: #051d4d;
+  --aou-2: #0c2d6b;
+  --aou-3: #0d419d;
+  --aou-4: #1158c7;
+  --aou-5: #1f6feb;
+  --aou-6: #4493f8;
+  --aou-7: #58a6ff;
+  --aou-8: #79c0ff;
+  --aou-9: #a5d6ff;
+  --aou-10: #cae8ff;
+  --bg-base: #0d1117;
+  --bg-1: #151b23;
+  --bg-2: #1a222d;
+  --bg-3: #212a37;
+  --bg-4: #28323f;
+  --bg-5: #323c48;
+  --bg-6: #3d444d;
+  --bg-8: #656c76;
+  --bg-9: #9198a1;
+  --bg-10: #bfc7cf;
+  --color-bg-1: #151b23;
+  --color-bg-2: #1a222d;
+  --color-bg-3: #212a37;
+  --color-bg-4: #28323f;
+  --bg-hover: #1c232e;
+  --bg-active: #232c38;
+  --text-primary: #f0f6fc;
+  --text-secondary: #9198a1;
+  --text-disabled: #656c76;
+  --text-0: #ffffff;
+  --text-white: #ffffff;
+  --color-text-1: #f0f6fc;
+  --color-text-2: #9198a1;
+  --color-text-3: #7d8590;
+  --color-text-4: #656c76;
+  --border-base: #3d444d;
+  --border-light: #2d333b;
+  --border-special: #484f58;
+  --color-border: #3d444d;
+  --color-border-1: #3d444d;
+  --color-border-2: #2d333b;
+  --fill: #212830;
+  --color-fill: #212830;
+  --fill-0: #151b23;
+  --fill-white-to-black: #0d1117;
+  --dialog-fill-0: #1c232e;
+  --inverse: #f0f6fc;
+  --success: #3fb950;
+  --warning: #d29922;
+  --danger: #f85149;
+  --info: #4493f8;
+  --message-user-bg: #1158c7;
+  --message-tips-bg: #1d1a12;
+  --workspace-btn-bg: #0c2d6b;
+  --color-guid-agent-bar: #151b23;
+  --gh-green-1: #0e4429;
+  --gh-green-2: #006d32;
+  --gh-green-3: #26a641;
+  --gh-green-4: #39d353;
+  --gh-btn-green: #238636;
+  --gh-btn-green-hover: #2ea043;
+  --gh-header: #010409;
+  --gh-syntax-red: #ff7b72;
+  --gh-syntax-orange: #ffa657;
+  --gh-syntax-purple: #d2a8ff;
+  --gh-syntax-blue: #79c0ff;
+  --gh-syntax-green: #7ee787;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-github] {
+  --dsw-static-deepseek-50: #ddf4ff;
+  --dsw-static-blue-50: #ddf4ff;
+  --dsw-static-deepseek-50p: #b6e3ff;
+  --dsw-static-blue-50p: #b6e3ff;
+  --dsw-static-deepseek-75: #b6e3ff;
+  --dsw-static-blue-75: #b6e3ff;
+  --dsw-static-deepseek-100: #b6e3ff;
+  --dsw-static-blue-100: #b6e3ff;
+  --dsw-static-deepseek-200: #80ccff;
+  --dsw-static-blue-200: #80ccff;
+  --dsw-static-deepseek-300: #54aeff;
+  --dsw-static-blue-300: #54aeff;
+  --dsw-static-deepseek-400: #218bff;
+  --dsw-static-blue-400: #218bff;
+  --dsw-static-deepseek-450: #218bff;
+  --dsw-static-blue-450: #218bff;
+  --dsw-static-deepseek-500: #0969da;
+  --dsw-static-blue-500: #0969da;
+  --dsw-static-deepseek-600: #0550ae;
+  --dsw-static-blue-600: #0550ae;
+  --dsw-static-deepseek-700-delete: #033d8b;
+  --dsw-static-deepseek-800: #033d8b;
+  --dsw-static-blue-800: #033d8b;
+  --dsw-static-deepseek-900: #0a3069;
+  --dsw-static-blue-900: #0a3069;
+  --dsw-static-deepseek-950: #002155;
+  --dsw-static-blue-950: #002155;
+  --dsw-static-neutral-bluish-00: #ffffff;
+  --dsw-static-neutral-00: #ffffff;
+  --dsw-static-neutral-bluish-50: #f6f8fa;
+  --dsw-static-neutral-50: #f6f8fa;
+  --dsw-static-neutral-bluish-60: #f6f8fa;
+  --dsw-static-neutral-60: #f6f8fa;
+  --dsw-static-neutral-bluish-75: #eff2f5;
+  --dsw-static-neutral-75: #eff2f5;
+  --dsw-static-neutral-bluish-100: #eff2f5;
+  --dsw-static-neutral-100: #eff2f5;
+  --dsw-static-neutral-bluish-150: #e8ecf0;
+  --dsw-static-neutral-150: #e8ecf0;
+  --dsw-static-neutral-bluish-200: #e8ecf0;
+  --dsw-static-neutral-200: #e8ecf0;
+  --dsw-static-neutral-bluish-250: #dde3e9;
+  --dsw-static-neutral-250: #dde3e9;
+  --dsw-static-neutral-bluish-300: #dde3e9;
+  --dsw-static-neutral-300: #dde3e9;
+  --dsw-static-neutral-bluish-400: #cfd6dd;
+  --dsw-static-neutral-400: #cfd6dd;
+  --dsw-static-neutral-bluish-500: #b9c1ca;
+  --dsw-static-neutral-500: #b9c1ca;
+  --dsw-static-neutral-bluish-550: #b9c1ca;
+  --dsw-static-neutral-550: #b9c1ca;
+  --dsw-static-neutral-bluish-600: #818b98;
+  --dsw-static-neutral-600: #818b98;
+  --dsw-static-neutral-bluish-700: #818b98;
+  --dsw-static-neutral-700: #818b98;
+  --dsw-static-neutral-bluish-750: #59636e;
+  --dsw-static-neutral-750: #59636e;
+  --dsw-static-neutral-bluish-800: #59636e;
+  --dsw-static-neutral-800: #59636e;
+  --dsw-static-neutral-bluish-850: #59636e;
+  --dsw-static-neutral-850: #59636e;
+  --dsw-static-neutral-bluish-875: #1f2328;
+  --dsw-static-neutral-875: #1f2328;
+  --dsw-static-neutral-bluish-900: #1f2328;
+  --dsw-static-neutral-900: #1f2328;
+  --dsw-static-neutral-bluish-950: #1f2328;
+  --dsw-static-neutral-950: #1f2328;
+  --dsw-static-neutral-bluish-1000: #1f2328;
+  --dsw-static-neutral-1000: #1f2328;
+  --dsw-static-green-50: color-mix(in srgb, #1a7f37 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #1a7f37 20%, white);
+  --dsw-static-green-400: #1a7f37;
+  --dsw-static-green-500: #1a7f37;
+  --dsw-static-green-600: color-mix(in srgb, #1a7f37 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #1a7f37 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #9a6700 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #9a6700 20%, white);
+  --dsw-static-amber-400: #9a6700;
+  --dsw-static-amber-500: #9a6700;
+  --dsw-static-amber-600: color-mix(in srgb, #9a6700 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #9a6700 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #cf222e 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #cf222e 20%, white);
+  --dsw-static-red-400: #cf222e;
+  --dsw-static-red-500: #cf222e;
+  --dsw-static-red-600: color-mix(in srgb, #cf222e 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #cf222e 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-github][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #051d4d;
+  --dsw-static-blue-50: #051d4d;
+  --dsw-static-deepseek-50p: #0c2d6b;
+  --dsw-static-blue-50p: #0c2d6b;
+  --dsw-static-deepseek-75: #0c2d6b;
+  --dsw-static-blue-75: #0c2d6b;
+  --dsw-static-deepseek-100: #0c2d6b;
+  --dsw-static-blue-100: #0c2d6b;
+  --dsw-static-deepseek-200: #0d419d;
+  --dsw-static-blue-200: #0d419d;
+  --dsw-static-deepseek-300: #1158c7;
+  --dsw-static-blue-300: #1158c7;
+  --dsw-static-deepseek-400: #1f6feb;
+  --dsw-static-blue-400: #1f6feb;
+  --dsw-static-deepseek-450: #1f6feb;
+  --dsw-static-blue-450: #1f6feb;
+  --dsw-static-deepseek-500: #4493f8;
+  --dsw-static-blue-500: #4493f8;
+  --dsw-static-deepseek-600: #58a6ff;
+  --dsw-static-blue-600: #58a6ff;
+  --dsw-static-deepseek-700-delete: #79c0ff;
+  --dsw-static-deepseek-800: #79c0ff;
+  --dsw-static-blue-800: #79c0ff;
+  --dsw-static-deepseek-900: #a5d6ff;
+  --dsw-static-blue-900: #a5d6ff;
+  --dsw-static-deepseek-950: #cae8ff;
+  --dsw-static-blue-950: #cae8ff;
+  --dsw-static-neutral-bluish-00: #151b23;
+  --dsw-static-neutral-00: #151b23;
+  --dsw-static-neutral-bluish-50: #151b23;
+  --dsw-static-neutral-50: #151b23;
+  --dsw-static-neutral-bluish-60: #151b23;
+  --dsw-static-neutral-60: #151b23;
+  --dsw-static-neutral-bluish-75: #1a222d;
+  --dsw-static-neutral-75: #1a222d;
+  --dsw-static-neutral-bluish-100: #1a222d;
+  --dsw-static-neutral-100: #1a222d;
+  --dsw-static-neutral-bluish-150: #212a37;
+  --dsw-static-neutral-150: #212a37;
+  --dsw-static-neutral-bluish-200: #212a37;
+  --dsw-static-neutral-200: #212a37;
+  --dsw-static-neutral-bluish-250: #28323f;
+  --dsw-static-neutral-250: #28323f;
+  --dsw-static-neutral-bluish-300: #28323f;
+  --dsw-static-neutral-300: #28323f;
+  --dsw-static-neutral-bluish-400: #323c48;
+  --dsw-static-neutral-400: #323c48;
+  --dsw-static-neutral-bluish-500: #3d444d;
+  --dsw-static-neutral-500: #3d444d;
+  --dsw-static-neutral-bluish-550: #3d444d;
+  --dsw-static-neutral-550: #3d444d;
+  --dsw-static-neutral-bluish-600: #656c76;
+  --dsw-static-neutral-600: #656c76;
+  --dsw-static-neutral-bluish-700: #656c76;
+  --dsw-static-neutral-700: #656c76;
+  --dsw-static-neutral-bluish-750: #9198a1;
+  --dsw-static-neutral-750: #9198a1;
+  --dsw-static-neutral-bluish-800: #9198a1;
+  --dsw-static-neutral-800: #9198a1;
+  --dsw-static-neutral-bluish-850: #9198a1;
+  --dsw-static-neutral-850: #9198a1;
+  --dsw-static-neutral-bluish-875: #bfc7cf;
+  --dsw-static-neutral-875: #bfc7cf;
+  --dsw-static-neutral-bluish-900: #bfc7cf;
+  --dsw-static-neutral-900: #bfc7cf;
+  --dsw-static-neutral-bluish-950: #bfc7cf;
+  --dsw-static-neutral-950: #bfc7cf;
+  --dsw-static-neutral-bluish-1000: #f0f6fc;
+  --dsw-static-neutral-1000: #f0f6fc;
+  --dsw-static-green-50: color-mix(in srgb, #3fb950 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #3fb950 20%, black);
+  --dsw-static-green-400: #3fb950;
+  --dsw-static-green-500: #3fb950;
+  --dsw-static-green-600: color-mix(in srgb, #3fb950 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3fb950 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d29922 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #d29922 20%, black);
+  --dsw-static-amber-400: #d29922;
+  --dsw-static-amber-500: #d29922;
+  --dsw-static-amber-600: color-mix(in srgb, #d29922 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d29922 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f85149 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #f85149 20%, black);
+  --dsw-static-red-400: #f85149;
+  --dsw-static-red-500: #f85149;
+  --dsw-static-red-600: color-mix(in srgb, #f85149 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f85149 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-github] {
+  --dsw-alias-button-primary-fill: #0969da;
+  --dsw-alias-button-primary-hover: #218bff;
+  --dsw-alias-button-primary-dimmed: #b6e3ff;
+  --dsw-alias-button-info-fill: #0969da;
+  --dsw-alias-button-info-hover: #218bff;
+  --dsw-alias-button-contrast-fill: #0550ae;
+  --dsw-alias-button-ghost-active-fill: #ddf4ff;
+  --dsw-alias-button-ghost-active-hover: #b6e3ff;
+  --dsw-alias-button-ghost-active-border: #54aeff;
+  --dsw-alias-button-elevated-fill: #ffffff;
+  --dsw-alias-button-floating-fill: #ffffff;
+  --dsw-alias-button-floating-hover: #eef2f5;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(9, 105, 218, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(9, 105, 218, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(9, 105, 218, 0.6);
+  --dsw-specific-bubble: #ddf4ff;
+  --dsw-specific-bubble-highlight: #80ccff;
+  --dsw-specific-input-major: #ffffff;
+  --dsw-specific-login-input: #ffffff;
+  --dsw-specific-sidebar-fill: #0969da;
+  --dsw-specific-sidebar-nav-item-active: #b6e3ff;
+  --dsw-specific-sidebar-nav-item-hover: #eef2f5;
+  --dsw-specific-sidebar-nav-item-active-accent: #54aeff;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-github][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #4493f8;
+  --dsw-alias-button-primary-hover: #58a6ff;
+  --dsw-alias-button-primary-dimmed: #0c2d6b;
+  --dsw-alias-button-info-fill: #4493f8;
+  --dsw-alias-button-info-hover: #58a6ff;
+  --dsw-alias-button-contrast-fill: #58a6ff;
+  --dsw-alias-button-ghost-active-fill: #0c2d6b;
+  --dsw-alias-button-ghost-active-hover: #0c2d6b;
+  --dsw-alias-button-ghost-active-border: #1158c7;
+  --dsw-alias-button-elevated-fill: #151b23;
+  --dsw-alias-button-floating-fill: #151b23;
+  --dsw-alias-button-floating-hover: #1c232e;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(68, 147, 248, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(68, 147, 248, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(68, 147, 248, 0.6);
+  --dsw-specific-bubble: #1158c7;
+  --dsw-specific-bubble-highlight: #0d419d;
+  --dsw-specific-input-major: #151b23;
+  --dsw-specific-login-input: #151b23;
+  --dsw-specific-sidebar-fill: #4493f8;
+  --dsw-specific-sidebar-nav-item-active: #0c2d6b;
+  --dsw-specific-sidebar-nav-item-hover: #1c232e;
+  --dsw-specific-sidebar-nav-item-active-accent: #1158c7;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-github] {
+  background-color: var(--bg-base) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+}
+
+body[data-dsh-github]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(to right, var(--gh-green-1) 9px, transparent 9px),
+      linear-gradient(to bottom, var(--gh-green-1) 9px, transparent 9px),
+      linear-gradient(to right, var(--gh-green-2) 9px, transparent 9px),
+      linear-gradient(to bottom, var(--gh-green-2) 9px, transparent 9px);
+    background-size: 76px 76px, 76px 76px, 76px 76px, 76px 76px;
+    background-position: 0 0, 0 0, 19px 38px, 19px 38px;
+}
+
+body[data-dsh-github]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background-image:
+      linear-gradient(to right, var(--gh-green-3) 9px, transparent 9px),
+      linear-gradient(to bottom, var(--gh-green-3) 9px, transparent 9px);
+    background-size: 152px 152px, 152px 152px;
+    background-position: 57px 19px, 57px 19px;
+    animation: github-gh-commit-pulse 6s ease-in-out infinite;
+}
+
+body[data-dsh-github] [class*='sider'] [class*='item'] {
+  border-radius: 6px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-github] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--gh-green-2);
+}
+
+body[data-dsh-github] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-github] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--primary);
+    font-weight: 600;
+}
+
+body[data-dsh-github] button[class*='primary'],
+body[data-dsh-github] button[class*='primary']:not(.arco-btn-disabled) {
+  background-color: var(--gh-btn-green) !important;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%) !important;
+    border: 1px solid rgba(31, 35, 40, 0.15) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    font-weight: 500;
+    box-shadow: 0 1px 0 rgba(31, 35, 40, 0.08);
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+body[data-dsh-github] button[class*='primary']:hover,
+body[data-dsh-github] button[class*='primary']:not(.arco-btn-disabled):hover {
+  background-color: var(--gh-btn-green-hover) !important;
+    box-shadow: 0 0 10px rgba(26, 127, 55, 0.3);
+    transform: translateY(-1px);
+}
+
+body[data-dsh-github] button[class*='primary']:active,
+body[data-dsh-github] button[class*='primary']:not(.arco-btn-disabled):active {
+  background-color: #116329 !important;
+    transform: translateY(0);
+    box-shadow: inset 0 1px 3px rgba(31, 35, 40, 0.2);
+}
+
+body[data-dsh-github] pre,
+body[data-dsh-github] .markdown-body pre {
+  background: var(--bg-1) !important;
+    border: 1px solid var(--border-light) !important;
+    border-left: 3px solid var(--gh-green-3) !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 1px 2px rgba(31, 35, 40, 0.04);
+}
+
+body[data-dsh-github] pre code,
+body[data-dsh-github] .markdown-body pre code {
+  background: transparent !important;
+    color: #1f2328 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-github] code,
+body[data-dsh-github] .markdown-body code {
+  background-color: rgba(129, 139, 152, 0.12);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 6px;
+    padding: 0.2em 0.4em;
+    font-size: 85%;
+}
+
+body[data-dsh-github] pre code,
+body[data-dsh-github] .markdown-body pre code {
+  border: none;
+    padding: 0;
+    font-size: 100%;
+}
+
+body[data-dsh-github] .markdown-body blockquote {
+  color: var(--text-secondary);
+    background-color: transparent;
+    border-left: 0.25em solid var(--border-base);
+    border-radius: 0;
+}
+
+body[data-dsh-github]::selection {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+body[data-dsh-github]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-github]::-webkit-scrollbar-thumb {
+  background: var(--bg-5);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-github]::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-8);
+}
+
+body[data-dsh-github]::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-github][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+}
+
+body[data-dsh-github][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image:
+      linear-gradient(to right, var(--gh-green-2) 9px, transparent 9px),
+      linear-gradient(to bottom, var(--gh-green-2) 9px, transparent 9px),
+      linear-gradient(to right, var(--gh-green-3) 9px, transparent 9px),
+      linear-gradient(to bottom, var(--gh-green-3) 9px, transparent 9px);
+    background-size: 76px 76px, 76px 76px, 76px 76px, 76px 76px;
+    background-position: 0 0, 0 0, 19px 38px, 19px 38px;
+    border-radius: 2px;
+}
+
+body[data-dsh-github][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image:
+      linear-gradient(to right, var(--gh-green-4) 9px, transparent 9px),
+      linear-gradient(to bottom, var(--gh-green-4) 9px, transparent 9px);
+    background-size: 152px 152px, 152px 152px;
+    background-position: 57px 19px, 57px 19px;
+    animation: github-gh-commit-pulse 6s ease-in-out infinite;
+}
+
+body[data-dsh-github][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 6px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-github][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--gh-green-3);
+}
+
+body[data-dsh-github][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-github][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--primary);
+    font-weight: 600;
+}
+
+body[data-dsh-github][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-github][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background-color: var(--gh-btn-green) !important;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%) !important;
+    border: 1px solid rgba(240, 246, 252, 0.1) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+    font-weight: 500;
+    box-shadow: 0 1px 0 rgba(1, 4, 9, 0.4);
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+body[data-dsh-github][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-github][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  background-color: var(--gh-btn-green-hover) !important;
+    box-shadow: 0 0 12px rgba(63, 185, 80, 0.35);
+    transform: translateY(-1px);
+}
+
+body[data-dsh-github][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-github][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  background-color: #1a7f37 !important;
+    transform: translateY(0);
+    box-shadow: inset 0 1px 3px rgba(1, 4, 9, 0.4);
+}
+
+body[data-dsh-github][data-ds-dark-theme] pre,
+body[data-dsh-github][data-ds-dark-theme] .markdown-body pre {
+  background: var(--bg-1) !important;
+    border: 1px solid var(--border-light) !important;
+    border-left: 3px solid var(--gh-green-3) !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 1px 4px rgba(1, 4, 9, 0.35);
+}
+
+body[data-dsh-github][data-ds-dark-theme] pre code,
+body[data-dsh-github][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #e6edf3 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-github][data-ds-dark-theme] code,
+body[data-dsh-github][data-ds-dark-theme] .markdown-body code {
+  background-color: rgba(101, 108, 118, 0.2);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 6px;
+    padding: 0.2em 0.4em;
+    font-size: 85%;
+}
+
+body[data-dsh-github][data-ds-dark-theme] pre code,
+body[data-dsh-github][data-ds-dark-theme] .markdown-body pre code {
+  border: none;
+    padding: 0;
+    font-size: 100%;
+}
+
+body[data-dsh-github][data-ds-dark-theme] .markdown-body blockquote {
+  color: var(--text-secondary);
+    background-color: transparent;
+    border-left: 0.25em solid var(--border-base);
+    border-radius: 0;
+}
+
+body[data-dsh-github][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+body[data-dsh-github][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-github][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: var(--bg-5);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-github][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-8);
+}
+
+body[data-dsh-github][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+/* --- keyframes --- */
+@keyframes github-gh-commit-pulse {
+  0%, 100% { opacity: 0.03; }
+  50% { opacity: 0.1; }
+}

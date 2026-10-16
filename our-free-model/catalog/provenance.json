@@ -1,0 +1,45 @@
+{
+  "subject": {
+    "id": "dev.ebony-vinyl.dsh-our-free-model",
+    "name": "dsh-our-free-model",
+    "version": "2.1.0",
+    "sourceRepository": "https://github.com/Ebony-Vinyl/dsh-our-free-model",
+    "sourceRevision": "227494c866c4aa09c720834b4ec7ecec94bb9553"
+  },
+  "license": {
+    "spdx": "MIT",
+    "file": "LICENSE",
+    "copyright": "Copyright (c) 2026 Ebony-Vinyl",
+    "notes": "MIT preserved unchanged from the upstream repository; no code was relicensed in standardization."
+  },
+  "upstreamRuntime": {
+    "package": "@deepseek-ai/dsh-llm",
+    "isolationFile": "adapter/kernel.js",
+    "contract": "The only kernel import in this plugin's own modules. Called lazily for attribution headers; any failure degrades to a static fallback User-Agent. No kernel version is pinned. The vendored channel pack below is the one deliberate exception, and it is not this plugin's code.",
+    "verifiedBy": "scripts/catalog-test.mjs (adapter isolation gate, which exempts vendor/)"
+  },
+  "vendoredChannelPack": {
+    "path": "vendor/channel-pack/pack.js",
+    "upstreamRepository": "https://gitee.com/iJetLi/deepseek-harness-codearts",
+    "upstreamRevision": "345f0a07b22713c0ae189ca7d8b97ec4f64626c6",
+    "license": "MIT (vendor/channel-pack/LICENSE, unchanged)",
+    "contract": "A third-party dsh plugin carried verbatim and bundled into one file by scripts/build-channel-pack.mjs. It registers the fourteen free-channel providers (CodeArts, CodeBuddy, WorkBuddy, LobsterAI, Qoder, Qoder CN, TRAE, Cline, Loomy, Raccoon, MiniMax, ZCode, Gemini, OpenCode) and therefore imports the kernel itself; that import is upstream's design, not this plugin's seam. Mounted on its own fiber: a composition without credentials/commands/llm loses the channels and keeps the free lane. Credentials it obtains go to the host credential store, never to this plugin's files or to the browser.",
+    "provenanceNotes": "vendor/channel-pack/NOTICE.md records what was taken, what was left out (upstream's own browser half) and how to rebuild the bundle."
+  },
+  "distribution": {
+    "selfUpdate": "default; in-app updater verifies feed/manifest.json SHA-256 digests before installing",
+    "announcementFeed": "default; owner-published feed/announcements.json",
+    "managedInstallation": "distribution=managed stands both channels down; the distributing pack owns update timing and bytes"
+  },
+  "integrity": {
+    "releaseManifest": "feed/manifest.json",
+    "catalogDigests": "catalog/integrity.json",
+    "algorithm": "sha256",
+    "normalization": "LF-normalized bytes (.gitattributes * text=auto eol=lf), matching what a git blob serves"
+  },
+  "mojobox": {
+    "recordInstalled": false,
+    "artifactDigest": null,
+    "notes": "catalog/dsh-plugin.json is the catalog-ready 0.15 record. It is not added to the Mojobox catalog repository by this change, and no artifact digest exists yet: the digest must be computed from the actual published tgz at release time and never invented. Mojobox integration is claimed only once that repository accepts the record."
+  }
+}

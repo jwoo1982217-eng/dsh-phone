@@ -1,0 +1,774 @@
+/* mario-yoshi — 超级马里奥 · 耀西 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-mario-yoshi], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-mario-yoshi] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1f2a1c;
+  background-color: #f7f5ec;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] {
+  color: #edf4ec;
+  background-color: #0c120e;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-mario-yoshi] {
+  --color-primary: #1e8a34;
+  --primary: #1e8a34;
+  --primary-rgb: 30, 138, 52;
+  --color-primary-light-1: #43b047;
+  --color-primary-light-2: #6cc476;
+  --color-primary-light-3: #9adba1;
+  --color-primary-dark-1: #136324;
+  --brand: #1e8a34;
+  --brand-light: #e2f3e3;
+  --brand-hover: #176c2a;
+  --color-brand-fill: #1e8a34;
+  --color-brand-bg: #d6eed8;
+  --aou-1: #e6f5e7;
+  --aou-2: #c9eccb;
+  --aou-3: #a5e0a9;
+  --aou-4: #7ccf84;
+  --aou-5: #52ba5a;
+  --aou-6: #33a03d;
+  --aou-7: #1e8a34;
+  --aou-8: #177129;
+  --aou-9: #11591f;
+  --aou-10: #0a3d15;
+  --bg-base: #f7f5ec;
+  --bg-1: #f0eee1;
+  --bg-2: #e8e5d5;
+  --bg-3: #dfdbc8;
+  --bg-4: #d4cfb9;
+  --bg-5: #c6c0a8;
+  --bg-6: #b5ae95;
+  --bg-8: #918a72;
+  --bg-9: #6a634f;
+  --bg-10: #423d2f;
+  --color-bg-1: #f0eee1;
+  --color-bg-2: #e8e5d5;
+  --color-bg-3: #dfdbc8;
+  --color-bg-4: #d4cfb9;
+  --bg-hover: #e4e0cf;
+  --bg-active: #dad4c0;
+  --text-primary: #1f2a1c;
+  --text-secondary: #55624f;
+  --text-disabled: #a3a68f;
+  --text-0: #121a10;
+  --text-white: #ffffff;
+  --color-text-1: #1f2a1c;
+  --color-text-2: #55624f;
+  --color-text-3: #7f8a72;
+  --color-text-4: #a3a68f;
+  --border-base: #cfc9b3;
+  --border-light: #dfdac6;
+  --border-special: #a5d0a9;
+  --color-border: #cfc9b3;
+  --color-border-1: #cfc9b3;
+  --color-border-2: #dfdac6;
+  --fill: #e8e5d5;
+  --color-fill: #e8e5d5;
+  --fill-0: #f0eee1;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fbfaf4;
+  --inverse: #1f2a1c;
+  --success: #1e8a34;
+  --warning: #e8761b;
+  --danger: #d43a28;
+  --info: #3a6ec9;
+  --message-user-bg: #166e2a;
+  --message-tips-bg: #e9f0dd;
+  --workspace-btn-bg: #d6eed8;
+  --color-guid-agent-bar: #ece8d8;
+  --yoshi-green: #43b047;
+  --yoshi-green-deep: #166e2a;
+  --yoshi-green-soft: rgba(30, 138, 52, 0.28);
+  --yoshi-saddle: #e8761b;
+  --yoshi-saddle-hi: #f09440;
+  --yoshi-egg-white: #fbfaf2;
+  --yoshi-tongue: #d43a28;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-mario-yoshi][data-ds-dark-theme] {
+  --color-primary: #4cc35b;
+  --primary: #4cc35b;
+  --primary-rgb: 76, 195, 91;
+  --color-primary-light-1: #74d181;
+  --color-primary-light-2: #9adfaa;
+  --color-primary-light-3: #c4eecf;
+  --color-primary-dark-1: #2f9640;
+  --brand: #4cc35b;
+  --brand-light: #122c18;
+  --brand-hover: #68d077;
+  --color-brand-fill: #4cc35b;
+  --color-brand-bg: #102414;
+  --aou-1: #0e2614;
+  --aou-2: #153a1d;
+  --aou-3: #1d5028;
+  --aou-4: #266933;
+  --aou-5: #338f44;
+  --aou-6: #4cc35b;
+  --aou-7: #74d181;
+  --aou-8: #9adfaa;
+  --aou-9: #c4eecf;
+  --aou-10: #e6f7ea;
+  --bg-base: #0c120e;
+  --bg-1: #121a14;
+  --bg-2: #18221b;
+  --bg-3: #1f2b22;
+  --bg-4: #28352c;
+  --bg-5: #334238;
+  --bg-6: #415247;
+  --bg-8: #5f7164;
+  --bg-9: #8a9a8e;
+  --bg-10: #c2cdc4;
+  --color-bg-1: #121a14;
+  --color-bg-2: #18221b;
+  --color-bg-3: #1f2b22;
+  --color-bg-4: #28352c;
+  --bg-hover: #1c2620;
+  --bg-active: #243028;
+  --text-primary: #edf4ec;
+  --text-secondary: #a8b8a9;
+  --text-disabled: #566257;
+  --text-0: #f7fbf7;
+  --text-white: #ffffff;
+  --color-text-1: #edf4ec;
+  --color-text-2: #a8b8a9;
+  --color-text-3: #7d8c7e;
+  --color-text-4: #566257;
+  --border-base: #2b362e;
+  --border-light: #212b24;
+  --border-special: #2f5c38;
+  --color-border: #2b362e;
+  --color-border-1: #2b362e;
+  --color-border-2: #212b24;
+  --fill: #18221b;
+  --color-fill: #18221b;
+  --fill-0: #121a14;
+  --fill-white-to-black: #0c120e;
+  --dialog-fill-0: #141c16;
+  --inverse: #edf4ec;
+  --success: #4cc35b;
+  --warning: #f0882e;
+  --danger: #e5563f;
+  --info: #5b8bd9;
+  --message-user-bg: #f4f7ee;
+  --message-tips-bg: #1b261e;
+  --workspace-btn-bg: #102414;
+  --color-guid-agent-bar: #161e18;
+  --yoshi-green: #4cc35b;
+  --yoshi-green-soft: rgba(76, 195, 91, 0.35);
+  --yoshi-saddle: #f0882e;
+  --yoshi-saddle-hi: #f7a355;
+  --yoshi-egg-white: #f4f7ee;
+  --yoshi-tongue: #e5563f;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-mario-yoshi] {
+  --dsw-static-deepseek-50: #e6f5e7;
+  --dsw-static-blue-50: #e6f5e7;
+  --dsw-static-deepseek-50p: #c9eccb;
+  --dsw-static-blue-50p: #c9eccb;
+  --dsw-static-deepseek-75: #c9eccb;
+  --dsw-static-blue-75: #c9eccb;
+  --dsw-static-deepseek-100: #c9eccb;
+  --dsw-static-blue-100: #c9eccb;
+  --dsw-static-deepseek-200: #a5e0a9;
+  --dsw-static-blue-200: #a5e0a9;
+  --dsw-static-deepseek-300: #7ccf84;
+  --dsw-static-blue-300: #7ccf84;
+  --dsw-static-deepseek-400: #52ba5a;
+  --dsw-static-blue-400: #52ba5a;
+  --dsw-static-deepseek-450: #52ba5a;
+  --dsw-static-blue-450: #52ba5a;
+  --dsw-static-deepseek-500: #33a03d;
+  --dsw-static-blue-500: #33a03d;
+  --dsw-static-deepseek-600: #1e8a34;
+  --dsw-static-blue-600: #1e8a34;
+  --dsw-static-deepseek-700-delete: #177129;
+  --dsw-static-deepseek-800: #177129;
+  --dsw-static-blue-800: #177129;
+  --dsw-static-deepseek-900: #11591f;
+  --dsw-static-blue-900: #11591f;
+  --dsw-static-deepseek-950: #0a3d15;
+  --dsw-static-blue-950: #0a3d15;
+  --dsw-static-neutral-bluish-00: #f0eee1;
+  --dsw-static-neutral-00: #f0eee1;
+  --dsw-static-neutral-bluish-50: #f0eee1;
+  --dsw-static-neutral-50: #f0eee1;
+  --dsw-static-neutral-bluish-60: #f0eee1;
+  --dsw-static-neutral-60: #f0eee1;
+  --dsw-static-neutral-bluish-75: #e8e5d5;
+  --dsw-static-neutral-75: #e8e5d5;
+  --dsw-static-neutral-bluish-100: #e8e5d5;
+  --dsw-static-neutral-100: #e8e5d5;
+  --dsw-static-neutral-bluish-150: #dfdbc8;
+  --dsw-static-neutral-150: #dfdbc8;
+  --dsw-static-neutral-bluish-200: #dfdbc8;
+  --dsw-static-neutral-200: #dfdbc8;
+  --dsw-static-neutral-bluish-250: #d4cfb9;
+  --dsw-static-neutral-250: #d4cfb9;
+  --dsw-static-neutral-bluish-300: #d4cfb9;
+  --dsw-static-neutral-300: #d4cfb9;
+  --dsw-static-neutral-bluish-400: #c6c0a8;
+  --dsw-static-neutral-400: #c6c0a8;
+  --dsw-static-neutral-bluish-500: #b5ae95;
+  --dsw-static-neutral-500: #b5ae95;
+  --dsw-static-neutral-bluish-550: #b5ae95;
+  --dsw-static-neutral-550: #b5ae95;
+  --dsw-static-neutral-bluish-600: #918a72;
+  --dsw-static-neutral-600: #918a72;
+  --dsw-static-neutral-bluish-700: #918a72;
+  --dsw-static-neutral-700: #918a72;
+  --dsw-static-neutral-bluish-750: #6a634f;
+  --dsw-static-neutral-750: #6a634f;
+  --dsw-static-neutral-bluish-800: #6a634f;
+  --dsw-static-neutral-800: #6a634f;
+  --dsw-static-neutral-bluish-850: #6a634f;
+  --dsw-static-neutral-850: #6a634f;
+  --dsw-static-neutral-bluish-875: #423d2f;
+  --dsw-static-neutral-875: #423d2f;
+  --dsw-static-neutral-bluish-900: #423d2f;
+  --dsw-static-neutral-900: #423d2f;
+  --dsw-static-neutral-bluish-950: #423d2f;
+  --dsw-static-neutral-950: #423d2f;
+  --dsw-static-neutral-bluish-1000: #1f2a1c;
+  --dsw-static-neutral-1000: #1f2a1c;
+  --dsw-static-green-50: color-mix(in srgb, #1e8a34 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #1e8a34 20%, white);
+  --dsw-static-green-400: #1e8a34;
+  --dsw-static-green-500: #1e8a34;
+  --dsw-static-green-600: color-mix(in srgb, #1e8a34 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #1e8a34 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8761b 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #e8761b 20%, white);
+  --dsw-static-amber-400: #e8761b;
+  --dsw-static-amber-500: #e8761b;
+  --dsw-static-amber-600: color-mix(in srgb, #e8761b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8761b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d43a28 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d43a28 20%, white);
+  --dsw-static-red-400: #d43a28;
+  --dsw-static-red-500: #d43a28;
+  --dsw-static-red-600: color-mix(in srgb, #d43a28 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d43a28 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-mario-yoshi][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #0e2614;
+  --dsw-static-blue-50: #0e2614;
+  --dsw-static-deepseek-50p: #153a1d;
+  --dsw-static-blue-50p: #153a1d;
+  --dsw-static-deepseek-75: #153a1d;
+  --dsw-static-blue-75: #153a1d;
+  --dsw-static-deepseek-100: #153a1d;
+  --dsw-static-blue-100: #153a1d;
+  --dsw-static-deepseek-200: #1d5028;
+  --dsw-static-blue-200: #1d5028;
+  --dsw-static-deepseek-300: #266933;
+  --dsw-static-blue-300: #266933;
+  --dsw-static-deepseek-400: #338f44;
+  --dsw-static-blue-400: #338f44;
+  --dsw-static-deepseek-450: #338f44;
+  --dsw-static-blue-450: #338f44;
+  --dsw-static-deepseek-500: #4cc35b;
+  --dsw-static-blue-500: #4cc35b;
+  --dsw-static-deepseek-600: #74d181;
+  --dsw-static-blue-600: #74d181;
+  --dsw-static-deepseek-700-delete: #9adfaa;
+  --dsw-static-deepseek-800: #9adfaa;
+  --dsw-static-blue-800: #9adfaa;
+  --dsw-static-deepseek-900: #c4eecf;
+  --dsw-static-blue-900: #c4eecf;
+  --dsw-static-deepseek-950: #e6f7ea;
+  --dsw-static-blue-950: #e6f7ea;
+  --dsw-static-neutral-bluish-00: #121a14;
+  --dsw-static-neutral-00: #121a14;
+  --dsw-static-neutral-bluish-50: #121a14;
+  --dsw-static-neutral-50: #121a14;
+  --dsw-static-neutral-bluish-60: #121a14;
+  --dsw-static-neutral-60: #121a14;
+  --dsw-static-neutral-bluish-75: #18221b;
+  --dsw-static-neutral-75: #18221b;
+  --dsw-static-neutral-bluish-100: #18221b;
+  --dsw-static-neutral-100: #18221b;
+  --dsw-static-neutral-bluish-150: #1f2b22;
+  --dsw-static-neutral-150: #1f2b22;
+  --dsw-static-neutral-bluish-200: #1f2b22;
+  --dsw-static-neutral-200: #1f2b22;
+  --dsw-static-neutral-bluish-250: #28352c;
+  --dsw-static-neutral-250: #28352c;
+  --dsw-static-neutral-bluish-300: #28352c;
+  --dsw-static-neutral-300: #28352c;
+  --dsw-static-neutral-bluish-400: #334238;
+  --dsw-static-neutral-400: #334238;
+  --dsw-static-neutral-bluish-500: #415247;
+  --dsw-static-neutral-500: #415247;
+  --dsw-static-neutral-bluish-550: #415247;
+  --dsw-static-neutral-550: #415247;
+  --dsw-static-neutral-bluish-600: #5f7164;
+  --dsw-static-neutral-600: #5f7164;
+  --dsw-static-neutral-bluish-700: #5f7164;
+  --dsw-static-neutral-700: #5f7164;
+  --dsw-static-neutral-bluish-750: #8a9a8e;
+  --dsw-static-neutral-750: #8a9a8e;
+  --dsw-static-neutral-bluish-800: #8a9a8e;
+  --dsw-static-neutral-800: #8a9a8e;
+  --dsw-static-neutral-bluish-850: #8a9a8e;
+  --dsw-static-neutral-850: #8a9a8e;
+  --dsw-static-neutral-bluish-875: #c2cdc4;
+  --dsw-static-neutral-875: #c2cdc4;
+  --dsw-static-neutral-bluish-900: #c2cdc4;
+  --dsw-static-neutral-900: #c2cdc4;
+  --dsw-static-neutral-bluish-950: #c2cdc4;
+  --dsw-static-neutral-950: #c2cdc4;
+  --dsw-static-neutral-bluish-1000: #edf4ec;
+  --dsw-static-neutral-1000: #edf4ec;
+  --dsw-static-green-50: color-mix(in srgb, #4cc35b 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4cc35b 20%, black);
+  --dsw-static-green-400: #4cc35b;
+  --dsw-static-green-500: #4cc35b;
+  --dsw-static-green-600: color-mix(in srgb, #4cc35b 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4cc35b 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f0882e 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #f0882e 20%, black);
+  --dsw-static-amber-400: #f0882e;
+  --dsw-static-amber-500: #f0882e;
+  --dsw-static-amber-600: color-mix(in srgb, #f0882e 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f0882e 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e5563f 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e5563f 20%, black);
+  --dsw-static-red-400: #e5563f;
+  --dsw-static-red-500: #e5563f;
+  --dsw-static-red-600: color-mix(in srgb, #e5563f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e5563f 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-mario-yoshi] {
+  --dsw-alias-button-primary-fill: #1e8a34;
+  --dsw-alias-button-primary-hover: #176c2a;
+  --dsw-alias-button-primary-dimmed: #c9eccb;
+  --dsw-alias-button-info-fill: #1e8a34;
+  --dsw-alias-button-info-hover: #176c2a;
+  --dsw-alias-button-contrast-fill: #1e8a34;
+  --dsw-alias-button-ghost-active-fill: #e2f3e3;
+  --dsw-alias-button-ghost-active-hover: #c9eccb;
+  --dsw-alias-button-ghost-active-border: #7ccf84;
+  --dsw-alias-button-elevated-fill: #f0eee1;
+  --dsw-alias-button-floating-fill: #f0eee1;
+  --dsw-alias-button-floating-hover: #e4e0cf;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(30, 138, 52, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(30, 138, 52, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(30, 138, 52, 0.6);
+  --dsw-specific-bubble: #166e2a;
+  --dsw-specific-bubble-highlight: #a5e0a9;
+  --dsw-specific-input-major: #f0eee1;
+  --dsw-specific-login-input: #f0eee1;
+  --dsw-specific-sidebar-fill: #1e8a34;
+  --dsw-specific-sidebar-nav-item-active: #c9eccb;
+  --dsw-specific-sidebar-nav-item-hover: #e4e0cf;
+  --dsw-specific-sidebar-nav-item-active-accent: #7ccf84;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-mario-yoshi][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #4cc35b;
+  --dsw-alias-button-primary-hover: #68d077;
+  --dsw-alias-button-primary-dimmed: #153a1d;
+  --dsw-alias-button-info-fill: #4cc35b;
+  --dsw-alias-button-info-hover: #68d077;
+  --dsw-alias-button-contrast-fill: #74d181;
+  --dsw-alias-button-ghost-active-fill: #122c18;
+  --dsw-alias-button-ghost-active-hover: #153a1d;
+  --dsw-alias-button-ghost-active-border: #266933;
+  --dsw-alias-button-elevated-fill: #121a14;
+  --dsw-alias-button-floating-fill: #121a14;
+  --dsw-alias-button-floating-hover: #1c2620;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(76, 195, 91, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(76, 195, 91, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(76, 195, 91, 0.6);
+  --dsw-specific-bubble: #f4f7ee;
+  --dsw-specific-bubble-highlight: #1d5028;
+  --dsw-specific-input-major: #121a14;
+  --dsw-specific-login-input: #121a14;
+  --dsw-specific-sidebar-fill: #4cc35b;
+  --dsw-specific-sidebar-nav-item-active: #153a1d;
+  --dsw-specific-sidebar-nav-item-hover: #1c2620;
+  --dsw-specific-sidebar-nav-item-active-accent: #266933;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-mario-yoshi] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-yoshi]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(30, 138, 52, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(232, 118, 27, 0.09) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(30, 138, 52, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(165, 224, 169, 0.35) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(232, 118, 27, 0.05) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.7;
+}
+
+body[data-dsh-mario-yoshi]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(30, 138, 52, 0.6) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 0%, rgba(232, 118, 27, 0.55) 0 9px, transparent 10px);
+    background-size: 36px 18px, 36px 18px;
+    background-position: 0 0, 18px 9px;
+    opacity: 0.05;
+    animation: mario-yoshi-yoshi-egg-drift 26s linear infinite;
+}
+
+body[data-dsh-mario-yoshi] [class*='sider'] [class*='session'],
+body[data-dsh-mario-yoshi] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-yoshi] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(124, 207, 132, 0.22);
+    box-shadow: inset 3px 0 0 0 rgba(67, 176, 71, 0.85);
+}
+
+body[data-dsh-mario-yoshi] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-yoshi] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(30, 138, 52, 0.18), rgba(30, 138, 52, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #1e8a34;
+}
+
+body[data-dsh-mario-yoshi] button[class*='primary'],
+body[data-dsh-mario-yoshi] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #136324 0%, #1e8a34 55%, #43b047 100%) !important;
+    border: 1px solid #7ccf84 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(30, 138, 52, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(10, 61, 21, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-yoshi] button[class*='primary']:hover,
+body[data-dsh-mario-yoshi] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.06);
+    box-shadow: 0 3px 14px rgba(30, 138, 52, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: mario-yoshi-yoshi-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-yoshi] pre,
+body[data-dsh-mario-yoshi] .markdown-body pre {
+  background: linear-gradient(180deg, #1d2b1f 0%, #16221a 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #e8761b !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(124, 207, 132, 0.15);
+}
+
+body[data-dsh-mario-yoshi] pre code,
+body[data-dsh-mario-yoshi] .markdown-body pre code {
+  background: transparent !important;
+    color: #e2ecdf !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-yoshi] code,
+body[data-dsh-mario-yoshi] .markdown-body code {
+  background: rgba(124, 207, 132, 0.22);
+    color: #176c2a;
+    border: 1px solid rgba(30, 138, 52, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-yoshi]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-mario-yoshi] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(66, 61, 47, 0.08), 0 0 0 1px rgba(124, 207, 132, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-yoshi] [class*='guidInputCard']:hover {
+  border-color: var(--yoshi-green) !important;
+}
+
+body[data-dsh-mario-yoshi] [class*='agent-bar'],
+body[data-dsh-mario-yoshi] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(30, 138, 52, 0.35);
+}
+
+body[data-dsh-mario-yoshi]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-yoshi]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #43b047, #e8761b);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-mario-yoshi]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #52ba5a, #f09440);
+}
+
+body[data-dsh-mario-yoshi]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-yoshi] .markdown-body a,
+body[data-dsh-mario-yoshi] a {
+  color: #176c2a;
+}
+
+body[data-dsh-mario-yoshi] .markdown-body a:hover,
+body[data-dsh-mario-yoshi] a:hover {
+  color: #1e8a34;
+}
+
+body[data-dsh-mario-yoshi] .markdown-body blockquote {
+  border-left: 3px solid #1e8a34;
+    background: rgba(124, 207, 132, 0.15);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-yoshi] .markdown-body hr,
+body[data-dsh-mario-yoshi] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(30, 138, 52, 0.5) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(30, 138, 52, 0.5) 50%, transparent 50%);
+    background-size: 12px 6px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 6px 1px;
+    opacity: 0.55;
+}
+
+body[data-dsh-mario-yoshi] .arco-btn:not(button[class*='primary']):hover {
+  color: #176c2a !important;
+    border-color: rgba(30, 138, 52, 0.5) !important;
+    background-color: rgba(30, 138, 52, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-mario-yoshi][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(76, 195, 91, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(240, 136, 46, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(76, 195, 91, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(38, 70, 46, 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(240, 136, 46, 0.06) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(76, 195, 91, 0.55) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 0%, rgba(240, 136, 46, 0.5) 0 9px, transparent 10px);
+    background-size: 36px 18px, 36px 18px;
+    background-position: 0 0, 18px 9px;
+    opacity: 0.06;
+    animation: mario-yoshi-yoshi-egg-drift 26s linear infinite;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(76, 195, 91, 0.16);
+    box-shadow: inset 3px 0 0 0 rgba(76, 195, 91, 0.9);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(76, 195, 91, 0.28), rgba(76, 195, 91, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #4cc35b;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-mario-yoshi][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #2f9640 0%, #4cc35b 55%, #74d181 100%) !important;
+    border: 1px solid #9adfaa !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(76, 195, 91, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(14, 38, 20, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-mario-yoshi][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    box-shadow: 0 3px 16px rgba(76, 195, 91, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: mario-yoshi-yoshi-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] pre,
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #121d14 0%, #0d1710 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #f0882e !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(76, 195, 91, 0.12);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] pre code,
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d9eadb !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] code,
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .markdown-body code {
+  background: rgba(76, 195, 91, 0.18);
+    color: #9adfaa;
+    border: 1px solid rgba(76, 195, 91, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(5, 8, 6, 0.5), 0 0 0 1px rgba(76, 195, 91, 0.18);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--yoshi-green) !important;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-mario-yoshi][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(76, 195, 91, 0.4);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4cc35b, #b35e15);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #74d181, #f0882e);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-mario-yoshi][data-ds-dark-theme] a {
+  color: #74d181;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-mario-yoshi][data-ds-dark-theme] a:hover {
+  color: #9adfaa;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #4cc35b;
+    background: rgba(76, 195, 91, 0.12);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-mario-yoshi][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(76, 195, 91, 0.55) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(76, 195, 91, 0.55) 50%, transparent 50%);
+    background-size: 12px 6px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 6px 1px;
+    opacity: 0.6;
+}
+
+body[data-dsh-mario-yoshi][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #9adfaa !important;
+    border-color: rgba(76, 195, 91, 0.5) !important;
+    background-color: rgba(76, 195, 91, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes mario-yoshi-yoshi-egg-drift {
+  0% { background-position: 0 0, 18px 9px; }
+  100% { background-position: 36px 18px, 54px 27px; }
+}
+
+@keyframes mario-yoshi-yoshi-shell-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(30, 138, 52, 0.14); }
+  50% { box-shadow: 0 2px 14px rgba(30, 138, 52, 0.3); }
+}
+
+@keyframes mario-yoshi-yoshi-btn-sheen {
+  0%, 100% { box-shadow: 0 3px 12px rgba(30, 138, 52, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 18px rgba(30, 138, 52, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes mario-yoshi-yoshi-tongue-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

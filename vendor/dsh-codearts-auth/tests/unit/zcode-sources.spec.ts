@@ -17,13 +17,15 @@ async function fixture() {
   const values = new Map([[JSON.stringify(credentialRef('A')), JSON.stringify(credential)]])
   const ctx = { get: () => undefined, logger: { warn: vi.fn() }, credentials: { resolve: async (ref: any) => ({ value: values.get(JSON.stringify(ref)) }), unset: async () => {} } } as any
   const pool = new AccountPool(ctx); await pool.addAccount({ id: 'A', provider: 'zcode', credentialRef: 'A', nickname: 'fixture', enabled: true, refreshable: false, createdAt: 1 })
-  let fail = false, teamUnassigned = false, numericUnit = false
+  let fail = false, teamUnassigned = false, numericUnit = false, splitKeys = false
   const requests: { url: string; method: string; headers: Headers }[] = []
   const fetcher = vi.fn(async (url: any, init: any) => {
     const pathname = new URL(url).pathname; requests.push({ url: String(url), method: init.method, headers: new Headers(init.headers) })
     const json = (data: any) => new Response(JSON.stringify({ code: 0, data }))
     if (fail) return new Response('', { status: 503 })
+    if (pathname.endsWith('/coding-plan/reset/status')) return json({available_five_hour_resets:[],available_week_resets:[],latest_five_hour_reset_history:null,latest_week_reset_history:null,has_unread_history:false})
     if (pathname.endsWith('getCustomerInfo')) return json({ organizations: [{ organizationId: 'org', organizationName: '默认机构', projects: [{ projectId: 'proj', projectName: '默认项目', projectType: 1 }, { projectId: 'team', projectName: '团队', projectType: 2 }] }] })
+    if (pathname.endsWith('api_keys') && splitKeys && !pathname.includes('/team/')) return json([{name:'zcode-api-key',keyType:1,usageScene:1,apiKey:'coding-only'},{name:'ordinary-api-key',keyType:1,usageScene:2,apiKey:'ordinary-only'}])
     if (pathname.endsWith('api_keys')) return json(pathname.includes('/team/') ? [{ name: 'zcode-team-api-key', keyType: 2, apiKey: 'team-key' }] : [{ name: 'zcode-api-key', keyType: 1, apiKey: 'personal-key' }])
     if (pathname.includes('/copy/')) return json({ secretKey: 'secret-fixture' })
     if (pathname.endsWith('querySubscribeDetail')) return json({ hasSubscription: true, status: 'EFFECTIVE', memberGrantStatus: teamUnassigned ? 'UNASSIGNED' : 'VALID' })
@@ -33,7 +35,7 @@ async function fixture() {
     return json({ plans: [] })
   }) as any
   const service = new ZcodeSources(ctx, pool, fetcher)
-  return { pool, ctx, credential, service, requests, numeric: () => { numericUnit = true }, fail: () => { fail = true }, unassigned: () => { teamUnassigned = true } }
+  return { pool, ctx, credential, service, requests, split: () => { splitKeys = true }, numeric: () => { numericUnit = true }, fail: () => { fail = true }, unassigned: () => { teamUnassigned = true } }
 }
 describe('ZCode独立额度来源', () => {
   it('赠送、个人、默认机构流量与机构套餐分别展示，不泄露密钥，只GET已有key', async () => {
@@ -114,4 +116,22 @@ describe('ZCode独立额度来源', () => {
     expect(result.sources.find(s => s.kind === 'team')?.quota).toBe('5小时：剩余 14998；每周：剩余 63931')
   })
 
+  it('机构流量优先普通API key，个人套餐使用自己的coding key，不借用套餐专用key', async () => {
+    const f=await fixture();f.split();const rows=(await f.service.list('A')).sources;
+    await f.service.select('A',rows.find(s=>s.kind==='organization-flow')!.id);
+    const ordinary=await f.service.resolve(f.pool.findAccount('A')!,f.credential);expect(ordinary.source_selection!.key).toBe('ordinary-only.secret-fixture');
+    await f.service.select('A','individual');const personal=await f.service.resolve(f.pool.findAccount('A')!,f.credential);expect(personal.source_selection!.key).toBe('coding-only.secret-fixture');
+  })
+  it('来源解析期间的切换使旧请求明确失败，不能把旧任务套入新Plan', async () => {
+    const f=await fixture();const rows=(await f.service.list('A')).sources;await f.service.select('A',rows.find(s=>s.kind==='organization-flow')!.id);const snapshot={...f.pool.findAccount('A')!};
+    await f.service.select('A','individual');await expect(f.service.resolve(snapshot,f.credential)).rejects.toThrow('来源已改变');expect(f.pool.findAccount('A')!.zcodeSource).toBe('individual');
+  })
+
 })
+
+it('额度重置只接受明确个人/机构编程套餐，使用OAuth双凭据且不改变推理所选Plan', async()=>{
+ const f=await fixture();const rows=(await f.service.list('A')).sources,flow=rows.find(r=>r.kind==='organization-flow')!,team=rows.find(r=>r.kind==='team')!;await f.service.select('A',flow.id);
+ await expect(f.service.reset('A',flow.id,'status')).rejects.toThrow('不适用');await expect(f.service.reset('A','start-plan','status')).rejects.toThrow('不适用');expect(f.requests.filter(r=>r.url.includes('/coding-plan/reset/'))).toHaveLength(0);
+ await f.service.reset('A','individual','status');let req=f.requests.at(-1)!;expect(req.headers.get('X-Bigmodel-Authorization')).toBe('fake-oauth');expect(req.headers.get('Bigmodel-Target-Type')).toBe('PERSONAL');expect(req.headers.get('Bigmodel-Organization')).toBe(null);
+ await f.service.reset('A',team.id,'status');req=f.requests.at(-1)!;expect(req.headers.get('Bigmodel-Target-Type')).toBe('TEAM');expect(req.headers.get('Bigmodel-Organization')).toBe('org');expect(req.headers.get('Bigmodel-Project')).toBe('team');expect(f.pool.findAccount('A')!.zcodeSource).toBe(flow.id);
+});

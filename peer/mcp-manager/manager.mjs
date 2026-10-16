@@ -9,16 +9,20 @@ import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { check, read, save, toolName, localCaller, MT_READ, policyOf } from './common.mjs';
 import { ModelRouter, ROUTER_TOOLS } from './router.mjs';
 import { LocalMcpTransport, BROWSER_TOOLS, browserCall } from './builtins.mjs';
+import { stdioLaunch, stdioEnvironment, launchNotice, expandHome } from './launch.mjs';
+import { MediaService, MEDIA_TOOLS } from './media.mjs';
 
 const run=promisify(execFile);
 const builtins=[
   {id:'router',label:'模型探针与自动派单',transport:'builtin-router',enabled:true,scope:'*'},
   {id:'browser',label:'内置浏览器控制',transport:'builtin-browser',enabled:true,scope:'*'},
+  {id:'media',label:'图片、视频与朗读音频',transport:'builtin-media',enabled:true,scope:'*'},
 ];
-function validate(input) {
+function validate(input,home) {
   check(input&&/^[a-zA-Z0-9_-]{1,32}$/.test(input.id),'服务标识只能用1至32位字母、数字、下划线或横线');
   check(!['router','browser'].includes(input.id)||input.transport==='builtin-'+input.id,'内置服务类型不能替换');
-  check(['stdio','streamable-http','sse','phone-mt','phone-local-mt','builtin-router','builtin-browser'].includes(input.transport),'未知连接方式');
+  check(['stdio','streamable-http','sse','phone-mt','phone-local-mt','builtin-router','builtin-browser','builtin-media'].includes(input.transport),'未知连接方式');
+  check(input.transport !== 'builtin-media' || input.id === 'media', '内置媒体服务标识为media');
   const row={id:input.id,label:String(input.label||input.id).slice(0,80),transport:input.transport,enabled:input.enabled!==false,scope:input.scope||'*'};
   check(Array.isArray(input.readOnlyTools||[])&&(input.readOnlyTools||[]).length<=300&&(input.readOnlyTools||[]).every(x=>typeof x==='string'&&x.length<=128),'只读工具名单无效');
   row.readOnlyTools=[...new Set(input.readOnlyTools||[])];
@@ -31,11 +35,12 @@ function validate(input) {
     check(typeof input.command==='string'&&input.command.length>0&&input.command.length<1024,'启动命令为空或过长');
     check(Array.isArray(input.args||[])&&(input.args||[]).length<=64&&(input.args||[]).every(x=>typeof x==='string'&&x.length<4096),'参数必须为字符串数组');
     row.command=input.command; row.args=input.args||[]; row.cwd=input.cwd||undefined;
-    check(!row.cwd||path.isAbsolute(row.cwd),'工作目录必须为绝对路径');
+    check(!row.cwd||path.isAbsolute(expandHome(row.cwd,home)),'工作目录必须为绝对路径或以 $DSH_HOME 开头');
   }
   if(row.transport==='phone-mt') {
     check(typeof input.serial==='string'&&/^[A-Za-z0-9_.:-]{1,120}$/.test(input.serial),'ADB设备标识无效');
     row.serial=input.serial;
+    if(input.adbServerPort!==undefined){check(Number.isInteger(input.adbServerPort)&&input.adbServerPort>=1&&input.adbServerPort<=65535,'ADB服务端口无效');row.adbServerPort=input.adbServerPort;}
   }
   if(row.transport==='phone-local-mt') {
     check(process.env.DSH_PHONE_ANDROID==='1','手机本机MT只在手机版使用');
@@ -56,8 +61,12 @@ export class McpManager {
   constructor(ctx,home) {
     this.ctx=ctx; this.home=home; this.file=path.join(home,'storage/mcp-manager/config.json');
     this.config=read(this.file,{version:1,revision:0,servers:builtins,pricing:{}});
+    if(!this.config.servers.some(row=>row.id==='media')) {
+      this.config={...this.config,revision:this.config.revision+1,servers:[...this.config.servers,builtins.find(row=>row.id==='media')]};save(this.file,this.config);
+    }
     this.links=new Map(); this.queue=Promise.resolve(); this.disposed=false;
     this.router=new ModelRouter(ctx,home,()=>this.config.pricing||{});
+    this.media=new MediaService(ctx,home);
   }
   secretRef(id) { return credentialRef('DSH_MCP_'+id+'_V1'); }
   async secrets(row) {
@@ -67,9 +76,9 @@ export class McpManager {
   status() {
     return {revision:this.config.revision,servers:this.config.servers.map(row=>{
       const link=this.links.get(row.id);
-      return {...row,status:link?.status||'disabled',error:link?.error||'',tools:(link?.tools||[]).map(t=>({name:t.name,publicName:toolName(row.id,t.name),description:String(t.description||'').slice(0,300)})),
-        secretFields:link?.secretFields||null};
-    }),pricing:this.config.pricing||{},windows:this.router.windows(),limits:{windowCalls:40,candidates:3,probeSamples:2,childCalls:8},
+      return {...row,upgradeNotice:launchNotice(row,this.home),status:link?.status||'disabled',error:link?.error||'',tools:(link?.tools||[]).map(t=>({name:t.name,publicName:toolName(row.id,t.name),description:String(t.description||'').slice(0,300)})),
+      secretFields:link?.secretFields||null};
+    }),media:this.media.status(),extensionDirectory:path.join(this.home,'extensions/mcp'),upgrade:read(path.join(this.home,'storage/mcp-manager/upgrade.json'),null),pricing:this.config.pricing||{},windows:this.router.windows(),limits:{windowCalls:40,candidates:3,probeSamples:2,childCalls:8},
       notice:'浏览器和模型观测按项目窗口分开；外部工具返回作为材料，不注入服务器指令或共享记忆。未知费用不视为免费。手机可直连本机 MT；电脑的 MT 接入需要 ADB 连接和 MT 服务运行。'};
   }
   async prepare(row,secrets) {
@@ -77,13 +86,18 @@ export class McpManager {
     try {
       if(row.transport==='builtin-router') link.transport=new LocalMcpTransport(ROUTER_TOOLS,(name,args,exec)=>this.router.call(name,args,exec));
       else if(row.transport==='builtin-browser') link.transport=new LocalMcpTransport(BROWSER_TOOLS,(name,args,exec)=>browserCall(this.ctx,name,args,exec));
-      else if(row.transport==='stdio') link.transport=new StdioClientTransport({command:row.command,args:row.args,cwd:row.cwd,env:{...scrubbedParentEnv(),...secrets.env},stderr:'pipe'});
+      else if(row.transport==='builtin-media') link.transport=new LocalMcpTransport(MEDIA_TOOLS,(name,args,exec)=>this.media.call(name,args,exec));
+      else if(row.transport==='stdio') {
+        const launch=stdioLaunch(row,this.home);
+        link.transport=new StdioClientTransport({...launch,env:stdioEnvironment(launch,scrubbedParentEnv(),secrets.env),stderr:'pipe'});
+      }
       else {
         let url=row.url;
         if(row.transport==='phone-mt') {
-          const {stdout}=await run('adb',['-s',row.serial,'forward','tcp:0','tcp:8787'],{timeout:10000,maxBuffer:4096});
+          const adbArgs=row.adbServerPort?['-P',String(row.adbServerPort)]:[];
+          const {stdout}=await run('adb',[...adbArgs,'-s',row.serial,'forward','tcp:0','tcp:8787'],{timeout:10000,maxBuffer:4096});
           const port=stdout.trim(); check(/^\d+$/.test(port),'ADB未返回转发端口');
-          link.forward={serial:row.serial,port}; url='http://127.0.0.1:'+port+'/mcp';
+          link.forward={serial:row.serial,port,adbServerPort:row.adbServerPort}; url='http://127.0.0.1:'+port+'/mcp';
         }
         link.transport=row.transport==='sse'?new SSEClientTransport(new URL(url),{requestInit:{headers:secrets.headers}}):
           new StreamableHTTPClientTransport(new URL(url),{requestInit:{headers:secrets.headers}});
@@ -127,7 +141,7 @@ export class McpManager {
               }
             }
             const ticket=link.transport instanceof LocalMcpTransport?link.transport.ticket(exec):null;
-            try { return await link.client.callTool({name:tool.name,arguments:args,...(ticket?{_meta:{dshExecutionTicket:ticket}}:{})},undefined,{signal:exec.signal,timeout:row.transport==='builtin-router'?360000:60000}); }
+            try { return await link.client.callTool({name:tool.name,arguments:args,...(ticket?{_meta:{dshExecutionTicket:ticket}}:{})},undefined,{signal:exec.signal,timeout:['builtin-router','builtin-media'].includes(row.transport)?360000:60000}); }
             finally { if(ticket) link.transport.release(ticket); }
           }});
         const render=definition.output.render;
@@ -140,7 +154,7 @@ export class McpManager {
     if(!link)return;
     link.status='closed'; for(const off of link.disposers.splice(0)) off();
     await link.client?.close().catch(()=>{}); await link.transport?.close().catch(()=>{});
-    if(link.forward) await run('adb',['-s',link.forward.serial,'forward','--remove','tcp:'+link.forward.port],{timeout:5000}).catch(()=>{});
+    if(link.forward) await run('adb',[...(link.forward.adbServerPort?['-P',String(link.forward.adbServerPort)]:[]),'-s',link.forward.serial,'forward','--remove','tcp:'+link.forward.port],{timeout:5000}).catch(()=>{});
   }
   async init() {
     for(const row of this.config.servers) if(row.enabled) {
@@ -150,6 +164,11 @@ export class McpManager {
   }
   async manage(payload) {
     if(payload.action==='status') return this.status();
+    // Authenticated human settings UI may retrieve an existing job from any window.
+    if(payload.action==='media.result') {
+      const job=this.media.load(payload.jobId);
+      return this.media.result(job.id,{cwd:job.projectPath,id:job.sessionId},AbortSignal.timeout(150000));
+    }
     if(payload.action==='invoke') {
       const agent=this.ctx.get('agents')?.get(payload.sessionId);
       check(agent,'会话未加载，请先在DSH打开这个窗口');
@@ -191,7 +210,8 @@ export class McpManager {
         await this.ctx.credentials.unset?.(this.secretRef(previous.id)); return this.status();
       }
       check(['save','toggle','reconnect'].includes(payload.action),'无效的管理操作');
-      const row=validate(payload.action==='save'?payload.server:{...previous,enabled:payload.action==='toggle'?payload.enabled:previous?.enabled});
+      const row=validate(payload.action==='save'?payload.server:{...previous,enabled:payload.action==='toggle'?payload.enabled:previous?.enabled},this.home);
+      check(!previous?.transport.startsWith('builtin-')||row.transport===previous.transport,'内置服务类型不能替换');
       check(previous||this.config.servers.length<32,'服务数量已达32个');
       const oldSecrets=previous?await this.secrets(previous):{headers:{},env:{}};
       const secrets=payload.secrets?validateSecrets(payload.secrets):oldSecrets;
@@ -216,5 +236,5 @@ export class McpManager {
     };
     const result=this.queue.then(operation); this.queue=result.catch(()=>{}); return result;
   }
-  async close() { this.disposed=true; await this.queue; for(const link of this.links.values()) await this.closeLink(link); this.links.clear(); }
+  async close() { this.disposed=true; await this.queue; for(const link of this.links.values()) await this.closeLink(link); this.links.clear(); await this.media.close(); }
 }

@@ -1,0 +1,803 @@
+/* style-steampunk — 蒸汽朋克 Steampunk | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-style-steampunk], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-style-steampunk] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2c2314;
+  background-color: #f4ecda;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] {
+  color: #f0e7d3;
+  background-color: #131009;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-style-steampunk] {
+  --color-primary: #8f6b12;
+  --primary: #8f6b12;
+  --primary-rgb: 143, 107, 18;
+  --color-primary-light-1: #a9821f;
+  --color-primary-light-2: #c29c35;
+  --color-primary-light-3: #dcbb63;
+  --color-primary-dark-1: #6d5109;
+  --brand: #8f6b12;
+  --brand-light: #f0e3bc;
+  --brand-hover: #a9821f;
+  --color-brand-fill: #8f6b12;
+  --color-brand-bg: #f0e3bc;
+  --aou-1: #faf3dc;
+  --aou-2: #f2e2ac;
+  --aou-3: #e6cc77;
+  --aou-4: #d9b84a;
+  --aou-5: #c9a227;
+  --aou-6: #a9821f;
+  --aou-7: #8f6b12;
+  --aou-8: #715616;
+  --aou-9: #554010;
+  --aou-10: #3d2e0c;
+  --bg-base: #f4ecda;
+  --bg-1: #ece1c8;
+  --bg-2: #e4d6b6;
+  --bg-3: #dbc9a3;
+  --bg-4: #d1bb8f;
+  --bg-5: #c4ab79;
+  --bg-6: #b29865;
+  --bg-8: #8f7a4e;
+  --bg-9: #6b5b3a;
+  --bg-10: #463c26;
+  --color-bg-1: #ece1c8;
+  --color-bg-2: #e4d6b6;
+  --color-bg-3: #dbc9a3;
+  --color-bg-4: #d1bb8f;
+  --bg-hover: #e2d4b2;
+  --bg-active: #d8c69e;
+  --text-primary: #2c2314;
+  --text-secondary: #5f543c;
+  --text-disabled: #a3967a;
+  --text-0: #1a1409;
+  --text-white: #ffffff;
+  --color-text-1: #2c2314;
+  --color-text-2: #5f543c;
+  --color-text-3: #857856;
+  --color-text-4: #a3967a;
+  --border-base: #cbb889;
+  --border-light: #dccdaa;
+  --border-special: #a07d1c;
+  --color-border: #cbb889;
+  --color-border-1: #cbb889;
+  --color-border-2: #dccdaa;
+  --fill: #e4d6b6;
+  --color-fill: #e4d6b6;
+  --fill-0: #ece1c8;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #efe4cb;
+  --inverse: #2c2314;
+  --success: #4e7d32;
+  --warning: #b26a10;
+  --danger: #a83520;
+  --info: #3d6f8e;
+  --message-user-bg: #6b4a24;
+  --message-tips-bg: #e7d9b8;
+  --workspace-btn-bg: #f0e3bc;
+  --color-guid-agent-bar: #ece0c4;
+  --sp-brass: #8f6b12;
+  --sp-brass-hi: #c9a227;
+  --sp-copper: #a35e24;
+  --sp-copper-dark: #7d4a1d;
+  --sp-leather: #6b4a24;
+  --sp-iron: #4a3f2c;
+  --sp-gauge-red: #a83520;
+  --sp-parchment: #f4ecda;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-style-steampunk][data-ds-dark-theme] {
+  --color-primary: #c9a227;
+  --primary: #c9a227;
+  --primary-rgb: 201, 162, 39;
+  --color-primary-light-1: #d9b84a;
+  --color-primary-light-2: #e6cc77;
+  --color-primary-light-3: #f2e2ac;
+  --color-primary-dark-1: #9a7a1a;
+  --brand: #c9a227;
+  --brand-light: #3a2f12;
+  --brand-hover: #d9b84a;
+  --color-brand-fill: #c9a227;
+  --color-brand-bg: #33290f;
+  --aou-1: #2a2008;
+  --aou-2: #3d2e0c;
+  --aou-3: #554010;
+  --aou-4: #715616;
+  --aou-5: #8f6e1d;
+  --aou-6: #c9a227;
+  --aou-7: #d9b84a;
+  --aou-8: #e6cc77;
+  --aou-9: #f2e2ac;
+  --aou-10: #faf3dc;
+  --bg-base: #131009;
+  --bg-1: #1a160e;
+  --bg-2: #211b12;
+  --bg-3: #292218;
+  --bg-4: #332a1d;
+  --bg-5: #3f3524;
+  --bg-6: #4d412c;
+  --bg-8: #6b5b3d;
+  --bg-9: #93805c;
+  --bg-10: #c0ab85;
+  --color-bg-1: #1a160e;
+  --color-bg-2: #211b12;
+  --color-bg-3: #292218;
+  --color-bg-4: #332a1d;
+  --bg-hover: #262017;
+  --bg-active: #322a1c;
+  --text-primary: #f0e7d3;
+  --text-secondary: #b8a88c;
+  --text-disabled: #6e6350;
+  --text-0: #faf5e8;
+  --text-white: #ffffff;
+  --color-text-1: #f0e7d3;
+  --color-text-2: #b8a88c;
+  --color-text-3: #8d8168;
+  --color-text-4: #6e6350;
+  --border-base: #3a3122;
+  --border-light: #2b2418;
+  --border-special: #7a5b23;
+  --color-border: #3a3122;
+  --color-border-1: #3a3122;
+  --color-border-2: #2b2418;
+  --fill: #211b12;
+  --color-fill: #211b12;
+  --fill-0: #1a160e;
+  --fill-white-to-black: #0d0b06;
+  --dialog-fill-0: #1e1910;
+  --inverse: #f0e7d3;
+  --success: #7fa65a;
+  --warning: #d98e2b;
+  --danger: #c0452e;
+  --info: #5f8ba8;
+  --message-user-bg: #4a3416;
+  --message-tips-bg: #241d12;
+  --workspace-btn-bg: #33290f;
+  --color-guid-agent-bar: #1c1710;
+  --sp-brass: #c9a227;
+  --sp-brass-hi: #e6cc77;
+  --sp-copper: #b87333;
+  --sp-copper-dark: #7d4a1d;
+  --sp-leather: #5c3a21;
+  --sp-iron: #2b241a;
+  --sp-gauge-red: #c0452e;
+  --sp-ivory: #f0e7d3;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-style-steampunk] {
+  --dsw-static-deepseek-50: #faf3dc;
+  --dsw-static-blue-50: #faf3dc;
+  --dsw-static-deepseek-50p: #f2e2ac;
+  --dsw-static-blue-50p: #f2e2ac;
+  --dsw-static-deepseek-75: #f2e2ac;
+  --dsw-static-blue-75: #f2e2ac;
+  --dsw-static-deepseek-100: #f2e2ac;
+  --dsw-static-blue-100: #f2e2ac;
+  --dsw-static-deepseek-200: #e6cc77;
+  --dsw-static-blue-200: #e6cc77;
+  --dsw-static-deepseek-300: #d9b84a;
+  --dsw-static-blue-300: #d9b84a;
+  --dsw-static-deepseek-400: #c9a227;
+  --dsw-static-blue-400: #c9a227;
+  --dsw-static-deepseek-450: #c9a227;
+  --dsw-static-blue-450: #c9a227;
+  --dsw-static-deepseek-500: #a9821f;
+  --dsw-static-blue-500: #a9821f;
+  --dsw-static-deepseek-600: #8f6b12;
+  --dsw-static-blue-600: #8f6b12;
+  --dsw-static-deepseek-700-delete: #715616;
+  --dsw-static-deepseek-800: #715616;
+  --dsw-static-blue-800: #715616;
+  --dsw-static-deepseek-900: #554010;
+  --dsw-static-blue-900: #554010;
+  --dsw-static-deepseek-950: #3d2e0c;
+  --dsw-static-blue-950: #3d2e0c;
+  --dsw-static-neutral-bluish-00: #ece1c8;
+  --dsw-static-neutral-00: #ece1c8;
+  --dsw-static-neutral-bluish-50: #ece1c8;
+  --dsw-static-neutral-50: #ece1c8;
+  --dsw-static-neutral-bluish-60: #ece1c8;
+  --dsw-static-neutral-60: #ece1c8;
+  --dsw-static-neutral-bluish-75: #e4d6b6;
+  --dsw-static-neutral-75: #e4d6b6;
+  --dsw-static-neutral-bluish-100: #e4d6b6;
+  --dsw-static-neutral-100: #e4d6b6;
+  --dsw-static-neutral-bluish-150: #dbc9a3;
+  --dsw-static-neutral-150: #dbc9a3;
+  --dsw-static-neutral-bluish-200: #dbc9a3;
+  --dsw-static-neutral-200: #dbc9a3;
+  --dsw-static-neutral-bluish-250: #d1bb8f;
+  --dsw-static-neutral-250: #d1bb8f;
+  --dsw-static-neutral-bluish-300: #d1bb8f;
+  --dsw-static-neutral-300: #d1bb8f;
+  --dsw-static-neutral-bluish-400: #c4ab79;
+  --dsw-static-neutral-400: #c4ab79;
+  --dsw-static-neutral-bluish-500: #b29865;
+  --dsw-static-neutral-500: #b29865;
+  --dsw-static-neutral-bluish-550: #b29865;
+  --dsw-static-neutral-550: #b29865;
+  --dsw-static-neutral-bluish-600: #8f7a4e;
+  --dsw-static-neutral-600: #8f7a4e;
+  --dsw-static-neutral-bluish-700: #8f7a4e;
+  --dsw-static-neutral-700: #8f7a4e;
+  --dsw-static-neutral-bluish-750: #6b5b3a;
+  --dsw-static-neutral-750: #6b5b3a;
+  --dsw-static-neutral-bluish-800: #6b5b3a;
+  --dsw-static-neutral-800: #6b5b3a;
+  --dsw-static-neutral-bluish-850: #6b5b3a;
+  --dsw-static-neutral-850: #6b5b3a;
+  --dsw-static-neutral-bluish-875: #463c26;
+  --dsw-static-neutral-875: #463c26;
+  --dsw-static-neutral-bluish-900: #463c26;
+  --dsw-static-neutral-900: #463c26;
+  --dsw-static-neutral-bluish-950: #463c26;
+  --dsw-static-neutral-950: #463c26;
+  --dsw-static-neutral-bluish-1000: #2c2314;
+  --dsw-static-neutral-1000: #2c2314;
+  --dsw-static-green-50: color-mix(in srgb, #4e7d32 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #4e7d32 20%, white);
+  --dsw-static-green-400: #4e7d32;
+  --dsw-static-green-500: #4e7d32;
+  --dsw-static-green-600: color-mix(in srgb, #4e7d32 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4e7d32 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #b26a10 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #b26a10 20%, white);
+  --dsw-static-amber-400: #b26a10;
+  --dsw-static-amber-500: #b26a10;
+  --dsw-static-amber-600: color-mix(in srgb, #b26a10 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #b26a10 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #a83520 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #a83520 20%, white);
+  --dsw-static-red-400: #a83520;
+  --dsw-static-red-500: #a83520;
+  --dsw-static-red-600: color-mix(in srgb, #a83520 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #a83520 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-style-steampunk][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2a2008;
+  --dsw-static-blue-50: #2a2008;
+  --dsw-static-deepseek-50p: #3d2e0c;
+  --dsw-static-blue-50p: #3d2e0c;
+  --dsw-static-deepseek-75: #3d2e0c;
+  --dsw-static-blue-75: #3d2e0c;
+  --dsw-static-deepseek-100: #3d2e0c;
+  --dsw-static-blue-100: #3d2e0c;
+  --dsw-static-deepseek-200: #554010;
+  --dsw-static-blue-200: #554010;
+  --dsw-static-deepseek-300: #715616;
+  --dsw-static-blue-300: #715616;
+  --dsw-static-deepseek-400: #8f6e1d;
+  --dsw-static-blue-400: #8f6e1d;
+  --dsw-static-deepseek-450: #8f6e1d;
+  --dsw-static-blue-450: #8f6e1d;
+  --dsw-static-deepseek-500: #c9a227;
+  --dsw-static-blue-500: #c9a227;
+  --dsw-static-deepseek-600: #d9b84a;
+  --dsw-static-blue-600: #d9b84a;
+  --dsw-static-deepseek-700-delete: #e6cc77;
+  --dsw-static-deepseek-800: #e6cc77;
+  --dsw-static-blue-800: #e6cc77;
+  --dsw-static-deepseek-900: #f2e2ac;
+  --dsw-static-blue-900: #f2e2ac;
+  --dsw-static-deepseek-950: #faf3dc;
+  --dsw-static-blue-950: #faf3dc;
+  --dsw-static-neutral-bluish-00: #1a160e;
+  --dsw-static-neutral-00: #1a160e;
+  --dsw-static-neutral-bluish-50: #1a160e;
+  --dsw-static-neutral-50: #1a160e;
+  --dsw-static-neutral-bluish-60: #1a160e;
+  --dsw-static-neutral-60: #1a160e;
+  --dsw-static-neutral-bluish-75: #211b12;
+  --dsw-static-neutral-75: #211b12;
+  --dsw-static-neutral-bluish-100: #211b12;
+  --dsw-static-neutral-100: #211b12;
+  --dsw-static-neutral-bluish-150: #292218;
+  --dsw-static-neutral-150: #292218;
+  --dsw-static-neutral-bluish-200: #292218;
+  --dsw-static-neutral-200: #292218;
+  --dsw-static-neutral-bluish-250: #332a1d;
+  --dsw-static-neutral-250: #332a1d;
+  --dsw-static-neutral-bluish-300: #332a1d;
+  --dsw-static-neutral-300: #332a1d;
+  --dsw-static-neutral-bluish-400: #3f3524;
+  --dsw-static-neutral-400: #3f3524;
+  --dsw-static-neutral-bluish-500: #4d412c;
+  --dsw-static-neutral-500: #4d412c;
+  --dsw-static-neutral-bluish-550: #4d412c;
+  --dsw-static-neutral-550: #4d412c;
+  --dsw-static-neutral-bluish-600: #6b5b3d;
+  --dsw-static-neutral-600: #6b5b3d;
+  --dsw-static-neutral-bluish-700: #6b5b3d;
+  --dsw-static-neutral-700: #6b5b3d;
+  --dsw-static-neutral-bluish-750: #93805c;
+  --dsw-static-neutral-750: #93805c;
+  --dsw-static-neutral-bluish-800: #93805c;
+  --dsw-static-neutral-800: #93805c;
+  --dsw-static-neutral-bluish-850: #93805c;
+  --dsw-static-neutral-850: #93805c;
+  --dsw-static-neutral-bluish-875: #c0ab85;
+  --dsw-static-neutral-875: #c0ab85;
+  --dsw-static-neutral-bluish-900: #c0ab85;
+  --dsw-static-neutral-900: #c0ab85;
+  --dsw-static-neutral-bluish-950: #c0ab85;
+  --dsw-static-neutral-950: #c0ab85;
+  --dsw-static-neutral-bluish-1000: #f0e7d3;
+  --dsw-static-neutral-1000: #f0e7d3;
+  --dsw-static-green-50: color-mix(in srgb, #7fa65a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #7fa65a 20%, black);
+  --dsw-static-green-400: #7fa65a;
+  --dsw-static-green-500: #7fa65a;
+  --dsw-static-green-600: color-mix(in srgb, #7fa65a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #7fa65a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d98e2b 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #d98e2b 20%, black);
+  --dsw-static-amber-400: #d98e2b;
+  --dsw-static-amber-500: #d98e2b;
+  --dsw-static-amber-600: color-mix(in srgb, #d98e2b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d98e2b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c0452e 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #c0452e 20%, black);
+  --dsw-static-red-400: #c0452e;
+  --dsw-static-red-500: #c0452e;
+  --dsw-static-red-600: color-mix(in srgb, #c0452e 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c0452e 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-style-steampunk] {
+  --dsw-alias-button-primary-fill: #8f6b12;
+  --dsw-alias-button-primary-hover: #a9821f;
+  --dsw-alias-button-primary-dimmed: #f2e2ac;
+  --dsw-alias-button-info-fill: #8f6b12;
+  --dsw-alias-button-info-hover: #a9821f;
+  --dsw-alias-button-contrast-fill: #8f6b12;
+  --dsw-alias-button-ghost-active-fill: #f0e3bc;
+  --dsw-alias-button-ghost-active-hover: #f2e2ac;
+  --dsw-alias-button-ghost-active-border: #d9b84a;
+  --dsw-alias-button-elevated-fill: #ece1c8;
+  --dsw-alias-button-floating-fill: #ece1c8;
+  --dsw-alias-button-floating-hover: #e2d4b2;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(143, 107, 18, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(143, 107, 18, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(143, 107, 18, 0.6);
+  --dsw-specific-bubble: #6b4a24;
+  --dsw-specific-bubble-highlight: #e6cc77;
+  --dsw-specific-input-major: #ece1c8;
+  --dsw-specific-login-input: #ece1c8;
+  --dsw-specific-sidebar-fill: #8f6b12;
+  --dsw-specific-sidebar-nav-item-active: #f2e2ac;
+  --dsw-specific-sidebar-nav-item-hover: #e2d4b2;
+  --dsw-specific-sidebar-nav-item-active-accent: #d9b84a;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-style-steampunk][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #c9a227;
+  --dsw-alias-button-primary-hover: #d9b84a;
+  --dsw-alias-button-primary-dimmed: #3d2e0c;
+  --dsw-alias-button-info-fill: #c9a227;
+  --dsw-alias-button-info-hover: #d9b84a;
+  --dsw-alias-button-contrast-fill: #d9b84a;
+  --dsw-alias-button-ghost-active-fill: #3a2f12;
+  --dsw-alias-button-ghost-active-hover: #3d2e0c;
+  --dsw-alias-button-ghost-active-border: #715616;
+  --dsw-alias-button-elevated-fill: #1a160e;
+  --dsw-alias-button-floating-fill: #1a160e;
+  --dsw-alias-button-floating-hover: #262017;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(201, 162, 39, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(201, 162, 39, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(201, 162, 39, 0.6);
+  --dsw-specific-bubble: #4a3416;
+  --dsw-specific-bubble-highlight: #554010;
+  --dsw-specific-input-major: #1a160e;
+  --dsw-specific-login-input: #1a160e;
+  --dsw-specific-sidebar-fill: #c9a227;
+  --dsw-specific-sidebar-nav-item-active: #3d2e0c;
+  --dsw-specific-sidebar-nav-item-hover: #262017;
+  --dsw-specific-sidebar-nav-item-active-accent: #715616;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-style-steampunk] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-steampunk]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 8px 8px, var(--sp-copper-dark) 0 1.5px, transparent 2.5px),
+      repeating-linear-gradient(0deg, rgba(125, 74, 29, 0.5) 0 1px, transparent 1px 40px),
+      repeating-linear-gradient(90deg, rgba(125, 74, 29, 0.5) 0 1px, transparent 1px 40px);
+    background-size: 120px 120px, 100% 100%, 100% 100%;
+}
+
+body[data-dsh-style-steampunk]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background-image:
+      repeating-conic-gradient(from 0deg at 88% 14%,
+        var(--sp-brass) 0deg 12deg, transparent 12deg 30deg),
+      radial-gradient(circle at 88% 14%, transparent 0 90px, var(--sp-brass) 90px 98px, transparent 98px),
+      repeating-conic-gradient(from 15deg at 6% 88%,
+        var(--sp-copper) 0deg 12deg, transparent 12deg 30deg),
+      radial-gradient(circle at 6% 88%, transparent 0 120px, var(--sp-copper) 120px 128px, transparent 128px);
+    animation: style-steampunk-sp-gear-mesh 40s linear infinite;
+}
+
+body[data-dsh-style-steampunk] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-steampunk] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--sp-copper);
+}
+
+body[data-dsh-style-steampunk] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-steampunk] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(201, 162, 39, 0.4), rgba(201, 162, 39, 0.12) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--sp-brass);
+    font-weight: 600;
+}
+
+body[data-dsh-style-steampunk] button[class*='primary'],
+body[data-dsh-style-steampunk] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(180deg, #a9821f 0%, var(--sp-brass) 55%, #6d5109 100%) !important;
+    border: 1px solid #6d5109 !important;
+    border-radius: 8px !important;
+    color: #fdf6e0 !important;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(60, 44, 6, 0.55);
+    box-shadow: 0 2px 8px rgba(143, 107, 18, 0.4), inset 0 1px 0 rgba(240, 220, 150, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease, transform 0.15s ease;
+}
+
+body[data-dsh-style-steampunk] button[class*='primary']:hover,
+body[data-dsh-style-steampunk] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 16px rgba(143, 107, 18, 0.55), inset 0 1px 0 rgba(240, 220, 150, 0.6);
+    animation: style-steampunk-sp-furnace-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-style-steampunk] button[class*='primary']:active,
+body[data-dsh-style-steampunk] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+}
+
+body[data-dsh-style-steampunk] pre,
+body[data-dsh-style-steampunk] .markdown-body pre {
+  background: linear-gradient(180deg, #efe5cd 0%, #e8dbba 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--sp-copper) !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 10px rgba(125, 74, 29, 0.14), 0 1px 4px rgba(125, 74, 29, 0.15);
+}
+
+body[data-dsh-style-steampunk] pre code,
+body[data-dsh-style-steampunk] .markdown-body pre code {
+  background: transparent !important;
+    color: #33301f !important;
+    border: none;
+    padding: 0;
+}
+
+body[data-dsh-style-steampunk] code,
+body[data-dsh-style-steampunk] .markdown-body code {
+  background: rgba(201, 162, 39, 0.22);
+    color: #6d5109;
+    border: 1px solid rgba(143, 107, 18, 0.4);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-style-steampunk]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-style-steampunk] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-bottom: 2px solid var(--sp-copper) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 6px rgba(125, 74, 29, 0.12), 0 0 0 1px rgba(143, 107, 18, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-steampunk] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+    border-bottom-color: var(--sp-copper-dark) !important;
+}
+
+body[data-dsh-style-steampunk] [class*='agent-bar'],
+body[data-dsh-style-steampunk] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(143, 107, 18, 0.4);
+}
+
+body[data-dsh-style-steampunk]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-steampunk]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--sp-brass-hi), var(--sp-copper-dark));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-steampunk]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #dcbb63, var(--sp-copper));
+    box-shadow: 0 0 8px rgba(143, 107, 18, 0.5);
+}
+
+body[data-dsh-style-steampunk]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-steampunk] .markdown-body a,
+body[data-dsh-style-steampunk] a {
+  color: #7d4a1d;
+    font-weight: 600;
+}
+
+body[data-dsh-style-steampunk] .markdown-body a:hover,
+body[data-dsh-style-steampunk] a:hover {
+  color: var(--sp-copper);
+}
+
+body[data-dsh-style-steampunk] .markdown-body blockquote {
+  border-left: 4px solid var(--sp-copper);
+    background: rgba(163, 94, 36, 0.12);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-steampunk] .markdown-body hr,
+body[data-dsh-style-steampunk] hr {
+  border: none;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(180deg,
+      var(--sp-copper-dark) 0%, var(--sp-copper) 40%,
+      #d99a58 50%, var(--sp-copper) 60%, var(--sp-copper-dark) 100%);
+    opacity: 0.7;
+}
+
+body[data-dsh-style-steampunk] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--sp-copper-dark) !important;
+    border-color: rgba(143, 107, 18, 0.55) !important;
+    background-color: rgba(201, 162, 39, 0.14) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-style-steampunk][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(circle at 8px 8px, var(--sp-brass) 0 2px, transparent 3px),
+      repeating-linear-gradient(
+        45deg,
+        rgba(201, 162, 39, 0.5) 0 1px,
+        transparent 1px 6px
+      );
+    background-size: 96px 96px, 100% 100%;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      repeating-conic-gradient(from 0deg at 88% 14%,
+        var(--sp-brass) 0deg 12deg, transparent 12deg 30deg),
+      radial-gradient(circle at 88% 14%, transparent 0 90px, var(--sp-brass) 90px 98px, transparent 98px),
+      repeating-conic-gradient(from 15deg at 6% 88%,
+        var(--sp-copper) 0deg 12deg, transparent 12deg 30deg),
+      radial-gradient(circle at 6% 88%, transparent 0 120px, var(--sp-copper) 120px 128px, transparent 128px);
+    animation: style-steampunk-sp-gear-mesh 40s linear infinite;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--sp-copper);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(201, 162, 39, 0.3), rgba(201, 162, 39, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--sp-brass);
+    font-weight: 600;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-style-steampunk][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(180deg, #d9b84a 0%, var(--sp-brass) 55%, #9a7a1a 100%) !important;
+    border: 1px solid var(--sp-brass-hi) !important;
+    border-radius: 8px !important;
+    color: #241a05 !important;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255, 240, 200, 0.45);
+    box-shadow: 0 2px 8px rgba(201, 162, 39, 0.35), inset 0 1px 0 rgba(255, 235, 180, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease, transform 0.15s ease;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-style-steampunk][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 16px rgba(201, 162, 39, 0.6), inset 0 1px 0 rgba(255, 235, 180, 0.6);
+    animation: style-steampunk-sp-furnace-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-style-steampunk][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] pre,
+body[data-dsh-style-steampunk][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #181410 0%, #100d08 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--sp-copper) !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.55), 0 0 12px rgba(184, 115, 51, 0.1);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] pre code,
+body[data-dsh-style-steampunk][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #e8dcc2 !important;
+    border: none;
+    padding: 0;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] code,
+body[data-dsh-style-steampunk][data-ds-dark-theme] .markdown-body code {
+  background: rgba(201, 162, 39, 0.14);
+    color: var(--sp-brass-hi);
+    border: 1px solid rgba(201, 162, 39, 0.35);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-bottom: 2px solid var(--sp-copper-dark) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 8px rgba(5, 4, 2, 0.5), 0 0 0 1px rgba(201, 162, 39, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+    border-bottom-color: var(--sp-copper) !important;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-style-steampunk][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(201, 162, 39, 0.4);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--sp-brass), var(--sp-copper-dark));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--sp-brass-hi), var(--sp-copper));
+    box-shadow: 0 0 8px rgba(201, 162, 39, 0.5);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-style-steampunk][data-ds-dark-theme] a {
+  color: var(--sp-brass-hi);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-style-steampunk][data-ds-dark-theme] a:hover {
+  color: #f2e2ac;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 4px solid var(--sp-copper);
+    background: rgba(92, 58, 33, 0.22);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-style-steampunk][data-ds-dark-theme] hr {
+  border: none;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(180deg,
+      var(--sp-copper-dark) 0%, var(--sp-copper) 40%,
+      #e0a05e 50%, var(--sp-copper) 60%, var(--sp-copper-dark) 100%);
+    opacity: 0.65;
+}
+
+body[data-dsh-style-steampunk][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--sp-brass-hi) !important;
+    border-color: rgba(201, 162, 39, 0.5) !important;
+    background-color: rgba(201, 162, 39, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes style-steampunk-sp-gear-mesh {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(6deg); }
+}
+
+@keyframes style-steampunk-sp-gauge-pulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(143, 107, 18, 0.24); }
+  50% { box-shadow: 0 2px 16px rgba(143, 107, 18, 0.46); }
+}
+
+@keyframes style-steampunk-sp-furnace-glow {
+  0%, 100% { box-shadow: 0 3px 14px rgba(143, 107, 18, 0.5), inset 0 1px 0 rgba(240, 220, 150, 0.55); }
+  50% { box-shadow: 0 3px 22px rgba(178, 106, 16, 0.75), inset 0 1px 0 rgba(240, 220, 150, 0.65); }
+}
+
+@keyframes style-steampunk-sp-steam-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

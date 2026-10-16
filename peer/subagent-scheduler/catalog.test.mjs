@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {ModelCatalog,authorizeSelected} from './catalog.mjs';
+test('configured regular APIs appear independently from the old subagent allowlist; only metadata is returned',async()=>{
+ const llm={listProviders:()=>[{id:'custom',name:'我的正规 API'},{id:'jet',name:'Jet Hub'}],listModels:async p=>[{provider:p,id:p==='custom'?'my-model':'jet-model',name:'可用模型',apiKey:'must-not-leak'}]};const c=new ModelCatalog(llm,{fallback:()=>[{provider:'jet',model:'jet-model'}]});const r=await c.read();assert.equal(r.routes.length,2);assert.equal(r.routes[0].provider,'custom');assert.equal(r.routes[0].providerName,'我的正规 API');assert(!JSON.stringify(r).includes('must-not-leak'));
+});
+test('a slow or failed provider keeps its prior routes, while other catalogs and cache refresh work',async()=>{
+ let hang=false,calls=0;const llm={listProviders:()=>[{id:'fast',name:'Fast'},{id:'slow',name:'Slow'}],listModels:async p=>{calls++;if(hang&&p==='slow')return new Promise(()=>{});return [{id:p+'-model',name:p}];}};const c=new ModelCatalog(llm,{timeoutMs:10});await c.read();await c.read();assert.equal(calls,2);hang=true;const value=await c.read(true);assert.equal(value.routes.length,2);assert.equal(value.providers[1].error,'目录暂不可读，已保留已有线路；请稍后刷新');assert.equal(value.routes[0].model,'fast-model');
+});
+test('saving authorizes only exact selected additions through revision-checked host settings; conflicts do not retry',async()=>{
+ const previous={enabled:true,allowedModels:[{provider:'old',model:'one'}]},writes=[];const settings={describe:()=>[{ns:'subagent-model-selection-settings',revision:7}],update:async(...args)=>writes.push(args)};const ctx={get:n=>n==='settings'?settings:{current:()=>previous}};await authorizeSelected(ctx,[{provider:'custom',model:'two',apiKey:'ignored'}]);assert.deepEqual(writes[0],['subagent-model-selection-settings',{enabled:true,allowedModels:[...previous.allowedModels,{provider:'custom',model:'two'}]},7]);await authorizeSelected(ctx,previous.allowedModels);assert.equal(writes.length,1);settings.update=async()=>{throw Error('conflict');};await assert.rejects(authorizeSelected(ctx,[{provider:'new',model:'three'}]),/conflict/);assert.equal(writes.length,1);
+});

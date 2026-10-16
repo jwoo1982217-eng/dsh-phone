@@ -22122,6 +22122,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const workspaceTrigger = inert && !removed && onRequestWorkspace !== void 0;
 			const editorDisabled = removed || locked && !workspaceTrigger;
 			const editable = live && !locked && !machineBusy;
+			(0, react.useEffect)(() => {
+				const card = cardRef.current;
+				if (card === null || keyboard === void 0) return;
+				const receive = (event) => {
+					const detail = event.detail, refs = detail?.references;
+					if (locked || machineBusy || !Array.isArray(refs) || refs.length < 1 || refs.length > 8 || !refs.every(ref => ref.source === "reference" && typeof ref.ref === "string" && ref.ref.startsWith("dsh-phone-attachment:") && ref.ref.length <= 16384 && typeof ref.label === "string" && typeof ref.clipboardText === "string" && ref.appearance === "file")) return;
+					detail.accepted = keyboard.addFiles(refs, []);
+				};
+				card.addEventListener("dsh:insert-file-references", receive);
+				return () => card.removeEventListener("dsh:insert-file-references", receive);
+			}, [keyboard, locked, machineBusy]);
 			const steeringAvailable = subagent === null || subagent.address.mode === "continuable";
 			const canSteerQueue = !locked && !machineBusy && !commandMenuOpen && empty && running && steeringAvailable && input.queue.length > 0;
 			(0, react.useEffect)(() => {

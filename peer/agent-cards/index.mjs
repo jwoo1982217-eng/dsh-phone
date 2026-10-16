@@ -8,18 +8,24 @@ export async function applyAgentCards(ctx, { legacyPrompts } = {}) {
   const cards = new AgentCards({ get: async key => (await ctx.credentials.resolve(credentialRef(key)))?.value,
     set: (key, value) => ctx.credentials.set(credentialRef(key), value) });
   await cards.init();
+  ctx.provide('dshAgentCards', cards);
   const migrate = async () => { if (legacyPrompts) await cards.importLegacy(await legacyPrompts()); };
   await migrate();
   await applyMemoryIsolation(ctx,cards);
   ctx.systemPrompt.variable('dsh_agent_persona_cards', context => {
     const session = context.agent?.session;
-    return String(session?.id ?? '').startsWith('qq-') || session?.header?.origin === 'subagent' || (session?.header?.delegationDepth ?? 0) > 0 ? '' : cards.promptText();
+    return String(session?.id ?? '').startsWith('qq-') || session?.header?.origin === 'subagent' || (session?.header?.delegationDepth ?? 0) > 0 || ctx.get('dshTeam')?.isSession(session) ? '' : cards.promptText();
   });
   ctx.systemPrompt.context({ name: 'dsh:agent-persona-cards', order: 20, text: '{{dsh_agent_persona_cards}}' });
   ctx.connection.rpc.handle('/agent-cards', async (method, payload) => {
     try {
       if (method !== 'manage' || !payload) throw new CardsError('无效的人设操作');
       await migrate();
+      if (payload.action === 'team.create') {
+        const team = ctx.get('dshTeam');
+        if (!team) throw new CardsError('团队协作尚未加载，请更新程序后重新打开');
+        return {ok: true, value: await team.fromCard(payload)};
+      }
       const value = payload.action === 'status' ? await cards.status()
         : payload.action === 'export' ? cards.export() : await cards.change(payload.action, payload);
       return { ok: true, value };

@@ -1,3 +1,5 @@
+import { registerOrcaTermLlm } from './orcaterm-adapter.js'
+import { parseCredentialText } from './orcaterm-credential.js'
 import type { Context } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { LlmError } from '@deepseek-ai/dsh-llm'
@@ -93,8 +95,12 @@ import { execFile } from 'node:child_process'
 /**
  * 懒加载的 OpenCode UA：首个请求要发时才探测本机 opencode 版本，探测一次即缓存。
  *
- * ⚠️ 拿不到**不阻塞、不抛错**，回退 `OPENCODE.defaultUserAgent`：UA 只是一个伪装
- * 维度，服务端并未校验其真实性（opencode2dsh 实测），不值得为此延迟启动。
+ * ⚠️ 拿不到**不阻塞、不抛错**，回退 `OPENCODE.defaultUserAgent`：UA 只是保真维度，
+ * 探测失败不值得延迟启动。
+ * ⚠️ 2026-10-15 起官方 UA 是**复合串**（真机 1.19.0 抓包）：
+ *   `opencode/<ver> ai-sdk/provider-utils/<x> runtime/bun/<y>`
+ * `--version` 只给得出版本号，后两段固定用 {@link OPENCODE.userAgentSuffix}
+ * （来自抓包，CLI 升级后上游若再变需重新抓包）。
  * 探测最多等 2 秒；本机没装 opencode 是**正常情况**（匿名通道照样能用）。
  * ⚠️ 用 `execFile` 而非 `exec`：**不经过 shell**，参数不会被解释；带
  * `windowsHide` 免得在 Windows 上闪一个黑框。
@@ -110,7 +116,9 @@ function lazyOpencodeUserAgent(): () => string {
     })
       .then((out) => {
         const version = out.match(/(\d+\.\d+\.\d+)/)?.[1]
-        return version === undefined ? OPENCODE.defaultUserAgent : `opencode/${version}`
+        return version === undefined
+          ? OPENCODE.defaultUserAgent
+          : `opencode/${version} ${OPENCODE.userAgentSuffix}`
       })
       .catch(() => OPENCODE.defaultUserAgent)
     // 同步取值：缓存命中时立刻有值；未命中时用产品默认（不阻塞首个请求）。
@@ -159,7 +167,7 @@ export const inject = ['credentials', 'commands', 'llm']
  * `TypeError: ... .toJSON is not a function`，进而使所有依赖 settings 的界面
  * （模型设置页、sidebar 的 settings.get/shell.get）全部失败。
  */
-export const Config = Schema.object({
+export const Config: Schema = Schema.object({
   providers: Schema.dict(Schema.any()).default({}).volatile(),
 })
 
@@ -2092,6 +2100,17 @@ const zcodeAdapter = registerZcodeLlm(ctx, {
     // 限制才接的）。先发原图，撞到限制再按实测加。
     readImage: makeReadImage(ctx),
   })
+  const orcaTermAdapter = registerOrcaTermLlm(ctx, {
+    resolveCredential: async () => {
+      for (const account of pool.listAccountsByProvider('orcaterm').filter(x => x.enabled)) {
+        const secret = await ctx.credentials.resolve(credentialRef(account.credentialRef)).catch(() => undefined)
+        if (secret) { const parsed = parseCredentialText(secret.value); if (parsed) return parsed }
+      }
+      return undefined
+    },
+    warn: message => ctx.logger.warn(message),
+  })
+
   // 保证至少有一条匿名通道（零账号也能用免费模型）。
   //
   // ⚠️ **不 await**：`apply()` 是同步的（不能 await），而这里是异步 IO。
@@ -2266,6 +2285,7 @@ const zcodeAdapter = registerZcodeLlm(ctx, {
     raccoon: pruned(RACCOON.id, raccoonAdapter),
     minimax: pruned(MINIMAX.id, minimaxAdapter),
     gemini: pruned(GEMINI.id, geminiAdapter),
+    orcaterm: pruned('orcaterm', orcaTermAdapter),
     zcode: pruned(ZCODE.id, zcodeAdapter),
     opencode: pruned(OPENCODE.id, opencodeAdapter),
     // ⚠️ 聚合 provider 也必须进这张表（设计文档 §5.2 的必改点）：`jet-hub-rpc.ts` 的

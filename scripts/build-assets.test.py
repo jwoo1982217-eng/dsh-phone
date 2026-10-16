@@ -10,6 +10,83 @@ spec.loader.exec_module(assets)
 
 
 class PlatformPackagingTests(unittest.TestCase):
+    def test_appearance_module_preserves_all_assets_and_upgrade_registration(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as temporary:
+            source = assets.ROOT / 'appearance'
+            target = Path(temporary) / 'dsh-appearance-center'
+            assets.copy_bundle('dsh-appearance-center', target, source)
+            self.assertGreaterEqual(assets.validate_peer_files(target), 5)
+            for item in source.rglob('*'):
+                if item.is_file() and (item.parent.name == 'themes' or item.name in ('client.js', 'page.js', 'page.css', 'visuals.js', 'runtime.css', 'catalog.json')):
+                    self.assertEqual(hashlib.sha256(item.read_bytes()).digest(), hashlib.sha256((target / item.relative_to(source)).read_bytes()).digest())
+            catalog = json.loads((target / 'assets/catalog.json').read_text())
+            self.assertEqual(sum(len(p['themes']) for p in catalog['providers']), 224)
+            missing = target / 'compat/opencode.mjs'
+            missing.unlink()
+            with self.assertRaisesRegex(RuntimeError, 'runtime reference'):
+                assets.validate_peer_files(target)
+            missing.write_bytes((source / 'compat/opencode.mjs').read_bytes())
+            assets.validate_peer_files(target)
+            self.assertIn('dsh-appearance-center', assets.BUNDLES)
+            manifest = json.loads((assets.ROOT / 'home-template/profiles/phone/package.json').read_text())
+            self.assertEqual(manifest['dsh']['profile']['bundles'].count('dsh-appearance-center'), 1)
+            self.assertEqual(manifest['dependencies']['dsh-appearance-center'], 'file:./node_modules/dsh-appearance-center')
+            runner = (assets.ROOT / 'app/src/main/java/com/dshphone/NodeRunner.kt').read_text()
+            self.assertIn('"dsh-team", "dsh-appearance-center", "dsh-knowledge-link").forEach', runner)
+            self.assertEqual(assets.validate_asset_version((assets.ROOT / 'app/build.gradle').read_text(), runner), '104')
+
+    def test_phone_bundle_activates_packaged_subagent_scheduler(self):
+        # 手机通过 phone-qq 应用 peer，必须在实际启用的 bundle 内登记调度器。
+        manifest = json.loads((assets.ROOT / 'home-template/profiles/phone/package.json').read_text())
+        self.assertIn('dsh-phone-qq', manifest['dsh']['profile']['bundles'])
+        patch = (assets.ROOT / 'phone-qq/cordis.patch.yml').read_text()
+        self.assertEqual(patch.count('id: dsh-subagent-scheduler'), 1)
+        self.assertIn('name: dsh-peer/subagent-scheduler', patch)
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / 'dsh-peer'
+            assets.copy_bundle('dsh-peer', target, assets.ROOT / 'peer')
+            self.assertTrue((target / 'subagent-scheduler/index.mjs').is_file())
+            self.assertIn('./subagent-scheduler', json.loads((target / 'package.json').read_text())['exports'])
+            self.assertGreater(assets.validate_peer_files(target), 0)
+
+    def test_framework_excludes_presets_and_retains_features(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tree, home = root / 'tree', root / 'home'
+            for base in (tree / 'node_modules', home / 'profiles/phone/node_modules'):
+                pack = base / 'dsh-phone-qq/bundled-packs/example.zip'
+                pack.parent.mkdir(parents=True)
+                pack.write_bytes(b'optional archive')
+                model = base / 'dsh-peer/knowledge-link/kb/assets/model/model.onnx'
+                model.parent.mkdir(parents=True)
+                model.write_bytes(b'offline model')
+            skill = home / 'skills/example/SKILL.md'
+            skill.parent.mkdir(parents=True)
+            skill.write_text('preset')
+            assets.prepare_distribution(tree, home)
+            self.assertFalse((home / 'skills').exists())
+            for base in (tree / 'node_modules', home / 'profiles/phone/node_modules'):
+                self.assertFalse((base / 'dsh-phone-qq/bundled-packs').exists())
+                self.assertEqual((base / 'dsh-peer/knowledge-link/kb/assets/model/model.onnx').read_bytes(), b'offline model')
+            self.assertFalse(json.loads((home / 'distribution.json').read_text())['presetSkills'])
+
+    def test_dedup_only_removes_byte_identical_profile_files(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tree, home = root / 'tree', root / 'home'
+            for base in (tree / 'node_modules/example', home / 'profiles/phone/node_modules/example'):
+                base.mkdir(parents=True)
+                (base / 'model.bin').write_bytes(b'identical model')
+                (base / 'config.json').write_text('tree' if base.is_relative_to(tree) else 'profile')
+            report = assets.deduplicate_profile_resources(tree, home)
+            self.assertEqual(report, {'files': 1, 'bytes': len(b'identical model')})
+            self.assertFalse((home / 'profiles/phone/node_modules/example/model.bin').exists())
+            self.assertEqual((home / 'profiles/phone/node_modules/example/config.json').read_text(), 'profile')
+            item = json.loads((home / '.shared-runtime-files.json').read_text())['files'][0]
+            self.assertEqual(item['sha256'], hashlib.sha256(b'identical model').hexdigest())
+            self.assertEqual((tree / item['source']).read_bytes(), b'identical model')
     def test_transitive_module_and_asset_closure_rejects_missing_files(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

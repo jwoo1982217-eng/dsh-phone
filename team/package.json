@@ -1,0 +1,9 @@
+{
+  "name": "dsh-team",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "main": "index.mjs",
+  "exports": {".": "./index.mjs", "./client": "./client.js", "./package.json": "./package.json"},
+  "dsh": {"client": {"platform": "web"}, "bundle": {"patch": "./cordis.patch.yml"}}
+}

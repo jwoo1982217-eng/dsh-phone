@@ -1,3 +1,7 @@
 - insert:
     - id: dsh-peer
       name: dsh-peer
+    - id: dsh-on-demand-tools
+      name: dsh-peer/on-demand-tools
+    - id: dsh-subagent-scheduler
+      name: dsh-peer/subagent-scheduler

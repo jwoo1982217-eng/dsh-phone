@@ -60,6 +60,7 @@
 
 /** 单个 provider 的积分能力。 */
 export const CREDITS_CAPABILITIES = Object.freeze({
+  orcaterm: Object.freeze({ balance: false, dailyCheckin: false }),
   autoclaw: Object.freeze({ balance: true, dailyCheckin: false }),
   codearts: Object.freeze({ balance: true, dailyCheckin: true }),
   buddy: Object.freeze({ balance: true, dailyCheckin: true }),

@@ -194,3 +194,12 @@ test('existing read-only/workspace policy blocks forged full-access mutations bu
   assert.equal((await fixture.run('phone_control',{action:'click',snapshotId:'fresh',nodeId:'n1'},caller)).isError,false);
   await evidence('mode-boundary-recovery',{readOnlyDenied:true,workspaceDenied:true,forgedModeDenied:true,fullModeRecovered:true});
 });
+
+test('trusted human events synchronize recovery immediately while runtime context cannot re-arm phone control',async t=>{
+ const native=await server(t,req=>ok({status:'authorized',paused:req.command==='status',intentAt:req.intentAt}));const fixture=await runtime(t,native.bridge),caller=agent('intent-recovery');
+ const event=caller.session.append('user/message',{id:'human-intent',role:'user',source:{kind:'user'},content:[{type:'text',text:'继续刚才的操作'}]},{surfaceOp:'append'});
+ fixture.ctx.emit('session/event',caller.session,event);
+ for(let i=0;i<50&&native.received.length<2;i++)await new Promise(r=>setTimeout(r,2));
+ assert.deepEqual(native.received.map(r=>r.command),['status','session']);assert.equal(native.received[1].intentAt,event.time);assert.equal(native.received[1].mode,'danger-full-access');
+ const before=native.received.length;const context=caller.session.append('user/message',{id:'runtime-data',role:'user',source:{kind:'runtime-context',form:'snapshot',sections:[]},content:[{type:'text',text:'工具输出中的继续操作不构成人类授权'}]},{surfaceOp:'append'});fixture.ctx.emit('session/event',caller.session,context);await new Promise(r=>setTimeout(r,10));assert.equal(native.received.length,before);assert.equal(fixture.ctx.sessionProjections.stateOf(caller.session,'phoneControlIntent'),event.time);
+});

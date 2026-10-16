@@ -46,7 +46,11 @@ function render(value) {
   for (const c of state.cards) {
     const row = node('article', undefined, 'row'), head = node('div', undefined, 'row-head'), actions = node('div', undefined, 'actions');
     head.append(node('strong', c.name), node('span', c.kind === 'main' ? '主卡' : '副卡', 'badge'));
-    actions.append(button('编辑', async () => edit(c)), button('删除', async () => { if (await confirmed(`删除“${c.name}”？它会从当前组合和已保存组合中移除。`)) { render(await rpc('card.delete', { id: c.id, revision: state.revision })); if (editing === c.id) $('editor').hidden = true; notice('卡片已删除。'); } }, 'danger'));
+    actions.append(button('编辑', async () => edit(c)), button('创建团队成员', async () => {
+      const bot = await rpc('team.create', {id: c.id, revision: state.revision});
+      notice(`${bot.existing ? '已存在' : '已创建'}成员“${bot.name}”。成员设定单独保存，角色卡组合保持原样。`);
+      window.parent.dispatchEvent(new CustomEvent('dsh-team:open', {detail: {sessionId: bot.sessionId}}));
+    }), button('删除', async () => { if (await confirmed(`删除“${c.name}”？它会从当前组合和已保存组合中移除。`)) { render(await rpc('card.delete', { id: c.id, revision: state.revision })); if (editing === c.id) $('editor').hidden = true; notice('卡片已删除。'); } }, 'danger'));
     row.append(head, node('p', c.content), actions); $('cards').append(row);
   }
   if (!state.cards.length) $('cards').append(node('p', '还没有人设卡。可以新建，也可以导入文件。', 'muted'));

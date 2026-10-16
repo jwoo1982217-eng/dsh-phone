@@ -1,0 +1,782 @@
+/* festival-lantern — 元宵 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-festival-lantern], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-festival-lantern] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #33231d;
+  background-color: #faf5ea;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] {
+  color: #f6f0e2;
+  background-color: #0e0a15;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-festival-lantern] {
+  --color-primary: #c22a1c;
+  --primary: #c22a1c;
+  --primary-rgb: 194, 42, 28;
+  --color-primary-light-1: #d24a3c;
+  --color-primary-light-2: #e07a6e;
+  --color-primary-light-3: #f0b3aa;
+  --color-primary-dark-1: #8f1c12;
+  --brand: #c22a1c;
+  --brand-light: #f9e2de;
+  --brand-hover: #a92316;
+  --color-brand-fill: #c22a1c;
+  --color-brand-bg: #f7e6df;
+  --aou-1: #fdeceb;
+  --aou-2: #f9cdc7;
+  --aou-3: #f3a79d;
+  --aou-4: #ec7d6e;
+  --aou-5: #e4553f;
+  --aou-6: #c22a1c;
+  --aou-7: #a92316;
+  --aou-8: #822217;
+  --aou-9: #5c1810;
+  --aou-10: #3a0f0a;
+  --bg-base: #faf5ea;
+  --bg-1: #f2ead8;
+  --bg-2: #eadfc8;
+  --bg-3: #e0d3b6;
+  --bg-4: #d4c4a2;
+  --bg-5: #c5b28c;
+  --bg-6: #b29d74;
+  --bg-8: #8f7c58;
+  --bg-9: #6d5d42;
+  --bg-10: #4a3f2c;
+  --color-bg-1: #f2ead8;
+  --color-bg-2: #eadfc8;
+  --color-bg-3: #e0d3b6;
+  --color-bg-4: #d4c4a2;
+  --bg-hover: #ede4d0;
+  --bg-active: #e3d7bc;
+  --text-primary: #33231d;
+  --text-secondary: #6b554a;
+  --text-disabled: #a89a8c;
+  --text-0: #221510;
+  --text-white: #ffffff;
+  --color-text-1: #33231d;
+  --color-text-2: #6b554a;
+  --color-text-3: #8a766a;
+  --color-text-4: #a89a8c;
+  --border-base: #d9cbae;
+  --border-light: #e5dabf;
+  --border-special: #c99a3a;
+  --color-border: #d9cbae;
+  --color-border-1: #d9cbae;
+  --color-border-2: #e5dabf;
+  --fill: #eadfc8;
+  --color-fill: #eadfc8;
+  --fill-0: #f2ead8;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #f6efe0;
+  --inverse: #33231d;
+  --success: #2e8b5f;
+  --warning: #b07a1a;
+  --danger: #c22a1c;
+  --info: #3a6db0;
+  --message-user-bg: #9c2215;
+  --message-tips-bg: #f0e6cf;
+  --workspace-btn-bg: #f9e2de;
+  --color-guid-agent-bar: #f2ead8;
+  --lantern-glow: #e8a832;
+  --lantern-red: #c22a1c;
+  --tangyuan: #ffffff;
+  --riddle-paper: #c22a1c;
+  --paper: #faf5ea;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-festival-lantern][data-ds-dark-theme] {
+  --color-primary: #e04536;
+  --primary: #e04536;
+  --primary-rgb: 224, 69, 54;
+  --color-primary-light-1: #e96a5e;
+  --color-primary-light-2: #f1938a;
+  --color-primary-light-3: #f8c4bf;
+  --color-primary-dark-1: #b02a1e;
+  --brand: #e04536;
+  --brand-light: #3d1a16;
+  --brand-hover: #f0563f;
+  --color-brand-fill: #e04536;
+  --color-brand-bg: #331512;
+  --aou-1: #33110d;
+  --aou-2: #4d1712;
+  --aou-3: #6b1d15;
+  --aou-4: #8f2419;
+  --aou-5: #b92f20;
+  --aou-6: #e04536;
+  --aou-7: #e96a5e;
+  --aou-8: #f1938a;
+  --aou-9: #f8c4bf;
+  --aou-10: #fdeceb;
+  --bg-base: #0e0a15;
+  --bg-1: #151020;
+  --bg-2: #1c1629;
+  --bg-3: #241d33;
+  --bg-4: #2e2540;
+  --bg-5: #3a2e4e;
+  --bg-6: #493c5e;
+  --bg-8: #6a5c82;
+  --bg-9: #968bab;
+  --bg-10: #cdc6da;
+  --color-bg-1: #151020;
+  --color-bg-2: #1c1629;
+  --color-bg-3: #241d33;
+  --color-bg-4: #2e2540;
+  --bg-hover: #211a30;
+  --bg-active: #2a2138;
+  --text-primary: #f6f0e2;
+  --text-secondary: #b8aec2;
+  --text-disabled: #5d5470;
+  --text-0: #fbf7ec;
+  --text-white: #ffffff;
+  --color-text-1: #f6f0e2;
+  --color-text-2: #b8aec2;
+  --color-text-3: #857a96;
+  --color-text-4: #5d5470;
+  --border-base: #342a48;
+  --border-light: #292138;
+  --border-special: #6b4a24;
+  --color-border: #342a48;
+  --color-border-1: #342a48;
+  --color-border-2: #292138;
+  --fill: #1c1629;
+  --color-fill: #1c1629;
+  --fill-0: #151020;
+  --fill-white-to-black: #0e0a15;
+  --dialog-fill-0: #181226;
+  --inverse: #f6f0e2;
+  --success: #4cb782;
+  --warning: #f0a93c;
+  --danger: #e04536;
+  --info: #6f9fe0;
+  --message-user-bg: #f6f1e6;
+  --message-tips-bg: #221a30;
+  --workspace-btn-bg: #3d1a16;
+  --color-guid-agent-bar: #181226;
+  --lantern-glow: #ffb84d;
+  --lantern-red: #e04536;
+  --tangyuan: #f6f1e6;
+  --riddle-paper: #d8402f;
+  --night: #0e0a15;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-festival-lantern] {
+  --dsw-static-deepseek-50: #fdeceb;
+  --dsw-static-blue-50: #fdeceb;
+  --dsw-static-deepseek-50p: #f9cdc7;
+  --dsw-static-blue-50p: #f9cdc7;
+  --dsw-static-deepseek-75: #f9cdc7;
+  --dsw-static-blue-75: #f9cdc7;
+  --dsw-static-deepseek-100: #f9cdc7;
+  --dsw-static-blue-100: #f9cdc7;
+  --dsw-static-deepseek-200: #f3a79d;
+  --dsw-static-blue-200: #f3a79d;
+  --dsw-static-deepseek-300: #ec7d6e;
+  --dsw-static-blue-300: #ec7d6e;
+  --dsw-static-deepseek-400: #e4553f;
+  --dsw-static-blue-400: #e4553f;
+  --dsw-static-deepseek-450: #e4553f;
+  --dsw-static-blue-450: #e4553f;
+  --dsw-static-deepseek-500: #c22a1c;
+  --dsw-static-blue-500: #c22a1c;
+  --dsw-static-deepseek-600: #a92316;
+  --dsw-static-blue-600: #a92316;
+  --dsw-static-deepseek-700-delete: #822217;
+  --dsw-static-deepseek-800: #822217;
+  --dsw-static-blue-800: #822217;
+  --dsw-static-deepseek-900: #5c1810;
+  --dsw-static-blue-900: #5c1810;
+  --dsw-static-deepseek-950: #3a0f0a;
+  --dsw-static-blue-950: #3a0f0a;
+  --dsw-static-neutral-bluish-00: #f2ead8;
+  --dsw-static-neutral-00: #f2ead8;
+  --dsw-static-neutral-bluish-50: #f2ead8;
+  --dsw-static-neutral-50: #f2ead8;
+  --dsw-static-neutral-bluish-60: #f2ead8;
+  --dsw-static-neutral-60: #f2ead8;
+  --dsw-static-neutral-bluish-75: #eadfc8;
+  --dsw-static-neutral-75: #eadfc8;
+  --dsw-static-neutral-bluish-100: #eadfc8;
+  --dsw-static-neutral-100: #eadfc8;
+  --dsw-static-neutral-bluish-150: #e0d3b6;
+  --dsw-static-neutral-150: #e0d3b6;
+  --dsw-static-neutral-bluish-200: #e0d3b6;
+  --dsw-static-neutral-200: #e0d3b6;
+  --dsw-static-neutral-bluish-250: #d4c4a2;
+  --dsw-static-neutral-250: #d4c4a2;
+  --dsw-static-neutral-bluish-300: #d4c4a2;
+  --dsw-static-neutral-300: #d4c4a2;
+  --dsw-static-neutral-bluish-400: #c5b28c;
+  --dsw-static-neutral-400: #c5b28c;
+  --dsw-static-neutral-bluish-500: #b29d74;
+  --dsw-static-neutral-500: #b29d74;
+  --dsw-static-neutral-bluish-550: #b29d74;
+  --dsw-static-neutral-550: #b29d74;
+  --dsw-static-neutral-bluish-600: #8f7c58;
+  --dsw-static-neutral-600: #8f7c58;
+  --dsw-static-neutral-bluish-700: #8f7c58;
+  --dsw-static-neutral-700: #8f7c58;
+  --dsw-static-neutral-bluish-750: #6d5d42;
+  --dsw-static-neutral-750: #6d5d42;
+  --dsw-static-neutral-bluish-800: #6d5d42;
+  --dsw-static-neutral-800: #6d5d42;
+  --dsw-static-neutral-bluish-850: #6d5d42;
+  --dsw-static-neutral-850: #6d5d42;
+  --dsw-static-neutral-bluish-875: #4a3f2c;
+  --dsw-static-neutral-875: #4a3f2c;
+  --dsw-static-neutral-bluish-900: #4a3f2c;
+  --dsw-static-neutral-900: #4a3f2c;
+  --dsw-static-neutral-bluish-950: #4a3f2c;
+  --dsw-static-neutral-950: #4a3f2c;
+  --dsw-static-neutral-bluish-1000: #33231d;
+  --dsw-static-neutral-1000: #33231d;
+  --dsw-static-green-50: color-mix(in srgb, #2e8b5f 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e8b5f 20%, white);
+  --dsw-static-green-400: #2e8b5f;
+  --dsw-static-green-500: #2e8b5f;
+  --dsw-static-green-600: color-mix(in srgb, #2e8b5f 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e8b5f 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #b07a1a 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #b07a1a 20%, white);
+  --dsw-static-amber-400: #b07a1a;
+  --dsw-static-amber-500: #b07a1a;
+  --dsw-static-amber-600: color-mix(in srgb, #b07a1a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #b07a1a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c22a1c 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c22a1c 20%, white);
+  --dsw-static-red-400: #c22a1c;
+  --dsw-static-red-500: #c22a1c;
+  --dsw-static-red-600: color-mix(in srgb, #c22a1c 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c22a1c 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-festival-lantern][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #33110d;
+  --dsw-static-blue-50: #33110d;
+  --dsw-static-deepseek-50p: #4d1712;
+  --dsw-static-blue-50p: #4d1712;
+  --dsw-static-deepseek-75: #4d1712;
+  --dsw-static-blue-75: #4d1712;
+  --dsw-static-deepseek-100: #4d1712;
+  --dsw-static-blue-100: #4d1712;
+  --dsw-static-deepseek-200: #6b1d15;
+  --dsw-static-blue-200: #6b1d15;
+  --dsw-static-deepseek-300: #8f2419;
+  --dsw-static-blue-300: #8f2419;
+  --dsw-static-deepseek-400: #b92f20;
+  --dsw-static-blue-400: #b92f20;
+  --dsw-static-deepseek-450: #b92f20;
+  --dsw-static-blue-450: #b92f20;
+  --dsw-static-deepseek-500: #e04536;
+  --dsw-static-blue-500: #e04536;
+  --dsw-static-deepseek-600: #e96a5e;
+  --dsw-static-blue-600: #e96a5e;
+  --dsw-static-deepseek-700-delete: #f1938a;
+  --dsw-static-deepseek-800: #f1938a;
+  --dsw-static-blue-800: #f1938a;
+  --dsw-static-deepseek-900: #f8c4bf;
+  --dsw-static-blue-900: #f8c4bf;
+  --dsw-static-deepseek-950: #fdeceb;
+  --dsw-static-blue-950: #fdeceb;
+  --dsw-static-neutral-bluish-00: #151020;
+  --dsw-static-neutral-00: #151020;
+  --dsw-static-neutral-bluish-50: #151020;
+  --dsw-static-neutral-50: #151020;
+  --dsw-static-neutral-bluish-60: #151020;
+  --dsw-static-neutral-60: #151020;
+  --dsw-static-neutral-bluish-75: #1c1629;
+  --dsw-static-neutral-75: #1c1629;
+  --dsw-static-neutral-bluish-100: #1c1629;
+  --dsw-static-neutral-100: #1c1629;
+  --dsw-static-neutral-bluish-150: #241d33;
+  --dsw-static-neutral-150: #241d33;
+  --dsw-static-neutral-bluish-200: #241d33;
+  --dsw-static-neutral-200: #241d33;
+  --dsw-static-neutral-bluish-250: #2e2540;
+  --dsw-static-neutral-250: #2e2540;
+  --dsw-static-neutral-bluish-300: #2e2540;
+  --dsw-static-neutral-300: #2e2540;
+  --dsw-static-neutral-bluish-400: #3a2e4e;
+  --dsw-static-neutral-400: #3a2e4e;
+  --dsw-static-neutral-bluish-500: #493c5e;
+  --dsw-static-neutral-500: #493c5e;
+  --dsw-static-neutral-bluish-550: #493c5e;
+  --dsw-static-neutral-550: #493c5e;
+  --dsw-static-neutral-bluish-600: #6a5c82;
+  --dsw-static-neutral-600: #6a5c82;
+  --dsw-static-neutral-bluish-700: #6a5c82;
+  --dsw-static-neutral-700: #6a5c82;
+  --dsw-static-neutral-bluish-750: #968bab;
+  --dsw-static-neutral-750: #968bab;
+  --dsw-static-neutral-bluish-800: #968bab;
+  --dsw-static-neutral-800: #968bab;
+  --dsw-static-neutral-bluish-850: #968bab;
+  --dsw-static-neutral-850: #968bab;
+  --dsw-static-neutral-bluish-875: #cdc6da;
+  --dsw-static-neutral-875: #cdc6da;
+  --dsw-static-neutral-bluish-900: #cdc6da;
+  --dsw-static-neutral-900: #cdc6da;
+  --dsw-static-neutral-bluish-950: #cdc6da;
+  --dsw-static-neutral-950: #cdc6da;
+  --dsw-static-neutral-bluish-1000: #f6f0e2;
+  --dsw-static-neutral-1000: #f6f0e2;
+  --dsw-static-green-50: color-mix(in srgb, #4cb782 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4cb782 20%, black);
+  --dsw-static-green-400: #4cb782;
+  --dsw-static-green-500: #4cb782;
+  --dsw-static-green-600: color-mix(in srgb, #4cb782 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4cb782 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f0a93c 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #f0a93c 20%, black);
+  --dsw-static-amber-400: #f0a93c;
+  --dsw-static-amber-500: #f0a93c;
+  --dsw-static-amber-600: color-mix(in srgb, #f0a93c 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f0a93c 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e04536 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e04536 20%, black);
+  --dsw-static-red-400: #e04536;
+  --dsw-static-red-500: #e04536;
+  --dsw-static-red-600: color-mix(in srgb, #e04536 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e04536 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-festival-lantern] {
+  --dsw-alias-button-primary-fill: #c22a1c;
+  --dsw-alias-button-primary-hover: #a92316;
+  --dsw-alias-button-primary-dimmed: #f9cdc7;
+  --dsw-alias-button-info-fill: #c22a1c;
+  --dsw-alias-button-info-hover: #a92316;
+  --dsw-alias-button-contrast-fill: #a92316;
+  --dsw-alias-button-ghost-active-fill: #f9e2de;
+  --dsw-alias-button-ghost-active-hover: #f9cdc7;
+  --dsw-alias-button-ghost-active-border: #ec7d6e;
+  --dsw-alias-button-elevated-fill: #f2ead8;
+  --dsw-alias-button-floating-fill: #f2ead8;
+  --dsw-alias-button-floating-hover: #ede4d0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(194, 42, 28, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(194, 42, 28, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(194, 42, 28, 0.6);
+  --dsw-specific-bubble: #9c2215;
+  --dsw-specific-bubble-highlight: #f3a79d;
+  --dsw-specific-input-major: #f2ead8;
+  --dsw-specific-login-input: #f2ead8;
+  --dsw-specific-sidebar-fill: #c22a1c;
+  --dsw-specific-sidebar-nav-item-active: #f9cdc7;
+  --dsw-specific-sidebar-nav-item-hover: #ede4d0;
+  --dsw-specific-sidebar-nav-item-active-accent: #ec7d6e;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-festival-lantern][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #e04536;
+  --dsw-alias-button-primary-hover: #f0563f;
+  --dsw-alias-button-primary-dimmed: #4d1712;
+  --dsw-alias-button-info-fill: #e04536;
+  --dsw-alias-button-info-hover: #f0563f;
+  --dsw-alias-button-contrast-fill: #e96a5e;
+  --dsw-alias-button-ghost-active-fill: #3d1a16;
+  --dsw-alias-button-ghost-active-hover: #4d1712;
+  --dsw-alias-button-ghost-active-border: #8f2419;
+  --dsw-alias-button-elevated-fill: #151020;
+  --dsw-alias-button-floating-fill: #151020;
+  --dsw-alias-button-floating-hover: #211a30;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(224, 69, 54, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(224, 69, 54, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(224, 69, 54, 0.6);
+  --dsw-specific-bubble: #f6f1e6;
+  --dsw-specific-bubble-highlight: #6b1d15;
+  --dsw-specific-input-major: #151020;
+  --dsw-specific-login-input: #151020;
+  --dsw-specific-sidebar-fill: #e04536;
+  --dsw-specific-sidebar-nav-item-active: #4d1712;
+  --dsw-specific-sidebar-nav-item-hover: #211a30;
+  --dsw-specific-sidebar-nav-item-active-accent: #8f2419;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-festival-lantern] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-lantern]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(ellipse 30% 24% at 16% 14%, var(--lantern-glow) 0%, transparent 68%),
+      radial-gradient(ellipse 26% 22% at 84% 10%, var(--lantern-red) 0%, transparent 70%),
+      radial-gradient(ellipse 34% 26% at 76% 84%, var(--lantern-glow) 0%, transparent 70%),
+      radial-gradient(ellipse 28% 22% at 22% 88%, var(--lantern-red) 0%, transparent 72%);
+    background-size: 165% 165%, 150% 150%, 175% 175%, 155% 155%;
+    animation: festival-lantern-lantern-glow-drift 34s ease-in-out infinite alternate;
+}
+
+body[data-dsh-festival-lantern]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(circle at 14% 30%, var(--lantern-red) 0 2.2px, transparent 3.2px),
+      radial-gradient(circle at 62% 12%, var(--lantern-glow) 0 1.8px, transparent 2.8px),
+      radial-gradient(circle at 86% 56%, var(--lantern-glow) 0 2px, transparent 3px),
+      radial-gradient(circle at 38% 72%, var(--lantern-red) 0 1.8px, transparent 2.8px),
+      radial-gradient(circle at 55% 44%, var(--lantern-glow) 0 1.6px, transparent 2.6px);
+    background-size: 540px 540px, 620px 620px, 480px 480px, 580px 580px, 500px 500px;
+    animation: festival-lantern-tangyuan-float 30s linear infinite;
+}
+
+body[data-dsh-festival-lantern] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-lantern] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--lantern-glow), 3px 0 10px rgba(232, 168, 50, 0.18);
+}
+
+body[data-dsh-festival-lantern] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-lantern] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(194, 42, 28, 0.16), rgba(194, 42, 28, 0.05) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--lantern-red), 3px 0 10px rgba(194, 42, 28, 0.18);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-lantern] button[class*='primary'],
+body[data-dsh-festival-lantern] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 50% 26%, rgba(255, 230, 170, 0.7) 0 3px, rgba(255, 200, 110, 0.28) 8px, transparent 14px),
+      linear-gradient(180deg, #d8402f 0%, var(--lantern-red) 55%, #8f1c12 100%) !important;
+    border: 1px solid var(--lantern-glow) !important;
+    border-radius: 999px !important;
+    color: var(--text-white) !important;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(80, 14, 8, 0.55);
+    box-shadow:
+      0 2px 10px rgba(194, 42, 28, 0.32),
+      inset 0 2px 0 rgba(110, 22, 12, 0.5),
+      inset 0 -2px 0 rgba(110, 22, 12, 0.5),
+      inset 0 1px 0 rgba(255, 230, 170, 0.4);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-lantern] button[class*='primary']:hover,
+body[data-dsh-festival-lantern] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    animation: festival-lantern-lantern-btn-flicker 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-lantern] pre,
+body[data-dsh-festival-lantern] .markdown-body pre {
+  background: linear-gradient(180deg, #2b1a16 0%, #22120f 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--riddle-paper) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.4), 0 2px 10px rgba(194, 42, 28, 0.1);
+}
+
+body[data-dsh-festival-lantern] pre code,
+body[data-dsh-festival-lantern] .markdown-body pre code {
+  background: transparent !important;
+    color: #f5e9d5 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-lantern] code,
+body[data-dsh-festival-lantern] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--color-primary-dark-1);
+    border: 1px solid rgba(194, 42, 28, 0.3);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-lantern]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-festival-lantern] [class*='agent-bar'],
+body[data-dsh-festival-lantern] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(194, 42, 28, 0.3);
+}
+
+body[data-dsh-festival-lantern] .markdown-body blockquote {
+  border-left: 3px solid var(--riddle-paper);
+    background: rgba(194, 42, 28, 0.06);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-lantern] .markdown-body hr,
+body[data-dsh-festival-lantern] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 6px 5px, rgba(194, 42, 28, 0.85) 0 2.6px, transparent 3.6px),
+      radial-gradient(circle at 18px 5px, rgba(232, 168, 50, 0.9) 0 2.6px, transparent 3.6px),
+      linear-gradient(90deg, transparent, rgba(194, 42, 28, 0.35), transparent);
+    background-size: 24px 10px, 24px 10px, 100% 1px;
+    background-position: 0 0, 0 0, 0 2px;
+    background-repeat: repeat-x, repeat-x, no-repeat;
+    opacity: 0.75;
+}
+
+body[data-dsh-festival-lantern] .markdown-body a,
+body[data-dsh-festival-lantern] a {
+  color: var(--lantern-red);
+}
+
+body[data-dsh-festival-lantern] .markdown-body a:hover,
+body[data-dsh-festival-lantern] a:hover {
+  color: var(--color-primary-dark-1);
+    text-shadow: 0 0 8px rgba(232, 168, 50, 0.4);
+}
+
+body[data-dsh-festival-lantern] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-dark-1) !important;
+    border-color: rgba(194, 42, 28, 0.5) !important;
+    background-color: rgba(194, 42, 28, 0.08) !important;
+}
+
+body[data-dsh-festival-lantern]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-lantern]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--lantern-red), #7e1a10);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-lantern]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--lantern-glow), var(--lantern-red));
+    box-shadow: 0 0 8px rgba(232, 168, 50, 0.5);
+}
+
+body[data-dsh-festival-lantern]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-festival-lantern][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(ellipse 30% 24% at 16% 14%, var(--lantern-glow) 0%, transparent 68%),
+      radial-gradient(ellipse 26% 22% at 84% 10%, var(--lantern-red) 0%, transparent 70%),
+      radial-gradient(ellipse 34% 26% at 76% 84%, var(--lantern-glow) 0%, transparent 70%),
+      radial-gradient(ellipse 28% 22% at 22% 88%, var(--lantern-red) 0%, transparent 72%);
+    background-size: 165% 165%, 150% 150%, 175% 175%, 155% 155%;
+    animation: festival-lantern-lantern-glow-drift 34s ease-in-out infinite alternate;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(circle at 14% 30%, var(--tangyuan) 0 2.5px, transparent 3.5px),
+      radial-gradient(circle at 62% 12%, var(--tangyuan) 0 1.8px, transparent 2.8px),
+      radial-gradient(circle at 86% 56%, var(--lantern-glow) 0 2px, transparent 3px),
+      radial-gradient(circle at 38% 72%, var(--tangyuan) 0 2.2px, transparent 3.2px),
+      radial-gradient(circle at 55% 44%, var(--lantern-glow) 0 1.6px, transparent 2.6px);
+    background-size: 540px 540px, 620px 620px, 480px 480px, 580px 580px, 500px 500px;
+    animation: festival-lantern-tangyuan-float 30s linear infinite;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--lantern-glow), 3px 0 10px rgba(255, 184, 77, 0.16);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-lantern][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(224, 69, 54, 0.3), rgba(224, 69, 54, 0.08) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--lantern-red), 3px 0 12px rgba(224, 69, 54, 0.3);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-festival-lantern][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 50% 26%, rgba(255, 230, 170, 0.75) 0 3px, rgba(255, 200, 110, 0.3) 8px, transparent 14px),
+      linear-gradient(180deg, #f0563f 0%, var(--lantern-red) 55%, #b02a1e 100%) !important;
+    border: 1px solid var(--lantern-glow) !important;
+    border-radius: 999px !important;
+    color: var(--text-white) !important;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(90, 16, 10, 0.55);
+    box-shadow:
+      0 0 14px rgba(224, 69, 54, 0.4),
+      inset 0 2px 0 rgba(110, 30, 16, 0.55),
+      inset 0 -2px 0 rgba(110, 30, 16, 0.55),
+      inset 0 1px 0 rgba(255, 230, 170, 0.4);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-festival-lantern][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    animation: festival-lantern-lantern-btn-flicker 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] pre,
+body[data-dsh-festival-lantern][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #130e20 0%, var(--night) 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--riddle-paper) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.55), 0 0 14px rgba(224, 69, 54, 0.1);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] pre code,
+body[data-dsh-festival-lantern][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #f0e6d2 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] code,
+body[data-dsh-festival-lantern][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--lantern-glow);
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-festival-lantern][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(255, 184, 77, 0.35);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--riddle-paper);
+    background: rgba(224, 69, 54, 0.08);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-festival-lantern][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 6px 5px, rgba(224, 69, 54, 0.85) 0 2.6px, transparent 3.6px),
+      radial-gradient(circle at 18px 5px, rgba(255, 184, 77, 0.85) 0 2.6px, transparent 3.6px),
+      linear-gradient(90deg, transparent, rgba(255, 184, 77, 0.4), transparent);
+    background-size: 24px 10px, 24px 10px, 100% 1px;
+    background-position: 0 0, 0 0, 0 2px;
+    background-repeat: repeat-x, repeat-x, no-repeat;
+    opacity: 0.7;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-festival-lantern][data-ds-dark-theme] a {
+  color: var(--lantern-glow);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-festival-lantern][data-ds-dark-theme] a:hover {
+  color: #ffd08a;
+    text-shadow: 0 0 8px rgba(255, 184, 77, 0.5);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-light-2) !important;
+    border-color: rgba(224, 69, 54, 0.55) !important;
+    background-color: rgba(224, 69, 54, 0.12) !important;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--lantern-red), #6b1d15);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--lantern-glow), var(--lantern-red));
+    box-shadow: 0 0 8px rgba(255, 184, 77, 0.5);
+}
+
+body[data-dsh-festival-lantern][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes festival-lantern-lantern-glow-drift {
+  0% { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; opacity: 0.05; }
+  100% { background-position: 7% 5%, 93% 6%, 95% 93%, 6% 95%; opacity: 0.11; }
+}
+
+@keyframes festival-lantern-tangyuan-float {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 0 -540px, 0 -620px, 0 -480px, 0 -580px, 0 -500px; }
+}
+
+@keyframes festival-lantern-lantern-titlebar-breathe {
+  0%, 100% { box-shadow: 0 2px 10px rgba(194, 42, 28, 0.14); }
+  50% { box-shadow: 0 2px 18px rgba(194, 42, 28, 0.3); }
+}
+
+@keyframes festival-lantern-lantern-btn-flicker {
+  0%, 100% { box-shadow: 0 2px 14px rgba(194, 42, 28, 0.4), 0 0 26px rgba(232, 168, 50, 0.22), inset 0 2px 0 rgba(110, 22, 12, 0.5), inset 0 -2px 0 rgba(110, 22, 12, 0.5), inset 0 1px 0 rgba(255, 230, 170, 0.45); }
+  50% { box-shadow: 0 2px 20px rgba(194, 42, 28, 0.55), 0 0 40px rgba(232, 168, 50, 0.35), inset 0 2px 0 rgba(110, 22, 12, 0.5), inset 0 -2px 0 rgba(110, 22, 12, 0.5), inset 0 1px 0 rgba(255, 230, 170, 0.55); }
+}
+
+@keyframes festival-lantern-lantern-ring-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

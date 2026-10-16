@@ -1,0 +1,765 @@
+/* game-hollowknight — 空洞骑士 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-game-hollowknight], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-game-hollowknight] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #23262e;
+  background-color: #f3f1ea;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] {
+  color: #eaeef5;
+  background-color: #07090f;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-game-hollowknight] {
+  --color-primary: #35608f;
+  --primary: #35608f;
+  --primary-rgb: 53, 96, 143;
+  --color-primary-light-1: #4f7cad;
+  --color-primary-light-2: #7c9dc4;
+  --color-primary-light-3: #b3c8e0;
+  --color-primary-dark-1: #26476b;
+  --brand: #35608f;
+  --brand-light: #e8eef7;
+  --brand-hover: #26476b;
+  --color-brand-fill: #35608f;
+  --color-brand-bg: #dde7f3;
+  --aou-1: #e8eef7;
+  --aou-2: #cdd9ec;
+  --aou-3: #adc2e0;
+  --aou-4: #8ba9cf;
+  --aou-5: #6b90ba;
+  --aou-6: #4a7fc1;
+  --aou-7: #35608f;
+  --aou-8: #26476b;
+  --aou-9: #1a3350;
+  --aou-10: #101f33;
+  --bg-base: #f3f1ea;
+  --bg-1: #ebe8df;
+  --bg-2: #e2ded2;
+  --bg-3: #d7d2c3;
+  --bg-4: #c9c3b1;
+  --bg-5: #b8b19d;
+  --bg-6: #a49c86;
+  --bg-8: #847d6a;
+  --bg-9: #5f5947;
+  --bg-10: #3a352a;
+  --color-bg-1: #ebe8df;
+  --color-bg-2: #e2ded2;
+  --color-bg-3: #d7d2c3;
+  --color-bg-4: #c9c3b1;
+  --bg-hover: #e4e0d5;
+  --bg-active: #dad5c7;
+  --text-primary: #23262e;
+  --text-secondary: #565c68;
+  --text-disabled: #a3a79e;
+  --text-0: #14161d;
+  --text-white: #ffffff;
+  --color-text-1: #23262e;
+  --color-text-2: #565c68;
+  --color-text-3: #7d8189;
+  --color-text-4: #a3a79e;
+  --border-base: #c8c2b0;
+  --border-light: #d8d3c4;
+  --border-special: #8ba9cf;
+  --color-border: #c8c2b0;
+  --color-border-1: #c8c2b0;
+  --color-border-2: #d8d3c4;
+  --fill: #e2ded2;
+  --color-fill: #e2ded2;
+  --fill-0: #ebe8df;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #faf8f2;
+  --inverse: #23262e;
+  --success: #2e9e66;
+  --warning: #c98a1d;
+  --danger: #c23a45;
+  --info: #35608f;
+  --message-user-bg: #141a2c;
+  --message-tips-bg: #e3e8f0;
+  --workspace-btn-bg: #dde7f3;
+  --color-guid-agent-bar: #e9e5da;
+  --hk-mask: #ece9e0;
+  --hk-dream: #7fb8e8;
+  --hk-soul: #4f9fb8;
+  --hk-night: #1a3350;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-game-hollowknight][data-ds-dark-theme] {
+  --color-primary: #4a7fc1;
+  --primary: #4a7fc1;
+  --primary-rgb: 74, 127, 193;
+  --color-primary-light-1: #6d97cf;
+  --color-primary-light-2: #93b2dd;
+  --color-primary-light-3: #c3d4ec;
+  --color-primary-dark-1: #35608f;
+  --brand: #4a7fc1;
+  --brand-light: #152238;
+  --brand-hover: #6392cc;
+  --color-brand-fill: #4a7fc1;
+  --color-brand-bg: #101a2c;
+  --aou-1: #0d1526;
+  --aou-2: #16233c;
+  --aou-3: #1f3152;
+  --aou-4: #284068;
+  --aou-5: #33517f;
+  --aou-6: #4a7fc1;
+  --aou-7: #6d97cf;
+  --aou-8: #93b2dd;
+  --aou-9: #c3d4ec;
+  --aou-10: #e6edf8;
+  --bg-base: #07090f;
+  --bg-1: #0c1018;
+  --bg-2: #121828;
+  --bg-3: #182136;
+  --bg-4: #202b45;
+  --bg-5: #2a3755;
+  --bg-6: #374668;
+  --bg-8: #55688e;
+  --bg-9: #7d90b3;
+  --bg-10: #b6c2d8;
+  --color-bg-1: #0c1018;
+  --color-bg-2: #121828;
+  --color-bg-3: #182136;
+  --color-bg-4: #202b45;
+  --bg-hover: #161e30;
+  --bg-active: #1d2740;
+  --text-primary: #eaeef5;
+  --text-secondary: #a9b4c6;
+  --text-disabled: #5a6478;
+  --text-0: #f6f8fb;
+  --text-white: #ffffff;
+  --color-text-1: #eaeef5;
+  --color-text-2: #a9b4c6;
+  --color-text-3: #7e8a9e;
+  --color-text-4: #5a6478;
+  --border-base: #263350;
+  --border-light: #1a2438;
+  --border-special: #3f5a86;
+  --color-border: #263350;
+  --color-border-1: #263350;
+  --color-border-2: #1a2438;
+  --fill: #121828;
+  --color-fill: #121828;
+  --fill-0: #0c1018;
+  --fill-white-to-black: #07090f;
+  --dialog-fill-0: #0e1420;
+  --inverse: #eaeef5;
+  --success: #4caf7d;
+  --warning: #d8a24a;
+  --danger: #d4555f;
+  --info: #4a7fc1;
+  --message-user-bg: #e9e6dc;
+  --message-tips-bg: #141c30;
+  --workspace-btn-bg: #101a2c;
+  --color-guid-agent-bar: #0d1220;
+  --hk-mask: #ece9e0;
+  --hk-dream: #cfe6ff;
+  --hk-soul: #8fd8e8;
+  --hk-night: #1f3152;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-game-hollowknight] {
+  --dsw-static-deepseek-50: #e8eef7;
+  --dsw-static-blue-50: #e8eef7;
+  --dsw-static-deepseek-50p: #cdd9ec;
+  --dsw-static-blue-50p: #cdd9ec;
+  --dsw-static-deepseek-75: #cdd9ec;
+  --dsw-static-blue-75: #cdd9ec;
+  --dsw-static-deepseek-100: #cdd9ec;
+  --dsw-static-blue-100: #cdd9ec;
+  --dsw-static-deepseek-200: #adc2e0;
+  --dsw-static-blue-200: #adc2e0;
+  --dsw-static-deepseek-300: #8ba9cf;
+  --dsw-static-blue-300: #8ba9cf;
+  --dsw-static-deepseek-400: #6b90ba;
+  --dsw-static-blue-400: #6b90ba;
+  --dsw-static-deepseek-450: #6b90ba;
+  --dsw-static-blue-450: #6b90ba;
+  --dsw-static-deepseek-500: #4a7fc1;
+  --dsw-static-blue-500: #4a7fc1;
+  --dsw-static-deepseek-600: #35608f;
+  --dsw-static-blue-600: #35608f;
+  --dsw-static-deepseek-700-delete: #26476b;
+  --dsw-static-deepseek-800: #26476b;
+  --dsw-static-blue-800: #26476b;
+  --dsw-static-deepseek-900: #1a3350;
+  --dsw-static-blue-900: #1a3350;
+  --dsw-static-deepseek-950: #101f33;
+  --dsw-static-blue-950: #101f33;
+  --dsw-static-neutral-bluish-00: #ebe8df;
+  --dsw-static-neutral-00: #ebe8df;
+  --dsw-static-neutral-bluish-50: #ebe8df;
+  --dsw-static-neutral-50: #ebe8df;
+  --dsw-static-neutral-bluish-60: #ebe8df;
+  --dsw-static-neutral-60: #ebe8df;
+  --dsw-static-neutral-bluish-75: #e2ded2;
+  --dsw-static-neutral-75: #e2ded2;
+  --dsw-static-neutral-bluish-100: #e2ded2;
+  --dsw-static-neutral-100: #e2ded2;
+  --dsw-static-neutral-bluish-150: #d7d2c3;
+  --dsw-static-neutral-150: #d7d2c3;
+  --dsw-static-neutral-bluish-200: #d7d2c3;
+  --dsw-static-neutral-200: #d7d2c3;
+  --dsw-static-neutral-bluish-250: #c9c3b1;
+  --dsw-static-neutral-250: #c9c3b1;
+  --dsw-static-neutral-bluish-300: #c9c3b1;
+  --dsw-static-neutral-300: #c9c3b1;
+  --dsw-static-neutral-bluish-400: #b8b19d;
+  --dsw-static-neutral-400: #b8b19d;
+  --dsw-static-neutral-bluish-500: #a49c86;
+  --dsw-static-neutral-500: #a49c86;
+  --dsw-static-neutral-bluish-550: #a49c86;
+  --dsw-static-neutral-550: #a49c86;
+  --dsw-static-neutral-bluish-600: #847d6a;
+  --dsw-static-neutral-600: #847d6a;
+  --dsw-static-neutral-bluish-700: #847d6a;
+  --dsw-static-neutral-700: #847d6a;
+  --dsw-static-neutral-bluish-750: #5f5947;
+  --dsw-static-neutral-750: #5f5947;
+  --dsw-static-neutral-bluish-800: #5f5947;
+  --dsw-static-neutral-800: #5f5947;
+  --dsw-static-neutral-bluish-850: #5f5947;
+  --dsw-static-neutral-850: #5f5947;
+  --dsw-static-neutral-bluish-875: #3a352a;
+  --dsw-static-neutral-875: #3a352a;
+  --dsw-static-neutral-bluish-900: #3a352a;
+  --dsw-static-neutral-900: #3a352a;
+  --dsw-static-neutral-bluish-950: #3a352a;
+  --dsw-static-neutral-950: #3a352a;
+  --dsw-static-neutral-bluish-1000: #23262e;
+  --dsw-static-neutral-1000: #23262e;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e66 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e66 20%, white);
+  --dsw-static-green-400: #2e9e66;
+  --dsw-static-green-500: #2e9e66;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e66 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e66 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #c98a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #c98a1d 20%, white);
+  --dsw-static-amber-400: #c98a1d;
+  --dsw-static-amber-500: #c98a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #c98a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #c98a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c23a45 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c23a45 20%, white);
+  --dsw-static-red-400: #c23a45;
+  --dsw-static-red-500: #c23a45;
+  --dsw-static-red-600: color-mix(in srgb, #c23a45 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c23a45 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-game-hollowknight][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #0d1526;
+  --dsw-static-blue-50: #0d1526;
+  --dsw-static-deepseek-50p: #16233c;
+  --dsw-static-blue-50p: #16233c;
+  --dsw-static-deepseek-75: #16233c;
+  --dsw-static-blue-75: #16233c;
+  --dsw-static-deepseek-100: #16233c;
+  --dsw-static-blue-100: #16233c;
+  --dsw-static-deepseek-200: #1f3152;
+  --dsw-static-blue-200: #1f3152;
+  --dsw-static-deepseek-300: #284068;
+  --dsw-static-blue-300: #284068;
+  --dsw-static-deepseek-400: #33517f;
+  --dsw-static-blue-400: #33517f;
+  --dsw-static-deepseek-450: #33517f;
+  --dsw-static-blue-450: #33517f;
+  --dsw-static-deepseek-500: #4a7fc1;
+  --dsw-static-blue-500: #4a7fc1;
+  --dsw-static-deepseek-600: #6d97cf;
+  --dsw-static-blue-600: #6d97cf;
+  --dsw-static-deepseek-700-delete: #93b2dd;
+  --dsw-static-deepseek-800: #93b2dd;
+  --dsw-static-blue-800: #93b2dd;
+  --dsw-static-deepseek-900: #c3d4ec;
+  --dsw-static-blue-900: #c3d4ec;
+  --dsw-static-deepseek-950: #e6edf8;
+  --dsw-static-blue-950: #e6edf8;
+  --dsw-static-neutral-bluish-00: #0c1018;
+  --dsw-static-neutral-00: #0c1018;
+  --dsw-static-neutral-bluish-50: #0c1018;
+  --dsw-static-neutral-50: #0c1018;
+  --dsw-static-neutral-bluish-60: #0c1018;
+  --dsw-static-neutral-60: #0c1018;
+  --dsw-static-neutral-bluish-75: #121828;
+  --dsw-static-neutral-75: #121828;
+  --dsw-static-neutral-bluish-100: #121828;
+  --dsw-static-neutral-100: #121828;
+  --dsw-static-neutral-bluish-150: #182136;
+  --dsw-static-neutral-150: #182136;
+  --dsw-static-neutral-bluish-200: #182136;
+  --dsw-static-neutral-200: #182136;
+  --dsw-static-neutral-bluish-250: #202b45;
+  --dsw-static-neutral-250: #202b45;
+  --dsw-static-neutral-bluish-300: #202b45;
+  --dsw-static-neutral-300: #202b45;
+  --dsw-static-neutral-bluish-400: #2a3755;
+  --dsw-static-neutral-400: #2a3755;
+  --dsw-static-neutral-bluish-500: #374668;
+  --dsw-static-neutral-500: #374668;
+  --dsw-static-neutral-bluish-550: #374668;
+  --dsw-static-neutral-550: #374668;
+  --dsw-static-neutral-bluish-600: #55688e;
+  --dsw-static-neutral-600: #55688e;
+  --dsw-static-neutral-bluish-700: #55688e;
+  --dsw-static-neutral-700: #55688e;
+  --dsw-static-neutral-bluish-750: #7d90b3;
+  --dsw-static-neutral-750: #7d90b3;
+  --dsw-static-neutral-bluish-800: #7d90b3;
+  --dsw-static-neutral-800: #7d90b3;
+  --dsw-static-neutral-bluish-850: #7d90b3;
+  --dsw-static-neutral-850: #7d90b3;
+  --dsw-static-neutral-bluish-875: #b6c2d8;
+  --dsw-static-neutral-875: #b6c2d8;
+  --dsw-static-neutral-bluish-900: #b6c2d8;
+  --dsw-static-neutral-900: #b6c2d8;
+  --dsw-static-neutral-bluish-950: #b6c2d8;
+  --dsw-static-neutral-950: #b6c2d8;
+  --dsw-static-neutral-bluish-1000: #eaeef5;
+  --dsw-static-neutral-1000: #eaeef5;
+  --dsw-static-green-50: color-mix(in srgb, #4caf7d 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4caf7d 20%, black);
+  --dsw-static-green-400: #4caf7d;
+  --dsw-static-green-500: #4caf7d;
+  --dsw-static-green-600: color-mix(in srgb, #4caf7d 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf7d 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d8a24a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #d8a24a 20%, black);
+  --dsw-static-amber-400: #d8a24a;
+  --dsw-static-amber-500: #d8a24a;
+  --dsw-static-amber-600: color-mix(in srgb, #d8a24a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d8a24a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d4555f 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #d4555f 20%, black);
+  --dsw-static-red-400: #d4555f;
+  --dsw-static-red-500: #d4555f;
+  --dsw-static-red-600: color-mix(in srgb, #d4555f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d4555f 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-game-hollowknight] {
+  --dsw-alias-button-primary-fill: #35608f;
+  --dsw-alias-button-primary-hover: #26476b;
+  --dsw-alias-button-primary-dimmed: #cdd9ec;
+  --dsw-alias-button-info-fill: #35608f;
+  --dsw-alias-button-info-hover: #26476b;
+  --dsw-alias-button-contrast-fill: #35608f;
+  --dsw-alias-button-ghost-active-fill: #e8eef7;
+  --dsw-alias-button-ghost-active-hover: #cdd9ec;
+  --dsw-alias-button-ghost-active-border: #8ba9cf;
+  --dsw-alias-button-elevated-fill: #ebe8df;
+  --dsw-alias-button-floating-fill: #ebe8df;
+  --dsw-alias-button-floating-hover: #e4e0d5;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(53, 96, 143, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(53, 96, 143, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(53, 96, 143, 0.6);
+  --dsw-specific-bubble: #141a2c;
+  --dsw-specific-bubble-highlight: #adc2e0;
+  --dsw-specific-input-major: #ebe8df;
+  --dsw-specific-login-input: #ebe8df;
+  --dsw-specific-sidebar-fill: #35608f;
+  --dsw-specific-sidebar-nav-item-active: #cdd9ec;
+  --dsw-specific-sidebar-nav-item-hover: #e4e0d5;
+  --dsw-specific-sidebar-nav-item-active-accent: #8ba9cf;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-game-hollowknight][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #4a7fc1;
+  --dsw-alias-button-primary-hover: #6392cc;
+  --dsw-alias-button-primary-dimmed: #16233c;
+  --dsw-alias-button-info-fill: #4a7fc1;
+  --dsw-alias-button-info-hover: #6392cc;
+  --dsw-alias-button-contrast-fill: #6d97cf;
+  --dsw-alias-button-ghost-active-fill: #152238;
+  --dsw-alias-button-ghost-active-hover: #16233c;
+  --dsw-alias-button-ghost-active-border: #284068;
+  --dsw-alias-button-elevated-fill: #0c1018;
+  --dsw-alias-button-floating-fill: #0c1018;
+  --dsw-alias-button-floating-hover: #161e30;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(74, 127, 193, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(74, 127, 193, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(74, 127, 193, 0.6);
+  --dsw-specific-bubble: #e9e6dc;
+  --dsw-specific-bubble-highlight: #1f3152;
+  --dsw-specific-input-major: #0c1018;
+  --dsw-specific-login-input: #0c1018;
+  --dsw-specific-sidebar-fill: #4a7fc1;
+  --dsw-specific-sidebar-nav-item-active: #16233c;
+  --dsw-specific-sidebar-nav-item-hover: #161e30;
+  --dsw-specific-sidebar-nav-item-active-accent: #284068;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-game-hollowknight] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-hollowknight]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 78%, rgba(53, 96, 143, 0.35) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 64% 60%, rgba(79, 159, 184, 0.3) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 86% 30%, rgba(53, 96, 143, 0.3) 0 2px, transparent 3px),
+      radial-gradient(circle at 38% 20%, rgba(79, 159, 184, 0.28) 0 1.5px, transparent 2.5px),
+      radial-gradient(ellipse at 85% 90%, rgba(173, 194, 224, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 5% 10%, rgba(53, 96, 143, 0.08) 0%, transparent 45%);
+    background-size: 520px 520px, 640px 640px, 580px 580px, 460px 460px, 100% 100%, 100% 100%;
+    opacity: 0.6;
+    animation: game-hollowknight-hk-dream-drift 22s linear infinite;
+}
+
+body[data-dsh-game-hollowknight]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(107, 144, 186, 0.5) 0 10px, transparent 11px),
+      radial-gradient(circle at 50% 0%, rgba(53, 96, 143, 0.4) 0 10px, transparent 11px);
+    background-size: 44px 22px, 44px 22px;
+    background-position: 0 0, 22px 11px;
+    opacity: 0.07;
+}
+
+body[data-dsh-game-hollowknight] [class*='sider'] [class*='session'],
+body[data-dsh-game-hollowknight] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-hollowknight] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(139, 169, 207, 0.25);
+    box-shadow: inset 3px 0 0 0 rgba(79, 159, 184, 0.75);
+}
+
+body[data-dsh-game-hollowknight] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-hollowknight] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(53, 96, 143, 0.2), rgba(53, 96, 143, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #35608f;
+}
+
+body[data-dsh-game-hollowknight] button[class*='primary'],
+body[data-dsh-game-hollowknight] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #26476b 0%, #35608f 55%, #4f7cad 100%) !important;
+    border: 1px solid #8ba9cf !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(53, 96, 143, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(16, 31, 51, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-hollowknight] button[class*='primary']:hover,
+body[data-dsh-game-hollowknight] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 14px rgba(53, 96, 143, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: game-hollowknight-hk-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-hollowknight] pre,
+body[data-dsh-game-hollowknight] .markdown-body pre {
+  background: linear-gradient(180deg, #1a2440 0%, #141c30 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #7fb8e8 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(16, 31, 51, 0.4);
+}
+
+body[data-dsh-game-hollowknight] pre code,
+body[data-dsh-game-hollowknight] .markdown-body pre code {
+  background: transparent !important;
+    color: #d8e4f2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-hollowknight] code,
+body[data-dsh-game-hollowknight] .markdown-body code {
+  background: rgba(139, 169, 207, 0.22);
+    color: #26476b;
+    border: 1px solid rgba(53, 96, 143, 0.35);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-hollowknight]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-game-hollowknight] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(58, 53, 42, 0.08), 0 0 0 1px rgba(53, 96, 143, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-hollowknight] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-game-hollowknight] [class*='agent-bar'],
+body[data-dsh-game-hollowknight] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(53, 96, 143, 0.35);
+}
+
+body[data-dsh-game-hollowknight]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-hollowknight]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4f7cad, #26476b);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-hollowknight]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6b90ba, #1a3350);
+}
+
+body[data-dsh-game-hollowknight]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-hollowknight] .markdown-body a,
+body[data-dsh-game-hollowknight] a {
+  color: #26476b;
+}
+
+body[data-dsh-game-hollowknight] .markdown-body a:hover,
+body[data-dsh-game-hollowknight] a:hover {
+  color: #35608f;
+}
+
+body[data-dsh-game-hollowknight] .markdown-body blockquote {
+  border-left: 3px solid #35608f;
+    background: rgba(139, 169, 207, 0.18);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-hollowknight] .markdown-body hr,
+body[data-dsh-game-hollowknight] hr {
+  border: none;
+    height: 10px;
+    background-image: linear-gradient(115deg, transparent 0 46%, rgba(53, 96, 143, 0.55) 46% 54%, transparent 54%);
+    background-size: 36px 10px;
+    background-repeat: repeat-x;
+    opacity: 0.55;
+}
+
+body[data-dsh-game-hollowknight] .arco-btn:not(button[class*='primary']):hover {
+  color: #26476b !important;
+    border-color: rgba(53, 96, 143, 0.5) !important;
+    background-color: rgba(53, 96, 143, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-game-hollowknight][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 78%, rgba(207, 230, 255, 0.5) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 64% 60%, rgba(143, 216, 232, 0.4) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 86% 30%, rgba(207, 230, 255, 0.45) 0 2px, transparent 3px),
+      radial-gradient(circle at 38% 20%, rgba(143, 216, 232, 0.35) 0 1.5px, transparent 2.5px),
+      radial-gradient(ellipse at 85% 90%, rgba(31, 49, 82, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at 5% 10%, rgba(74, 127, 193, 0.12) 0%, transparent 45%);
+    background-size: 520px 520px, 640px 640px, 580px 580px, 460px 460px, 100% 100%, 100% 100%;
+    opacity: 0.55;
+    animation: game-hollowknight-hk-dream-drift 22s linear infinite;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(93, 130, 180, 0.55) 0 10px, transparent 11px),
+      radial-gradient(circle at 50% 0%, rgba(207, 230, 255, 0.4) 0 10px, transparent 11px);
+    background-size: 44px 22px, 44px 22px;
+    background-position: 0 0, 22px 11px;
+    opacity: 0.06;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(31, 49, 82, 0.55);
+    box-shadow: inset 3px 0 0 0 rgba(143, 216, 232, 0.7);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(74, 127, 193, 0.35), rgba(74, 127, 193, 0.1) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #cfe6ff;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-game-hollowknight][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #284068 0%, #4a7fc1 55%, #6d97cf 100%) !important;
+    border: 1px solid #93b2dd !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(74, 127, 193, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(13, 21, 38, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-game-hollowknight][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    box-shadow: 0 3px 16px rgba(143, 216, 232, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: game-hollowknight-hk-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] pre,
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0e1526 0%, #0a101d 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #8fd8e8 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(31, 49, 82, 0.5);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] pre code,
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d8e4f2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] code,
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .markdown-body code {
+  background: rgba(31, 49, 82, 0.6);
+    color: #a8ddf0;
+    border: 1px solid rgba(143, 216, 232, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(3, 5, 9, 0.6), 0 0 0 1px rgba(74, 127, 193, 0.18);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-game-hollowknight][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(143, 216, 232, 0.35);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4a7fc1, #1f3152);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6d97cf, #284068);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-game-hollowknight][data-ds-dark-theme] a {
+  color: #8fd8e8;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-game-hollowknight][data-ds-dark-theme] a:hover {
+  color: #cfe6ff;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #4a7fc1;
+    background: rgba(31, 49, 82, 0.4);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-game-hollowknight][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image: linear-gradient(115deg, transparent 0 46%, rgba(207, 230, 255, 0.6) 46% 54%, transparent 54%);
+    background-size: 36px 10px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-game-hollowknight][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #cfe6ff !important;
+    border-color: rgba(143, 216, 232, 0.5) !important;
+    background-color: rgba(74, 127, 193, 0.15) !important;
+}
+
+/* --- keyframes --- */
+@keyframes game-hollowknight-hk-dream-drift {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 30px -520px, -40px -640px, 24px -580px, -20px -460px, 0 0, 0 0; }
+}
+
+@keyframes game-hollowknight-hk-mask-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(53, 96, 143, 0.15); }
+  50% { box-shadow: 0 2px 15px rgba(79, 159, 184, 0.35); }
+}
+
+@keyframes game-hollowknight-hk-btn-glow {
+  0%, 100% { box-shadow: 0 3px 12px rgba(53, 96, 143, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 18px rgba(79, 159, 184, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes game-hollowknight-hk-dream-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

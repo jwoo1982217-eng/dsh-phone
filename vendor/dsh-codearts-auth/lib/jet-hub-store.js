@@ -308,6 +308,7 @@ class MemoryStore {
  * / `opencode` / `gemini`。
  */
 const REF_PREFIX_TO_PROVIDER = [
+    ['ORCATERM', 'orcaterm'],
     ['CODEARTS', 'codearts'],
     ['BUDDY', 'buddy'],
     ['WORKBUDDY', 'workbuddy'],

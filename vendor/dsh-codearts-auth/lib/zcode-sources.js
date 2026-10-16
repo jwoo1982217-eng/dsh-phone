@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { LlmError } from '@deepseek-ai/dsh-llm';
 import { fetchZcodeBalance, describeZcodePendingGrants } from './zcode-upstream.js';
+import { resetCodingPlan } from './zcode-plan-reset.js';
 const services = new WeakMap();
 export function zcodeSources(ctx, pool) {
     let service = services.get(pool);
@@ -40,13 +41,17 @@ export class ZcodeSources {
             throw new Error('上游未允许读取此额度来源');
         return value.data ?? value;
     }
-    async projectKey(host, token, org, project, team) {
+    async projectKey(host, token, org, project, kind) {
         const headers = { Authorization: token, 'Content-Type': 'application/json', 'bigmodel-organization': org, 'bigmodel-project': project };
         const base = `${host}/api/biz/v1/organization/${encodeURIComponent(org)}/projects/${encodeURIComponent(project)}/api_keys`;
         const raw = await this.get(base, headers);
         const list = Array.isArray(raw) ? raw : [];
-        const key = team ? list.find((v) => v.name === 'zcode-team-api-key' && v.keyType === 2)
-            : list.find((v) => v.name === 'zcode-api-key' && v.keyType !== 2) ?? list.find((v) => v.keyType !== 2 && typeof v.apiKey === 'string');
+        const team = kind === 'team';
+        const ordinary = list.filter((v) => v.keyType !== 2 && v.usageScene !== 1);
+        const key = kind === 'organization-flow'
+            ? ordinary.find((v) => v.usageScene === 2) ?? ordinary.find((v) => v.name !== 'zcode-api-key') ?? ordinary[0]
+            : team ? list.find((v) => v.name === 'zcode-team-api-key' && v.keyType === 2)
+                : list.find((v) => v.name === 'zcode-api-key' && v.keyType !== 2) ?? list.find((v) => v.keyType !== 2 && typeof v.apiKey === 'string');
         if (typeof key?.apiKey !== 'string' || !key.apiKey.trim())
             return undefined;
         const copied = await this.get(`${base}/copy/${encodeURIComponent(key.apiKey)}`, headers);
@@ -102,15 +107,15 @@ export class ZcodeSources {
                 const team = String(p.projectType) === '2';
                 let key, reason;
                 try {
-                    key = await this.projectKey(host, token, o.organizationId, p.projectId, team);
+                    key = await this.projectKey(host, token, o.organizationId, p.projectId, team ? 'team' : 'organization-flow');
                 }
                 catch {
                     reason = '机构密钥读取失败，请刷新或重新授权';
                 }
                 if (!team && ordinary[0]?.o.organizationId === o.organizationId && ordinary[0]?.p.projectId === p.projectId && !personal && key) {
-                    personal = key;
-                    personalRow.projection.key = key;
-                    personalRow.available = true;
+                    personal = await this.projectKey(host, token, o.organizationId, p.projectId, 'individual');
+                    personalRow.projection.key = personal;
+                    personalRow.available = Boolean(personal);
                 }
                 const kind = team ? 'team' : 'organization-flow';
                 const id = `${kind}:${encodeURIComponent(o.organizationId)}:${encodeURIComponent(p.projectId)}`;
@@ -185,13 +190,33 @@ export class ZcodeSources {
         }
         await this.pool.updateAccount(accountId, { zcodeSource: sourceId });
     }
+    async reset(accountId, sourceId, action, options = {}) {
+        const entry = this.pool.findAccount(accountId);
+        if (!entry || entry.provider !== 'zcode')
+            throw new Error('ZCode 账号不存在');
+        const c = await this.read(entry), fingerprint = createHash('sha256').update(JSON.stringify(c)).digest('hex');
+        const source = (await this.load(entry, c)).find(s => s.id === sourceId);
+        if (!source || !['individual', 'team'].includes(source.kind))
+            throw new Error('额度重置仅适用于个人或机构编程套餐；赠送和机构流量不适用');
+        const result = await resetCodingPlan({ credential: c, ...(source.kind === 'team' ? { organizationId: source.projection.organizationId, projectId: source.projection.projectId } : {}), assertCurrent: async () => {
+                const latest = this.pool.findAccount(accountId);
+                if (!latest || latest.provider !== 'zcode' || latest.credentialRef !== entry.credentialRef || createHash('sha256').update(JSON.stringify(await this.read(latest))).digest('hex') !== fingerprint)
+                    throw new Error('账号授权已变化，请刷新后再操作');
+            } }, action, options, this.fetchImpl);
+        if (action === 'use')
+            this.cache.delete(accountId);
+        return result;
+    }
     async resolve(entry, c) {
         if (!entry.zcodeSource || entry.zcodeSource === 'auto')
             return c;
         const source = (await this.load(entry, c)).find(s => s.id === entry.zcodeSource);
         if (!source?.available || !source.projection.key)
             throw new LlmError('ZCode 所选额度来源不可用，请到账号卡片刷新并选择', 'MISSING_CREDENTIAL');
-        return { ...c, source_selection: source.projection };
+        const latest = this.pool.findAccount(entry.id);
+        if (!latest?.enabled || latest.zcodeSource !== entry.zcodeSource)
+            throw new LlmError('ZCode 额度来源已改变，请重新发送本次请求；不会混用新旧 Plan', 'SOURCE_CHANGED');
+        return { ...c, source_selection: { ...source.projection } };
     }
 }
 //# sourceMappingURL=zcode-sources.js.map

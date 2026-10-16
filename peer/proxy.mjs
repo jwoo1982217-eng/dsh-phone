@@ -17,7 +17,7 @@ function safePath(value) {
 }
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const comboPath = path => path.startsWith('/plugins/??') && /&rev=[a-f0-9]{12}$/.test(path) && path.length <= 8192;
-const requestLimit = (service,method,url) => service === 'ui' && method === 'POST' && url.split('?')[0] === '/phone-chat-files/upload' ? 64*1024*1024 : MAX_BODY;
+const requestLimit = (service,method,url) => service === 'ui' && method === 'POST' && url.split('?')[0] === '/phone-chat-files/upload' ? 256*1024*1024 : MAX_BODY;
 export function createPeerProxy(tunnel, { role, webPort = 3080, localWebPort, uiHeaders = async () => ({}), gatewayPort = 8326, gatewayKey = async () => undefined, allowGateway = () => true, transformHtml = html => html, assets = new Map(), reusableScripts = [] } = {}) {
   const reusable = new Map(reusableScripts.filter(bytes => Buffer.isBuffer(bytes) && bytes.length > 0 && bytes.length <= MAX_BODY / 2).slice(0, 1).map(bytes => [digest(bytes), bytes]));
   const outgoing = new Map(), incoming = new Map(), localWs = new Map(), remoteWs = new Map();

@@ -24,6 +24,10 @@ test('authenticated upload exposes the original JSON through the actual SDK tool
   try{
     const bytes=Buffer.from(JSON.stringify({items:Array.from({length:100000},(_,i)=>({i,text:'中文😀数据'}))}));
     const uploaded=await upload(bytes);assert.equal(uploaded.status,200);assert.deepEqual(await readFile(uploaded.json.file.path),bytes);
+    assert.equal(uploaded.json.file.preview,undefined);
+    const continuation=await ctx.tools.execute({name:'chat_file_read',arguments:{filePath:uploaded.json.file.path,offset:0},callId:'qa-continuation',signal:new AbortController().signal});
+    assert.equal(continuation.isError,false);
+    assert.ok(bytes.toString('utf8').startsWith(JSON.parse(continuation.value).text));
     let offset=0,text='';
     for(;;){
       const result=await ctx.tools.execute({name:'chat_file_read',arguments:{filePath:uploaded.json.file.path,offset},callId:'qa-'+offset,signal:new AbortController().signal});
@@ -34,7 +38,13 @@ test('authenticated upload exposes the original JSON through the actual SDK tool
     assert.equal((await upload('{}',{origin:'https://other.invalid'})).status,403);
     assert.equal((await upload('{}',{'content-type':'application/json'})).status,403);
     assert.equal((await upload('',{'content-length':String(MAX_FILE_BYTES+1)})).status,413);
-    assert.equal((await upload('{"retry":true}')).status,200);
+    const invalid=await upload(Buffer.from([65,255]));
+    assert.equal(invalid.status,200);assert.equal(invalid.json.file.preview,undefined);
+    assert.deepEqual(await readFile(invalid.json.file.path),Buffer.from([65,255]));
+    const zip=await upload(Buffer.from([80,75,0,0]),{'x-dsh-file-name':'archive.zip'});
+    assert.equal(zip.status,200);assert.equal(zip.json.file.preview,undefined);
+    const retry=await upload('{"retry":true}');assert.equal(retry.status,200);
+    assert.equal(retry.json.file.preview,undefined);assert.equal((await readFile(retry.json.file.path)).toString(),'{"retry":true}');
   }finally{
     server.closeAllConnections();await new Promise(r=>server.close(r));await ctx.fiber.dispose();await rm(home,{recursive:true,force:true});
   }

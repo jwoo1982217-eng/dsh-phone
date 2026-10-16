@@ -1,0 +1,781 @@
+/* pokemon-snorlax — 宝可梦 · 卡比兽 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-pokemon-snorlax], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-pokemon-snorlax] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #232a26;
+  background-color: #f5f2e8;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] {
+  color: #eef1ea;
+  background-color: #0d1311;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-pokemon-snorlax] {
+  --color-primary: #2e6e64;
+  --primary: #2e6e64;
+  --primary-rgb: 46, 110, 100;
+  --color-primary-light-1: #4b8a80;
+  --color-primary-light-2: #79aca2;
+  --color-primary-light-3: #b2d2c9;
+  --color-primary-dark-1: #1f544c;
+  --brand: #2e6e64;
+  --brand-light: #e3efe9;
+  --brand-hover: #1f544c;
+  --color-brand-fill: #2e6e64;
+  --color-brand-bg: #d8e9e2;
+  --aou-1: #e3efe9;
+  --aou-2: #c4ded2;
+  --aou-3: #a2cbbb;
+  --aou-4: #7fb5a3;
+  --aou-5: #599a87;
+  --aou-6: #2e6e64;
+  --aou-7: #275d55;
+  --aou-8: #1f4c46;
+  --aou-9: #183c37;
+  --aou-10: #102825;
+  --bg-base: #f5f2e8;
+  --bg-1: #eeeadd;
+  --bg-2: #e5e0cf;
+  --bg-3: #dbd4bf;
+  --bg-4: #cec6ad;
+  --bg-5: #bdb49a;
+  --bg-6: #a89e83;
+  --bg-8: #867c64;
+  --bg-9: #615a47;
+  --bg-10: #3b362a;
+  --color-bg-1: #eeeadd;
+  --color-bg-2: #e5e0cf;
+  --color-bg-3: #dbd4bf;
+  --color-bg-4: #cec6ad;
+  --bg-hover: #e2ddcb;
+  --bg-active: #d7d0b9;
+  --text-primary: #232a26;
+  --text-secondary: #5a635d;
+  --text-disabled: #a3a89f;
+  --text-0: #141a17;
+  --text-white: #ffffff;
+  --color-text-1: #232a26;
+  --color-text-2: #5a635d;
+  --color-text-3: #7f877f;
+  --color-text-4: #a3a89f;
+  --border-base: #c9c0a8;
+  --border-light: #dcd5c0;
+  --border-special: #8fb5aa;
+  --color-border: #c9c0a8;
+  --color-border-1: #c9c0a8;
+  --color-border-2: #dcd5c0;
+  --fill: #e5e0cf;
+  --color-fill: #e5e0cf;
+  --fill-0: #eeeadd;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #faf7ee;
+  --inverse: #232a26;
+  --success: #2e9e66;
+  --warning: #d08a1d;
+  --danger: #c94040;
+  --info: #3a6ec9;
+  --message-user-bg: #24443e;
+  --message-tips-bg: #e6efe6;
+  --workspace-btn-bg: #d8e9e2;
+  --color-guid-agent-bar: #ece7d6;
+  --snorlax-teal: #2e6e64;
+  --snorlax-teal-hi: #79aca2;
+  --snorlax-belly: #f2ecd8;
+  --snorlax-belly-deep: #e3dab9;
+  --snorlax-leaf: #4d7a4f;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] {
+  --color-primary: #57a99a;
+  --primary: #57a99a;
+  --primary-rgb: 87, 169, 154;
+  --color-primary-light-1: #79bfb1;
+  --color-primary-light-2: #9bd1c5;
+  --color-primary-light-3: #c2e4db;
+  --color-primary-dark-1: #3a8578;
+  --brand: #57a99a;
+  --brand-light: #17322d;
+  --brand-hover: #6cbeaf;
+  --color-brand-fill: #57a99a;
+  --color-brand-bg: #14291f;
+  --aou-1: #102622;
+  --aou-2: #16332e;
+  --aou-3: #1e453e;
+  --aou-4: #27594f;
+  --aou-5: #387b6e;
+  --aou-6: #57a99a;
+  --aou-7: #79bfb1;
+  --aou-8: #9bd1c5;
+  --aou-9: #c2e4db;
+  --aou-10: #e8f5f1;
+  --bg-base: #0d1311;
+  --bg-1: #121a17;
+  --bg-2: #182220;
+  --bg-3: #1f2b28;
+  --bg-4: #27342f;
+  --bg-5: #323f39;
+  --bg-6: #40504a;
+  --bg-8: #5c6e66;
+  --bg-9: #82948c;
+  --bg-10: #b8c6c0;
+  --color-bg-1: #121a17;
+  --color-bg-2: #182220;
+  --color-bg-3: #1f2b28;
+  --color-bg-4: #27342f;
+  --bg-hover: #1d2622;
+  --bg-active: #252f2a;
+  --text-primary: #eef1ea;
+  --text-secondary: #adb8b0;
+  --text-disabled: #55615b;
+  --text-0: #f8faf6;
+  --text-white: #ffffff;
+  --color-text-1: #eef1ea;
+  --color-text-2: #adb8b0;
+  --color-text-3: #7f8c84;
+  --color-text-4: #55615b;
+  --border-base: #2c3833;
+  --border-light: #222c28;
+  --border-special: #3f6d62;
+  --color-border: #2c3833;
+  --color-border-1: #2c3833;
+  --color-border-2: #222c28;
+  --fill: #182220;
+  --color-fill: #182220;
+  --fill-0: #121a17;
+  --fill-white-to-black: #0d1311;
+  --dialog-fill-0: #141c19;
+  --inverse: #eef1ea;
+  --success: #4caf7d;
+  --warning: #e0a84a;
+  --danger: #e05656;
+  --info: #5a8fd6;
+  --message-user-bg: #ece3c8;
+  --message-tips-bg: #1a2a24;
+  --workspace-btn-bg: #14291f;
+  --color-guid-agent-bar: #161e1b;
+  --snorlax-teal: #57a99a;
+  --snorlax-teal-hi: #3f6d62;
+  --snorlax-belly: #ece3c8;
+  --snorlax-belly-deep: #d9cda8;
+  --snorlax-leaf: #5c8a5e;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-pokemon-snorlax] {
+  --dsw-static-deepseek-50: #e3efe9;
+  --dsw-static-blue-50: #e3efe9;
+  --dsw-static-deepseek-50p: #c4ded2;
+  --dsw-static-blue-50p: #c4ded2;
+  --dsw-static-deepseek-75: #c4ded2;
+  --dsw-static-blue-75: #c4ded2;
+  --dsw-static-deepseek-100: #c4ded2;
+  --dsw-static-blue-100: #c4ded2;
+  --dsw-static-deepseek-200: #a2cbbb;
+  --dsw-static-blue-200: #a2cbbb;
+  --dsw-static-deepseek-300: #7fb5a3;
+  --dsw-static-blue-300: #7fb5a3;
+  --dsw-static-deepseek-400: #599a87;
+  --dsw-static-blue-400: #599a87;
+  --dsw-static-deepseek-450: #599a87;
+  --dsw-static-blue-450: #599a87;
+  --dsw-static-deepseek-500: #2e6e64;
+  --dsw-static-blue-500: #2e6e64;
+  --dsw-static-deepseek-600: #275d55;
+  --dsw-static-blue-600: #275d55;
+  --dsw-static-deepseek-700-delete: #1f4c46;
+  --dsw-static-deepseek-800: #1f4c46;
+  --dsw-static-blue-800: #1f4c46;
+  --dsw-static-deepseek-900: #183c37;
+  --dsw-static-blue-900: #183c37;
+  --dsw-static-deepseek-950: #102825;
+  --dsw-static-blue-950: #102825;
+  --dsw-static-neutral-bluish-00: #eeeadd;
+  --dsw-static-neutral-00: #eeeadd;
+  --dsw-static-neutral-bluish-50: #eeeadd;
+  --dsw-static-neutral-50: #eeeadd;
+  --dsw-static-neutral-bluish-60: #eeeadd;
+  --dsw-static-neutral-60: #eeeadd;
+  --dsw-static-neutral-bluish-75: #e5e0cf;
+  --dsw-static-neutral-75: #e5e0cf;
+  --dsw-static-neutral-bluish-100: #e5e0cf;
+  --dsw-static-neutral-100: #e5e0cf;
+  --dsw-static-neutral-bluish-150: #dbd4bf;
+  --dsw-static-neutral-150: #dbd4bf;
+  --dsw-static-neutral-bluish-200: #dbd4bf;
+  --dsw-static-neutral-200: #dbd4bf;
+  --dsw-static-neutral-bluish-250: #cec6ad;
+  --dsw-static-neutral-250: #cec6ad;
+  --dsw-static-neutral-bluish-300: #cec6ad;
+  --dsw-static-neutral-300: #cec6ad;
+  --dsw-static-neutral-bluish-400: #bdb49a;
+  --dsw-static-neutral-400: #bdb49a;
+  --dsw-static-neutral-bluish-500: #a89e83;
+  --dsw-static-neutral-500: #a89e83;
+  --dsw-static-neutral-bluish-550: #a89e83;
+  --dsw-static-neutral-550: #a89e83;
+  --dsw-static-neutral-bluish-600: #867c64;
+  --dsw-static-neutral-600: #867c64;
+  --dsw-static-neutral-bluish-700: #867c64;
+  --dsw-static-neutral-700: #867c64;
+  --dsw-static-neutral-bluish-750: #615a47;
+  --dsw-static-neutral-750: #615a47;
+  --dsw-static-neutral-bluish-800: #615a47;
+  --dsw-static-neutral-800: #615a47;
+  --dsw-static-neutral-bluish-850: #615a47;
+  --dsw-static-neutral-850: #615a47;
+  --dsw-static-neutral-bluish-875: #3b362a;
+  --dsw-static-neutral-875: #3b362a;
+  --dsw-static-neutral-bluish-900: #3b362a;
+  --dsw-static-neutral-900: #3b362a;
+  --dsw-static-neutral-bluish-950: #3b362a;
+  --dsw-static-neutral-950: #3b362a;
+  --dsw-static-neutral-bluish-1000: #232a26;
+  --dsw-static-neutral-1000: #232a26;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e66 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e66 20%, white);
+  --dsw-static-green-400: #2e9e66;
+  --dsw-static-green-500: #2e9e66;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e66 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e66 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c94040 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c94040 20%, white);
+  --dsw-static-red-400: #c94040;
+  --dsw-static-red-500: #c94040;
+  --dsw-static-red-600: color-mix(in srgb, #c94040 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c94040 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #102622;
+  --dsw-static-blue-50: #102622;
+  --dsw-static-deepseek-50p: #16332e;
+  --dsw-static-blue-50p: #16332e;
+  --dsw-static-deepseek-75: #16332e;
+  --dsw-static-blue-75: #16332e;
+  --dsw-static-deepseek-100: #16332e;
+  --dsw-static-blue-100: #16332e;
+  --dsw-static-deepseek-200: #1e453e;
+  --dsw-static-blue-200: #1e453e;
+  --dsw-static-deepseek-300: #27594f;
+  --dsw-static-blue-300: #27594f;
+  --dsw-static-deepseek-400: #387b6e;
+  --dsw-static-blue-400: #387b6e;
+  --dsw-static-deepseek-450: #387b6e;
+  --dsw-static-blue-450: #387b6e;
+  --dsw-static-deepseek-500: #57a99a;
+  --dsw-static-blue-500: #57a99a;
+  --dsw-static-deepseek-600: #79bfb1;
+  --dsw-static-blue-600: #79bfb1;
+  --dsw-static-deepseek-700-delete: #9bd1c5;
+  --dsw-static-deepseek-800: #9bd1c5;
+  --dsw-static-blue-800: #9bd1c5;
+  --dsw-static-deepseek-900: #c2e4db;
+  --dsw-static-blue-900: #c2e4db;
+  --dsw-static-deepseek-950: #e8f5f1;
+  --dsw-static-blue-950: #e8f5f1;
+  --dsw-static-neutral-bluish-00: #121a17;
+  --dsw-static-neutral-00: #121a17;
+  --dsw-static-neutral-bluish-50: #121a17;
+  --dsw-static-neutral-50: #121a17;
+  --dsw-static-neutral-bluish-60: #121a17;
+  --dsw-static-neutral-60: #121a17;
+  --dsw-static-neutral-bluish-75: #182220;
+  --dsw-static-neutral-75: #182220;
+  --dsw-static-neutral-bluish-100: #182220;
+  --dsw-static-neutral-100: #182220;
+  --dsw-static-neutral-bluish-150: #1f2b28;
+  --dsw-static-neutral-150: #1f2b28;
+  --dsw-static-neutral-bluish-200: #1f2b28;
+  --dsw-static-neutral-200: #1f2b28;
+  --dsw-static-neutral-bluish-250: #27342f;
+  --dsw-static-neutral-250: #27342f;
+  --dsw-static-neutral-bluish-300: #27342f;
+  --dsw-static-neutral-300: #27342f;
+  --dsw-static-neutral-bluish-400: #323f39;
+  --dsw-static-neutral-400: #323f39;
+  --dsw-static-neutral-bluish-500: #40504a;
+  --dsw-static-neutral-500: #40504a;
+  --dsw-static-neutral-bluish-550: #40504a;
+  --dsw-static-neutral-550: #40504a;
+  --dsw-static-neutral-bluish-600: #5c6e66;
+  --dsw-static-neutral-600: #5c6e66;
+  --dsw-static-neutral-bluish-700: #5c6e66;
+  --dsw-static-neutral-700: #5c6e66;
+  --dsw-static-neutral-bluish-750: #82948c;
+  --dsw-static-neutral-750: #82948c;
+  --dsw-static-neutral-bluish-800: #82948c;
+  --dsw-static-neutral-800: #82948c;
+  --dsw-static-neutral-bluish-850: #82948c;
+  --dsw-static-neutral-850: #82948c;
+  --dsw-static-neutral-bluish-875: #b8c6c0;
+  --dsw-static-neutral-875: #b8c6c0;
+  --dsw-static-neutral-bluish-900: #b8c6c0;
+  --dsw-static-neutral-900: #b8c6c0;
+  --dsw-static-neutral-bluish-950: #b8c6c0;
+  --dsw-static-neutral-950: #b8c6c0;
+  --dsw-static-neutral-bluish-1000: #eef1ea;
+  --dsw-static-neutral-1000: #eef1ea;
+  --dsw-static-green-50: color-mix(in srgb, #4caf7d 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4caf7d 20%, black);
+  --dsw-static-green-400: #4caf7d;
+  --dsw-static-green-500: #4caf7d;
+  --dsw-static-green-600: color-mix(in srgb, #4caf7d 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf7d 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e0a84a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e0a84a 20%, black);
+  --dsw-static-amber-400: #e0a84a;
+  --dsw-static-amber-500: #e0a84a;
+  --dsw-static-amber-600: color-mix(in srgb, #e0a84a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e0a84a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e05656 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e05656 20%, black);
+  --dsw-static-red-400: #e05656;
+  --dsw-static-red-500: #e05656;
+  --dsw-static-red-600: color-mix(in srgb, #e05656 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e05656 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-pokemon-snorlax] {
+  --dsw-alias-button-primary-fill: #2e6e64;
+  --dsw-alias-button-primary-hover: #1f544c;
+  --dsw-alias-button-primary-dimmed: #c4ded2;
+  --dsw-alias-button-info-fill: #2e6e64;
+  --dsw-alias-button-info-hover: #1f544c;
+  --dsw-alias-button-contrast-fill: #275d55;
+  --dsw-alias-button-ghost-active-fill: #e3efe9;
+  --dsw-alias-button-ghost-active-hover: #c4ded2;
+  --dsw-alias-button-ghost-active-border: #7fb5a3;
+  --dsw-alias-button-elevated-fill: #eeeadd;
+  --dsw-alias-button-floating-fill: #eeeadd;
+  --dsw-alias-button-floating-hover: #e2ddcb;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(46, 110, 100, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(46, 110, 100, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(46, 110, 100, 0.6);
+  --dsw-specific-bubble: #24443e;
+  --dsw-specific-bubble-highlight: #a2cbbb;
+  --dsw-specific-input-major: #eeeadd;
+  --dsw-specific-login-input: #eeeadd;
+  --dsw-specific-sidebar-fill: #2e6e64;
+  --dsw-specific-sidebar-nav-item-active: #c4ded2;
+  --dsw-specific-sidebar-nav-item-hover: #e2ddcb;
+  --dsw-specific-sidebar-nav-item-active-accent: #7fb5a3;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #57a99a;
+  --dsw-alias-button-primary-hover: #6cbeaf;
+  --dsw-alias-button-primary-dimmed: #16332e;
+  --dsw-alias-button-info-fill: #57a99a;
+  --dsw-alias-button-info-hover: #6cbeaf;
+  --dsw-alias-button-contrast-fill: #79bfb1;
+  --dsw-alias-button-ghost-active-fill: #17322d;
+  --dsw-alias-button-ghost-active-hover: #16332e;
+  --dsw-alias-button-ghost-active-border: #27594f;
+  --dsw-alias-button-elevated-fill: #121a17;
+  --dsw-alias-button-floating-fill: #121a17;
+  --dsw-alias-button-floating-hover: #1d2622;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(87, 169, 154, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(87, 169, 154, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(87, 169, 154, 0.6);
+  --dsw-specific-bubble: #ece3c8;
+  --dsw-specific-bubble-highlight: #1e453e;
+  --dsw-specific-input-major: #121a17;
+  --dsw-specific-login-input: #121a17;
+  --dsw-specific-sidebar-fill: #57a99a;
+  --dsw-specific-sidebar-nav-item-active: #16332e;
+  --dsw-specific-sidebar-nav-item-hover: #1d2622;
+  --dsw-specific-sidebar-nav-item-active-accent: #27594f;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-pokemon-snorlax] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pokemon-snorlax]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(46, 110, 100, 0.10) 0 3px, transparent 4.5px),
+      radial-gradient(circle at 76% 10%, rgba(77, 122, 79, 0.09) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 60% 72%, rgba(46, 110, 100, 0.07) 0 2.5px, transparent 4px),
+      radial-gradient(ellipse at 88% 88%, rgba(227, 218, 185, 0.5) 0%, transparent 45%),
+      radial-gradient(ellipse at 6% 92%, rgba(46, 110, 100, 0.06) 0%, transparent 40%);
+    background-size: 580px 580px, 640px 640px, 520px 520px, 100% 100%, 100% 100%;
+    opacity: 0.75;
+}
+
+body[data-dsh-pokemon-snorlax]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(46, 110, 100, 0.85) 0 14px, transparent 15px),
+      radial-gradient(circle at 70% 65%, rgba(77, 122, 79, 0.8) 0 20px, transparent 21px),
+      radial-gradient(circle at 50% 90%, rgba(46, 110, 100, 0.7) 0 10px, transparent 11px);
+    background-size: 340px 340px, 460px 460px, 280px 280px;
+    opacity: 0.06;
+    animation: pokemon-snorlax-snorlax-dapple-drift 26s ease-in-out infinite alternate;
+}
+
+body[data-dsh-pokemon-snorlax] [class*='sider'] [class*='session'],
+body[data-dsh-pokemon-snorlax] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-pokemon-snorlax] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(77, 122, 79, 0.14);
+    box-shadow: inset 3px 0 0 0 rgba(77, 122, 79, 0.7);
+}
+
+body[data-dsh-pokemon-snorlax] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-pokemon-snorlax] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(46, 110, 100, 0.2), rgba(46, 110, 100, 0.06) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #2e6e64;
+}
+
+body[data-dsh-pokemon-snorlax] button[class*='primary'],
+body[data-dsh-pokemon-snorlax] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #1f544c 0%, #2e6e64 55%, #4b8a80 100%) !important;
+    border: 1px solid #a2cbbb !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(31, 76, 70, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(16, 40, 37, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-pokemon-snorlax] button[class*='primary']:hover,
+body[data-dsh-pokemon-snorlax] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 14px rgba(31, 76, 70, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: pokemon-snorlax-snorlax-btn-doze 3s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-snorlax] pre,
+body[data-dsh-pokemon-snorlax] .markdown-body pre {
+  background: linear-gradient(180deg, #22403a 0%, #1a332e 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #e3dab9 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(121, 172, 162, 0.14);
+}
+
+body[data-dsh-pokemon-snorlax] pre code,
+body[data-dsh-pokemon-snorlax] .markdown-body pre code {
+  background: transparent !important;
+    color: #e9ecdd !important;
+    text-shadow: none;
+}
+
+body[data-dsh-pokemon-snorlax] code,
+body[data-dsh-pokemon-snorlax] .markdown-body code {
+  background: rgba(46, 110, 100, 0.14);
+    color: #1f544c;
+    border: 1px solid rgba(46, 110, 100, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pokemon-snorlax]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-pokemon-snorlax] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 14px;
+    box-shadow: inset 0 2px 6px rgba(59, 54, 42, 0.08), 0 0 0 1px rgba(46, 110, 100, 0.14);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-pokemon-snorlax] [class*='guidInputCard']:hover {
+  border-color: var(--snorlax-teal-hi) !important;
+}
+
+body[data-dsh-pokemon-snorlax] [class*='agent-bar'],
+body[data-dsh-pokemon-snorlax] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(46, 110, 100, 0.35);
+}
+
+body[data-dsh-pokemon-snorlax]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pokemon-snorlax]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4b8a80, #1f4c46);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pokemon-snorlax]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #79aca2, #275d55);
+}
+
+body[data-dsh-pokemon-snorlax]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pokemon-snorlax] .markdown-body a,
+body[data-dsh-pokemon-snorlax] a {
+  color: #1f544c;
+}
+
+body[data-dsh-pokemon-snorlax] .markdown-body a:hover,
+body[data-dsh-pokemon-snorlax] a:hover {
+  color: #2e6e64;
+}
+
+body[data-dsh-pokemon-snorlax] .markdown-body blockquote {
+  border-left: 3px solid #2e6e64;
+    background: rgba(46, 110, 100, 0.1);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-pokemon-snorlax] .markdown-body hr,
+body[data-dsh-pokemon-snorlax] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(46, 110, 100, 0.55) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(46, 110, 100, 0.55) 50%, transparent 50%);
+    background-size: 14px 7px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 7px 1px;
+    opacity: 0.6;
+}
+
+body[data-dsh-pokemon-snorlax] .arco-btn:not(button[class*='primary']):hover {
+  color: #1f544c !important;
+    border-color: rgba(46, 110, 100, 0.5) !important;
+    background-color: rgba(46, 110, 100, 0.1) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(87, 169, 154, 0.12) 0 3px, transparent 4.5px),
+      radial-gradient(circle at 76% 10%, rgba(92, 138, 94, 0.1) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 60% 72%, rgba(87, 169, 154, 0.08) 0 2.5px, transparent 4px),
+      radial-gradient(ellipse at 88% 88%, rgba(40, 62, 56, 0.4) 0%, transparent 45%),
+      radial-gradient(ellipse at 6% 92%, rgba(236, 227, 200, 0.05) 0%, transparent 40%);
+    background-size: 580px 580px, 640px 640px, 520px 520px, 100% 100%, 100% 100%;
+    opacity: 0.85;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(87, 169, 154, 0.9) 0 14px, transparent 15px),
+      radial-gradient(circle at 70% 65%, rgba(236, 227, 200, 0.85) 0 20px, transparent 21px),
+      radial-gradient(circle at 50% 90%, rgba(92, 138, 94, 0.8) 0 10px, transparent 11px);
+    background-size: 340px 340px, 460px 460px, 280px 280px;
+    opacity: 0.07;
+    animation: pokemon-snorlax-snorlax-dapple-drift 26s ease-in-out infinite alternate;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(63, 109, 98, 0.35);
+    box-shadow: inset 3px 0 0 0 rgba(63, 109, 98, 0.9);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(87, 169, 154, 0.28), rgba(87, 169, 154, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #57a99a;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #387b6e 0%, #57a99a 55%, #79bfb1 100%) !important;
+    border: 1px solid #9bd1c5 !important;
+    color: #102622 !important;
+    box-shadow: 0 2px 8px rgba(87, 169, 154, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.25);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(87, 169, 154, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: pokemon-snorlax-snorlax-btn-doze 3s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] pre,
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #122019 0%, #0e1a15 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #d9cda8 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(63, 109, 98, 0.35);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] pre code,
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #dce8de !important;
+    text-shadow: none;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] code,
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .markdown-body code {
+  background: rgba(63, 109, 98, 0.35);
+    color: #c2e4db;
+    border: 1px solid rgba(87, 169, 154, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 14px;
+    box-shadow: inset 0 2px 8px rgba(5, 8, 7, 0.5), 0 0 0 1px rgba(63, 109, 98, 0.18);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--snorlax-teal-hi) !important;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(87, 169, 154, 0.4);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #57a99a, #1e453e);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #79bfb1, #27594f);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] a {
+  color: #79bfb1;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] a:hover {
+  color: #9bd1c5;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #57a99a;
+    background: rgba(63, 109, 98, 0.18);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(87, 169, 154, 0.55) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(87, 169, 154, 0.55) 50%, transparent 50%);
+    background-size: 14px 7px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 7px 1px;
+    opacity: 0.6;
+}
+
+body[data-dsh-pokemon-snorlax][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #9bd1c5 !important;
+    border-color: rgba(87, 169, 154, 0.5) !important;
+    background-color: rgba(87, 169, 154, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes pokemon-snorlax-snorlax-dapple-drift {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 40px 24px, -32px 20px, 24px -16px; }
+}
+
+@keyframes pokemon-snorlax-snorlax-belly-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(31, 76, 70, 0.26); }
+  50% { box-shadow: 0 4px 18px rgba(31, 76, 70, 0.45); }
+}
+
+@keyframes pokemon-snorlax-snorlax-snot-bubble {
+  0%, 100% { transform: scale(0.7); opacity: 0.65; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes pokemon-snorlax-snorlax-btn-doze {
+  0%, 100% { box-shadow: 0 3px 12px rgba(31, 76, 70, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.28); }
+  50% { box-shadow: 0 3px 20px rgba(46, 110, 100, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.34); }
+}
+
+@keyframes pokemon-snorlax-snorlax-zzz-float {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(-3px); opacity: 0.95; }
+}
+
+@keyframes pokemon-snorlax-snorlax-focus-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

@@ -36,7 +36,7 @@ object TermuxCommands {
         val installed = runCatching { ctx.packageManager.getPackageInfo("com.termux", 0); true }.getOrDefault(false)
         val permission = installed && ctx.checkSelfPermission(PERMISSION) == PackageManager.PERMISSION_GRANTED
         return JSONObject().put("installed", installed).put("permissionGranted", permission).put("transportReady", permission)
-            .put("hint", if (!installed) "先安装官方 Termux 并打开一次完成初始化" else if (!permission) "在服务→手机操作授权 Termux 命令权限" else "还需在 Termux 设置 allow-external-apps=true；以实际命令结果确认接入成功")
+            .put("hint", if (!installed) "先安装官方 Termux 并打开一次完成初始化" else if (!permission) "在服务→手机操作授权 Termux 命令权限" else "命令权限已授予，可直接调用；若首次调用明确报告外部调用未开启，再检查 Termux 的 allow-external-apps 设置")
     }
     private fun allowed(owner: String): ControlLease.Grant {
         require(owner.matches(Regex("[a-zA-Z0-9_-]{1,128}")) && !owner.startsWith("qq-") && !owner.startsWith("cloud-")) { "Termux 命令只供手机 DSH 普通会话" }

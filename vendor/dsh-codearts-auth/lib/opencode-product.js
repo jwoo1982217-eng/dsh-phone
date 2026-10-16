@@ -39,8 +39,12 @@ export const OPENCODE = {
     // ⚠️ 匿名凭证是**字面量** `public`：opencode 官方 CLI 在没有 key 时自己就用它
     // （其 provider.ts 的 opencode 分支：`options: ok ? {} : { apiKey: 'public' }`）。
     anonymousKey: 'public',
-    // ⚠️ 兜底 UA 版本号。接线层会用真机 `opencode --version` 的结果覆盖它。
-    defaultUserAgent: 'opencode/1.18.22',
+    // ⚠️ 兜底 UA。1.19.0 起官方 UA 是**复合串**（真机抓包 2026-10-15）：
+    //   opencode/1.19.0 ai-sdk/provider-utils/4.0.23 runtime/bun/1.3.14
+    // 接线层会用真机 `opencode --version` 的版本号重建前段；后两段随 CLI 构建
+    // 而变，CLI 升级后以重新抓包为准（openai-compatible 模型元数据里不带这些）。
+    defaultUserAgent: 'opencode/1.19.0 ai-sdk/provider-utils/4.0.23 runtime/bun/1.3.14',
+    userAgentSuffix: 'ai-sdk/provider-utils/4.0.23 runtime/bun/1.3.14',
     /**
      * 模型能力元数据源（**远端**，能力的主来源）。
      *
@@ -155,8 +159,10 @@ export function classifyOpencodeError(status, body, headers) {
         return { kind: 'go_usage_limit', ...retryAfterMs === undefined ? {} : { retryAfterMs }, detail };
     }
     if (body.includes('FreeTierError')) {
-        // 形状门禁：伪装形态被拒。**不重试也不换槽**（我们每槽发的是同一套形状，
-        // 换槽重试无意义），如实透传让人知道「伪装需跟进上游更新」。
+        // 传输指纹门禁（2026-10-15 起）：免费模型只认官方 OpenCode 客户端的
+        // TLS/HTTP 指纹，非官方栈（Node/curl/python/普通 Bun 反代）连完全复刻
+        // 的头序都过不了。**不重试也不换槽**（每槽同一套栈，换槽重试无意义），
+        // 如实透传让用户走唯一有效动作：绑定付费 key（Zen sk / Console）。
         return { kind: 'free_tier', detail };
     }
     if (status === 429 || lower.includes('too many requests') || lower.includes('rate limit')) {

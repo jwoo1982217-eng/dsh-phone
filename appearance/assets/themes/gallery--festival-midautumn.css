@@ -1,0 +1,790 @@
+/* festival-midautumn — 中秋 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-festival-midautumn], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-festival-midautumn] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2e2410;
+  background-color: #faf3e2;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] {
+  color: #f3ead6;
+  background-color: #0e0b14;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-festival-midautumn] {
+  --color-primary: #a87b16;
+  --primary: #a87b16;
+  --primary-rgb: 168, 123, 22;
+  --color-primary-light-1: #c2952a;
+  --color-primary-light-2: #d9b04e;
+  --color-primary-light-3: #ecd08a;
+  --color-primary-dark-1: #7d5c0f;
+  --brand: #a87b16;
+  --brand-light: #f3e5bd;
+  --brand-hover: #8f6711;
+  --color-brand-fill: #a87b16;
+  --color-brand-bg: #f6ecd0;
+  --aou-1: #faf0d6;
+  --aou-2: #f3e2b4;
+  --aou-3: #ecd08a;
+  --aou-4: #e0ba5c;
+  --aou-5: #d0a23a;
+  --aou-6: #bc8c24;
+  --aou-7: #a87b16;
+  --aou-8: #86620f;
+  --aou-9: #644a0b;
+  --aou-10: #463406;
+  --bg-base: #faf3e2;
+  --bg-1: #f3ead4;
+  --bg-2: #ece0c6;
+  --bg-3: #e2d3b4;
+  --bg-4: #d6c4a0;
+  --bg-5: #c3ad84;
+  --bg-6: #ab9268;
+  --bg-8: #86714c;
+  --bg-9: #5f4f32;
+  --bg-10: #3a2f1c;
+  --color-bg-1: #f3ead4;
+  --color-bg-2: #ece0c6;
+  --color-bg-3: #e2d3b4;
+  --color-bg-4: #d6c4a0;
+  --bg-hover: #e9dcc0;
+  --bg-active: #ddcdab;
+  --text-primary: #2e2410;
+  --text-secondary: #6b5c38;
+  --text-disabled: #ab9f82;
+  --text-0: #1c1508;
+  --text-white: #ffffff;
+  --color-text-1: #2e2410;
+  --color-text-2: #6b5c38;
+  --color-text-3: #8a7c58;
+  --color-text-4: #ab9f82;
+  --border-base: #d9c8a4;
+  --border-light: #e6dabd;
+  --border-special: #b8942e;
+  --color-border: #d9c8a4;
+  --color-border-1: #d9c8a4;
+  --color-border-2: #e6dabd;
+  --fill: #ece0c6;
+  --color-fill: #ece0c6;
+  --fill-0: #f3ead4;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fdf9ee;
+  --inverse: #2e2410;
+  --success: #2c8f5e;
+  --warning: #b57a12;
+  --danger: #c8402f;
+  --info: #2f6fc4;
+  --message-user-bg: #f0bd52;
+  --message-tips-bg: #ece0c6;
+  --workspace-btn-bg: #f3e5bd;
+  --color-guid-agent-bar: #f3ead4;
+  --mid-moon: #e8b93c;
+  --mid-gold: #a87b16;
+  --mid-gold-hi: #d9b04e;
+  --mid-osmanthus: #c47a1e;
+  --mid-rabbit: #8a7c58;
+  --mid-paper: #faf3e2;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-festival-midautumn][data-ds-dark-theme] {
+  --color-primary: #f0b93c;
+  --primary: #f0b93c;
+  --primary-rgb: 240, 185, 60;
+  --color-primary-light-1: #f5c964;
+  --color-primary-light-2: #f9d98c;
+  --color-primary-light-3: #fce9bc;
+  --color-primary-dark-1: #c79524;
+  --brand: #f0b93c;
+  --brand-light: #3d2f10;
+  --brand-hover: #f7c85a;
+  --color-brand-fill: #f0b93c;
+  --color-brand-bg: #33270d;
+  --aou-1: #3d2f10;
+  --aou-2: #54400f;
+  --aou-3: #6e5213;
+  --aou-4: #8c6817;
+  --aou-5: #b0831e;
+  --aou-6: #d3a02b;
+  --aou-7: #f0b93c;
+  --aou-8: #f5c964;
+  --aou-9: #f9d98c;
+  --aou-10: #fce9bc;
+  --bg-base: #0e0b14;
+  --bg-1: #151019;
+  --bg-2: #1c1622;
+  --bg-3: #241c2c;
+  --bg-4: #2d2438;
+  --bg-5: #382e46;
+  --bg-6: #463a56;
+  --bg-8: #5f5070;
+  --bg-9: #8a7c9c;
+  --bg-10: #c4bad2;
+  --color-bg-1: #151019;
+  --color-bg-2: #1c1622;
+  --color-bg-3: #241c2c;
+  --color-bg-4: #2d2438;
+  --bg-hover: #211a2a;
+  --bg-active: #2a2236;
+  --text-primary: #f3ead6;
+  --text-secondary: #b3a892;
+  --text-disabled: #5d5560;
+  --text-0: #fbf6ea;
+  --text-white: #ffffff;
+  --color-text-1: #f3ead6;
+  --color-text-2: #b3a892;
+  --color-text-3: #857b70;
+  --color-text-4: #5d5560;
+  --border-base: #332a40;
+  --border-light: #282031;
+  --border-special: #6e5213;
+  --color-border: #332a40;
+  --color-border-1: #332a40;
+  --color-border-2: #282031;
+  --fill: #1c1622;
+  --color-fill: #1c1622;
+  --fill-0: #151019;
+  --fill-white-to-black: #0e0b14;
+  --dialog-fill-0: #171221;
+  --inverse: #f3ead6;
+  --success: #62c48a;
+  --warning: #e8a33d;
+  --danger: #e0574f;
+  --info: #5f8fd8;
+  --message-user-bg: #f0bd52;
+  --message-tips-bg: #241c2c;
+  --workspace-btn-bg: #33270d;
+  --color-guid-agent-bar: #151019;
+  --mid-moon: #ffe9a8;
+  --mid-gold: #f0b93c;
+  --mid-gold-deep: #c79524;
+  --mid-osmanthus: #e8963c;
+  --mid-rabbit: #f4f1ea;
+  --mid-night: #0e0b14;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-festival-midautumn] {
+  --dsw-static-deepseek-50: #faf0d6;
+  --dsw-static-blue-50: #faf0d6;
+  --dsw-static-deepseek-50p: #f3e2b4;
+  --dsw-static-blue-50p: #f3e2b4;
+  --dsw-static-deepseek-75: #f3e2b4;
+  --dsw-static-blue-75: #f3e2b4;
+  --dsw-static-deepseek-100: #f3e2b4;
+  --dsw-static-blue-100: #f3e2b4;
+  --dsw-static-deepseek-200: #ecd08a;
+  --dsw-static-blue-200: #ecd08a;
+  --dsw-static-deepseek-300: #e0ba5c;
+  --dsw-static-blue-300: #e0ba5c;
+  --dsw-static-deepseek-400: #d0a23a;
+  --dsw-static-blue-400: #d0a23a;
+  --dsw-static-deepseek-450: #d0a23a;
+  --dsw-static-blue-450: #d0a23a;
+  --dsw-static-deepseek-500: #bc8c24;
+  --dsw-static-blue-500: #bc8c24;
+  --dsw-static-deepseek-600: #a87b16;
+  --dsw-static-blue-600: #a87b16;
+  --dsw-static-deepseek-700-delete: #86620f;
+  --dsw-static-deepseek-800: #86620f;
+  --dsw-static-blue-800: #86620f;
+  --dsw-static-deepseek-900: #644a0b;
+  --dsw-static-blue-900: #644a0b;
+  --dsw-static-deepseek-950: #463406;
+  --dsw-static-blue-950: #463406;
+  --dsw-static-neutral-bluish-00: #f3ead4;
+  --dsw-static-neutral-00: #f3ead4;
+  --dsw-static-neutral-bluish-50: #f3ead4;
+  --dsw-static-neutral-50: #f3ead4;
+  --dsw-static-neutral-bluish-60: #f3ead4;
+  --dsw-static-neutral-60: #f3ead4;
+  --dsw-static-neutral-bluish-75: #ece0c6;
+  --dsw-static-neutral-75: #ece0c6;
+  --dsw-static-neutral-bluish-100: #ece0c6;
+  --dsw-static-neutral-100: #ece0c6;
+  --dsw-static-neutral-bluish-150: #e2d3b4;
+  --dsw-static-neutral-150: #e2d3b4;
+  --dsw-static-neutral-bluish-200: #e2d3b4;
+  --dsw-static-neutral-200: #e2d3b4;
+  --dsw-static-neutral-bluish-250: #d6c4a0;
+  --dsw-static-neutral-250: #d6c4a0;
+  --dsw-static-neutral-bluish-300: #d6c4a0;
+  --dsw-static-neutral-300: #d6c4a0;
+  --dsw-static-neutral-bluish-400: #c3ad84;
+  --dsw-static-neutral-400: #c3ad84;
+  --dsw-static-neutral-bluish-500: #ab9268;
+  --dsw-static-neutral-500: #ab9268;
+  --dsw-static-neutral-bluish-550: #ab9268;
+  --dsw-static-neutral-550: #ab9268;
+  --dsw-static-neutral-bluish-600: #86714c;
+  --dsw-static-neutral-600: #86714c;
+  --dsw-static-neutral-bluish-700: #86714c;
+  --dsw-static-neutral-700: #86714c;
+  --dsw-static-neutral-bluish-750: #5f4f32;
+  --dsw-static-neutral-750: #5f4f32;
+  --dsw-static-neutral-bluish-800: #5f4f32;
+  --dsw-static-neutral-800: #5f4f32;
+  --dsw-static-neutral-bluish-850: #5f4f32;
+  --dsw-static-neutral-850: #5f4f32;
+  --dsw-static-neutral-bluish-875: #3a2f1c;
+  --dsw-static-neutral-875: #3a2f1c;
+  --dsw-static-neutral-bluish-900: #3a2f1c;
+  --dsw-static-neutral-900: #3a2f1c;
+  --dsw-static-neutral-bluish-950: #3a2f1c;
+  --dsw-static-neutral-950: #3a2f1c;
+  --dsw-static-neutral-bluish-1000: #2e2410;
+  --dsw-static-neutral-1000: #2e2410;
+  --dsw-static-green-50: color-mix(in srgb, #2c8f5e 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2c8f5e 20%, white);
+  --dsw-static-green-400: #2c8f5e;
+  --dsw-static-green-500: #2c8f5e;
+  --dsw-static-green-600: color-mix(in srgb, #2c8f5e 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2c8f5e 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #b57a12 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #b57a12 20%, white);
+  --dsw-static-amber-400: #b57a12;
+  --dsw-static-amber-500: #b57a12;
+  --dsw-static-amber-600: color-mix(in srgb, #b57a12 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #b57a12 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c8402f 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c8402f 20%, white);
+  --dsw-static-red-400: #c8402f;
+  --dsw-static-red-500: #c8402f;
+  --dsw-static-red-600: color-mix(in srgb, #c8402f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c8402f 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-festival-midautumn][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #3d2f10;
+  --dsw-static-blue-50: #3d2f10;
+  --dsw-static-deepseek-50p: #54400f;
+  --dsw-static-blue-50p: #54400f;
+  --dsw-static-deepseek-75: #54400f;
+  --dsw-static-blue-75: #54400f;
+  --dsw-static-deepseek-100: #54400f;
+  --dsw-static-blue-100: #54400f;
+  --dsw-static-deepseek-200: #6e5213;
+  --dsw-static-blue-200: #6e5213;
+  --dsw-static-deepseek-300: #8c6817;
+  --dsw-static-blue-300: #8c6817;
+  --dsw-static-deepseek-400: #b0831e;
+  --dsw-static-blue-400: #b0831e;
+  --dsw-static-deepseek-450: #b0831e;
+  --dsw-static-blue-450: #b0831e;
+  --dsw-static-deepseek-500: #d3a02b;
+  --dsw-static-blue-500: #d3a02b;
+  --dsw-static-deepseek-600: #f0b93c;
+  --dsw-static-blue-600: #f0b93c;
+  --dsw-static-deepseek-700-delete: #f5c964;
+  --dsw-static-deepseek-800: #f5c964;
+  --dsw-static-blue-800: #f5c964;
+  --dsw-static-deepseek-900: #f9d98c;
+  --dsw-static-blue-900: #f9d98c;
+  --dsw-static-deepseek-950: #fce9bc;
+  --dsw-static-blue-950: #fce9bc;
+  --dsw-static-neutral-bluish-00: #151019;
+  --dsw-static-neutral-00: #151019;
+  --dsw-static-neutral-bluish-50: #151019;
+  --dsw-static-neutral-50: #151019;
+  --dsw-static-neutral-bluish-60: #151019;
+  --dsw-static-neutral-60: #151019;
+  --dsw-static-neutral-bluish-75: #1c1622;
+  --dsw-static-neutral-75: #1c1622;
+  --dsw-static-neutral-bluish-100: #1c1622;
+  --dsw-static-neutral-100: #1c1622;
+  --dsw-static-neutral-bluish-150: #241c2c;
+  --dsw-static-neutral-150: #241c2c;
+  --dsw-static-neutral-bluish-200: #241c2c;
+  --dsw-static-neutral-200: #241c2c;
+  --dsw-static-neutral-bluish-250: #2d2438;
+  --dsw-static-neutral-250: #2d2438;
+  --dsw-static-neutral-bluish-300: #2d2438;
+  --dsw-static-neutral-300: #2d2438;
+  --dsw-static-neutral-bluish-400: #382e46;
+  --dsw-static-neutral-400: #382e46;
+  --dsw-static-neutral-bluish-500: #463a56;
+  --dsw-static-neutral-500: #463a56;
+  --dsw-static-neutral-bluish-550: #463a56;
+  --dsw-static-neutral-550: #463a56;
+  --dsw-static-neutral-bluish-600: #5f5070;
+  --dsw-static-neutral-600: #5f5070;
+  --dsw-static-neutral-bluish-700: #5f5070;
+  --dsw-static-neutral-700: #5f5070;
+  --dsw-static-neutral-bluish-750: #8a7c9c;
+  --dsw-static-neutral-750: #8a7c9c;
+  --dsw-static-neutral-bluish-800: #8a7c9c;
+  --dsw-static-neutral-800: #8a7c9c;
+  --dsw-static-neutral-bluish-850: #8a7c9c;
+  --dsw-static-neutral-850: #8a7c9c;
+  --dsw-static-neutral-bluish-875: #c4bad2;
+  --dsw-static-neutral-875: #c4bad2;
+  --dsw-static-neutral-bluish-900: #c4bad2;
+  --dsw-static-neutral-900: #c4bad2;
+  --dsw-static-neutral-bluish-950: #c4bad2;
+  --dsw-static-neutral-950: #c4bad2;
+  --dsw-static-neutral-bluish-1000: #f3ead6;
+  --dsw-static-neutral-1000: #f3ead6;
+  --dsw-static-green-50: color-mix(in srgb, #62c48a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #62c48a 20%, black);
+  --dsw-static-green-400: #62c48a;
+  --dsw-static-green-500: #62c48a;
+  --dsw-static-green-600: color-mix(in srgb, #62c48a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #62c48a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8a33d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8a33d 20%, black);
+  --dsw-static-amber-400: #e8a33d;
+  --dsw-static-amber-500: #e8a33d;
+  --dsw-static-amber-600: color-mix(in srgb, #e8a33d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8a33d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e0574f 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e0574f 20%, black);
+  --dsw-static-red-400: #e0574f;
+  --dsw-static-red-500: #e0574f;
+  --dsw-static-red-600: color-mix(in srgb, #e0574f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e0574f 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-festival-midautumn] {
+  --dsw-alias-button-primary-fill: #a87b16;
+  --dsw-alias-button-primary-hover: #8f6711;
+  --dsw-alias-button-primary-dimmed: #f3e2b4;
+  --dsw-alias-button-info-fill: #a87b16;
+  --dsw-alias-button-info-hover: #8f6711;
+  --dsw-alias-button-contrast-fill: #a87b16;
+  --dsw-alias-button-ghost-active-fill: #f3e5bd;
+  --dsw-alias-button-ghost-active-hover: #f3e2b4;
+  --dsw-alias-button-ghost-active-border: #e0ba5c;
+  --dsw-alias-button-elevated-fill: #f3ead4;
+  --dsw-alias-button-floating-fill: #f3ead4;
+  --dsw-alias-button-floating-hover: #e9dcc0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(168, 123, 22, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(168, 123, 22, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(168, 123, 22, 0.6);
+  --dsw-specific-bubble: #f0bd52;
+  --dsw-specific-bubble-highlight: #ecd08a;
+  --dsw-specific-input-major: #f3ead4;
+  --dsw-specific-login-input: #f3ead4;
+  --dsw-specific-sidebar-fill: #a87b16;
+  --dsw-specific-sidebar-nav-item-active: #f3e2b4;
+  --dsw-specific-sidebar-nav-item-hover: #e9dcc0;
+  --dsw-specific-sidebar-nav-item-active-accent: #e0ba5c;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-festival-midautumn][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #f0b93c;
+  --dsw-alias-button-primary-hover: #f7c85a;
+  --dsw-alias-button-primary-dimmed: #54400f;
+  --dsw-alias-button-info-fill: #f0b93c;
+  --dsw-alias-button-info-hover: #f7c85a;
+  --dsw-alias-button-contrast-fill: #f0b93c;
+  --dsw-alias-button-ghost-active-fill: #3d2f10;
+  --dsw-alias-button-ghost-active-hover: #54400f;
+  --dsw-alias-button-ghost-active-border: #8c6817;
+  --dsw-alias-button-elevated-fill: #151019;
+  --dsw-alias-button-floating-fill: #151019;
+  --dsw-alias-button-floating-hover: #211a2a;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(240, 185, 60, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(240, 185, 60, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(240, 185, 60, 0.6);
+  --dsw-specific-bubble: #f0bd52;
+  --dsw-specific-bubble-highlight: #6e5213;
+  --dsw-specific-input-major: #151019;
+  --dsw-specific-login-input: #151019;
+  --dsw-specific-sidebar-fill: #f0b93c;
+  --dsw-specific-sidebar-nav-item-active: #54400f;
+  --dsw-specific-sidebar-nav-item-hover: #211a2a;
+  --dsw-specific-sidebar-nav-item-active-accent: #8c6817;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-festival-midautumn] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-midautumn]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 14% 16%, var(--mid-osmanthus) 0 2.2px, transparent 3.2px),
+      radial-gradient(circle at 62% 30%, var(--mid-gold) 0 1.8px, transparent 2.8px),
+      radial-gradient(circle at 36% 58%, var(--mid-osmanthus) 0 2px, transparent 3px),
+      radial-gradient(circle at 84% 74%, var(--mid-gold) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle at 22% 86%, var(--mid-gold-hi) 0 1.4px, transparent 2.4px),
+      radial-gradient(circle at 74% 8%, var(--mid-osmanthus) 0 1.6px, transparent 2.6px);
+    background-size: 560px 560px, 640px 640px, 480px 480px, 600px 600px, 520px 520px, 700px 700px;
+    animation: festival-midautumn-mid-petal-fall 22s linear infinite;
+}
+
+body[data-dsh-festival-midautumn]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(90deg, var(--mid-gold) 1px, transparent 1px),
+      linear-gradient(0deg, var(--mid-gold) 1px, transparent 1px),
+      linear-gradient(90deg, var(--mid-gold) 1px, transparent 1px),
+      linear-gradient(0deg, var(--mid-gold) 1px, transparent 1px);
+    background-size: 28px 28px, 28px 28px, 14px 14px, 14px 14px;
+    background-position: 0 0, 0 0, 6px 6px, 6px 6px;
+    animation: festival-midautumn-mid-brocade-glow 6s ease-in-out infinite;
+}
+
+body[data-dsh-festival-midautumn] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-midautumn] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--mid-osmanthus), 3px 0 10px rgba(196, 122, 30, 0.16);
+}
+
+body[data-dsh-festival-midautumn] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-midautumn] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(168, 123, 22, 0.22), rgba(168, 123, 22, 0.06) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--mid-gold), 3px 0 12px rgba(168, 123, 22, 0.24);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-midautumn] button[class*='primary'],
+body[data-dsh-festival-midautumn] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 24% 26%, rgba(255, 248, 224, 0.7) 0 2px, transparent 3px),
+      radial-gradient(circle at 30% 32%, rgba(255, 248, 224, 0.7) 0 2px, transparent 3px),
+      radial-gradient(circle at 18% 32%, rgba(255, 248, 224, 0.7) 0 2px, transparent 3px),
+      radial-gradient(circle at 24% 38%, rgba(255, 248, 224, 0.7) 0 2px, transparent 3px),
+      linear-gradient(135deg, #c2952a 0%, #e0ba5c 55%, #ecd08a 100%) !important;
+    border: 1px solid #8f6711 !important;
+    border-radius: 10px !important;
+    color: #3a2708 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(168, 123, 22, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-midautumn] button[class*='primary']:hover,
+body[data-dsh-festival-midautumn] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.05);
+    animation: festival-midautumn-mid-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-festival-midautumn] pre,
+body[data-dsh-festival-midautumn] .markdown-body pre {
+  background: linear-gradient(180deg, #f0e5c8 0%, #eadcbb 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--mid-gold) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 10px rgba(120, 95, 40, 0.12), 0 2px 10px rgba(168, 123, 22, 0.12);
+}
+
+body[data-dsh-festival-midautumn] pre code,
+body[data-dsh-festival-midautumn] .markdown-body pre code {
+  background: transparent !important;
+    color: #3a2e14 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-midautumn] code,
+body[data-dsh-festival-midautumn] .markdown-body code {
+  background-color: var(--brand-light);
+    color: #9a5a10;
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-midautumn]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-festival-midautumn] [class*='agent-bar'],
+body[data-dsh-festival-midautumn] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(168, 123, 22, 0.3);
+}
+
+body[data-dsh-festival-midautumn] .markdown-body blockquote {
+  border-left: 3px solid var(--mid-rabbit);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+    background-color: rgba(168, 123, 22, 0.06);
+    background-image:
+      radial-gradient(ellipse 5px 14px at 92% 22%, rgba(138, 124, 88, 0.55) 0%, transparent 70%),
+      radial-gradient(ellipse 5px 14px at 96% 22%, rgba(138, 124, 88, 0.55) 0%, transparent 70%);
+    background-repeat: no-repeat;
+}
+
+body[data-dsh-festival-midautumn] .markdown-body hr,
+body[data-dsh-festival-midautumn] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 5px 5px, rgba(168, 123, 22, 0.85) 0 2.6px, transparent 3.6px),
+      linear-gradient(90deg, transparent, rgba(168, 123, 22, 0.4), transparent);
+    background-size: 30px 10px, 100% 1px;
+    background-position: 0 0, 0 5px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.7;
+}
+
+body[data-dsh-festival-midautumn] .markdown-body a,
+body[data-dsh-festival-midautumn] a {
+  color: #9a5a10;
+}
+
+body[data-dsh-festival-midautumn] .markdown-body a:hover,
+body[data-dsh-festival-midautumn] a:hover {
+  color: #c47a1e;
+    text-shadow: 0 0 8px rgba(217, 176, 78, 0.5);
+}
+
+body[data-dsh-festival-midautumn] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-dark-1) !important;
+    border-color: rgba(168, 123, 22, 0.5) !important;
+    background-color: rgba(168, 123, 22, 0.08) !important;
+}
+
+body[data-dsh-festival-midautumn]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-midautumn]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--mid-gold-hi), var(--mid-gold));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-midautumn]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--mid-moon), var(--color-primary-dark-1));
+    box-shadow: 0 0 8px rgba(168, 123, 22, 0.45);
+}
+
+body[data-dsh-festival-midautumn]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-festival-midautumn][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 14% 16%, var(--mid-osmanthus) 0 2.2px, transparent 3.2px),
+      radial-gradient(circle at 62% 30%, var(--mid-gold) 0 1.8px, transparent 2.8px),
+      radial-gradient(circle at 36% 58%, var(--mid-osmanthus) 0 2px, transparent 3px),
+      radial-gradient(circle at 84% 74%, var(--mid-gold) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle at 22% 86%, var(--mid-rabbit) 0 1.2px, transparent 2.2px),
+      radial-gradient(circle at 74% 8%, var(--mid-rabbit) 0 1.4px, transparent 2.4px);
+    background-size: 560px 560px, 640px 640px, 480px 480px, 600px 600px, 520px 520px, 700px 700px;
+    animation: festival-midautumn-mid-petal-fall 22s linear infinite;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image:
+      linear-gradient(90deg, var(--mid-gold) 1px, transparent 1px),
+      linear-gradient(0deg, var(--mid-gold) 1px, transparent 1px),
+      linear-gradient(90deg, var(--mid-gold) 1px, transparent 1px),
+      linear-gradient(0deg, var(--mid-gold) 1px, transparent 1px);
+    background-size: 28px 28px, 28px 28px, 14px 14px, 14px 14px;
+    background-position: 0 0, 0 0, 6px 6px, 6px 6px;
+    animation: festival-midautumn-mid-brocade-glow 6s ease-in-out infinite;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--mid-osmanthus), 3px 0 10px rgba(232, 150, 60, 0.18);
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-midautumn][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(240, 185, 60, 0.26), rgba(240, 185, 60, 0.07) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--mid-gold), 3px 0 12px rgba(240, 185, 60, 0.28);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-festival-midautumn][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 24% 26%, rgba(255, 246, 216, 0.55) 0 2px, transparent 3px),
+      radial-gradient(circle at 30% 32%, rgba(255, 246, 216, 0.55) 0 2px, transparent 3px),
+      radial-gradient(circle at 18% 32%, rgba(255, 246, 216, 0.55) 0 2px, transparent 3px),
+      radial-gradient(circle at 24% 38%, rgba(255, 246, 216, 0.55) 0 2px, transparent 3px),
+      linear-gradient(135deg, #c79524 0%, var(--mid-gold) 55%, #f9d98c 100%) !important;
+    border: 1px solid #fce9bc !important;
+    border-radius: 10px !important;
+    color: #3a2708 !important;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(240, 185, 60, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-festival-midautumn][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    animation: festival-midautumn-mid-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] pre,
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #14101e 0%, var(--mid-night) 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--mid-gold) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 14px rgba(240, 185, 60, 0.1);
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] pre code,
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #eee6d2 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] code,
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--brand-light);
+    color: #f2b06a;
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-festival-midautumn][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(240, 185, 60, 0.35);
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--mid-rabbit);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+    background-color: rgba(244, 241, 234, 0.05);
+    background-image:
+      radial-gradient(ellipse 5px 14px at 92% 22%, rgba(244, 241, 234, 0.5) 0%, transparent 70%),
+      radial-gradient(ellipse 5px 14px at 96% 22%, rgba(244, 241, 234, 0.5) 0%, transparent 70%);
+    background-repeat: no-repeat;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-festival-midautumn][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 5px 5px, rgba(255, 233, 168, 0.9) 0 2.6px, transparent 3.6px),
+      linear-gradient(90deg, transparent, rgba(240, 185, 60, 0.4), transparent);
+    background-size: 30px 10px, 100% 1px;
+    background-position: 0 0, 0 5px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.65;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-festival-midautumn][data-ds-dark-theme] a {
+  color: #f2b06a;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-festival-midautumn][data-ds-dark-theme] a:hover {
+  color: #f9d98c;
+    text-shadow: 0 0 8px rgba(240, 185, 60, 0.5);
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-light-2) !important;
+    border-color: rgba(240, 185, 60, 0.5) !important;
+    background-color: rgba(240, 185, 60, 0.1) !important;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--mid-gold), #6e5213);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--mid-moon), var(--mid-gold));
+    box-shadow: 0 0 8px rgba(240, 185, 60, 0.5);
+}
+
+body[data-dsh-festival-midautumn][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes festival-midautumn-mid-petal-fall {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 90px 560px, -70px 640px, 60px 480px, -80px 600px, 50px 520px, -60px 700px; }
+}
+
+@keyframes festival-midautumn-mid-brocade-glow {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.1; }
+}
+
+@keyframes festival-midautumn-mid-moon-breathe {
+  0%, 100% { box-shadow: 0 0 6px rgba(232, 185, 60, 0.55), 0 0 16px rgba(168, 123, 22, 0.3); }
+  50% { box-shadow: 0 0 12px rgba(232, 185, 60, 0.9), 0 0 30px rgba(168, 123, 22, 0.55); }
+}
+
+@keyframes festival-midautumn-mid-btn-glow {
+  0%, 100% { box-shadow: 0 2px 12px rgba(168, 123, 22, 0.4), 0 0 24px rgba(217, 176, 78, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.52); }
+  50% { box-shadow: 0 2px 18px rgba(168, 123, 22, 0.55), 0 0 38px rgba(217, 176, 78, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+}
+
+@keyframes festival-midautumn-mid-moonlight-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

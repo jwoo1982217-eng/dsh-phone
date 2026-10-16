@@ -6,25 +6,35 @@ import re
 import shutil
 import tarfile
 import tempfile
+import argparse
+import hashlib
 
 ROOT = Path(__file__).resolve().parents[1]
 DEPLOY = ROOT / 'runtime'
 MODULES = DEPLOY / 'node_modules'
 ASSETS = ROOT / 'app/src/main/assets'
-BUNDLES = ('dsh-codearts-auth', 'dsh-phone-account', 'dsh-phone-qq', 'dsh-phone-control', 'dsh-phone-cloud-tools', 'dsh-peer', '@zseven-w/dsh-noema')
+BUNDLES = ('dsh-our-free-model', 'dsh-codearts-auth', 'dsh-phone-account', 'dsh-phone-qq', 'dsh-phone-control', 'dsh-phone-cloud-tools', 'dsh-peer', 'dsh-knowledge-link', '@zseven-w/dsh-noema', 'dsh-team', 'dsh-appearance-center')
 
 
 def copy_bundle(name, destination, source=None):
     source = source or MODULES / name
+    if name == 'dsh-our-free-model':
+        destination.mkdir(parents=True)
+        shutil.copytree(source, destination, dirs_exist_ok=True, ignore=shutil.ignore_patterns('node_modules', '.DS_Store', '._*'))
+        return
     manifest = json.loads((source / 'package.json').read_text())
     destination.mkdir(parents=True)
     (destination / 'package.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    entries = ('LICENSE', 'LICENSE.openclaw', 'bin', 'sample-tools', 'lib', 'locale', 'vendor', 'agent-cards', 'chat-files', 'chat-history', 'memory-isolation', 'mcp-manager', 'controlled-market', 'workflow-hub', 'cards-client.js', 'index.js', 'config.js', 'manager.js', 'bridge.mjs', 'cli.mjs', 'skills',
+    entries = ('LICENSE', 'LICENSE.openclaw', 'bin', 'sample-tools', 'lib', 'locale', 'vendor', 'agent-cards', 'knowledge-link', 'task-supervisor', 'subagent-scheduler', 'chat-files', 'chat-history', 'memory-isolation', 'mcp-manager', 'on-demand-tools', 'controlled-market', 'workflow-hub', 'cards-client.js', 'index.js', 'config.js', 'manager.js', 'bridge.mjs', 'cli.mjs', 'skills',
                   'index.mjs', 'protocol.mjs', 'relay.mjs', 'tunnel.mjs', 'proxy.mjs', 'ui-reuse.mjs', 'browser-session.mjs', 'config-sync.mjs', 'skill-import.js',
                   'account.js', 'messages-adapter.js', 'core-migration.js', 'plugin-compat.js', 'chatgpt.js', 'chatgpt-account.js', 'chatgpt-protocol.js',
                   'chatgpt-adapter.js', 'chatgpt-page.html', 'persona.js', 'skills.js', 'phone-home.js', 'setup.js', 'qq-login.js', 'qq-download.py', 'code-access.js', 'workspace.js', 'skills.html', 'workspace.html', 'packs.js', 'replace-skills.js', 'bundled-packs', 'packs.html', 'skill-import.js', 'browser-compat.js', 'zip.js', 'runtime.js', 'runtime-catalog.json', 'runtime-preflight.js', 'web-fetch.js', 'runtime-upstream-MIT.txt', 'presentation.css', 'presentation.js', 'platforms.json', 'page.html', 'cordis.patch.yml')
     if name == '@zseven-w/dsh-noema':
         entries += ('src',)
+    if name == 'dsh-team':
+        entries += ('client.js', 'page.js', 'upstream.json', 'README.md')
+    if name == 'dsh-appearance-center':
+        entries += ('client.js', 'page.js', 'page.css', 'visuals.js', 'runtime.css', 'preferences.mjs', 'store.mjs', 'catalog.mjs', 'compat', 'assets', 'licenses', 'README.md')
     for entry in entries:
         item = source / entry
         if item.is_dir():
@@ -51,6 +61,39 @@ def make_tar(source, target):
         temporary.replace(target)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def prepare_distribution(tree, home, with_skills=False):
+    """Keep user content out of a framework distribution, not out of upgrades."""
+    if not with_skills:
+        shutil.rmtree(home / 'skills', ignore_errors=True)
+        for base in (tree / 'node_modules', home / 'profiles/phone/node_modules'):
+            shutil.rmtree(base / 'dsh-phone-qq/bundled-packs', ignore_errors=True)
+    (home / 'distribution.json').write_text(json.dumps({
+        'format': 1, 'presetSkills': with_skills, 'presetPersonas': False,
+        'offlineMemoryModel': True, 'themes': True,
+    }, indent=2) + '\n')
+
+
+def deduplicate_profile_resources(tree, home):
+    """Store identical bundled files once; restore private copies before activation."""
+    modules = home / 'profiles/phone/node_modules'
+    files = []
+    for target in sorted(modules.rglob('*')):
+        if not target.is_file():
+            continue
+        source = tree / 'node_modules' / target.relative_to(modules)
+        if not source.is_file() or source.stat().st_size != target.stat().st_size:
+            continue
+        data = target.read_bytes()
+        if source.read_bytes() != data:
+            continue
+        files.append({'source': source.relative_to(tree).as_posix(),
+                      'target': target.relative_to(home).as_posix(),
+                      'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+        target.unlink()
+    (home / '.shared-runtime-files.json').write_text(json.dumps({'version': 1, 'files': files}, separators=(',', ':')) + '\n')
+    return {'files': len(files), 'bytes': sum(f['bytes'] for f in files)}
 
 
 def supports_platform(manifest, system='android', cpu='arm64'):
@@ -131,9 +174,13 @@ def validate_peer_files(directory):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--with-skills', action='store_true', help='Explicitly include the optional preset skill libraries and import archives')
+    args = parser.parse_args()
     validate_asset_version((ROOT/'app/build.gradle').read_text(), (ROOT/'app/src/main/java/com/dshphone/NodeRunner.kt').read_text())
     import subprocess
     subprocess.run(['node', str(ROOT/'scripts/build-agent-cards-client.mjs')], check=True)
+    subprocess.run(['node', str(ROOT/'scripts/build-model-picker.mjs')], check=True)
     for extension in ('css', 'js'):
         shutil.copy2(ROOT/f'app/src/main/assets/dsh-phone.{extension}', ROOT/f'phone-qq/presentation.{extension}')
     shutil.copy2(ROOT/'app/src/main/assets/dsh-phone.compat.js', ROOT/'phone-qq/browser-compat.js')
@@ -160,7 +207,11 @@ def main():
                          ('dsh-phone-control', ROOT / 'phone-control'),
                          ('dsh-phone-cloud-tools', ROOT / 'phone-cloud-tools'),
                          ('dsh-peer', ROOT / 'peer'),
-                         ('@zseven-w/dsh-noema', ROOT / 'vendor/dsh-noema')]:
+                         ('dsh-knowledge-link', ROOT / 'knowledge'),
+                         ('dsh-team', ROOT / 'team'),
+                         ('dsh-appearance-center', ROOT / 'appearance'),
+                         ('@zseven-w/dsh-noema', ROOT / 'vendor/dsh-noema'),
+                         ('dsh-our-free-model', ROOT / 'our-free-model')]:
         target = MODULES / name
         shutil.rmtree(target, ignore_errors=True)
         copy_bundle(name, target, source)
@@ -181,11 +232,18 @@ def main():
         shutil.copytree(ROOT / 'home-template', home)
         for name in BUNDLES:
             copy_bundle(name, home / 'profiles/phone/node_modules' / name)
+        if args.with_skills:
+            for pack in ('reverse-skill', 'zhaohua-kit', 'vscreen-phone'):
+                shutil.copytree(ROOT / 'skills-src' / pack, home / 'skills' / pack, dirs_exist_ok=True, ignore=shutil.ignore_patterns('.DS_Store', '._*'))
+        prepare_distribution(tree, home, args.with_skills)
         for base in (tree / 'node_modules', home / 'profiles/phone/node_modules'):
             validate_peer_files(base / 'dsh-peer')
+            validate_peer_files(base / 'dsh-appearance-center')
+        shared = deduplicate_profile_resources(tree, home)
+        print('Shared bundled resources stored once: ' + json.dumps(shared))
         make_tar(tree, ASSETS / 'dsh-tree.tar')
         make_tar(home, ASSETS / 'dsh-home.tar')
-    print('Built blank phone assets. Personal credentials and bot configurations were not read.')
+    print('Built phone assets: ' + ('with optional preset skills' if args.with_skills else 'framework only, no preset skills/personas'))
 
 
 if __name__ == '__main__':

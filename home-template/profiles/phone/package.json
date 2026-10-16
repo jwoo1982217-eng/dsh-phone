@@ -5,7 +5,11 @@
     "dsh-codearts-auth": "file:./node_modules/dsh-codearts-auth",
     "dsh-phone-account": "file:./node_modules/dsh-phone-account",
     "dsh-phone-qq": "file:./node_modules/dsh-phone-qq",
-    "@zseven-w/dsh-noema": "file:./node_modules/@zseven-w/dsh-noema"
+    "@zseven-w/dsh-noema": "file:./node_modules/@zseven-w/dsh-noema",
+    "dsh-our-free-model": "file:./node_modules/dsh-our-free-model",
+    "dsh-team": "file:./node_modules/dsh-team",
+    "dsh-appearance-center": "file:./node_modules/dsh-appearance-center",
+    "dsh-knowledge-link": "file:./node_modules/dsh-knowledge-link"
   },
   "dsh": {
     "profile": {
@@ -15,7 +19,11 @@
         "dsh-codearts-auth",
         "dsh-phone-account",
         "dsh-phone-qq",
-        "@zseven-w/dsh-noema"
+        "@zseven-w/dsh-noema",
+        "dsh-our-free-model",
+        "dsh-team",
+        "dsh-appearance-center",
+        "dsh-knowledge-link"
       ]
     }
   }

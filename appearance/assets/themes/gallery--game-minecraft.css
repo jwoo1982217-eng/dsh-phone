@@ -1,0 +1,775 @@
+/* game-minecraft — 我的世界 · 苦力怕 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-game-minecraft], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-game-minecraft] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #232a1c;
+  background-color: #f3f5ec;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] {
+  color: #edf3e6;
+  background-color: #0c110a;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-game-minecraft] {
+  --color-primary: #43a047;
+  --primary: #43a047;
+  --primary-rgb: 67, 160, 71;
+  --color-primary-light-1: #68bb55;
+  --color-primary-light-2: #8ecf7a;
+  --color-primary-light-3: #aede9e;
+  --color-primary-dark-1: #29682c;
+  --brand: #43a047;
+  --brand-light: #e2f3de;
+  --brand-hover: #358439;
+  --color-brand-fill: #43a047;
+  --color-brand-bg: #d8ecd2;
+  --aou-1: #e8f5e4;
+  --aou-2: #cdeac3;
+  --aou-3: #aede9e;
+  --aou-4: #8ecf7a;
+  --aou-5: #68bb55;
+  --aou-6: #43a047;
+  --aou-7: #358439;
+  --aou-8: #29682c;
+  --aou-9: #1d4d20;
+  --aou-10: #123214;
+  --bg-base: #f3f5ec;
+  --bg-1: #ecefdd;
+  --bg-2: #e3e7d0;
+  --bg-3: #d8ddc2;
+  --bg-4: #cbd1b4;
+  --bg-5: #b9c09f;
+  --bg-6: #a3ab89;
+  --bg-8: #7d8564;
+  --bg-9: #5a6147;
+  --bg-10: #383d2c;
+  --color-bg-1: #ecefdd;
+  --color-bg-2: #e3e7d0;
+  --color-bg-3: #d8ddc2;
+  --color-bg-4: #cbd1b4;
+  --bg-hover: #e2e6cf;
+  --bg-active: #d6dcc0;
+  --text-primary: #232a1c;
+  --text-secondary: #56604a;
+  --text-disabled: #9aa387;
+  --text-0: #141a0f;
+  --text-white: #ffffff;
+  --color-text-1: #232a1c;
+  --color-text-2: #56604a;
+  --color-text-3: #7a8467;
+  --color-text-4: #9aa387;
+  --border-base: #c4cba8;
+  --border-light: #d8ddc6;
+  --border-special: #b08a5e;
+  --color-border: #c4cba8;
+  --color-border-1: #c4cba8;
+  --color-border-2: #d8ddc6;
+  --fill: #e3e7d0;
+  --color-fill: #e3e7d0;
+  --fill-0: #ecefdd;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fafbf4;
+  --inverse: #232a1c;
+  --success: #43a047;
+  --warning: #d09a1d;
+  --danger: #d13a2e;
+  --info: #3a7bd6;
+  --message-user-bg: #2e7d32;
+  --message-tips-bg: #e6ecd8;
+  --workspace-btn-bg: #d8ecd2;
+  --color-guid-agent-bar: #e9ecdd;
+  --creeper-green: #43a047;
+  --creeper-green-hi: #7ec850;
+  --creeper-face: #1a2b12;
+  --dirt-brown: #79553a;
+  --dirt-brown-hi: #9c7350;
+  --tnt-red: #d13a2e;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-game-minecraft][data-ds-dark-theme] {
+  --color-primary: #5fc24b;
+  --primary: #5fc24b;
+  --primary-rgb: 95, 194, 75;
+  --color-primary-light-1: #7ed06c;
+  --color-primary-light-2: #a1de93;
+  --color-primary-light-3: #c4ecba;
+  --color-primary-dark-1: #3e8c41;
+  --brand: #5fc24b;
+  --brand-light: #1a3016;
+  --brand-hover: #74cf60;
+  --color-brand-fill: #5fc24b;
+  --color-brand-bg: #162812;
+  --aou-1: #132a14;
+  --aou-2: #1b3f1e;
+  --aou-3: #245628;
+  --aou-4: #2f6e33;
+  --aou-5: #3e8c41;
+  --aou-6: #52ad4e;
+  --aou-7: #6fc263;
+  --aou-8: #8fd084;
+  --aou-9: #b6e2ac;
+  --aou-10: #def2d6;
+  --bg-base: #0c110a;
+  --bg-1: #121a10;
+  --bg-2: #182215;
+  --bg-3: #1f2c1b;
+  --bg-4: #283723;
+  --bg-5: #33442d;
+  --bg-6: #415439;
+  --bg-8: #5d7351;
+  --bg-9: #7f956f;
+  --bg-10: #b3c4a4;
+  --color-bg-1: #121a10;
+  --color-bg-2: #182215;
+  --color-bg-3: #1f2c1b;
+  --color-bg-4: #283723;
+  --bg-hover: #1c2717;
+  --bg-active: #243120;
+  --text-primary: #edf3e6;
+  --text-secondary: #aebfa0;
+  --text-disabled: #5a6852;
+  --text-0: #f7faf2;
+  --text-white: #ffffff;
+  --color-text-1: #edf3e6;
+  --color-text-2: #aebfa0;
+  --color-text-3: #849576;
+  --color-text-4: #5a6852;
+  --border-base: #2e3b27;
+  --border-light: #232d1d;
+  --border-special: #5a4429;
+  --color-border: #2e3b27;
+  --color-border-1: #2e3b27;
+  --color-border-2: #232d1d;
+  --fill: #182215;
+  --color-fill: #182215;
+  --fill-0: #121a10;
+  --fill-white-to-black: #0c110a;
+  --dialog-fill-0: #141d11;
+  --inverse: #edf3e6;
+  --success: #5fc24b;
+  --warning: #e0a83d;
+  --danger: #e04a3d;
+  --info: #5b8ade;
+  --message-user-bg: #245c26;
+  --message-tips-bg: #1a2616;
+  --workspace-btn-bg: #162812;
+  --color-guid-agent-bar: #151e12;
+  --creeper-green: #5fc24b;
+  --creeper-green-hi: #8fd069;
+  --creeper-face: #0d1809;
+  --dirt-brown: #8a613f;
+  --dirt-brown-hi: #a97e58;
+  --tnt-red: #e04a3d;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-game-minecraft] {
+  --dsw-static-deepseek-50: #e8f5e4;
+  --dsw-static-blue-50: #e8f5e4;
+  --dsw-static-deepseek-50p: #cdeac3;
+  --dsw-static-blue-50p: #cdeac3;
+  --dsw-static-deepseek-75: #cdeac3;
+  --dsw-static-blue-75: #cdeac3;
+  --dsw-static-deepseek-100: #cdeac3;
+  --dsw-static-blue-100: #cdeac3;
+  --dsw-static-deepseek-200: #aede9e;
+  --dsw-static-blue-200: #aede9e;
+  --dsw-static-deepseek-300: #8ecf7a;
+  --dsw-static-blue-300: #8ecf7a;
+  --dsw-static-deepseek-400: #68bb55;
+  --dsw-static-blue-400: #68bb55;
+  --dsw-static-deepseek-450: #68bb55;
+  --dsw-static-blue-450: #68bb55;
+  --dsw-static-deepseek-500: #43a047;
+  --dsw-static-blue-500: #43a047;
+  --dsw-static-deepseek-600: #358439;
+  --dsw-static-blue-600: #358439;
+  --dsw-static-deepseek-700-delete: #29682c;
+  --dsw-static-deepseek-800: #29682c;
+  --dsw-static-blue-800: #29682c;
+  --dsw-static-deepseek-900: #1d4d20;
+  --dsw-static-blue-900: #1d4d20;
+  --dsw-static-deepseek-950: #123214;
+  --dsw-static-blue-950: #123214;
+  --dsw-static-neutral-bluish-00: #ecefdd;
+  --dsw-static-neutral-00: #ecefdd;
+  --dsw-static-neutral-bluish-50: #ecefdd;
+  --dsw-static-neutral-50: #ecefdd;
+  --dsw-static-neutral-bluish-60: #ecefdd;
+  --dsw-static-neutral-60: #ecefdd;
+  --dsw-static-neutral-bluish-75: #e3e7d0;
+  --dsw-static-neutral-75: #e3e7d0;
+  --dsw-static-neutral-bluish-100: #e3e7d0;
+  --dsw-static-neutral-100: #e3e7d0;
+  --dsw-static-neutral-bluish-150: #d8ddc2;
+  --dsw-static-neutral-150: #d8ddc2;
+  --dsw-static-neutral-bluish-200: #d8ddc2;
+  --dsw-static-neutral-200: #d8ddc2;
+  --dsw-static-neutral-bluish-250: #cbd1b4;
+  --dsw-static-neutral-250: #cbd1b4;
+  --dsw-static-neutral-bluish-300: #cbd1b4;
+  --dsw-static-neutral-300: #cbd1b4;
+  --dsw-static-neutral-bluish-400: #b9c09f;
+  --dsw-static-neutral-400: #b9c09f;
+  --dsw-static-neutral-bluish-500: #a3ab89;
+  --dsw-static-neutral-500: #a3ab89;
+  --dsw-static-neutral-bluish-550: #a3ab89;
+  --dsw-static-neutral-550: #a3ab89;
+  --dsw-static-neutral-bluish-600: #7d8564;
+  --dsw-static-neutral-600: #7d8564;
+  --dsw-static-neutral-bluish-700: #7d8564;
+  --dsw-static-neutral-700: #7d8564;
+  --dsw-static-neutral-bluish-750: #5a6147;
+  --dsw-static-neutral-750: #5a6147;
+  --dsw-static-neutral-bluish-800: #5a6147;
+  --dsw-static-neutral-800: #5a6147;
+  --dsw-static-neutral-bluish-850: #5a6147;
+  --dsw-static-neutral-850: #5a6147;
+  --dsw-static-neutral-bluish-875: #383d2c;
+  --dsw-static-neutral-875: #383d2c;
+  --dsw-static-neutral-bluish-900: #383d2c;
+  --dsw-static-neutral-900: #383d2c;
+  --dsw-static-neutral-bluish-950: #383d2c;
+  --dsw-static-neutral-950: #383d2c;
+  --dsw-static-neutral-bluish-1000: #232a1c;
+  --dsw-static-neutral-1000: #232a1c;
+  --dsw-static-green-50: color-mix(in srgb, #43a047 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #43a047 20%, white);
+  --dsw-static-green-400: #43a047;
+  --dsw-static-green-500: #43a047;
+  --dsw-static-green-600: color-mix(in srgb, #43a047 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #43a047 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d09a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d09a1d 20%, white);
+  --dsw-static-amber-400: #d09a1d;
+  --dsw-static-amber-500: #d09a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d09a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d09a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d13a2e 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d13a2e 20%, white);
+  --dsw-static-red-400: #d13a2e;
+  --dsw-static-red-500: #d13a2e;
+  --dsw-static-red-600: color-mix(in srgb, #d13a2e 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d13a2e 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-game-minecraft][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #132a14;
+  --dsw-static-blue-50: #132a14;
+  --dsw-static-deepseek-50p: #1b3f1e;
+  --dsw-static-blue-50p: #1b3f1e;
+  --dsw-static-deepseek-75: #1b3f1e;
+  --dsw-static-blue-75: #1b3f1e;
+  --dsw-static-deepseek-100: #1b3f1e;
+  --dsw-static-blue-100: #1b3f1e;
+  --dsw-static-deepseek-200: #245628;
+  --dsw-static-blue-200: #245628;
+  --dsw-static-deepseek-300: #2f6e33;
+  --dsw-static-blue-300: #2f6e33;
+  --dsw-static-deepseek-400: #3e8c41;
+  --dsw-static-blue-400: #3e8c41;
+  --dsw-static-deepseek-450: #3e8c41;
+  --dsw-static-blue-450: #3e8c41;
+  --dsw-static-deepseek-500: #52ad4e;
+  --dsw-static-blue-500: #52ad4e;
+  --dsw-static-deepseek-600: #6fc263;
+  --dsw-static-blue-600: #6fc263;
+  --dsw-static-deepseek-700-delete: #8fd084;
+  --dsw-static-deepseek-800: #8fd084;
+  --dsw-static-blue-800: #8fd084;
+  --dsw-static-deepseek-900: #b6e2ac;
+  --dsw-static-blue-900: #b6e2ac;
+  --dsw-static-deepseek-950: #def2d6;
+  --dsw-static-blue-950: #def2d6;
+  --dsw-static-neutral-bluish-00: #121a10;
+  --dsw-static-neutral-00: #121a10;
+  --dsw-static-neutral-bluish-50: #121a10;
+  --dsw-static-neutral-50: #121a10;
+  --dsw-static-neutral-bluish-60: #121a10;
+  --dsw-static-neutral-60: #121a10;
+  --dsw-static-neutral-bluish-75: #182215;
+  --dsw-static-neutral-75: #182215;
+  --dsw-static-neutral-bluish-100: #182215;
+  --dsw-static-neutral-100: #182215;
+  --dsw-static-neutral-bluish-150: #1f2c1b;
+  --dsw-static-neutral-150: #1f2c1b;
+  --dsw-static-neutral-bluish-200: #1f2c1b;
+  --dsw-static-neutral-200: #1f2c1b;
+  --dsw-static-neutral-bluish-250: #283723;
+  --dsw-static-neutral-250: #283723;
+  --dsw-static-neutral-bluish-300: #283723;
+  --dsw-static-neutral-300: #283723;
+  --dsw-static-neutral-bluish-400: #33442d;
+  --dsw-static-neutral-400: #33442d;
+  --dsw-static-neutral-bluish-500: #415439;
+  --dsw-static-neutral-500: #415439;
+  --dsw-static-neutral-bluish-550: #415439;
+  --dsw-static-neutral-550: #415439;
+  --dsw-static-neutral-bluish-600: #5d7351;
+  --dsw-static-neutral-600: #5d7351;
+  --dsw-static-neutral-bluish-700: #5d7351;
+  --dsw-static-neutral-700: #5d7351;
+  --dsw-static-neutral-bluish-750: #7f956f;
+  --dsw-static-neutral-750: #7f956f;
+  --dsw-static-neutral-bluish-800: #7f956f;
+  --dsw-static-neutral-800: #7f956f;
+  --dsw-static-neutral-bluish-850: #7f956f;
+  --dsw-static-neutral-850: #7f956f;
+  --dsw-static-neutral-bluish-875: #b3c4a4;
+  --dsw-static-neutral-875: #b3c4a4;
+  --dsw-static-neutral-bluish-900: #b3c4a4;
+  --dsw-static-neutral-900: #b3c4a4;
+  --dsw-static-neutral-bluish-950: #b3c4a4;
+  --dsw-static-neutral-950: #b3c4a4;
+  --dsw-static-neutral-bluish-1000: #edf3e6;
+  --dsw-static-neutral-1000: #edf3e6;
+  --dsw-static-green-50: color-mix(in srgb, #5fc24b 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #5fc24b 20%, black);
+  --dsw-static-green-400: #5fc24b;
+  --dsw-static-green-500: #5fc24b;
+  --dsw-static-green-600: color-mix(in srgb, #5fc24b 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #5fc24b 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e0a83d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e0a83d 20%, black);
+  --dsw-static-amber-400: #e0a83d;
+  --dsw-static-amber-500: #e0a83d;
+  --dsw-static-amber-600: color-mix(in srgb, #e0a83d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e0a83d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e04a3d 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e04a3d 20%, black);
+  --dsw-static-red-400: #e04a3d;
+  --dsw-static-red-500: #e04a3d;
+  --dsw-static-red-600: color-mix(in srgb, #e04a3d 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e04a3d 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-game-minecraft] {
+  --dsw-alias-button-primary-fill: #43a047;
+  --dsw-alias-button-primary-hover: #358439;
+  --dsw-alias-button-primary-dimmed: #cdeac3;
+  --dsw-alias-button-info-fill: #43a047;
+  --dsw-alias-button-info-hover: #358439;
+  --dsw-alias-button-contrast-fill: #358439;
+  --dsw-alias-button-ghost-active-fill: #e2f3de;
+  --dsw-alias-button-ghost-active-hover: #cdeac3;
+  --dsw-alias-button-ghost-active-border: #8ecf7a;
+  --dsw-alias-button-elevated-fill: #ecefdd;
+  --dsw-alias-button-floating-fill: #ecefdd;
+  --dsw-alias-button-floating-hover: #e2e6cf;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(67, 160, 71, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(67, 160, 71, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(67, 160, 71, 0.6);
+  --dsw-specific-bubble: #2e7d32;
+  --dsw-specific-bubble-highlight: #aede9e;
+  --dsw-specific-input-major: #ecefdd;
+  --dsw-specific-login-input: #ecefdd;
+  --dsw-specific-sidebar-fill: #43a047;
+  --dsw-specific-sidebar-nav-item-active: #cdeac3;
+  --dsw-specific-sidebar-nav-item-hover: #e2e6cf;
+  --dsw-specific-sidebar-nav-item-active-accent: #8ecf7a;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-game-minecraft][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #5fc24b;
+  --dsw-alias-button-primary-hover: #74cf60;
+  --dsw-alias-button-primary-dimmed: #1b3f1e;
+  --dsw-alias-button-info-fill: #5fc24b;
+  --dsw-alias-button-info-hover: #74cf60;
+  --dsw-alias-button-contrast-fill: #6fc263;
+  --dsw-alias-button-ghost-active-fill: #1a3016;
+  --dsw-alias-button-ghost-active-hover: #1b3f1e;
+  --dsw-alias-button-ghost-active-border: #2f6e33;
+  --dsw-alias-button-elevated-fill: #121a10;
+  --dsw-alias-button-floating-fill: #121a10;
+  --dsw-alias-button-floating-hover: #1c2717;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(95, 194, 75, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(95, 194, 75, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(95, 194, 75, 0.6);
+  --dsw-specific-bubble: #245c26;
+  --dsw-specific-bubble-highlight: #245628;
+  --dsw-specific-input-major: #121a10;
+  --dsw-specific-login-input: #121a10;
+  --dsw-specific-sidebar-fill: #5fc24b;
+  --dsw-specific-sidebar-nav-item-active: #1b3f1e;
+  --dsw-specific-sidebar-nav-item-hover: #1c2717;
+  --dsw-specific-sidebar-nav-item-active-accent: #2f6e33;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-game-minecraft] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-minecraft]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(67, 160, 71, 0.12) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(208, 154, 29, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(121, 85, 58, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(126, 200, 80, 0.28) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(121, 85, 58, 0.10) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.75;
+}
+
+body[data-dsh-game-minecraft]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(45deg, rgba(67, 160, 71, 0.55) 25%, transparent 25%, transparent 75%, rgba(67, 160, 71, 0.55) 75%),
+      linear-gradient(45deg, rgba(121, 85, 58, 0.5) 25%, transparent 25%, transparent 75%, rgba(121, 85, 58, 0.5) 75%);
+    background-size: 32px 32px, 32px 32px;
+    background-position: 0 0, 16px 16px;
+    opacity: 0.06;
+    animation: game-minecraft-creeper-pixel-drift 24s linear infinite;
+}
+
+body[data-dsh-game-minecraft] [class*='sider'] [class*='session'],
+body[data-dsh-game-minecraft] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-minecraft] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(126, 200, 80, 0.2);
+    box-shadow: inset 3px 0 0 0 rgba(126, 200, 80, 0.9);
+}
+
+body[data-dsh-game-minecraft] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-minecraft] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(67, 160, 71, 0.2), rgba(67, 160, 71, 0.06) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #43a047;
+}
+
+body[data-dsh-game-minecraft] button[class*='primary'],
+body[data-dsh-game-minecraft] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #358439 0%, #43a047 55%, #68bb55 100%) !important;
+    border: 1px solid #aede9e !important;
+    border-radius: 4px !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(67, 160, 71, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(18, 50, 20, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-minecraft] button[class*='primary']:hover,
+body[data-dsh-game-minecraft] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.06);
+    box-shadow: 0 3px 14px rgba(67, 160, 71, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: game-minecraft-creeper-fuse-pulse 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-minecraft] pre,
+body[data-dsh-game-minecraft] .markdown-body pre {
+  background: linear-gradient(180deg, #2e241b 0%, #241c14 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #43a047 !important;
+    border-radius: 4px;
+    box-shadow: inset 0 0 20px rgba(67, 160, 71, 0.12);
+}
+
+body[data-dsh-game-minecraft] pre code,
+body[data-dsh-game-minecraft] .markdown-body pre code {
+  background: transparent !important;
+    color: #dfe8cf !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-minecraft] code,
+body[data-dsh-game-minecraft] .markdown-body code {
+  background: rgba(126, 200, 80, 0.18);
+    color: #29682c;
+    border: 1px solid rgba(67, 160, 71, 0.35);
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-minecraft]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-game-minecraft] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 6px rgba(56, 61, 44, 0.08), 0 0 0 1px rgba(126, 200, 80, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-minecraft] [class*='guidInputCard']:hover {
+  border-color: var(--creeper-green-hi) !important;
+}
+
+body[data-dsh-game-minecraft] [class*='agent-bar'],
+body[data-dsh-game-minecraft] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(67, 160, 71, 0.4);
+}
+
+body[data-dsh-game-minecraft]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-minecraft]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #43a047 0 30%, #79553a 30% 100%);
+    border-radius: 3px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-minecraft]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #68bb55 0 30%, #9c7350 30% 100%);
+}
+
+body[data-dsh-game-minecraft]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-minecraft] .markdown-body a,
+body[data-dsh-game-minecraft] a {
+  color: #29682c;
+}
+
+body[data-dsh-game-minecraft] .markdown-body a:hover,
+body[data-dsh-game-minecraft] a:hover {
+  color: #43a047;
+}
+
+body[data-dsh-game-minecraft] .markdown-body blockquote {
+  border-left: 3px solid #43a047;
+    background: rgba(126, 200, 80, 0.15);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-minecraft] .markdown-body hr,
+body[data-dsh-game-minecraft] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(90deg, rgba(67, 160, 71, 0.6) 50%, transparent 50%),
+      linear-gradient(90deg, rgba(121, 85, 58, 0.55) 50%, transparent 50%);
+    background-size: 16px 4px, 16px 4px;
+    background-repeat: repeat-x;
+    background-position: 0 0, 8px 4px;
+    opacity: 0.65;
+}
+
+body[data-dsh-game-minecraft] .arco-btn:not(button[class*='primary']):hover {
+  color: #29682c !important;
+    border-color: rgba(67, 160, 71, 0.5) !important;
+    background-color: rgba(67, 160, 71, 0.1) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-game-minecraft][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(95, 194, 75, 0.12) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(224, 168, 61, 0.1) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(224, 74, 61, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(36, 86, 40, 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(95, 194, 75, 0.07) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.85;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(45deg, rgba(95, 194, 75, 0.55) 25%, transparent 25%, transparent 75%, rgba(95, 194, 75, 0.55) 75%),
+      linear-gradient(45deg, rgba(138, 97, 63, 0.5) 25%, transparent 25%, transparent 75%, rgba(138, 97, 63, 0.5) 75%);
+    background-size: 32px 32px, 32px 32px;
+    background-position: 0 0, 16px 16px;
+    opacity: 0.07;
+    animation: game-minecraft-creeper-pixel-drift 24s linear infinite;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(143, 208, 105, 0.18);
+    box-shadow: inset 3px 0 0 0 rgba(143, 208, 105, 0.85);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(95, 194, 75, 0.26), rgba(95, 194, 75, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #5fc24b;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-game-minecraft][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #3e8c41 0%, #52ad4e 55%, #74cf60 100%) !important;
+    border: 1px solid #8fd084 !important;
+    border-radius: 4px !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(95, 194, 75, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(19, 42, 20, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-game-minecraft][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(95, 194, 75, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: game-minecraft-creeper-fuse-pulse 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] pre,
+body[data-dsh-game-minecraft][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #1b150e 0%, #151009 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #5fc24b !important;
+    border-radius: 4px;
+    box-shadow: inset 0 0 24px rgba(95, 194, 75, 0.1);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] pre code,
+body[data-dsh-game-minecraft][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d8e6c8 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] code,
+body[data-dsh-game-minecraft][data-ds-dark-theme] .markdown-body code {
+  background: rgba(95, 194, 75, 0.2);
+    color: #a1de93;
+    border: 1px solid rgba(95, 194, 75, 0.32);
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 8px rgba(4, 8, 4, 0.5), 0 0 0 1px rgba(95, 194, 75, 0.18);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--creeper-green-hi) !important;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-game-minecraft][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(95, 194, 75, 0.4);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #5fc24b 0 30%, #8a613f 30% 100%);
+    border-radius: 3px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7ed06c 0 30%, #a97e58 30% 100%);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-game-minecraft][data-ds-dark-theme] a {
+  color: #8fd084;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-game-minecraft][data-ds-dark-theme] a:hover {
+  color: #b6e2ac;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #5fc24b;
+    background: rgba(95, 194, 75, 0.12);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-game-minecraft][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(90deg, rgba(95, 194, 75, 0.6) 50%, transparent 50%),
+      linear-gradient(90deg, rgba(138, 97, 63, 0.55) 50%, transparent 50%);
+    background-size: 16px 4px, 16px 4px;
+    background-repeat: repeat-x;
+    background-position: 0 0, 8px 4px;
+    opacity: 0.6;
+}
+
+body[data-dsh-game-minecraft][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #a1de93 !important;
+    border-color: rgba(95, 194, 75, 0.5) !important;
+    background-color: rgba(95, 194, 75, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes game-minecraft-creeper-pixel-drift {
+  0% { background-position: 0 0, 16px 16px; }
+  100% { background-position: 32px 32px, 48px 48px; }
+}
+
+@keyframes game-minecraft-creeper-hiss-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(67, 160, 71, 0.16); }
+  50% { box-shadow: 0 2px 14px rgba(67, 160, 71, 0.34); }
+}
+
+@keyframes game-minecraft-creeper-fuse-pulse {
+  0%, 100% { box-shadow: 0 3px 12px rgba(67, 160, 71, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 20px rgba(209, 58, 46, 0.4), 0 3px 14px rgba(67, 160, 71, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes game-minecraft-creeper-border-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

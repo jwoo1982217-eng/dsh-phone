@@ -1,0 +1,321 @@
+
+/* The host injects its theme sheets at runtime, so their <style> order against
+   this one is not guaranteed; the id in :not() lifts the skin above the host's
+   body[data-ds-dark-theme] palette (same specificity, later wins) without
+   !important. The id never exists in the DOM. */
+body:not(#dsh-ui-tweaks-theme-scope){
+  color-scheme:light;
+  --dut-paper:#ffffff;
+  --dut-paper-2:#fafbfc;
+  --dut-paper-3:#ffffff;
+  --dut-pop:#ffffff;
+  --dut-ink:#101418;
+  /* the markdown table header keeps an ink strip; its type rides the accent */
+  --dut-th-bg:#101418;
+  --dut-code:#f7f8f9;
+  --dut-text-1:#101418;
+  --dut-text-2:#3d4750;
+  --dut-text-3:#7a8791;
+  --dut-text-4:#9aa4ad;
+  --dut-btn-fg:#ffffff;
+  --dut-lime:#c6ff00;
+  --dut-lime-soft:#dcff4d;
+  --dut-accent:#c15f3c;
+  --dut-accent-soft:rgba(193,95,60,.12);
+  --dut-accent-pale:#eccfc4;
+  --dut-hover:rgba(193,95,60,.07);
+  --dut-active:rgba(193,95,60,.13);
+  /* text selection uses the native blue in both schemes */
+  --dut-sel-bg:Highlight;
+  --dut-sel-fg:HighlightText;
+  --dut-faint:rgba(0,0,0,.06);
+  --dut-scroll-1:#e3e6ea;
+  --dut-scroll-2:#c8cdd3;
+  --dut-elev:#101418;
+  /* the user bubble: a pale tint of the Anthropic-red accent, so it stays in
+     the same family as the links, buttons and artifacts */
+  --dut-bubble:#ffe3d9;
+  --dut-shadow:#101418;
+  --dut-drop:rgba(255,255,255,.7);
+  /* Hairlines stay the host's own subtle values: the shipped 0.5px pills and
+     dividers are designed around them, and painting them poster-ink read as
+     "changed too much". The bold ink lives only in this skin's own explicit
+     rules (code blocks, composer card, table header, panels). */
+  --dut-line-1:rgba(0,0,0,.04);
+  --dut-line-2:rgba(0,0,0,.10);
+  --dut-line-3:rgba(0,0,0,.12);
+  --dut-line-4:rgba(0,0,0,.16);
+  --dut-error:var(--dsw-static-red-600);
+  --dut-error-2:var(--dsw-static-red-400);
+  --dut-success:var(--dsw-static-green-500);
+  --dut-success-2:var(--dsw-static-green-400);
+  --dut-success-3:var(--dsw-static-green-100);
+  --dut-warn-3:var(--dsw-static-amber-100);
+  /* Two surfaces read the STATIC DeepSeek scale instead of an alias, so the
+     alias re-points below never reached them: the running-turn "深度求索中…"
+     shimmer (500 + 200 painted into the glyphs) and the ongoing state dot
+     (450). Re-point the static steps here — every alias that also derives from
+     them is already mapped explicitly, so nothing else moves. */
+  --dsw-static-deepseek-200:var(--dut-accent-pale);
+  --dsw-static-deepseek-450:var(--dut-accent);
+  --dsw-static-deepseek-500:var(--dut-accent);
+  --dsw-alias-bg-base:var(--dut-paper);
+  --dsw-alias-bg-layer-1:var(--dut-paper);
+  --dsw-alias-bg-layer-2:var(--dut-paper-2);
+  --dsw-alias-bg-layer-3:var(--dut-paper-3);
+  --dsw-alias-bg-mask-1:rgba(0,0,0,.24);
+  --dsw-alias-bg-mask-2:rgba(0,0,0,.12);
+  --dsw-alias-bg-mask-3:rgba(0,0,0,.48);
+  --dsw-alias-bg-mask-photo:rgba(0,0,0,.88);
+  --dsw-alias-bg-mask-drop:var(--dut-drop);
+  --dsw-alias-bg-module-platform:var(--dut-paper-3);
+  --dsw-alias-bg-multi-select:var(--dut-paper-2);
+  --dsw-alias-bg-overlay:var(--dut-paper-3);
+  --dsw-alias-bg-skeleton:var(--dut-faint);
+  --dsw-alias-border-inverted:rgba(0,0,0,0);
+  --dsw-alias-border-inverted2:rgba(0,0,0,0);
+  --dsw-alias-border-l1:var(--dut-line-1);
+  --dsw-alias-border-l2:var(--dut-line-2);
+  --dsw-alias-border-l2-darkmode-thin:var(--dut-line-2);
+  --dsw-alias-border-l3:var(--dut-line-3);
+  --dsw-alias-border-l4:var(--dut-line-4);
+  --dsw-alias-brand-primary:var(--dut-text-1);
+  --dsw-alias-brand-primary-invert:var(--dut-paper);
+  --dsw-alias-brand-text:var(--dut-text-1);
+  --dsw-alias-brand-primary-new-colorprimary-new-color:var(--dut-accent);
+  --dsw-alias-button-contrast-fill:var(--dut-text-2);
+  --dsw-alias-button-elevated-fill:var(--dut-paper);
+  --dsw-alias-button-floating-fill:var(--dut-paper);
+  --dsw-alias-button-floating-hover:var(--dut-paper-2);
+  --dsw-alias-button-ghost-active-border:var(--dut-ink);
+  --dsw-alias-button-ghost-active-fill:var(--dut-paper-3);
+  --dsw-alias-button-ghost-active-hover:var(--dut-paper-3);
+  --dsw-alias-button-info-fill:var(--dut-accent);
+  --dsw-alias-button-info-hover:var(--dut-accent);
+  --dsw-alias-button-primary-dimmed:var(--dut-paper-2);
+  --dsw-alias-button-primary-fill:var(--dut-text-1);
+  --dsw-alias-button-primary-hover:var(--dut-text-1);
+  --dsw-alias-interactive-bg-active:var(--dut-active);
+  --dsw-alias-interactive-bg-hover:var(--dut-hover);
+  --dsw-alias-interactive-bg-hover-accent:var(--dut-active);
+  --dsw-alias-interactive-bg-hover-danger:rgba(236,19,19,.05);
+  --dsw-alias-interactive-bg-hover-solid:var(--dut-paper-3);
+  --dsw-alias-label-caption:var(--dut-text-4);
+  --dsw-alias-label-dimmed:var(--dut-text-4);
+  --dsw-alias-label-primary:var(--dut-text-1);
+  --dsw-alias-label-primary-bluish:var(--dut-text-1);
+  --dsw-alias-label-primary-dimmed:var(--dut-text-1);
+  --dsw-alias-label-primary-foreground:var(--dut-btn-fg);
+  --dsw-alias-label-primary-inverted:var(--dut-btn-fg);
+  --dsw-alias-label-secondary:var(--dut-text-2);
+  --dsw-alias-label-tertiary:var(--dut-text-3);
+  --dsw-alias-link:var(--dut-accent);
+  --dsw-alias-markdown-citation:var(--dut-paper-2);
+  --dsw-alias-markdown-code-block:var(--dut-code);
+  --dsw-alias-markdown-code-block-banner:var(--dut-paper-3);
+  --dsw-alias-markdown-code-segment-selected:var(--dut-paper);
+  --dsw-alias-markdown-code-segment-unselected:var(--dut-paper-2);
+  --dsw-alias-markdown-placeholder:var(--dut-paper-2);
+  --dsw-alias-markdown-tag:var(--dut-paper-2);
+  --dsw-alias-scrollbar-bg-l1:var(--dut-scroll-1);
+  --dsw-alias-scrollbar-bg-l2:var(--dut-scroll-1);
+  --dsw-alias-scrollbar-hover-l1:var(--dut-scroll-2);
+  --dsw-alias-scrollbar-hover-l2:var(--dut-scroll-2);
+  --dsw-alias-state-business-primary:var(--dut-accent);
+  --dsw-alias-state-business-tertiary:var(--dut-accent-soft);
+  --dsw-alias-state-error-primary:var(--dut-error);
+  --dsw-alias-state-error-secondary:var(--dut-error-2);
+  --dsw-alias-state-success-primary:var(--dut-success);
+  --dsw-alias-state-success-secondary:var(--dut-success-2);
+  --dsw-alias-state-success-tertiary:var(--dut-success-3);
+  --dsw-alias-state-warn-label:var(--dsw-static-amber-600);
+  --dsw-alias-state-warn-primary:var(--dsw-static-amber-500);
+  --dsw-alias-state-warn-secondary:var(--dsw-static-amber-400);
+  --dsw-alias-state-warn-tertiary:var(--dut-warn-3);
+  --dsw-alias-toast-bg:var(--dut-elev);
+  --dsw-alias-tooltip-bg:var(--dut-elev);
+  --dsw-specific-bubble:var(--dut-bubble);
+  --dsw-specific-bubble-highlight:var(--dut-lime-soft);
+  --dsw-specific-input-major:var(--dut-pop);
+  --dsw-specific-login-input:var(--dut-paper-2);
+  --dsw-specific-selector:var(--dut-pop);
+  --dsw-specific-menu:var(--dut-pop);
+  --dsw-specific-sidebar-fill:var(--dut-paper);
+  --dsw-specific-sidebar-nav-item-active:var(--dut-lime-soft);
+  /* NOT themed: despite the name this token feeds only the "推荐" chip in the
+     question composer, and a lime slab behind text read as a highlighter mark
+     rather than a chip — it stays on the host's own background. */
+  --dsw-specific-sidebar-nav-item-hover:var(--dut-paper-2);
+  --dsw-specific-tip:var(--dut-paper-2);
+}
+/* Dark scheme: re-point the design variables only — every alias mapping and
+   element rule follows through var() indirection, so the host's scheme toggle
+   flips the whole skin without a second copy of the rules. */
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme]{
+  color-scheme:dark;
+  --dut-paper:#0b0d10;
+  --dut-paper-2:#14181d;
+  --dut-paper-3:#1e252c;
+  --dut-pop:#161c22;
+  /* the poster frame drops to translucent white in dark mode: a solid
+     near-white 2px frame plus its hard offset read as glare (see --dut-shadow) */
+  --dut-ink:rgba(232,236,239,.42);
+  /* a light strip would kill the red type here, so dark mode keeps a dark
+     header strip lifted one step off the paper */
+  --dut-th-bg:#1e252c;
+  --dut-code:#171d24;
+  --dut-text-1:#f2f5f3;
+  --dut-text-2:#b9c3ca;
+  --dut-text-3:#7f8d97;
+  --dut-text-4:#66727c;
+  --dut-btn-fg:#101418;
+  --dut-lime:#c6ff00;
+  --dut-lime-soft:#dcff4d;
+  --dut-accent:#d97757;
+  --dut-accent-soft:rgba(217,119,87,.18);
+  --dut-accent-pale:#eec2b3;
+  --dut-hover:rgba(217,119,87,.16);
+  --dut-active:rgba(217,119,87,.26);
+  /* text selection uses the native blue in both schemes */
+  --dut-sel-bg:Highlight;
+  --dut-sel-fg:HighlightText;
+  --dut-faint:rgba(255,255,255,.07);
+  --dut-scroll-1:#2a3138;
+  --dut-scroll-2:#3a444d;
+  --dut-elev:#1f262c;
+  /* dark twin: the same red accent, deepened onto the near-black paper */
+  --dut-bubble:#35201a;
+  /* the hard offset band softens with it, so the sticker silhouette survives
+     while the brightness does not */
+  --dut-shadow:rgba(232,236,239,.16);
+  --dut-drop:rgba(39,39,48,.7);
+  --dut-line-1:rgba(255,255,255,.06);
+  --dut-line-2:rgba(255,255,255,.12);
+  --dut-line-3:rgba(255,255,255,.16);
+  --dut-line-4:rgba(255,255,255,.20);
+  --dut-error:var(--dsw-static-red-400);
+  --dut-error-2:var(--dsw-static-red-400);
+  --dut-success:var(--dsw-static-green-400);
+  --dut-success-2:var(--dsw-static-green-400);
+  --dut-success-3:var(--dsw-static-green-900);
+  --dut-warn-3:var(--dsw-static-amber-900);
+}
+::selection{background:var(--dut-sel-bg);color:var(--dut-sel-fg)}
+/* table header: the ink header strip, with the type in the accent red */
+div[data-slot="conversation.chat.node"] table th{
+  background:var(--dut-th-bg);
+  color:var(--dut-accent);
+}
+div[data-slot="conversation.chat.node"] pre{
+  border:2px solid var(--dut-ink) !important;
+  border-radius:10px !important;
+  box-shadow:5px 5px 0 var(--dut-shadow) !important;
+  background:var(--dut-paper) !important;
+}
+div[data-slot="conversation.chat.node"] :not(pre)>code{
+  color:var(--dut-accent) !important;
+  border:none !important;
+  border-radius:6px !important;
+  padding:1px 6px !important;
+}
+/* composer card: white framed sticker (hard shadow, ink border) */
+div[data-composer-card]{
+  border:2px solid var(--dut-ink) !important;
+  box-shadow:5px 5px 0 var(--dut-shadow) !important;
+  background:var(--dut-paper) !important;
+}
+/* context-occupancy ring: the stock track/fill both read near-ink on this
+   skin; give the track a quiet gray and the used arc the red accent
+   (scoped to the composer's svg so the class-substring match stays safe) */
+div[data-composer-card] svg [class*="track"]{stroke:var(--dut-scroll-1)}
+div[data-composer-card] svg [class*="fill"]{stroke:var(--dut-accent)}
+/* Thinking-effort band colours are shared with the minimal skin, so they live
+   in EFFORT_TINT_CSS above and are spliced in here at their original position
+   — the poster's emitted sheet is unchanged. */
+
+[data-slot="conversation.input.model"] span[data-dut-effort],
+div[role="menu"] span[data-dut-effort]{font-weight:600}
+[data-slot="conversation.input.model"] span[data-dut-effort="low"],
+div[role="menu"] span[data-dut-effort="low"]{color:#15803d}
+[data-slot="conversation.input.model"] span[data-dut-effort="medium"],
+div[role="menu"] span[data-dut-effort="medium"]{color:#b45309}
+[data-slot="conversation.input.model"] span[data-dut-effort="high"],
+div[role="menu"] span[data-dut-effort="high"]{color:#1d4ed8}
+[data-slot="conversation.input.model"] span[data-dut-effort="max"],
+div[role="menu"] span[data-dut-effort="max"]{color:#7c3aed}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="low"],
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] span[data-dut-effort="low"]{color:#4ade80}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="medium"],
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] span[data-dut-effort="medium"]{color:#fbbf24}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="high"],
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] span[data-dut-effort="high"]{color:#60a5fa}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="max"],
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] span[data-dut-effort="max"]{color:#a78bfa}
+/* Trigger chip: the input-box effort label additionally rides a translucent
+   pill in its band hue (menu labels stay plain text). Padding/radius work
+   as-is — the trigger is flex, so its spans are already blockified. */
+[data-slot="conversation.input.model"] span[data-dut-effort]{
+  padding:1px 7px;
+  border-radius:999px;
+}
+[data-slot="conversation.input.model"] span[data-dut-effort="low"]{background:rgba(21,128,61,.12)}
+[data-slot="conversation.input.model"] span[data-dut-effort="medium"]{background:rgba(180,83,9,.12)}
+[data-slot="conversation.input.model"] span[data-dut-effort="high"]{background:rgba(29,78,216,.10)}
+[data-slot="conversation.input.model"] span[data-dut-effort="max"]{background:rgba(124,58,237,.12)}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="low"]{background:rgba(74,222,128,.18)}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="medium"]{background:rgba(251,191,36,.18)}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="high"]{background:rgba(96,165,250,.18)}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] [data-slot="conversation.input.model"] span[data-dut-effort="max"]{background:rgba(167,139,250,.20)}
+/* Effort option rows: on hover the row background wipes in from the left in
+   the band hue (translucent wash into transparency), replacing the stock row
+   hover fill. The host paints that fill with a 'background' shorthand whose
+   priority outranks a plain declaration; because a shorthand resets size /
+   image / repeat to their initials, it silently killed this wash — so the
+   hover rule restates all three with !important rather than relying on
+   specificity. background-size animates reliably (no background-clip text
+   involved); honoring prefers-reduced-motion. */
+div[role="menu"] button[data-dut-effort]{
+  background-repeat:no-repeat;
+  background-size:0% 100%;
+  transition:background-size .6s ease;
+}
+div[role="menu"] button[data-dut-effort="low"]:hover{background-image:linear-gradient(90deg,rgba(21,128,61,.16),rgba(21,128,61,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+div[role="menu"] button[data-dut-effort="medium"]:hover{background-image:linear-gradient(90deg,rgba(180,83,9,.16),rgba(180,83,9,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+div[role="menu"] button[data-dut-effort="high"]:hover{background-image:linear-gradient(90deg,rgba(29,78,216,.14),rgba(29,78,216,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+div[role="menu"] button[data-dut-effort="max"]:hover{background-image:linear-gradient(90deg,rgba(124,58,237,.16),rgba(124,58,237,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] button[data-dut-effort="low"]:hover{background-image:linear-gradient(90deg,rgba(74,222,128,.18),rgba(74,222,128,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] button[data-dut-effort="medium"]:hover{background-image:linear-gradient(90deg,rgba(251,191,36,.18),rgba(251,191,36,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] button[data-dut-effort="high"]:hover{background-image:linear-gradient(90deg,rgba(96,165,250,.20),rgba(96,165,250,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] div[role="menu"] button[data-dut-effort="max"]:hover{background-image:linear-gradient(90deg,rgba(167,139,250,.20),rgba(167,139,250,0)) !important;background-size:100% 100% !important;background-repeat:no-repeat !important}
+@media (prefers-reduced-motion:reduce){
+  div[role="menu"] button[data-dut-effort]{transition:none}
+}
+
+/* sidebar new-session button: lime sticker. Matched by its CSS-module class,
+   NOT the aria-label — the brand row button shares the same "新建会话"
+   label (it doubles as the new-session shortcut) and must stay plain. */
+button[class*="newSession"]{
+  background:var(--dut-lime) !important;
+  color:#101418 !important;
+  border:2px solid var(--dut-ink) !important;
+  border-radius:10px !important;
+  box-shadow:3px 3px 0 var(--dut-shadow) !important;
+}
+button[class*="newSession"]:hover{background:#d4ff33 !important;color:#101418 !important}
+/* dark scheme: invert the sticker to a lime-outlined dark pill — a full lime
+   slab was the loudest thing in the column and the black label read as a
+   mistake next to the dark chrome */
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] button[class*="newSession"],
+body:not(#dsh-ui-tweaks-theme-scope)[data-ds-dark-theme] button[class*="newSession"]:hover{
+  background:var(--dut-paper) !important;
+  color:var(--dut-lime) !important;
+  border-color:var(--dut-lime) !important;
+  box-shadow:3px 3px 0 var(--dut-lime) !important;
+}
+/* The poster frame is the host's own 1px border (recolored) plus a 1px inset
+   ring, not a real 2px border: a 2px border stole 2px of content width and
+   wrapped the half-width alert cells ("仅页面不可见时" and its buttons broke
+   onto two lines). An inset ring costs no layout. */
+.dut-panel{border-color:var(--dut-ink) !important;box-shadow:inset 0 0 0 1px var(--dut-ink),5px 5px 0 var(--dut-shadow) !important}
+.dut-seg button.dut-seg-active{background:var(--dut-lime) !important;color:#101418 !important}
+.dut-btn.dut-btn-active{background:var(--dut-lime) !important;color:#101418 !important;border-color:var(--dut-ink) !important}

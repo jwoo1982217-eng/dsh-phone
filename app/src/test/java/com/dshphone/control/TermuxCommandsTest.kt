@@ -73,4 +73,25 @@ class TermuxCommandsTest {
         val job = TermuxCommands.start(ctx, owner, args()); reply(shadowOf(ctx).nextStartedService, "a".repeat(49000) + "\nAuthorization: Bearer private-token-value")
         val value = TermuxCommands.result(owner, job.getString("jobId")); assertTrue(value.getBoolean("outputTruncated")); assertFalse(value.toString().contains("private-token-value")); assertTrue(value.getString("stdout").length <= 48000)
     }
+    @Test fun accessibilityDisconnectDoesNotRevokeAnIndependentDispatchedTermuxResult() {
+        val service = org.robolectric.Robolectric.buildService(PhoneControlService::class.java).create().get()
+        ControlRuntime.service = service
+        val job = TermuxCommands.start(ctx, owner, args()); val command = shadowOf(ctx).nextStartedService
+        service.onDestroy(); assertNull(ControlRuntime.service)
+        reply(command, "result-after-backend-disconnect", 7)
+        val value = TermuxCommands.result(owner, job.getString("jobId"))
+        assertEquals("completed", value.getString("status")); assertEquals(7, value.getInt("exitCode"))
+        assertEquals("result-after-backend-disconnect", value.getString("stdout"))
+    }
+    @Test fun anotherSessionCannotReplaceAuthorityWhileTheTermuxCommandIsRunning() {
+        ControlRuntime.stop("test reset")
+        val sync = ControlRuntime.call(ctx, JSONObject().put("command", "session").put("owner", owner).put("mode", "danger-full-access").put("intentAt", System.currentTimeMillis() + 1000))
+        shadowOf(android.os.Looper.getMainLooper()).idle(); sync.get()
+        val job = TermuxCommands.start(ctx, owner, args()); val command = shadowOf(ctx).nextStartedService
+        val other = ControlRuntime.call(ctx, JSONObject().put("command", "session").put("owner", "another-session").put("mode", "danger-full-access").put("intentAt", System.currentTimeMillis() + 1000))
+        shadowOf(android.os.Looper.getMainLooper()).idle(); assertTrue(other.isCompletedExceptionally)
+        assertEquals(owner, ControlRuntime.lease.current()!!.owner)
+        reply(command, "original-command-preserved")
+        assertEquals("completed", TermuxCommands.result(owner, job.getString("jobId")).getString("status"))
+    }
 }

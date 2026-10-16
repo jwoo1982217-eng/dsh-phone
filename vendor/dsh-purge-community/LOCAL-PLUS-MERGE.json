@@ -1,0 +1,30 @@
+{
+  "baseArchiveSha256": "c21a0c2d90433bfead0b2cb9fca8da64503c5582eec80eae0864088079ec0890",
+  "plusArchiveSha256": "dfaec825c6c650e488564db4efc22034b05a3c597b5d72feacd6fecb35b33678",
+  "version": "1.1.68-community.stable-dock-entry.2.plus-fixes.6.cards-mode.1",
+  "mergedPatch": 86,
+  "alreadyPresent": [
+    "bash timeout idempotence",
+    "Node24 path guards",
+    "persona prefix variants"
+  ],
+  "unchangedOriginalFiles": 107,
+  "changedOriginalFiles": [
+    "package.json",
+    "lib/core.js",
+    "lib/community-profile-paths.js",
+    "lib/community-profile.js",
+    "lib/community-overlay.js",
+    "lib/redteam/store.js",
+    "client.js",
+    "cordis.patch.yml"
+  ],
+  "additionalFiles": [
+    "lib/tun-fake-ip.js",
+    "LOCAL-PLUS-MERGE.json"
+  ],
+  "scope": "Independent Purge UI, hooks, persona injection and Redteam services disabled. Existing private SDK generation retained; capability deltas distilled into existing user skills.",
+  "validation": "Build and deployment receipts recorded under dsh-purge-skill-split-20261015; no new skill/persona entries.",
+  "mobileLayout": "Native Android dsh-phone-presentation marker covers tablet and landscape widths; narrow mobile fallback retained. Desktop host geometry unchanged.",
+  "uiMode": "No independent native button, client module, background persona or Redteam services; keep existing private SDK fixes. Skills/persona content managed by original libraries."
+}

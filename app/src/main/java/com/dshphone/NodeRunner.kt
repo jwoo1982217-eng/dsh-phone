@@ -22,7 +22,7 @@ import org.json.JSONArray
  */
 object NodeRunner {
     private const val TAG = "dsh-phone"
-    const val ASSET_VERSION = "66"
+        const val ASSET_VERSION = "104"
     const val GATEWAY_PORT = 8326
     const val WEB_PORT = 3080
 
@@ -45,16 +45,29 @@ object NodeRunner {
 
         Log.i(TAG, "extracting dsh assets v$ASSET_VERSION")
         // 只替换程序树。账号、令牌、会话与用户设置都在 dsh-home，升级必须保留。
-        treeDir(ctx).deleteRecursively()
-        treeDir(ctx).mkdirs()
         val existingHome = File(homeDir(ctx), "profiles/phone/package.json").exists()
         homeDir(ctx).mkdirs()
-        extractAsset(ctx, "dsh-tree.tar", treeDir(ctx))
+        // Inspect and preserve referenced independent MCP extensions before
+        // replacing either shipped tree. Extraction failures retain the old tree.
+        val stagedTree = File(ctx.filesDir, "dsh-tree-next")
+        stagedTree.deleteRecursively()
+        stagedTree.mkdirs()
+        extractAsset(ctx, "dsh-tree.tar", stagedTree)
+        val template = File(ctx.filesDir, "dsh-home-template")
+        template.deleteRecursively()
+        template.mkdirs()
+        extractAsset(ctx, "dsh-home.tar", template)
+        BundledResources.hydrate(stagedTree, template)
+        if (existingHome) preserveMcpExtensions(ctx, stagedTree, template)
+        val previousTree = File(ctx.filesDir, "dsh-tree-previous")
+        previousTree.deleteRecursively()
+        val hadTree = treeDir(ctx).exists()
+        if (hadTree) check(treeDir(ctx).renameTo(previousTree)) { "Cannot retain previous runtime tree" }
+        if (!stagedTree.renameTo(treeDir(ctx))) {
+            if (hadTree) check(previousTree.renameTo(treeDir(ctx))) { "Cannot restore previous runtime tree" }
+            throw IllegalStateException("Cannot activate new runtime tree; previous program retained")
+        }
         if (existingHome) {
-            val template = File(ctx.filesDir, "dsh-home-template")
-            template.deleteRecursively()
-            template.mkdirs()
-            extractAsset(ctx, "dsh-home.tar", template)
             val bundledModules = File(template, "profiles/phone/node_modules")
             val installedModules = File(homeDir(ctx), "profiles/phone/node_modules")
             installedModules.mkdirs()
@@ -77,20 +90,58 @@ object NodeRunner {
             val profile = dsh.optJSONObject("profile") ?: JSONObject().also { dsh.put("profile", it) }
             val bundles = profile.optJSONArray("bundles") ?: JSONArray().also { profile.put("bundles", it) }
             val dependencies = packageJson.optJSONObject("dependencies") ?: JSONObject().also { packageJson.put("dependencies", it) }
-            listOf("dsh-codearts-auth", "dsh-phone-account", "dsh-phone-qq", "@zseven-w/dsh-noema").forEach { bundle ->
+            listOf("dsh-codearts-auth", "dsh-phone-account", "dsh-phone-qq", "@zseven-w/dsh-noema", "dsh-our-free-model", "dsh-team", "dsh-appearance-center", "dsh-knowledge-link").forEach { bundle ->
                 if ((0 until bundles.length()).none { bundles.optString(it) == bundle }) bundles.put(bundle)
                 dependencies.put(bundle, "file:./node_modules/$bundle")
             }
             manifest.writeText(packageJson.toString(2))
             val settings = File(homeDir(ctx), "settings.yaml")
             if (!settings.exists()) File(template, "settings.yaml").copyTo(settings)
+            // 合并打包技能包：逐包替换，保留用户新增技能
+            val bundledSkills = File(template, "skills")
+            val homeSkills = File(homeDir(ctx), "skills")
+            homeSkills.mkdirs()
+            bundledSkills.listFiles()?.forEach { pack ->
+                val target = File(homeSkills, pack.name)
+                target.deleteRecursively()
+                check(pack.copyRecursively(target, overwrite = true)) {
+                    "Cannot update bundled skill ${pack.name}"
+                }
+            }
             template.deleteRecursively()
         } else {
-            extractAsset(ctx, "dsh-home.tar", homeDir(ctx))
+            check(template.copyRecursively(homeDir(ctx), overwrite = true)) { "Cannot install prepared phone profile" }
         }
+        template.deleteRecursively()
         makeHomeLink(ctx)
         versionFile(ctx).writeText(ASSET_VERSION)
+        previousTree.deleteRecursively()
         Log.i(TAG, "extracted ok")
+    }
+
+    private fun preserveMcpExtensions(ctx: Context, stagedTree: File, template: File) {
+        val script = File(stagedTree, "node_modules/dsh-peer/mcp-manager/upgrade.mjs")
+        check(script.isFile) { "MCP upgrade guard missing; original runtime retained" }
+        val log = File.createTempFile("dsh-mcp-upgrade-", ".log", tmpDir(ctx))
+        try {
+            val builder = ProcessBuilder(File(ctx.applicationInfo.nativeLibraryDir, "libnode.so").absolutePath,
+                script.absolutePath, homeDir(ctx).absolutePath, treeDir(ctx).absolutePath,
+                stagedTree.absolutePath, File(template, "profiles/phone/node_modules").absolutePath)
+            builder.environment().put("LD_LIBRARY_PATH", ctx.applicationInfo.nativeLibraryDir)
+            builder.environment().put("OPENSSL_CONF", "/dev/null")
+            builder.redirectErrorStream(true).redirectOutput(log)
+            val child = builder.start()
+            if (!child.waitFor(60, java.util.concurrent.TimeUnit.SECONDS)) {
+                child.destroyForcibly()
+                child.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+                throw IllegalStateException("MCP extension migration timed out; original runtime retained")
+            }
+            val output = log.readText()
+            check(child.exitValue() == 0) { output.takeLast(1200) }
+            val report = JSONObject(output.trim()).getJSONObject("mcpUpgrade")
+            val count = report.getJSONArray("migrated").length()
+            if (count > 0) DshService.appendLog("升级已保留 $count 个 MCP 扩展目录")
+        } finally { log.delete() }
     }
 
     private fun extractAsset(ctx: Context, name: String, target: File) {

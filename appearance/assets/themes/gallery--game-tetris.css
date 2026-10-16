@@ -1,0 +1,775 @@
+/* game-tetris — 俄罗斯方块 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-game-tetris], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-game-tetris] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #232a33;
+  background-color: #f3f5f7;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] {
+  color: #eef1f6;
+  background-color: #0a0d13;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-game-tetris] {
+  --color-primary: #1488c0;
+  --primary: #1488c0;
+  --primary-rgb: 20, 136, 192;
+  --color-primary-light-1: #3da2d2;
+  --color-primary-light-2: #72bce0;
+  --color-primary-light-3: #abd7ee;
+  --color-primary-dark-1: #0d6895;
+  --brand: #1488c0;
+  --brand-light: #e2f2fa;
+  --brand-hover: #0d6895;
+  --color-brand-fill: #1488c0;
+  --color-brand-bg: #d8ecf7;
+  --aou-1: #e2f2fa;
+  --aou-2: #bde2f4;
+  --aou-3: #8ecbec;
+  --aou-4: #5cb0dd;
+  --aou-5: #3499cc;
+  --aou-6: #1488c0;
+  --aou-7: #0f72a2;
+  --aou-8: #0b5c83;
+  --aou-9: #084664;
+  --aou-10: #053144;
+  --bg-base: #f3f5f7;
+  --bg-1: #ebeef1;
+  --bg-2: #e2e6eb;
+  --bg-3: #d7dde3;
+  --bg-4: #c9d1d9;
+  --bg-5: #b8c2cc;
+  --bg-6: #a2adb9;
+  --bg-8: #7d8a99;
+  --bg-9: #5a6675;
+  --bg-10: #38424f;
+  --color-bg-1: #ebeef1;
+  --color-bg-2: #e2e6eb;
+  --color-bg-3: #d7dde3;
+  --color-bg-4: #c9d1d9;
+  --bg-hover: #e0e5ea;
+  --bg-active: #d5dbe2;
+  --text-primary: #232a33;
+  --text-secondary: #59626e;
+  --text-disabled: #a3acb6;
+  --text-0: #141920;
+  --text-white: #ffffff;
+  --color-text-1: #232a33;
+  --color-text-2: #59626e;
+  --color-text-3: #7e8792;
+  --color-text-4: #a3acb6;
+  --border-base: #c7cfd8;
+  --border-light: #d8dee5;
+  --border-special: #9cc9e2;
+  --color-border: #c7cfd8;
+  --color-border-1: #c7cfd8;
+  --color-border-2: #d8dee5;
+  --fill: #e2e6eb;
+  --color-fill: #e2e6eb;
+  --fill-0: #ebeef1;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fafbfc;
+  --inverse: #232a33;
+  --success: #2ea84c;
+  --warning: #b89a12;
+  --danger: #d23c3c;
+  --info: #2f63c9;
+  --message-user-bg: #222c3e;
+  --message-tips-bg: #e2ecf3;
+  --workspace-btn-bg: #d8ecf7;
+  --color-guid-agent-bar: #e6eaee;
+  --tetris-i: #0fa8bd;
+  --tetris-o: #c9ad12;
+  --tetris-t: #8b46d6;
+  --tetris-s: #2ea84c;
+  --tetris-z: #d23c3c;
+  --tetris-j: #2f63c9;
+  --tetris-l: #d1782a;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-game-tetris][data-ds-dark-theme] {
+  --color-primary: #2fb5e3;
+  --primary: #2fb5e3;
+  --primary-rgb: 47, 181, 227;
+  --color-primary-light-1: #57c7ec;
+  --color-primary-light-2: #86d9f3;
+  --color-primary-light-3: #bbeaf9;
+  --color-primary-dark-1: #1d86ad;
+  --brand: #2fb5e3;
+  --brand-light: #0e2c3a;
+  --brand-hover: #57c7ec;
+  --color-brand-fill: #2fb5e3;
+  --color-brand-bg: #0c2530;
+  --aou-1: #08222e;
+  --aou-2: #0d3a4c;
+  --aou-3: #125269;
+  --aou-4: #176b87;
+  --aou-5: #1e8aab;
+  --aou-6: #2fb5e3;
+  --aou-7: #57c7ec;
+  --aou-8: #86d9f3;
+  --aou-9: #bbeaf9;
+  --aou-10: #e4f7fd;
+  --bg-base: #0a0d13;
+  --bg-1: #10141c;
+  --bg-2: #161b25;
+  --bg-3: #1d2330;
+  --bg-4: #252d3c;
+  --bg-5: #303a4b;
+  --bg-6: #3f4c60;
+  --bg-8: #5d6d84;
+  --bg-9: #8795a8;
+  --bg-10: #bcc6d3;
+  --color-bg-1: #10141c;
+  --color-bg-2: #161b25;
+  --color-bg-3: #1d2330;
+  --color-bg-4: #252d3c;
+  --bg-hover: #1c2230;
+  --bg-active: #242c3b;
+  --text-primary: #eef1f6;
+  --text-secondary: #a9b2c0;
+  --text-disabled: #566071;
+  --text-0: #f8fafc;
+  --text-white: #ffffff;
+  --color-text-1: #eef1f6;
+  --color-text-2: #a9b2c0;
+  --color-text-3: #7e8898;
+  --color-text-4: #566071;
+  --border-base: #2a3342;
+  --border-light: #202736;
+  --border-special: #1d5a75;
+  --color-border: #2a3342;
+  --color-border-1: #2a3342;
+  --color-border-2: #202736;
+  --fill: #161b25;
+  --color-fill: #161b25;
+  --fill-0: #10141c;
+  --fill-white-to-black: #0a0d13;
+  --dialog-fill-0: #121722;
+  --inverse: #eef1f6;
+  --success: #4ecf6a;
+  --warning: #e8d24a;
+  --danger: #e85454;
+  --info: #4a7de8;
+  --message-user-bg: #1b2230;
+  --message-tips-bg: #1a2230;
+  --workspace-btn-bg: #0c2530;
+  --color-guid-agent-bar: #121722;
+  --tetris-i: #35d6e6;
+  --tetris-o: #e8d24a;
+  --tetris-t: #a96ae8;
+  --tetris-s: #4ecf6a;
+  --tetris-z: #e85454;
+  --tetris-j: #4a7de8;
+  --tetris-l: #e8964a;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-game-tetris] {
+  --dsw-static-deepseek-50: #e2f2fa;
+  --dsw-static-blue-50: #e2f2fa;
+  --dsw-static-deepseek-50p: #bde2f4;
+  --dsw-static-blue-50p: #bde2f4;
+  --dsw-static-deepseek-75: #bde2f4;
+  --dsw-static-blue-75: #bde2f4;
+  --dsw-static-deepseek-100: #bde2f4;
+  --dsw-static-blue-100: #bde2f4;
+  --dsw-static-deepseek-200: #8ecbec;
+  --dsw-static-blue-200: #8ecbec;
+  --dsw-static-deepseek-300: #5cb0dd;
+  --dsw-static-blue-300: #5cb0dd;
+  --dsw-static-deepseek-400: #3499cc;
+  --dsw-static-blue-400: #3499cc;
+  --dsw-static-deepseek-450: #3499cc;
+  --dsw-static-blue-450: #3499cc;
+  --dsw-static-deepseek-500: #1488c0;
+  --dsw-static-blue-500: #1488c0;
+  --dsw-static-deepseek-600: #0f72a2;
+  --dsw-static-blue-600: #0f72a2;
+  --dsw-static-deepseek-700-delete: #0b5c83;
+  --dsw-static-deepseek-800: #0b5c83;
+  --dsw-static-blue-800: #0b5c83;
+  --dsw-static-deepseek-900: #084664;
+  --dsw-static-blue-900: #084664;
+  --dsw-static-deepseek-950: #053144;
+  --dsw-static-blue-950: #053144;
+  --dsw-static-neutral-bluish-00: #ebeef1;
+  --dsw-static-neutral-00: #ebeef1;
+  --dsw-static-neutral-bluish-50: #ebeef1;
+  --dsw-static-neutral-50: #ebeef1;
+  --dsw-static-neutral-bluish-60: #ebeef1;
+  --dsw-static-neutral-60: #ebeef1;
+  --dsw-static-neutral-bluish-75: #e2e6eb;
+  --dsw-static-neutral-75: #e2e6eb;
+  --dsw-static-neutral-bluish-100: #e2e6eb;
+  --dsw-static-neutral-100: #e2e6eb;
+  --dsw-static-neutral-bluish-150: #d7dde3;
+  --dsw-static-neutral-150: #d7dde3;
+  --dsw-static-neutral-bluish-200: #d7dde3;
+  --dsw-static-neutral-200: #d7dde3;
+  --dsw-static-neutral-bluish-250: #c9d1d9;
+  --dsw-static-neutral-250: #c9d1d9;
+  --dsw-static-neutral-bluish-300: #c9d1d9;
+  --dsw-static-neutral-300: #c9d1d9;
+  --dsw-static-neutral-bluish-400: #b8c2cc;
+  --dsw-static-neutral-400: #b8c2cc;
+  --dsw-static-neutral-bluish-500: #a2adb9;
+  --dsw-static-neutral-500: #a2adb9;
+  --dsw-static-neutral-bluish-550: #a2adb9;
+  --dsw-static-neutral-550: #a2adb9;
+  --dsw-static-neutral-bluish-600: #7d8a99;
+  --dsw-static-neutral-600: #7d8a99;
+  --dsw-static-neutral-bluish-700: #7d8a99;
+  --dsw-static-neutral-700: #7d8a99;
+  --dsw-static-neutral-bluish-750: #5a6675;
+  --dsw-static-neutral-750: #5a6675;
+  --dsw-static-neutral-bluish-800: #5a6675;
+  --dsw-static-neutral-800: #5a6675;
+  --dsw-static-neutral-bluish-850: #5a6675;
+  --dsw-static-neutral-850: #5a6675;
+  --dsw-static-neutral-bluish-875: #38424f;
+  --dsw-static-neutral-875: #38424f;
+  --dsw-static-neutral-bluish-900: #38424f;
+  --dsw-static-neutral-900: #38424f;
+  --dsw-static-neutral-bluish-950: #38424f;
+  --dsw-static-neutral-950: #38424f;
+  --dsw-static-neutral-bluish-1000: #232a33;
+  --dsw-static-neutral-1000: #232a33;
+  --dsw-static-green-50: color-mix(in srgb, #2ea84c 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2ea84c 20%, white);
+  --dsw-static-green-400: #2ea84c;
+  --dsw-static-green-500: #2ea84c;
+  --dsw-static-green-600: color-mix(in srgb, #2ea84c 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2ea84c 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #b89a12 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #b89a12 20%, white);
+  --dsw-static-amber-400: #b89a12;
+  --dsw-static-amber-500: #b89a12;
+  --dsw-static-amber-600: color-mix(in srgb, #b89a12 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #b89a12 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d23c3c 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d23c3c 20%, white);
+  --dsw-static-red-400: #d23c3c;
+  --dsw-static-red-500: #d23c3c;
+  --dsw-static-red-600: color-mix(in srgb, #d23c3c 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d23c3c 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-game-tetris][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #08222e;
+  --dsw-static-blue-50: #08222e;
+  --dsw-static-deepseek-50p: #0d3a4c;
+  --dsw-static-blue-50p: #0d3a4c;
+  --dsw-static-deepseek-75: #0d3a4c;
+  --dsw-static-blue-75: #0d3a4c;
+  --dsw-static-deepseek-100: #0d3a4c;
+  --dsw-static-blue-100: #0d3a4c;
+  --dsw-static-deepseek-200: #125269;
+  --dsw-static-blue-200: #125269;
+  --dsw-static-deepseek-300: #176b87;
+  --dsw-static-blue-300: #176b87;
+  --dsw-static-deepseek-400: #1e8aab;
+  --dsw-static-blue-400: #1e8aab;
+  --dsw-static-deepseek-450: #1e8aab;
+  --dsw-static-blue-450: #1e8aab;
+  --dsw-static-deepseek-500: #2fb5e3;
+  --dsw-static-blue-500: #2fb5e3;
+  --dsw-static-deepseek-600: #57c7ec;
+  --dsw-static-blue-600: #57c7ec;
+  --dsw-static-deepseek-700-delete: #86d9f3;
+  --dsw-static-deepseek-800: #86d9f3;
+  --dsw-static-blue-800: #86d9f3;
+  --dsw-static-deepseek-900: #bbeaf9;
+  --dsw-static-blue-900: #bbeaf9;
+  --dsw-static-deepseek-950: #e4f7fd;
+  --dsw-static-blue-950: #e4f7fd;
+  --dsw-static-neutral-bluish-00: #10141c;
+  --dsw-static-neutral-00: #10141c;
+  --dsw-static-neutral-bluish-50: #10141c;
+  --dsw-static-neutral-50: #10141c;
+  --dsw-static-neutral-bluish-60: #10141c;
+  --dsw-static-neutral-60: #10141c;
+  --dsw-static-neutral-bluish-75: #161b25;
+  --dsw-static-neutral-75: #161b25;
+  --dsw-static-neutral-bluish-100: #161b25;
+  --dsw-static-neutral-100: #161b25;
+  --dsw-static-neutral-bluish-150: #1d2330;
+  --dsw-static-neutral-150: #1d2330;
+  --dsw-static-neutral-bluish-200: #1d2330;
+  --dsw-static-neutral-200: #1d2330;
+  --dsw-static-neutral-bluish-250: #252d3c;
+  --dsw-static-neutral-250: #252d3c;
+  --dsw-static-neutral-bluish-300: #252d3c;
+  --dsw-static-neutral-300: #252d3c;
+  --dsw-static-neutral-bluish-400: #303a4b;
+  --dsw-static-neutral-400: #303a4b;
+  --dsw-static-neutral-bluish-500: #3f4c60;
+  --dsw-static-neutral-500: #3f4c60;
+  --dsw-static-neutral-bluish-550: #3f4c60;
+  --dsw-static-neutral-550: #3f4c60;
+  --dsw-static-neutral-bluish-600: #5d6d84;
+  --dsw-static-neutral-600: #5d6d84;
+  --dsw-static-neutral-bluish-700: #5d6d84;
+  --dsw-static-neutral-700: #5d6d84;
+  --dsw-static-neutral-bluish-750: #8795a8;
+  --dsw-static-neutral-750: #8795a8;
+  --dsw-static-neutral-bluish-800: #8795a8;
+  --dsw-static-neutral-800: #8795a8;
+  --dsw-static-neutral-bluish-850: #8795a8;
+  --dsw-static-neutral-850: #8795a8;
+  --dsw-static-neutral-bluish-875: #bcc6d3;
+  --dsw-static-neutral-875: #bcc6d3;
+  --dsw-static-neutral-bluish-900: #bcc6d3;
+  --dsw-static-neutral-900: #bcc6d3;
+  --dsw-static-neutral-bluish-950: #bcc6d3;
+  --dsw-static-neutral-950: #bcc6d3;
+  --dsw-static-neutral-bluish-1000: #eef1f6;
+  --dsw-static-neutral-1000: #eef1f6;
+  --dsw-static-green-50: color-mix(in srgb, #4ecf6a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4ecf6a 20%, black);
+  --dsw-static-green-400: #4ecf6a;
+  --dsw-static-green-500: #4ecf6a;
+  --dsw-static-green-600: color-mix(in srgb, #4ecf6a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4ecf6a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8d24a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8d24a 20%, black);
+  --dsw-static-amber-400: #e8d24a;
+  --dsw-static-amber-500: #e8d24a;
+  --dsw-static-amber-600: color-mix(in srgb, #e8d24a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8d24a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e85454 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e85454 20%, black);
+  --dsw-static-red-400: #e85454;
+  --dsw-static-red-500: #e85454;
+  --dsw-static-red-600: color-mix(in srgb, #e85454 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e85454 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-game-tetris] {
+  --dsw-alias-button-primary-fill: #1488c0;
+  --dsw-alias-button-primary-hover: #0d6895;
+  --dsw-alias-button-primary-dimmed: #bde2f4;
+  --dsw-alias-button-info-fill: #1488c0;
+  --dsw-alias-button-info-hover: #0d6895;
+  --dsw-alias-button-contrast-fill: #0f72a2;
+  --dsw-alias-button-ghost-active-fill: #e2f2fa;
+  --dsw-alias-button-ghost-active-hover: #bde2f4;
+  --dsw-alias-button-ghost-active-border: #5cb0dd;
+  --dsw-alias-button-elevated-fill: #ebeef1;
+  --dsw-alias-button-floating-fill: #ebeef1;
+  --dsw-alias-button-floating-hover: #e0e5ea;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(20, 136, 192, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(20, 136, 192, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(20, 136, 192, 0.6);
+  --dsw-specific-bubble: #222c3e;
+  --dsw-specific-bubble-highlight: #8ecbec;
+  --dsw-specific-input-major: #ebeef1;
+  --dsw-specific-login-input: #ebeef1;
+  --dsw-specific-sidebar-fill: #1488c0;
+  --dsw-specific-sidebar-nav-item-active: #bde2f4;
+  --dsw-specific-sidebar-nav-item-hover: #e0e5ea;
+  --dsw-specific-sidebar-nav-item-active-accent: #5cb0dd;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-game-tetris][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #2fb5e3;
+  --dsw-alias-button-primary-hover: #57c7ec;
+  --dsw-alias-button-primary-dimmed: #0d3a4c;
+  --dsw-alias-button-info-fill: #2fb5e3;
+  --dsw-alias-button-info-hover: #57c7ec;
+  --dsw-alias-button-contrast-fill: #57c7ec;
+  --dsw-alias-button-ghost-active-fill: #0e2c3a;
+  --dsw-alias-button-ghost-active-hover: #0d3a4c;
+  --dsw-alias-button-ghost-active-border: #176b87;
+  --dsw-alias-button-elevated-fill: #10141c;
+  --dsw-alias-button-floating-fill: #10141c;
+  --dsw-alias-button-floating-hover: #1c2230;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(47, 181, 227, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(47, 181, 227, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(47, 181, 227, 0.6);
+  --dsw-specific-bubble: #1b2230;
+  --dsw-specific-bubble-highlight: #125269;
+  --dsw-specific-input-major: #10141c;
+  --dsw-specific-login-input: #10141c;
+  --dsw-specific-sidebar-fill: #2fb5e3;
+  --dsw-specific-sidebar-nav-item-active: #0d3a4c;
+  --dsw-specific-sidebar-nav-item-hover: #1c2230;
+  --dsw-specific-sidebar-nav-item-active-accent: #176b87;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-game-tetris] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-tetris]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(15, 168, 189, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(139, 70, 214, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(201, 173, 18, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(47, 99, 201, 0.12) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(20, 136, 192, 0.07) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.7;
+}
+
+body[data-dsh-game-tetris]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      conic-gradient(rgba(15, 168, 189, 0.55) 25%, transparent 0 50%, rgba(15, 168, 189, 0.55) 0 75%, transparent 0),
+      conic-gradient(transparent 25%, rgba(201, 173, 18, 0.5) 0 50%, transparent 0 75%, rgba(201, 173, 18, 0.5) 0),
+      conic-gradient(rgba(139, 70, 214, 0.45) 25%, transparent 0 50%, rgba(46, 168, 76, 0.45) 0 75%, transparent 0);
+    background-size: 48px 48px, 48px 48px, 96px 96px;
+    background-position: 0 0, 24px 24px, 48px 0;
+    opacity: 0.05;
+    animation: game-tetris-tetris-fall 24s linear infinite;
+}
+
+body[data-dsh-game-tetris] [class*='sider'] [class*='session'],
+body[data-dsh-game-tetris] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-tetris] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(20, 136, 192, 0.1);
+    box-shadow: inset 3px 0 0 0 rgba(15, 168, 189, 0.75);
+}
+
+body[data-dsh-game-tetris] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-tetris] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(20, 136, 192, 0.18), rgba(20, 136, 192, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #0fa8bd;
+}
+
+body[data-dsh-game-tetris] button[class*='primary'],
+body[data-dsh-game-tetris] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #0f72a2 0%, #1488c0 55%, #3da2d2 100%) !important;
+    border: 1px solid #8ecbec !important;
+    border-radius: 4px !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(20, 136, 192, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(5, 49, 68, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-tetris] button[class*='primary']:hover,
+body[data-dsh-game-tetris] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.06);
+    animation: game-tetris-tetris-btn-flash 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-tetris] pre,
+body[data-dsh-game-tetris] .markdown-body pre {
+  background: linear-gradient(180deg, #232c3c 0%, #1c2431 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #2f63c9 !important;
+    border-radius: 4px;
+    box-shadow: inset 0 0 20px rgba(20, 136, 192, 0.15);
+}
+
+body[data-dsh-game-tetris] pre code,
+body[data-dsh-game-tetris] .markdown-body pre code {
+  background: transparent !important;
+    color: #dde6ee !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-tetris] code,
+body[data-dsh-game-tetris] .markdown-body code {
+  background: rgba(20, 136, 192, 0.12);
+    color: #0d6895;
+    border: 1px solid rgba(20, 136, 192, 0.3);
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-tetris]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-game-tetris] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 6px;
+    box-shadow: inset 0 2px 6px rgba(56, 66, 79, 0.08), 0 0 0 1px rgba(20, 136, 192, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-tetris] [class*='guidInputCard']:hover {
+  border-color: rgba(15, 168, 189, 0.55) !important;
+}
+
+body[data-dsh-game-tetris] [class*='agent-bar'],
+body[data-dsh-game-tetris] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(15, 168, 189, 0.35);
+}
+
+body[data-dsh-game-tetris]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-tetris]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3499cc, #0b5c83);
+    border-radius: 4px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-tetris]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5cb0dd, #084664);
+}
+
+body[data-dsh-game-tetris]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-tetris] .markdown-body a,
+body[data-dsh-game-tetris] a {
+  color: #0d6895;
+}
+
+body[data-dsh-game-tetris] .markdown-body a:hover,
+body[data-dsh-game-tetris] a:hover {
+  color: #1488c0;
+}
+
+body[data-dsh-game-tetris] .markdown-body blockquote {
+  border-left: 3px solid #8b46d6;
+    background: rgba(139, 70, 214, 0.08);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-tetris] .markdown-body hr,
+body[data-dsh-game-tetris] hr {
+  border: none;
+    height: 6px;
+    background-image: linear-gradient(90deg,
+      rgba(15, 168, 189, 0.55) 0 14.285%, rgba(201, 173, 18, 0.55) 0 28.571%,
+      rgba(139, 70, 214, 0.55) 0 42.857%, rgba(46, 168, 76, 0.55) 0 57.142%,
+      rgba(210, 60, 60, 0.55) 0 71.428%, rgba(47, 99, 201, 0.55) 0 85.714%,
+      rgba(209, 120, 42, 0.55) 0 100%);
+    opacity: 0.55;
+}
+
+body[data-dsh-game-tetris] .arco-btn:not(button[class*='primary']):hover {
+  color: #0d6895 !important;
+    border-color: rgba(20, 136, 192, 0.5) !important;
+    background-color: rgba(20, 136, 192, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-game-tetris][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(53, 214, 230, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(169, 106, 232, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(232, 210, 74, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(74, 125, 232, 0.14) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(47, 181, 227, 0.08) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      conic-gradient(rgba(53, 214, 230, 0.55) 25%, transparent 0 50%, rgba(53, 214, 230, 0.55) 0 75%, transparent 0),
+      conic-gradient(transparent 25%, rgba(232, 210, 74, 0.5) 0 50%, transparent 0 75%, rgba(232, 210, 74, 0.5) 0),
+      conic-gradient(rgba(169, 106, 232, 0.45) 25%, transparent 0 50%, rgba(78, 207, 106, 0.45) 0 75%, transparent 0);
+    background-size: 48px 48px, 48px 48px, 96px 96px;
+    background-position: 0 0, 24px 24px, 48px 0;
+    opacity: 0.07;
+    animation: game-tetris-tetris-fall 24s linear infinite;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(47, 181, 227, 0.12);
+    box-shadow: inset 3px 0 0 0 rgba(53, 214, 230, 0.8);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(47, 181, 227, 0.28), rgba(47, 181, 227, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #35d6e6;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-game-tetris][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #1e8aab 0%, #2fb5e3 55%, #57c7ec 100%) !important;
+    border: 1px solid #86d9f3 !important;
+    border-radius: 4px !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(47, 181, 227, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(8, 34, 46, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-game-tetris][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    animation: game-tetris-tetris-btn-flash 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] pre,
+body[data-dsh-game-tetris][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0e1522 0%, #0b111b 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #4a7de8 !important;
+    border-radius: 4px;
+    box-shadow: inset 0 0 24px rgba(47, 181, 227, 0.12);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] pre code,
+body[data-dsh-game-tetris][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d6e4ee !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] code,
+body[data-dsh-game-tetris][data-ds-dark-theme] .markdown-body code {
+  background: rgba(47, 181, 227, 0.16);
+    color: #86d9f3;
+    border: 1px solid rgba(47, 181, 227, 0.32);
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 6px;
+    box-shadow: inset 0 2px 8px rgba(6, 9, 14, 0.5), 0 0 0 1px rgba(47, 181, 227, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: rgba(53, 214, 230, 0.6) !important;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-game-tetris][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(53, 214, 230, 0.4);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2fb5e3, #125269);
+    border-radius: 4px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #57c7ec, #176b87);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-game-tetris][data-ds-dark-theme] a {
+  color: #57c7ec;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-game-tetris][data-ds-dark-theme] a:hover {
+  color: #86d9f3;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #a96ae8;
+    background: rgba(169, 106, 232, 0.1);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-game-tetris][data-ds-dark-theme] hr {
+  border: none;
+    height: 6px;
+    background-image: linear-gradient(90deg,
+      rgba(53, 214, 230, 0.6) 0 14.285%, rgba(232, 210, 74, 0.6) 0 28.571%,
+      rgba(169, 106, 232, 0.6) 0 42.857%, rgba(78, 207, 106, 0.6) 0 57.142%,
+      rgba(232, 84, 84, 0.6) 0 71.428%, rgba(74, 125, 232, 0.6) 0 85.714%,
+      rgba(232, 150, 74, 0.6) 0 100%);
+    opacity: 0.6;
+}
+
+body[data-dsh-game-tetris][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #86d9f3 !important;
+    border-color: rgba(47, 181, 227, 0.5) !important;
+    background-color: rgba(47, 181, 227, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes game-tetris-tetris-fall {
+  0% { background-position: 0 0, 24px 24px, 48px 0; }
+  100% { background-position: 0 96px, 24px 120px, 48px 192px; }
+}
+
+@keyframes game-tetris-tetris-line-clear {
+  0%, 100% { box-shadow: 0 2px 8px rgba(20, 136, 192, 0.14); }
+  50% { box-shadow: 0 2px 16px rgba(15, 168, 189, 0.35), 0 0 5px rgba(255, 255, 255, 0.6); }
+}
+
+@keyframes game-tetris-tetris-btn-flash {
+  0%, 100% { box-shadow: 0 3px 12px rgba(20, 136, 192, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 18px rgba(15, 168, 189, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.42); }
+}
+
+@keyframes game-tetris-tetris-rainbow-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

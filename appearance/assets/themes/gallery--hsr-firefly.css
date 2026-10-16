@@ -1,0 +1,777 @@
+/* hsr-firefly — 崩坏星穹铁道 · 流萤 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-hsr-firefly], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-hsr-firefly] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #20281f;
+  background-color: #f3f6f2;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] {
+  color: #eef5f1;
+  background-color: #090d13;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-hsr-firefly] {
+  --color-primary: #12835c;
+  --primary: #12835c;
+  --primary-rgb: 18, 131, 92;
+  --color-primary-light-1: #3ba87f;
+  --color-primary-light-2: #6fc7a5;
+  --color-primary-light-3: #abe3cd;
+  --color-primary-dark-1: #0c5a40;
+  --brand: #12835c;
+  --brand-light: #e2f5ec;
+  --brand-hover: #0f6e4d;
+  --color-brand-fill: #12835c;
+  --color-brand-bg: #d8f0e5;
+  --aou-1: #e9f8f1;
+  --aou-2: #c9efdf;
+  --aou-3: #a5e4cb;
+  --aou-4: #7cd6b4;
+  --aou-5: #4cc39a;
+  --aou-6: #12835c;
+  --aou-7: #0f6e4d;
+  --aou-8: #0c5a40;
+  --aou-9: #094633;
+  --aou-10: #063324;
+  --bg-base: #f3f6f2;
+  --bg-1: #ebefe9;
+  --bg-2: #e2e7df;
+  --bg-3: #d7ded3;
+  --bg-4: #cbd4c6;
+  --bg-5: #bcc8b8;
+  --bg-6: #abb8a6;
+  --bg-8: #8a9a88;
+  --bg-9: #66776a;
+  --bg-10: #414f45;
+  --color-bg-1: #ebefe9;
+  --color-bg-2: #e2e7df;
+  --color-bg-3: #d7ded3;
+  --color-bg-4: #cbd4c6;
+  --bg-hover: #e0e6dc;
+  --bg-active: #d5dccf;
+  --text-primary: #20281f;
+  --text-secondary: #55614f;
+  --text-disabled: #a4af9d;
+  --text-0: #121812;
+  --text-white: #ffffff;
+  --color-text-1: #20281f;
+  --color-text-2: #55614f;
+  --color-text-3: #7d8a76;
+  --color-text-4: #a4af9d;
+  --border-base: #c6cfc0;
+  --border-light: #d6dcd0;
+  --border-special: #8fd0b6;
+  --color-border: #c6cfc0;
+  --color-border-1: #c6cfc0;
+  --color-border-2: #d6dcd0;
+  --fill: #e2e7df;
+  --color-fill: #e2e7df;
+  --fill-0: #ebefe9;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fafcf9;
+  --inverse: #20281f;
+  --success: #1f9e6b;
+  --warning: #cf8f1c;
+  --danger: #d24a44;
+  --info: #3a7fd0;
+  --message-user-bg: #123527;
+  --message-tips-bg: #e4ece7;
+  --workspace-btn-bg: #d8f0e5;
+  --color-guid-agent-bar: #e7ebe2;
+  --ff-glow: #12835c;
+  --ff-glow-soft: rgba(18, 131, 92, 0.3);
+  --ff-warm: #9dbb3a;
+  --ff-sam-silver: #c2ccd8;
+  --ff-sam-silver-hi: #8d99a8;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-hsr-firefly][data-ds-dark-theme] {
+  --color-primary: #4fdca8;
+  --primary: #4fdca8;
+  --primary-rgb: 79, 220, 168;
+  --color-primary-light-1: #7ce7c0;
+  --color-primary-light-2: #a5efd6;
+  --color-primary-light-3: #cff7e7;
+  --color-primary-dark-1: #2fae7d;
+  --brand: #4fdca8;
+  --brand-light: #123527;
+  --brand-hover: #6fe8bc;
+  --color-brand-fill: #4fdca8;
+  --color-brand-bg: #0f2d21;
+  --aou-1: #0d2a1f;
+  --aou-2: #14422f;
+  --aou-3: #1c5a3f;
+  --aou-4: #247350;
+  --aou-5: #2f8f63;
+  --aou-6: #4fdca8;
+  --aou-7: #7ce7c0;
+  --aou-8: #a5efd6;
+  --aou-9: #cff7e7;
+  --aou-10: #eafbf3;
+  --bg-base: #090d13;
+  --bg-1: #0e141c;
+  --bg-2: #141b25;
+  --bg-3: #1b2430;
+  --bg-4: #232e3c;
+  --bg-5: #2c394a;
+  --bg-6: #38485c;
+  --bg-8: #55677e;
+  --bg-9: #7b8ea3;
+  --bg-10: #b6c3d0;
+  --color-bg-1: #0e141c;
+  --color-bg-2: #141b25;
+  --color-bg-3: #1b2430;
+  --color-bg-4: #232e3c;
+  --bg-hover: #19212d;
+  --bg-active: #212b39;
+  --text-primary: #eef5f1;
+  --text-secondary: #a9bcb6;
+  --text-disabled: #566661;
+  --text-0: #f8fcfa;
+  --text-white: #ffffff;
+  --color-text-1: #eef5f1;
+  --color-text-2: #a9bcb6;
+  --color-text-3: #7e938c;
+  --color-text-4: #566661;
+  --border-base: #2a3542;
+  --border-light: #202a35;
+  --border-special: #1e5240;
+  --color-border: #2a3542;
+  --color-border-1: #2a3542;
+  --color-border-2: #202a35;
+  --fill: #141b25;
+  --color-fill: #141b25;
+  --fill-0: #0e141c;
+  --fill-white-to-black: #090d13;
+  --dialog-fill-0: #101820;
+  --inverse: #eef5f1;
+  --success: #3ecf8e;
+  --warning: #e8b04a;
+  --danger: #e8605a;
+  --info: #5fa8e8;
+  --message-user-bg: #dfe6ee;
+  --message-tips-bg: #16202c;
+  --workspace-btn-bg: #0f2d21;
+  --color-guid-agent-bar: #0f1620;
+  --ff-glow: #4fdca8;
+  --ff-glow-soft: rgba(79, 220, 168, 0.35);
+  --ff-warm: #d9f270;
+  --ff-sam-silver: #dfe6ee;
+  --ff-sam-silver-dim: #8d99a8;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-hsr-firefly] {
+  --dsw-static-deepseek-50: #e9f8f1;
+  --dsw-static-blue-50: #e9f8f1;
+  --dsw-static-deepseek-50p: #c9efdf;
+  --dsw-static-blue-50p: #c9efdf;
+  --dsw-static-deepseek-75: #c9efdf;
+  --dsw-static-blue-75: #c9efdf;
+  --dsw-static-deepseek-100: #c9efdf;
+  --dsw-static-blue-100: #c9efdf;
+  --dsw-static-deepseek-200: #a5e4cb;
+  --dsw-static-blue-200: #a5e4cb;
+  --dsw-static-deepseek-300: #7cd6b4;
+  --dsw-static-blue-300: #7cd6b4;
+  --dsw-static-deepseek-400: #4cc39a;
+  --dsw-static-blue-400: #4cc39a;
+  --dsw-static-deepseek-450: #4cc39a;
+  --dsw-static-blue-450: #4cc39a;
+  --dsw-static-deepseek-500: #12835c;
+  --dsw-static-blue-500: #12835c;
+  --dsw-static-deepseek-600: #0f6e4d;
+  --dsw-static-blue-600: #0f6e4d;
+  --dsw-static-deepseek-700-delete: #0c5a40;
+  --dsw-static-deepseek-800: #0c5a40;
+  --dsw-static-blue-800: #0c5a40;
+  --dsw-static-deepseek-900: #094633;
+  --dsw-static-blue-900: #094633;
+  --dsw-static-deepseek-950: #063324;
+  --dsw-static-blue-950: #063324;
+  --dsw-static-neutral-bluish-00: #ebefe9;
+  --dsw-static-neutral-00: #ebefe9;
+  --dsw-static-neutral-bluish-50: #ebefe9;
+  --dsw-static-neutral-50: #ebefe9;
+  --dsw-static-neutral-bluish-60: #ebefe9;
+  --dsw-static-neutral-60: #ebefe9;
+  --dsw-static-neutral-bluish-75: #e2e7df;
+  --dsw-static-neutral-75: #e2e7df;
+  --dsw-static-neutral-bluish-100: #e2e7df;
+  --dsw-static-neutral-100: #e2e7df;
+  --dsw-static-neutral-bluish-150: #d7ded3;
+  --dsw-static-neutral-150: #d7ded3;
+  --dsw-static-neutral-bluish-200: #d7ded3;
+  --dsw-static-neutral-200: #d7ded3;
+  --dsw-static-neutral-bluish-250: #cbd4c6;
+  --dsw-static-neutral-250: #cbd4c6;
+  --dsw-static-neutral-bluish-300: #cbd4c6;
+  --dsw-static-neutral-300: #cbd4c6;
+  --dsw-static-neutral-bluish-400: #bcc8b8;
+  --dsw-static-neutral-400: #bcc8b8;
+  --dsw-static-neutral-bluish-500: #abb8a6;
+  --dsw-static-neutral-500: #abb8a6;
+  --dsw-static-neutral-bluish-550: #abb8a6;
+  --dsw-static-neutral-550: #abb8a6;
+  --dsw-static-neutral-bluish-600: #8a9a88;
+  --dsw-static-neutral-600: #8a9a88;
+  --dsw-static-neutral-bluish-700: #8a9a88;
+  --dsw-static-neutral-700: #8a9a88;
+  --dsw-static-neutral-bluish-750: #66776a;
+  --dsw-static-neutral-750: #66776a;
+  --dsw-static-neutral-bluish-800: #66776a;
+  --dsw-static-neutral-800: #66776a;
+  --dsw-static-neutral-bluish-850: #66776a;
+  --dsw-static-neutral-850: #66776a;
+  --dsw-static-neutral-bluish-875: #414f45;
+  --dsw-static-neutral-875: #414f45;
+  --dsw-static-neutral-bluish-900: #414f45;
+  --dsw-static-neutral-900: #414f45;
+  --dsw-static-neutral-bluish-950: #414f45;
+  --dsw-static-neutral-950: #414f45;
+  --dsw-static-neutral-bluish-1000: #20281f;
+  --dsw-static-neutral-1000: #20281f;
+  --dsw-static-green-50: color-mix(in srgb, #1f9e6b 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #1f9e6b 20%, white);
+  --dsw-static-green-400: #1f9e6b;
+  --dsw-static-green-500: #1f9e6b;
+  --dsw-static-green-600: color-mix(in srgb, #1f9e6b 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #1f9e6b 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #cf8f1c 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #cf8f1c 20%, white);
+  --dsw-static-amber-400: #cf8f1c;
+  --dsw-static-amber-500: #cf8f1c;
+  --dsw-static-amber-600: color-mix(in srgb, #cf8f1c 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #cf8f1c 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d24a44 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d24a44 20%, white);
+  --dsw-static-red-400: #d24a44;
+  --dsw-static-red-500: #d24a44;
+  --dsw-static-red-600: color-mix(in srgb, #d24a44 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d24a44 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-hsr-firefly][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #0d2a1f;
+  --dsw-static-blue-50: #0d2a1f;
+  --dsw-static-deepseek-50p: #14422f;
+  --dsw-static-blue-50p: #14422f;
+  --dsw-static-deepseek-75: #14422f;
+  --dsw-static-blue-75: #14422f;
+  --dsw-static-deepseek-100: #14422f;
+  --dsw-static-blue-100: #14422f;
+  --dsw-static-deepseek-200: #1c5a3f;
+  --dsw-static-blue-200: #1c5a3f;
+  --dsw-static-deepseek-300: #247350;
+  --dsw-static-blue-300: #247350;
+  --dsw-static-deepseek-400: #2f8f63;
+  --dsw-static-blue-400: #2f8f63;
+  --dsw-static-deepseek-450: #2f8f63;
+  --dsw-static-blue-450: #2f8f63;
+  --dsw-static-deepseek-500: #4fdca8;
+  --dsw-static-blue-500: #4fdca8;
+  --dsw-static-deepseek-600: #7ce7c0;
+  --dsw-static-blue-600: #7ce7c0;
+  --dsw-static-deepseek-700-delete: #a5efd6;
+  --dsw-static-deepseek-800: #a5efd6;
+  --dsw-static-blue-800: #a5efd6;
+  --dsw-static-deepseek-900: #cff7e7;
+  --dsw-static-blue-900: #cff7e7;
+  --dsw-static-deepseek-950: #eafbf3;
+  --dsw-static-blue-950: #eafbf3;
+  --dsw-static-neutral-bluish-00: #0e141c;
+  --dsw-static-neutral-00: #0e141c;
+  --dsw-static-neutral-bluish-50: #0e141c;
+  --dsw-static-neutral-50: #0e141c;
+  --dsw-static-neutral-bluish-60: #0e141c;
+  --dsw-static-neutral-60: #0e141c;
+  --dsw-static-neutral-bluish-75: #141b25;
+  --dsw-static-neutral-75: #141b25;
+  --dsw-static-neutral-bluish-100: #141b25;
+  --dsw-static-neutral-100: #141b25;
+  --dsw-static-neutral-bluish-150: #1b2430;
+  --dsw-static-neutral-150: #1b2430;
+  --dsw-static-neutral-bluish-200: #1b2430;
+  --dsw-static-neutral-200: #1b2430;
+  --dsw-static-neutral-bluish-250: #232e3c;
+  --dsw-static-neutral-250: #232e3c;
+  --dsw-static-neutral-bluish-300: #232e3c;
+  --dsw-static-neutral-300: #232e3c;
+  --dsw-static-neutral-bluish-400: #2c394a;
+  --dsw-static-neutral-400: #2c394a;
+  --dsw-static-neutral-bluish-500: #38485c;
+  --dsw-static-neutral-500: #38485c;
+  --dsw-static-neutral-bluish-550: #38485c;
+  --dsw-static-neutral-550: #38485c;
+  --dsw-static-neutral-bluish-600: #55677e;
+  --dsw-static-neutral-600: #55677e;
+  --dsw-static-neutral-bluish-700: #55677e;
+  --dsw-static-neutral-700: #55677e;
+  --dsw-static-neutral-bluish-750: #7b8ea3;
+  --dsw-static-neutral-750: #7b8ea3;
+  --dsw-static-neutral-bluish-800: #7b8ea3;
+  --dsw-static-neutral-800: #7b8ea3;
+  --dsw-static-neutral-bluish-850: #7b8ea3;
+  --dsw-static-neutral-850: #7b8ea3;
+  --dsw-static-neutral-bluish-875: #b6c3d0;
+  --dsw-static-neutral-875: #b6c3d0;
+  --dsw-static-neutral-bluish-900: #b6c3d0;
+  --dsw-static-neutral-900: #b6c3d0;
+  --dsw-static-neutral-bluish-950: #b6c3d0;
+  --dsw-static-neutral-950: #b6c3d0;
+  --dsw-static-neutral-bluish-1000: #eef5f1;
+  --dsw-static-neutral-1000: #eef5f1;
+  --dsw-static-green-50: color-mix(in srgb, #3ecf8e 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #3ecf8e 20%, black);
+  --dsw-static-green-400: #3ecf8e;
+  --dsw-static-green-500: #3ecf8e;
+  --dsw-static-green-600: color-mix(in srgb, #3ecf8e 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3ecf8e 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8b04a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8b04a 20%, black);
+  --dsw-static-amber-400: #e8b04a;
+  --dsw-static-amber-500: #e8b04a;
+  --dsw-static-amber-600: color-mix(in srgb, #e8b04a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8b04a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e8605a 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e8605a 20%, black);
+  --dsw-static-red-400: #e8605a;
+  --dsw-static-red-500: #e8605a;
+  --dsw-static-red-600: color-mix(in srgb, #e8605a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e8605a 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-hsr-firefly] {
+  --dsw-alias-button-primary-fill: #12835c;
+  --dsw-alias-button-primary-hover: #0f6e4d;
+  --dsw-alias-button-primary-dimmed: #c9efdf;
+  --dsw-alias-button-info-fill: #12835c;
+  --dsw-alias-button-info-hover: #0f6e4d;
+  --dsw-alias-button-contrast-fill: #0f6e4d;
+  --dsw-alias-button-ghost-active-fill: #e2f5ec;
+  --dsw-alias-button-ghost-active-hover: #c9efdf;
+  --dsw-alias-button-ghost-active-border: #7cd6b4;
+  --dsw-alias-button-elevated-fill: #ebefe9;
+  --dsw-alias-button-floating-fill: #ebefe9;
+  --dsw-alias-button-floating-hover: #e0e6dc;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(18, 131, 92, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(18, 131, 92, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(18, 131, 92, 0.6);
+  --dsw-specific-bubble: #123527;
+  --dsw-specific-bubble-highlight: #a5e4cb;
+  --dsw-specific-input-major: #ebefe9;
+  --dsw-specific-login-input: #ebefe9;
+  --dsw-specific-sidebar-fill: #12835c;
+  --dsw-specific-sidebar-nav-item-active: #c9efdf;
+  --dsw-specific-sidebar-nav-item-hover: #e0e6dc;
+  --dsw-specific-sidebar-nav-item-active-accent: #7cd6b4;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-hsr-firefly][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #4fdca8;
+  --dsw-alias-button-primary-hover: #6fe8bc;
+  --dsw-alias-button-primary-dimmed: #14422f;
+  --dsw-alias-button-info-fill: #4fdca8;
+  --dsw-alias-button-info-hover: #6fe8bc;
+  --dsw-alias-button-contrast-fill: #7ce7c0;
+  --dsw-alias-button-ghost-active-fill: #123527;
+  --dsw-alias-button-ghost-active-hover: #14422f;
+  --dsw-alias-button-ghost-active-border: #247350;
+  --dsw-alias-button-elevated-fill: #0e141c;
+  --dsw-alias-button-floating-fill: #0e141c;
+  --dsw-alias-button-floating-hover: #19212d;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(79, 220, 168, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(79, 220, 168, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(79, 220, 168, 0.6);
+  --dsw-specific-bubble: #dfe6ee;
+  --dsw-specific-bubble-highlight: #1c5a3f;
+  --dsw-specific-input-major: #0e141c;
+  --dsw-specific-login-input: #0e141c;
+  --dsw-specific-sidebar-fill: #4fdca8;
+  --dsw-specific-sidebar-nav-item-active: #14422f;
+  --dsw-specific-sidebar-nav-item-hover: #19212d;
+  --dsw-specific-sidebar-nav-item-active-accent: #247350;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-hsr-firefly] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-hsr-firefly]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(18, 131, 92, 0.12) 0 2.5px, transparent 4.5px),
+      radial-gradient(circle at 80% 14%, rgba(157, 187, 58, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 62% 70%, rgba(18, 131, 92, 0.08) 0 2px, transparent 4px),
+      radial-gradient(ellipse at 85% 85%, rgba(165, 228, 203, 0.4) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 92%, rgba(18, 131, 92, 0.06) 0%, transparent 40%);
+    background-size: 560px 560px, 640px 640px, 520px 520px, 100% 100%, 100% 100%;
+    opacity: 0.75;
+}
+
+body[data-dsh-hsr-firefly]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(18, 131, 92, 0.85) 0 1.6px, transparent 3px),
+      radial-gradient(circle at 70% 60%, rgba(157, 187, 58, 0.65) 0 1.2px, transparent 2.6px),
+      radial-gradient(circle at 50% 80%, rgba(18, 131, 92, 0.5) 0 1.3px, transparent 2.8px);
+    background-size: 220px 180px, 300px 240px, 260px 320px;
+    opacity: 0.06;
+    animation: hsr-firefly-firefly-drift 32s ease-in-out infinite alternate;
+}
+
+body[data-dsh-hsr-firefly] [class*='sider'] [class*='session'],
+body[data-dsh-hsr-firefly] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-hsr-firefly] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(18, 131, 92, 0.08);
+    box-shadow: inset 3px 0 0 0 rgba(18, 131, 92, 0.5);
+}
+
+body[data-dsh-hsr-firefly] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-hsr-firefly] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(18, 131, 92, 0.16), rgba(18, 131, 92, 0.04) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #12835c;
+}
+
+body[data-dsh-hsr-firefly] button[class*='primary'],
+body[data-dsh-hsr-firefly] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #0c5a40 0%, #12835c 55%, #3ba87f 100%) !important;
+    border: 1px solid #7cd6b4 !important;
+    color: var(--text-white) !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(18, 131, 92, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(6, 51, 36, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-hsr-firefly] button[class*='primary']:hover,
+body[data-dsh-hsr-firefly] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    box-shadow: 0 3px 15px rgba(18, 131, 92, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: hsr-firefly-firefly-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-hsr-firefly] pre,
+body[data-dsh-hsr-firefly] .markdown-body pre {
+  background: linear-gradient(180deg, #182430 0%, #131d27 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #4fdca8 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(18, 131, 92, 0.2);
+}
+
+body[data-dsh-hsr-firefly] pre code,
+body[data-dsh-hsr-firefly] .markdown-body pre code {
+  background: transparent !important;
+    color: #d3e8de !important;
+    text-shadow: none;
+}
+
+body[data-dsh-hsr-firefly] code,
+body[data-dsh-hsr-firefly] .markdown-body code {
+  background: rgba(18, 131, 92, 0.1);
+    color: #0f6e4d;
+    border: 1px solid rgba(18, 131, 92, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-hsr-firefly]::selection {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-hsr-firefly] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(65, 79, 69, 0.08), 0 0 0 1px rgba(141, 153, 168, 0.16);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-hsr-firefly] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-hsr-firefly] [class*='agent-bar'],
+body[data-dsh-hsr-firefly] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(141, 153, 168, 0.45);
+    box-shadow: 0 -1px 5px rgba(18, 131, 92, 0.08);
+}
+
+body[data-dsh-hsr-firefly]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-hsr-firefly]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3ba87f, #0c5a40);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-hsr-firefly]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6fc7a5, #094633);
+}
+
+body[data-dsh-hsr-firefly]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-hsr-firefly] .markdown-body a,
+body[data-dsh-hsr-firefly] a {
+  color: #0f6e4d;
+}
+
+body[data-dsh-hsr-firefly] .markdown-body a:hover,
+body[data-dsh-hsr-firefly] a:hover {
+  color: #12835c;
+}
+
+body[data-dsh-hsr-firefly] .markdown-body blockquote {
+  border-left: 3px solid #12835c;
+    background: rgba(18, 131, 92, 0.07);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-hsr-firefly] .markdown-body hr,
+body[data-dsh-hsr-firefly] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      radial-gradient(circle at 8px 4px, rgba(18, 131, 92, 0.7) 0 2px, transparent 3.2px),
+      linear-gradient(90deg, transparent, rgba(18, 131, 92, 0.22), transparent);
+    background-size: 34px 8px, 100% 1px;
+    background-repeat: repeat-x, no-repeat;
+    background-position: 0 0, 0 4px;
+    opacity: 0.6;
+}
+
+body[data-dsh-hsr-firefly] .arco-btn:not(button[class*='primary']):hover {
+  color: #0f6e4d !important;
+    border-color: rgba(18, 131, 92, 0.5) !important;
+    background-color: rgba(18, 131, 92, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-hsr-firefly][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(79, 220, 168, 0.14) 0 2.5px, transparent 4.5px),
+      radial-gradient(circle at 80% 14%, rgba(217, 242, 112, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 62% 70%, rgba(79, 220, 168, 0.10) 0 2px, transparent 4px),
+      radial-gradient(circle at 30% 85%, rgba(217, 242, 112, 0.07) 0 1.5px, transparent 3px),
+      radial-gradient(ellipse at 85% 85%, rgba(20, 66, 47, 0.35) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 92%, rgba(79, 220, 168, 0.08) 0%, transparent 40%);
+    background-size: 560px 560px, 640px 640px, 520px 520px, 480px 480px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(79, 220, 168, 0.9) 0 1.6px, transparent 3px),
+      radial-gradient(circle at 70% 60%, rgba(217, 242, 112, 0.7) 0 1.2px, transparent 2.6px),
+      radial-gradient(circle at 50% 80%, rgba(79, 220, 168, 0.55) 0 1.3px, transparent 2.8px);
+    background-size: 220px 180px, 300px 240px, 260px 320px;
+    opacity: 0.08;
+    animation: hsr-firefly-firefly-drift 32s ease-in-out infinite alternate;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(79, 220, 168, 0.10);
+    box-shadow: inset 3px 0 0 0 rgba(79, 220, 168, 0.55);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(79, 220, 168, 0.26), rgba(79, 220, 168, 0.07) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #4fdca8;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-hsr-firefly][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #247350 0%, #2fae7d 45%, #4fdca8 100%) !important;
+    border: 1px solid #7ce7c0 !important;
+    color: #06251a !important;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(79, 220, 168, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    text-shadow: 0 1px 1px rgba(207, 247, 231, 0.35);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-hsr-firefly][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 18px rgba(79, 220, 168, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    animation: hsr-firefly-firefly-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] pre,
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0e1822 0%, #0b141d 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #4fdca8 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(20, 66, 47, 0.4);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] pre code,
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d3e8de !important;
+    text-shadow: none;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] code,
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .markdown-body code {
+  background: rgba(79, 220, 168, 0.12);
+    color: #a5efd6;
+    border: 1px solid rgba(79, 220, 168, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(5, 9, 13, 0.5), 0 0 0 1px rgba(141, 153, 168, 0.14);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: #1e5240 !important;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-hsr-firefly][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(141, 153, 168, 0.4);
+    box-shadow: 0 -1px 6px rgba(79, 220, 168, 0.1);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4fdca8, #247350);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7ce7c0, #2fae7d);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-hsr-firefly][data-ds-dark-theme] a {
+  color: #7ce7c0;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-hsr-firefly][data-ds-dark-theme] a:hover {
+  color: #a5efd6;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #4fdca8;
+    background: rgba(20, 66, 47, 0.25);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-hsr-firefly][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      radial-gradient(circle at 8px 4px, rgba(79, 220, 168, 0.8) 0 2px, transparent 3.2px),
+      linear-gradient(90deg, transparent, rgba(79, 220, 168, 0.28), transparent);
+    background-size: 34px 8px, 100% 1px;
+    background-repeat: repeat-x, no-repeat;
+    background-position: 0 0, 0 4px;
+    opacity: 0.65;
+}
+
+body[data-dsh-hsr-firefly][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #a5efd6 !important;
+    border-color: rgba(79, 220, 168, 0.5) !important;
+    background-color: rgba(79, 220, 168, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes hsr-firefly-firefly-drift {
+  0% { background-position: 0 0, 40px 30px, 90px 10px; }
+  50% { background-position: 30px -24px, 10px 58px, 60px -30px; }
+  100% { background-position: -20px 18px, 60px 6px, 20px 40px; }
+}
+
+@keyframes hsr-firefly-firefly-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(18, 131, 92, 0.14); }
+  50% { box-shadow: 0 2px 15px rgba(18, 131, 92, 0.3); }
+}
+
+@keyframes hsr-firefly-firefly-btn-glow {
+  0%, 100% { box-shadow: 0 3px 12px rgba(18, 131, 92, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.28); }
+  50% { box-shadow: 0 3px 19px rgba(18, 131, 92, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.34); }
+}
+
+@keyframes hsr-firefly-firefly-ring-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

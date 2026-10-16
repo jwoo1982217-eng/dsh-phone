@@ -6,6 +6,9 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { installDesktopPeer } from './install-desktop-peer.mjs';
 import { installDesktopChatGpt } from './install-desktop-chatgpt.mjs';
 import { installDesktopPocket } from './install-desktop-pocket.mjs';
+import { installDesktopTeam } from './install-desktop-team.mjs';
+import { buildTeamClient } from '../team/build-client.mjs';
+import { buildModelPicker } from './build-model-picker.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -51,7 +54,7 @@ async function installDesktopUpstreamUnlocked(desktop, profile) {
   await writeFile(path.join(backup, 'package.json'), original, { mode: 0o600 });
   const swapped = [], copied = [];
   // 子安装器会替换本地自带插件，先保留完整副本，失败时连同清单一起恢复。
-  for (const name of ['dsh-peer', 'dsh-desktop-chatgpt', 'dsh-pocket']) {
+  for (const name of ['dsh-peer', 'dsh-desktop-chatgpt', 'dsh-pocket', 'dsh-team']) {
     const target = path.join(profile, 'node_modules', name), saved = path.join(backup, name);
     let existed = false;
     try { await lstat(target); await cp(target, saved, { recursive: true }); existed = true; }
@@ -76,7 +79,7 @@ async function installDesktopUpstreamUnlocked(desktop, profile) {
   try {
     // 核心会优先从自身安装目录解析组合包，部署时同步已审核的本地程序。
     for (const [name, source] of [['dsh-codearts-auth', 'vendor/dsh-codearts-auth'], ['@zseven-w/dsh-noema', 'vendor/dsh-noema'], ['dsh-peer', 'peer']]) {
-      for (const entry of ['package.json', 'cordis.patch.yml', 'lib', 'src', 'locale', 'vendor', 'agent-cards', 'chat-history', 'memory-isolation', 'mcp-manager', 'controlled-market', 'workflow-hub', 'index.mjs', 'protocol.mjs', 'relay.mjs', 'tunnel.mjs', 'proxy.mjs', 'ui-reuse.mjs', 'browser-session.mjs', 'config-sync.mjs', 'page.html', 'presentation.css', 'presentation.js', 'browser-compat.js', 'skill-import.js']) {
+      for (const entry of ['package.json', 'cordis.patch.yml', 'lib', 'src', 'locale', 'vendor', 'agent-cards', 'task-supervisor', 'chat-history', 'memory-isolation', 'mcp-manager', 'subagent-scheduler', 'controlled-market', 'workflow-hub', 'index.mjs', 'protocol.mjs', 'relay.mjs', 'tunnel.mjs', 'proxy.mjs', 'ui-reuse.mjs', 'browser-session.mjs', 'config-sync.mjs', 'page.html', 'presentation.css', 'presentation.js', 'browser-compat.js', 'skill-import.js']) {
         const file = path.join(root, source, entry);
         try { await lstat(file); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
         const deployed = path.join(modules, name, entry);
@@ -97,6 +100,7 @@ async function installDesktopUpstreamUnlocked(desktop, profile) {
     }
     // 新核心的移动适配均以本版源码为基线；桌面仍走原生分支。
     const { readdir } = await import('node:fs/promises');
+    await buildModelPicker();
     for (const name of await readdir(path.join(root, 'runtime/overlays/@deepseek-ai'))) {
       await cp(path.join(root, 'runtime/overlays/@deepseek-ai', name), path.join(modules, '@deepseek-ai', name), { recursive: true });
     }
@@ -108,6 +112,8 @@ async function installDesktopUpstreamUnlocked(desktop, profile) {
     if (await readFile(manifestPath, 'utf8') !== original) throw Error('安装期间 Profile 有其他修改');
     await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n', { mode: 0o600 });
     await installDesktopPeer(profile, modules);
+    await buildTeamClient();
+    await installDesktopTeam(profile, modules);
     await installDesktopChatGpt(profile, modules);
     await installDesktopPocket(profile, modules);
     if (desktop) {

@@ -20,17 +20,18 @@ class PhoneControlService : AccessibilityService() {
     private var version = 0L
     private var stopView: TextView? = null
     private var gestureBusy = false
-    override fun onServiceConnected() { ControlRuntime.attach(this); ControlRuntime.service = this }
+    private var lifecycle = 0L
+    override fun onServiceConnected() { ControlRuntime.accessibilityConnected(this) }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.packageName?.toString() != packageName && event?.eventType in listOf(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)) version++
     }
-    override fun onInterrupt() { ControlRuntime.stop("无障碍服务中断") }
+    override fun onInterrupt() { ControlRuntime.accessibilityUnavailable(this, "无障碍服务中断", false) }
     override fun onDestroy() {
-        ControlRuntime.stop("无障碍服务已关闭")
-        if (ControlRuntime.service === this) ControlRuntime.service = null
+        ControlRuntime.accessibilityUnavailable(this, "无障碍服务已关闭", true)
         super.onDestroy()
     }
-    fun clear() { snapshot = null; hideStop() }
+    fun invalidateScreen() { snapshot = null; version++; lifecycle++; gestureBusy = false }
+    fun clear() { invalidateScreen(); hideStop() }
     private fun screen(owner: String, epoch: Long): ControlScreen {
         check(!(getSystemService(KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked) { "请先由本人解锁手机" }
         val root = rootInActiveWindow ?: error("当前界面无法读取，请打开已授权 App")
@@ -125,9 +126,16 @@ class PhoneControlService : AccessibilityService() {
                     val path = Path().apply { moveTo(coordinate("x", true), coordinate("y", false)); if (action == "swipe") lineTo(coordinate("endX", true), coordinate("endY", false)) }
                     val gesture = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, when (action) { "tap" -> 60; "long_press" -> 800; else -> 300 })).build()
                     snapshot = null; gestureBusy = true
+                    val dispatchedLifecycle = lifecycle
                     val dispatched = dispatchGesture(gesture, object : GestureResultCallback() {
-                        override fun onCompleted(description: GestureDescription?) { gestureBusy = false; done(JSONObject().put("status", if (ControlRuntime.lease.current()?.epoch == epoch) "performed" else "stopped_after_dispatch").put("action", action)) }
-                        override fun onCancelled(description: GestureDescription?) { gestureBusy = false; done(JSONObject().put("status", "gesture_cancelled").put("action", action)) }
+                        override fun onCompleted(description: GestureDescription?) {
+                            if (lifecycle == dispatchedLifecycle) gestureBusy = false
+                            done(JSONObject().put("status", if (lifecycle != dispatchedLifecycle) "result_unknown" else if (ControlRuntime.lease.current()?.epoch == epoch) "performed" else "stopped_after_dispatch").put("action", action))
+                        }
+                        override fun onCancelled(description: GestureDescription?) {
+                            if (lifecycle == dispatchedLifecycle) gestureBusy = false
+                            done(JSONObject().put("status", "gesture_cancelled").put("action", action))
+                        }
                     }, null)
                     if (!dispatched) { gestureBusy = false; error("系统没有执行该手势") }
                     return

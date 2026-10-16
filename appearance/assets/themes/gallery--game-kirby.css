@@ -1,0 +1,772 @@
+/* game-kirby — 星之卡比 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-game-kirby], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-game-kirby] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #3d2830;
+  background-color: #fdf6f7;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] {
+  color: #f6eef3;
+  background-color: #120b16;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-game-kirby] {
+  --color-primary: #e2447f;
+  --primary: #e2447f;
+  --primary-rgb: 226, 68, 127;
+  --color-primary-light-1: #ea6c9b;
+  --color-primary-light-2: #f196b8;
+  --color-primary-light-3: #f8c4d8;
+  --color-primary-dark-1: #b52a60;
+  --brand: #e2447f;
+  --brand-light: #fdeef5;
+  --brand-hover: #c9336c;
+  --color-brand-fill: #e2447f;
+  --color-brand-bg: #fbe3ee;
+  --aou-1: #fdeef5;
+  --aou-2: #f9d5e6;
+  --aou-3: #f3aec9;
+  --aou-4: #ec83aa;
+  --aou-5: #e85f92;
+  --aou-6: #e2447f;
+  --aou-7: #c9336c;
+  --aou-8: #a82557;
+  --aou-9: #821943;
+  --aou-10: #5c1030;
+  --bg-base: #fdf6f7;
+  --bg-1: #f7edef;
+  --bg-2: #efe2e6;
+  --bg-3: #e6d6db;
+  --bg-4: #d9c6cc;
+  --bg-5: #c8b0b7;
+  --bg-6: #b0959d;
+  --bg-8: #8b6f77;
+  --bg-9: #63505a;
+  --bg-10: #3c2e34;
+  --color-bg-1: #f7edef;
+  --color-bg-2: #efe2e6;
+  --color-bg-3: #e6d6db;
+  --color-bg-4: #d9c6cc;
+  --bg-hover: #f2e4e9;
+  --bg-active: #ead7dd;
+  --text-primary: #3d2830;
+  --text-secondary: #755a64;
+  --text-disabled: #b39aa3;
+  --text-0: #241218;
+  --text-white: #ffffff;
+  --color-text-1: #3d2830;
+  --color-text-2: #755a64;
+  --color-text-3: #99808a;
+  --color-text-4: #b39aa3;
+  --border-base: #e0cdd4;
+  --border-light: #ebdde2;
+  --border-special: #f0a8c4;
+  --color-border: #e0cdd4;
+  --color-border-1: #e0cdd4;
+  --color-border-2: #ebdde2;
+  --fill: #efe2e6;
+  --color-fill: #efe2e6;
+  --fill-0: #f7edef;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fdfafa;
+  --inverse: #3d2830;
+  --success: #2e9e66;
+  --warning: #d08a1d;
+  --danger: #e63950;
+  --info: #3a7bd0;
+  --message-user-bg: #ffc2da;
+  --message-tips-bg: #fdf0d0;
+  --workspace-btn-bg: #fbe3ee;
+  --color-guid-agent-bar: #f6ebee;
+  --kirby-pink: #ff9fc4;
+  --kirby-blush: #e2447f;
+  --kirby-star: #ffd23f;
+  --kirby-feet: #e63950;
+  --kirby-pink-soft: rgba(226, 68, 127, 0.28);
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-game-kirby][data-ds-dark-theme] {
+  --color-primary: #f06ba3;
+  --primary: #f06ba3;
+  --primary-rgb: 240, 107, 163;
+  --color-primary-light-1: #f48db8;
+  --color-primary-light-2: #f8b1cd;
+  --color-primary-light-3: #fcd3e3;
+  --color-primary-dark-1: #c94a82;
+  --brand: #f06ba3;
+  --brand-light: #381726;
+  --brand-hover: #f48db8;
+  --color-brand-fill: #f06ba3;
+  --color-brand-bg: #2e1320;
+  --aou-1: #2e1320;
+  --aou-2: #471c31;
+  --aou-3: #652745;
+  --aou-4: #8a355e;
+  --aou-5: #b04775;
+  --aou-6: #f06ba3;
+  --aou-7: #f48db8;
+  --aou-8: #f8b1cd;
+  --aou-9: #fcd3e3;
+  --aou-10: #fdeef5;
+  --bg-base: #120b16;
+  --bg-1: #191021;
+  --bg-2: #21172b;
+  --bg-3: #2a1f36;
+  --bg-4: #352842;
+  --bg-5: #423352;
+  --bg-6: #534165;
+  --bg-8: #715d85;
+  --bg-9: #978aa8;
+  --bg-10: #c6bdd2;
+  --color-bg-1: #191021;
+  --color-bg-2: #21172b;
+  --color-bg-3: #2a1f36;
+  --color-bg-4: #352842;
+  --bg-hover: #261b31;
+  --bg-active: #302340;
+  --text-primary: #f6eef3;
+  --text-secondary: #c2b2c6;
+  --text-disabled: #6b5d72;
+  --text-0: #fdf8fb;
+  --text-white: #ffffff;
+  --color-text-1: #f6eef3;
+  --color-text-2: #c2b2c6;
+  --color-text-3: #94859c;
+  --color-text-4: #6b5d72;
+  --border-base: #3a2c46;
+  --border-light: #2c2136;
+  --border-special: #6e3a56;
+  --color-border: #3a2c46;
+  --color-border-1: #3a2c46;
+  --color-border-2: #2c2136;
+  --fill: #21172b;
+  --color-fill: #21172b;
+  --fill-0: #191021;
+  --fill-white-to-black: #120b16;
+  --dialog-fill-0: #1c1325;
+  --inverse: #f6eef3;
+  --success: #4caf7d;
+  --warning: #e8b13d;
+  --danger: #f0506a;
+  --info: #6a95e8;
+  --message-user-bg: #ffc2da;
+  --message-tips-bg: #2e2418;
+  --workspace-btn-bg: #2e1320;
+  --color-guid-agent-bar: #1d1428;
+  --kirby-pink: #ff9fc4;
+  --kirby-blush: #f06ba3;
+  --kirby-star: #ffd23f;
+  --kirby-feet: #f0506a;
+  --kirby-pink-soft: rgba(240, 107, 163, 0.35);
+}
+
+/* --- static palette: light --- */
+body[data-dsh-game-kirby] {
+  --dsw-static-deepseek-50: #fdeef5;
+  --dsw-static-blue-50: #fdeef5;
+  --dsw-static-deepseek-50p: #f9d5e6;
+  --dsw-static-blue-50p: #f9d5e6;
+  --dsw-static-deepseek-75: #f9d5e6;
+  --dsw-static-blue-75: #f9d5e6;
+  --dsw-static-deepseek-100: #f9d5e6;
+  --dsw-static-blue-100: #f9d5e6;
+  --dsw-static-deepseek-200: #f3aec9;
+  --dsw-static-blue-200: #f3aec9;
+  --dsw-static-deepseek-300: #ec83aa;
+  --dsw-static-blue-300: #ec83aa;
+  --dsw-static-deepseek-400: #e85f92;
+  --dsw-static-blue-400: #e85f92;
+  --dsw-static-deepseek-450: #e85f92;
+  --dsw-static-blue-450: #e85f92;
+  --dsw-static-deepseek-500: #e2447f;
+  --dsw-static-blue-500: #e2447f;
+  --dsw-static-deepseek-600: #c9336c;
+  --dsw-static-blue-600: #c9336c;
+  --dsw-static-deepseek-700-delete: #a82557;
+  --dsw-static-deepseek-800: #a82557;
+  --dsw-static-blue-800: #a82557;
+  --dsw-static-deepseek-900: #821943;
+  --dsw-static-blue-900: #821943;
+  --dsw-static-deepseek-950: #5c1030;
+  --dsw-static-blue-950: #5c1030;
+  --dsw-static-neutral-bluish-00: #f7edef;
+  --dsw-static-neutral-00: #f7edef;
+  --dsw-static-neutral-bluish-50: #f7edef;
+  --dsw-static-neutral-50: #f7edef;
+  --dsw-static-neutral-bluish-60: #f7edef;
+  --dsw-static-neutral-60: #f7edef;
+  --dsw-static-neutral-bluish-75: #efe2e6;
+  --dsw-static-neutral-75: #efe2e6;
+  --dsw-static-neutral-bluish-100: #efe2e6;
+  --dsw-static-neutral-100: #efe2e6;
+  --dsw-static-neutral-bluish-150: #e6d6db;
+  --dsw-static-neutral-150: #e6d6db;
+  --dsw-static-neutral-bluish-200: #e6d6db;
+  --dsw-static-neutral-200: #e6d6db;
+  --dsw-static-neutral-bluish-250: #d9c6cc;
+  --dsw-static-neutral-250: #d9c6cc;
+  --dsw-static-neutral-bluish-300: #d9c6cc;
+  --dsw-static-neutral-300: #d9c6cc;
+  --dsw-static-neutral-bluish-400: #c8b0b7;
+  --dsw-static-neutral-400: #c8b0b7;
+  --dsw-static-neutral-bluish-500: #b0959d;
+  --dsw-static-neutral-500: #b0959d;
+  --dsw-static-neutral-bluish-550: #b0959d;
+  --dsw-static-neutral-550: #b0959d;
+  --dsw-static-neutral-bluish-600: #8b6f77;
+  --dsw-static-neutral-600: #8b6f77;
+  --dsw-static-neutral-bluish-700: #8b6f77;
+  --dsw-static-neutral-700: #8b6f77;
+  --dsw-static-neutral-bluish-750: #63505a;
+  --dsw-static-neutral-750: #63505a;
+  --dsw-static-neutral-bluish-800: #63505a;
+  --dsw-static-neutral-800: #63505a;
+  --dsw-static-neutral-bluish-850: #63505a;
+  --dsw-static-neutral-850: #63505a;
+  --dsw-static-neutral-bluish-875: #3c2e34;
+  --dsw-static-neutral-875: #3c2e34;
+  --dsw-static-neutral-bluish-900: #3c2e34;
+  --dsw-static-neutral-900: #3c2e34;
+  --dsw-static-neutral-bluish-950: #3c2e34;
+  --dsw-static-neutral-950: #3c2e34;
+  --dsw-static-neutral-bluish-1000: #3d2830;
+  --dsw-static-neutral-1000: #3d2830;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e66 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e66 20%, white);
+  --dsw-static-green-400: #2e9e66;
+  --dsw-static-green-500: #2e9e66;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e66 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e66 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e63950 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e63950 20%, white);
+  --dsw-static-red-400: #e63950;
+  --dsw-static-red-500: #e63950;
+  --dsw-static-red-600: color-mix(in srgb, #e63950 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e63950 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-game-kirby][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2e1320;
+  --dsw-static-blue-50: #2e1320;
+  --dsw-static-deepseek-50p: #471c31;
+  --dsw-static-blue-50p: #471c31;
+  --dsw-static-deepseek-75: #471c31;
+  --dsw-static-blue-75: #471c31;
+  --dsw-static-deepseek-100: #471c31;
+  --dsw-static-blue-100: #471c31;
+  --dsw-static-deepseek-200: #652745;
+  --dsw-static-blue-200: #652745;
+  --dsw-static-deepseek-300: #8a355e;
+  --dsw-static-blue-300: #8a355e;
+  --dsw-static-deepseek-400: #b04775;
+  --dsw-static-blue-400: #b04775;
+  --dsw-static-deepseek-450: #b04775;
+  --dsw-static-blue-450: #b04775;
+  --dsw-static-deepseek-500: #f06ba3;
+  --dsw-static-blue-500: #f06ba3;
+  --dsw-static-deepseek-600: #f48db8;
+  --dsw-static-blue-600: #f48db8;
+  --dsw-static-deepseek-700-delete: #f8b1cd;
+  --dsw-static-deepseek-800: #f8b1cd;
+  --dsw-static-blue-800: #f8b1cd;
+  --dsw-static-deepseek-900: #fcd3e3;
+  --dsw-static-blue-900: #fcd3e3;
+  --dsw-static-deepseek-950: #fdeef5;
+  --dsw-static-blue-950: #fdeef5;
+  --dsw-static-neutral-bluish-00: #191021;
+  --dsw-static-neutral-00: #191021;
+  --dsw-static-neutral-bluish-50: #191021;
+  --dsw-static-neutral-50: #191021;
+  --dsw-static-neutral-bluish-60: #191021;
+  --dsw-static-neutral-60: #191021;
+  --dsw-static-neutral-bluish-75: #21172b;
+  --dsw-static-neutral-75: #21172b;
+  --dsw-static-neutral-bluish-100: #21172b;
+  --dsw-static-neutral-100: #21172b;
+  --dsw-static-neutral-bluish-150: #2a1f36;
+  --dsw-static-neutral-150: #2a1f36;
+  --dsw-static-neutral-bluish-200: #2a1f36;
+  --dsw-static-neutral-200: #2a1f36;
+  --dsw-static-neutral-bluish-250: #352842;
+  --dsw-static-neutral-250: #352842;
+  --dsw-static-neutral-bluish-300: #352842;
+  --dsw-static-neutral-300: #352842;
+  --dsw-static-neutral-bluish-400: #423352;
+  --dsw-static-neutral-400: #423352;
+  --dsw-static-neutral-bluish-500: #534165;
+  --dsw-static-neutral-500: #534165;
+  --dsw-static-neutral-bluish-550: #534165;
+  --dsw-static-neutral-550: #534165;
+  --dsw-static-neutral-bluish-600: #715d85;
+  --dsw-static-neutral-600: #715d85;
+  --dsw-static-neutral-bluish-700: #715d85;
+  --dsw-static-neutral-700: #715d85;
+  --dsw-static-neutral-bluish-750: #978aa8;
+  --dsw-static-neutral-750: #978aa8;
+  --dsw-static-neutral-bluish-800: #978aa8;
+  --dsw-static-neutral-800: #978aa8;
+  --dsw-static-neutral-bluish-850: #978aa8;
+  --dsw-static-neutral-850: #978aa8;
+  --dsw-static-neutral-bluish-875: #c6bdd2;
+  --dsw-static-neutral-875: #c6bdd2;
+  --dsw-static-neutral-bluish-900: #c6bdd2;
+  --dsw-static-neutral-900: #c6bdd2;
+  --dsw-static-neutral-bluish-950: #c6bdd2;
+  --dsw-static-neutral-950: #c6bdd2;
+  --dsw-static-neutral-bluish-1000: #f6eef3;
+  --dsw-static-neutral-1000: #f6eef3;
+  --dsw-static-green-50: color-mix(in srgb, #4caf7d 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4caf7d 20%, black);
+  --dsw-static-green-400: #4caf7d;
+  --dsw-static-green-500: #4caf7d;
+  --dsw-static-green-600: color-mix(in srgb, #4caf7d 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf7d 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8b13d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8b13d 20%, black);
+  --dsw-static-amber-400: #e8b13d;
+  --dsw-static-amber-500: #e8b13d;
+  --dsw-static-amber-600: color-mix(in srgb, #e8b13d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8b13d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f0506a 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #f0506a 20%, black);
+  --dsw-static-red-400: #f0506a;
+  --dsw-static-red-500: #f0506a;
+  --dsw-static-red-600: color-mix(in srgb, #f0506a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f0506a 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-game-kirby] {
+  --dsw-alias-button-primary-fill: #e2447f;
+  --dsw-alias-button-primary-hover: #c9336c;
+  --dsw-alias-button-primary-dimmed: #f9d5e6;
+  --dsw-alias-button-info-fill: #e2447f;
+  --dsw-alias-button-info-hover: #c9336c;
+  --dsw-alias-button-contrast-fill: #c9336c;
+  --dsw-alias-button-ghost-active-fill: #fdeef5;
+  --dsw-alias-button-ghost-active-hover: #f9d5e6;
+  --dsw-alias-button-ghost-active-border: #ec83aa;
+  --dsw-alias-button-elevated-fill: #f7edef;
+  --dsw-alias-button-floating-fill: #f7edef;
+  --dsw-alias-button-floating-hover: #f2e4e9;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(226, 68, 127, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(226, 68, 127, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(226, 68, 127, 0.6);
+  --dsw-specific-bubble: #ffc2da;
+  --dsw-specific-bubble-highlight: #f3aec9;
+  --dsw-specific-input-major: #f7edef;
+  --dsw-specific-login-input: #f7edef;
+  --dsw-specific-sidebar-fill: #e2447f;
+  --dsw-specific-sidebar-nav-item-active: #f9d5e6;
+  --dsw-specific-sidebar-nav-item-hover: #f2e4e9;
+  --dsw-specific-sidebar-nav-item-active-accent: #ec83aa;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-game-kirby][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #f06ba3;
+  --dsw-alias-button-primary-hover: #f48db8;
+  --dsw-alias-button-primary-dimmed: #471c31;
+  --dsw-alias-button-info-fill: #f06ba3;
+  --dsw-alias-button-info-hover: #f48db8;
+  --dsw-alias-button-contrast-fill: #f48db8;
+  --dsw-alias-button-ghost-active-fill: #381726;
+  --dsw-alias-button-ghost-active-hover: #471c31;
+  --dsw-alias-button-ghost-active-border: #8a355e;
+  --dsw-alias-button-elevated-fill: #191021;
+  --dsw-alias-button-floating-fill: #191021;
+  --dsw-alias-button-floating-hover: #261b31;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(240, 107, 163, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(240, 107, 163, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(240, 107, 163, 0.6);
+  --dsw-specific-bubble: #ffc2da;
+  --dsw-specific-bubble-highlight: #652745;
+  --dsw-specific-input-major: #191021;
+  --dsw-specific-login-input: #191021;
+  --dsw-specific-sidebar-fill: #f06ba3;
+  --dsw-specific-sidebar-nav-item-active: #471c31;
+  --dsw-specific-sidebar-nav-item-hover: #261b31;
+  --dsw-specific-sidebar-nav-item-active-accent: #8a355e;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-game-kirby] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-kirby]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255, 210, 63, 0.55) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 82% 14%, rgba(226, 68, 127, 0.5) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 60% 72%, rgba(255, 210, 63, 0.45) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 88% 88%, rgba(125, 184, 240, 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse at 6% 92%, rgba(226, 68, 127, 0.22) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.1;
+}
+
+body[data-dsh-game-kirby]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(255, 210, 63, 0.9) 0 2px, transparent 3px),
+      radial-gradient(circle at 50% 50%, rgba(226, 68, 127, 0.85) 0 2px, transparent 3px);
+    background-size: 48px 48px, 48px 48px;
+    background-position: 0 0, 24px 24px;
+    opacity: 0.07;
+    animation: game-kirby-kirby-stardust-drift 24s linear infinite;
+}
+
+body[data-dsh-game-kirby] [class*='sider'] [class*='session'],
+body[data-dsh-game-kirby] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-kirby] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(255, 159, 196, 0.22);
+    box-shadow: inset 3px 0 0 0 rgba(255, 159, 196, 0.9);
+}
+
+body[data-dsh-game-kirby] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-kirby] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(226, 68, 127, 0.2), rgba(255, 210, 63, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #e2447f;
+}
+
+body[data-dsh-game-kirby] button[class*='primary'],
+body[data-dsh-game-kirby] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #c9336c 0%, #e2447f 55%, #ea6c9b 100%) !important;
+    border: 1px solid #f3aec9 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(226, 68, 127, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    text-shadow: 0 1px 2px rgba(92, 16, 48, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-kirby] button[class*='primary']:hover,
+body[data-dsh-game-kirby] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    box-shadow: 0 3px 14px rgba(226, 68, 127, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    animation: game-kirby-kirby-star-twinkle 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-kirby] pre,
+body[data-dsh-game-kirby] .markdown-body pre {
+  background: linear-gradient(180deg, #fffafa 0%, #f8eff2 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid transparent !important;
+    border-image: linear-gradient(180deg, #e2447f, #ffd23f) 1 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(255, 159, 196, 0.15);
+}
+
+body[data-dsh-game-kirby] pre code,
+body[data-dsh-game-kirby] .markdown-body pre code {
+  background: transparent !important;
+    color: #4a2a38 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-kirby] code,
+body[data-dsh-game-kirby] .markdown-body code {
+  background: rgba(255, 159, 196, 0.22);
+    color: #b52a60;
+    border: 1px solid rgba(226, 68, 127, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-kirby]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-game-kirby] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(92, 16, 48, 0.06), 0 0 0 1px rgba(255, 159, 196, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-kirby] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-game-kirby] [class*='agent-bar'],
+body[data-dsh-game-kirby] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(226, 68, 127, 0.35);
+}
+
+body[data-dsh-game-kirby]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-kirby]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ea6c9b, #c9336c);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-kirby]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f196b8, #a82557);
+}
+
+body[data-dsh-game-kirby]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-kirby] .markdown-body a,
+body[data-dsh-game-kirby] a {
+  color: #c9336c;
+}
+
+body[data-dsh-game-kirby] .markdown-body a:hover,
+body[data-dsh-game-kirby] a:hover {
+  color: #e2447f;
+}
+
+body[data-dsh-game-kirby] .markdown-body blockquote {
+  border-left: 3px solid var(--kirby-star);
+    background: rgba(255, 210, 63, 0.12);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-kirby] .markdown-body hr,
+body[data-dsh-game-kirby] hr {
+  border: none;
+    height: 8px;
+    background-image: radial-gradient(circle at 6px 4px, rgba(255, 210, 63, 0.8) 0 2px, transparent 3px);
+    background-size: 24px 8px;
+    background-repeat: repeat-x;
+    opacity: 0.7;
+}
+
+body[data-dsh-game-kirby] .arco-btn:not(button[class*='primary']):hover {
+  color: #c9336c !important;
+    border-color: rgba(226, 68, 127, 0.5) !important;
+    background-color: rgba(226, 68, 127, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-game-kirby][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(255, 210, 63, 0.6) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 82% 14%, rgba(240, 107, 163, 0.55) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 60% 72%, rgba(255, 210, 63, 0.5) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 88% 88%, rgba(106, 149, 232, 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse at 6% 92%, rgba(240, 107, 163, 0.22) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.12;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(255, 210, 63, 0.95) 0 2px, transparent 3px),
+      radial-gradient(circle at 50% 50%, rgba(240, 107, 163, 0.9) 0 2px, transparent 3px);
+    background-size: 48px 48px, 48px 48px;
+    background-position: 0 0, 24px 24px;
+    opacity: 0.08;
+    animation: game-kirby-kirby-stardust-drift 24s linear infinite;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(255, 159, 196, 0.18);
+    box-shadow: inset 3px 0 0 0 rgba(255, 159, 196, 0.85);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(240, 107, 163, 0.3), rgba(255, 210, 63, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #f06ba3;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-game-kirby][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #c94a82 0%, #f06ba3 55%, #f48db8 100%) !important;
+    border: 1px solid #f8b1cd !important;
+    color: #2a0f1c !important;
+    box-shadow: 0 2px 8px rgba(240, 107, 163, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-game-kirby][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(240, 107, 163, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    animation: game-kirby-kirby-star-twinkle 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] pre,
+body[data-dsh-game-kirby][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #161021 0%, #120c1a 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid transparent !important;
+    border-image: linear-gradient(180deg, #f06ba3, #ffd23f) 1 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(255, 159, 196, 0.12);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] pre code,
+body[data-dsh-game-kirby][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #f0e2ee !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] code,
+body[data-dsh-game-kirby][data-ds-dark-theme] .markdown-body code {
+  background: rgba(255, 159, 196, 0.2);
+    color: #f8b1cd;
+    border: 1px solid rgba(240, 107, 163, 0.35);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(6, 3, 10, 0.5), 0 0 0 1px rgba(255, 159, 196, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-game-kirby][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(240, 107, 163, 0.4);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f06ba3, #8a355e);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f48db8, #652745);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-game-kirby][data-ds-dark-theme] a {
+  color: #f48db8;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-game-kirby][data-ds-dark-theme] a:hover {
+  color: #f8b1cd;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--kirby-star);
+    background: rgba(255, 210, 63, 0.1);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-game-kirby][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image: radial-gradient(circle at 6px 4px, rgba(255, 210, 63, 0.85) 0 2px, transparent 3px);
+    background-size: 24px 8px;
+    background-repeat: repeat-x;
+    opacity: 0.75;
+}
+
+body[data-dsh-game-kirby][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #f8b1cd !important;
+    border-color: rgba(240, 107, 163, 0.5) !important;
+    background-color: rgba(240, 107, 163, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes game-kirby-kirby-stardust-drift {
+  0% { background-position: 0 0, 24px 24px; }
+  100% { background-position: 48px 48px, 72px 72px; }
+}
+
+@keyframes game-kirby-kirby-sparkle-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(226, 68, 127, 0.12); }
+  50% { box-shadow: 0 2px 16px rgba(255, 210, 63, 0.4); }
+}
+
+@keyframes game-kirby-kirby-rainbow-slide {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes game-kirby-kirby-star-twinkle {
+  0%, 100% { box-shadow: 0 3px 12px rgba(226, 68, 127, 0.42), 0 0 6px rgba(255, 210, 63, 0.25); }
+  50% { box-shadow: 0 3px 18px rgba(226, 68, 127, 0.58), 0 0 14px rgba(255, 210, 63, 0.5); }
+}
+
+@keyframes game-kirby-kirby-rainbow-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

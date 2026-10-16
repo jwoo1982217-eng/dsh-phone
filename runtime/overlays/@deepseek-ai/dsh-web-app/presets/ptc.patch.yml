@@ -39,6 +39,8 @@
             name: '@deepseek-ai/dsh-skill-filesystem'
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
+            config:
+              catalogDescriptionMaxLength: 160
           - id: command-goal
             name: '@deepseek-ai/dsh-command-goal'
           - id: tool-goal

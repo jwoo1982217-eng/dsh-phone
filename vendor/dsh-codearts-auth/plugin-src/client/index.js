@@ -68,6 +68,7 @@ import { installJetHubStyles } from './jet-hub-styles.js'
 import { JET_HUB_RPC_CHANNEL, JetHubPage, providerLabel } from './jet-hub.js'
 import { startCarrierContribution } from './zcode-carrier.js'
 import { UsageBadge } from './usage-badge.js'
+import {installZcodeComposerReset} from './zcode-reset-launcher.js'
 import { createChatGptCall } from './chatgpt-plan-rpc.js'
 
 export function apply(ctx) {
@@ -77,6 +78,7 @@ export function apply(ctx) {
     const raw = await callManagementRpc(ctx.connection, JET_HUB_RPC_CHANNEL, endpoint, payload, signal)
     return unwrapRpcResult(raw)
   }
+  ctx.effect(() => installZcodeComposerReset({rpcCall}), 'jet-hub: 对话页模型选择器额度重置')
   const chatGptCall = createChatGptCall(ctx.connection)
 
   /**

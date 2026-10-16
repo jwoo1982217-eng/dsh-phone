@@ -1,0 +1,495 @@
+{
+  "adaptation": "community.2",
+  "originalAuthor": "YuJunZhiXue",
+  "publisher": "DeepSeek Stream community marketplace",
+  "name": "dsh-purge",
+  "version": "1.1.67",
+  "originalSha256": "8cf20c2e3b70d255ca8706493d68ad277fb167998943fb92bd42efb4db02ed22",
+  "originalReleaseUrl": "https://github.com/YuJunZhiXue/dsh-purge/releases/tag/v1.1.67",
+  "authorTarget": "0.2.0-rc.2",
+  "communityTarget": "0.2.1-alpha.1",
+  "originalFiles": 105,
+  "modifiedFiles": [
+    {
+      "path": "bin/dsh-purge.js",
+      "originalSha256": "759081efd77e2ac757d759eeb2d14552bfbf925944ee3a53247e36064196e1eb",
+      "adaptedSha256": "17b6c2dd66058721c85c7060a8dae69a6565b21e23f42cd5d2ace627ca4e1888"
+    },
+    {
+      "path": "client.js",
+      "originalSha256": "8e59ae612b1ec4c6ed59bcf738d0e0e981ea7e2b8abf81e270e704edd25c64f1",
+      "adaptedSha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb"
+    },
+    {
+      "path": "cordis.patch.yml",
+      "originalSha256": "116a1b54e921d7f6e53dbf92702115b2340be8ac6d4901161d1c6752a55362fe",
+      "adaptedSha256": "9dd1fe6b694ef75a694813fcbd3de4c930fc236e9d51aea6592f52e0f365b436"
+    },
+    {
+      "path": "lib/core.js",
+      "originalSha256": "b1e9889c1c28cb9e1df91303f01ded8f45635190e57ded2709fc90ddf8bacd91",
+      "adaptedSha256": "acf85aeaf60b758866a78ec439cab6339f0b5fe134ede2609d7f508fd2dd73b8"
+    },
+    {
+      "path": "lib/drill-grant.js",
+      "originalSha256": "fa908869d923fa404845a239bc3d313e0ab56dce54aefa729bc0658a3d709efc",
+      "adaptedSha256": "681e449d1c9965b6502ca98d1fe2e0d9c5a7358d0dce76a9de79ae84c40cbfcd"
+    },
+    {
+      "path": "lib/hooks-deny.js",
+      "originalSha256": "77b3bf38048df223b5f8ca7625b92bf9e229bbb6fc8672bbb407d273b8e2474e",
+      "adaptedSha256": "8cbbf2952f23342350b08ae7fac5c05886a8fc92837364742a61c8e9f90f988e"
+    },
+    {
+      "path": "lib/host.js",
+      "originalSha256": "954009fc82fceef7f2e55743b873055681991906192a7d02ef7c355f6edf5d62",
+      "adaptedSha256": "6a52d5ae2f1818723afbfec45effd20bf4768bd83967067c010b90acf6a90d7d"
+    },
+    {
+      "path": "lib/index.js",
+      "originalSha256": "cafc80d511d87abe53a76426554d8a2fcd28499a31d66f9c7eb5307b17f22387",
+      "adaptedSha256": "cad81b332f6b4dc28d44954ef1f3d27cfdf2235188f004cb75be79f9a42edaab"
+    },
+    {
+      "path": "lib/net-scope.js",
+      "originalSha256": "51f7f99b4f0cddbdc0788e64d647f10f4fb03282ae0c827b74f5f76fc74d9a60",
+      "adaptedSha256": "12bbd290c16ea5412552573a107ea13c4f64e09316a8852bcf5995aed8cc1b00"
+    },
+    {
+      "path": "lib/official-update.js",
+      "originalSha256": "b044b2bd748026e6e6b6154313b9f5161e064b3286bc50a768b5543f409626f9",
+      "adaptedSha256": "b5fbdff8ac64d74d78a047764663e54c3d8d6f01666d8e4177c521979f6fe5b6"
+    },
+    {
+      "path": "lib/reapply.js",
+      "originalSha256": "75005087bf507019aff91fadf5bf1586c84011d0b4f7f730108105f542609c65",
+      "adaptedSha256": "38c55300d0f5d0f8fe92c5b27e19d1b7eec2a73cf14f606d5dca7d736ace6f87"
+    },
+    {
+      "path": "lib/redteam/index.js",
+      "originalSha256": "dfc335925b5d019b0f8e29d910e73dc52c152740db67cbc3f4889ca983269f11",
+      "adaptedSha256": "2be19126d2ae72ae8fae928170ebe4f03505402558e657e58393745a22912184"
+    },
+    {
+      "path": "lib/redteam/platform-config.js",
+      "originalSha256": "295786757eb2b5b168ab0d47f3243db51d07c26e58aecd5a0d8f0dd9e848ca87",
+      "adaptedSha256": "15f84f734389fc47e80c406f19fb0a46094849f4210448bd10435ba17cb6cbb9"
+    },
+    {
+      "path": "lib/redteam/schema.js",
+      "originalSha256": "3fbde317207d15988dd03c3f89694bbbe3999b1098a8b05609e6eb8dc7368556",
+      "adaptedSha256": "fa06c6adc5ee7fd0fee1d2a00dfc918e363cc5d8c850bf6e1189de67d7a71f92"
+    },
+    {
+      "path": "lib/redteam/settings.js",
+      "originalSha256": "d4592b059304c45fe3c8362fe29826c665bd7c9309edc870628272215b477e87",
+      "adaptedSha256": "6f491f3944c47d5ddb09c533702df36a79bea91dd58cba33df956294942af5cf"
+    },
+    {
+      "path": "lib/redteam/store-core.js",
+      "originalSha256": "d42ab5fbc27353ef67d358fc69233a44b46a838154762c5ce0f839ff311c5608",
+      "adaptedSha256": "9d71d4c8d0c1a60e654f4a56f73670d97233c9c175e4efad93768381ff7be78b"
+    },
+    {
+      "path": "lib/redteam/store.js",
+      "originalSha256": "fc1262b1c312a960f03c732954e4b831cf2718681319f15aa02b2ae5dc3aaf0f",
+      "adaptedSha256": "758d5e34d0e72138c394fcaa253c98583ba0269ab2ac83b8c9dc903a8b8d08b8"
+    },
+    {
+      "path": "lib/redteam/tools.js",
+      "originalSha256": "b03da8deef78aa2c75dc9280c350fbd957dfb52371d75d0ab9b9c17de3c03086",
+      "adaptedSha256": "ca8519acd4ab9a6c95a45b2c6920ce88f5aa16a151375f95eedfc8ab7301cf0d"
+    },
+    {
+      "path": "lib/redteam/ui.js",
+      "originalSha256": "a3c2a16ccca9ea27935aa8489576bbe8bb7d17cfea7f7447c3bb0ce6c14f6b8e",
+      "adaptedSha256": "be844c3f3b58be43fae30b9d75ae1689d6a19aff145daadeecb37b8f526a8449"
+    },
+    {
+      "path": "lib/rules.js",
+      "originalSha256": "847734a2a6916032c4bf9b98ff2ffe583925d881fce6a6f1439d5d78a5de2a82",
+      "adaptedSha256": "c47412b6fb122aa228a516b72f97a65730f31d2f886015e6c6654675dc13075d"
+    },
+    {
+      "path": "lib/skills.js",
+      "originalSha256": "077b60c4065768331859812c1dd2f6405f18ad4660145a8dcf7ef2d67f23b0fb",
+      "adaptedSha256": "580f239ab74be8befe6678a60fe292116fad0f4dbe696057668f3fcb9cbcc707"
+    },
+    {
+      "path": "lib/uninstall.js",
+      "originalSha256": "cc5bfce22028e9970d631cf783876a795b0ab67c86ef4e847815f9ff9bba3f3e",
+      "adaptedSha256": "f77f903b171c1f340ca0e59701773c591a262fba2c27f1293c8a75311a975927"
+    },
+    {
+      "path": "lib/update.js",
+      "originalSha256": "aff4e8c448ea8c80b6aa60681c58ff991b463adff9a2cbf32e0fdf5d03528a86",
+      "adaptedSha256": "f02098a62927450f28b3425f695c9d45a625133cf549886624f74f452b2832ce"
+    },
+    {
+      "path": "package.json",
+      "originalSha256": "0f14f8f0827008c1b0489b1019bd5222c56e8a2a56b66fa3ff56ef8b3dd61865",
+      "adaptedSha256": "476379ef8508af00159f54181c2f30b3974b3bcdc81a07fb6242b072f9340b34"
+    }
+  ],
+  "addedFiles": [
+    {
+      "path": "COMMUNITY-ADAPTATION.md",
+      "adaptedSha256": "7eae0ce1492927819772d76d47a721cdd677f5bb495d470dca14f4fe65985801"
+    },
+    {
+      "path": "lib/community-overlay.js",
+      "adaptedSha256": "6406918410138d50a2e7b2dbe9bca09b6a187a74027229da2d20aa1c67b9d448"
+    },
+    {
+      "path": "lib/community-profile-paths.js",
+      "adaptedSha256": "08f1766413cddd40078e37090e80019f725755b66bf745ebcedbeefa4d4c0751"
+    },
+    {
+      "path": "lib/community-profile.js",
+      "adaptedSha256": "5c2d7be659fd780da39fb4cd2128f214e49e46b99c5936ece5e81bbe4f1fc1c4"
+    },
+    {
+      "path": "lib/community-recover.js",
+      "adaptedSha256": "fe60d633c9b96de0b8f5f19366d3596b568bd37b3f693c76dff7cd45fec9848f"
+    }
+  ],
+  "removedFiles": [],
+  "changes": [
+    "Exact author v1.1.67 release, original version/attribution/MIT license retained; explicitly community-maintained adaptation for 0.2.1-alpha.1.",
+    "Mandatory absolute launcher profileContext/DSH_HOME; no default home, global host scanning or boot-time shared-core patching.",
+    "Explicit Apply backs up and patches current-host physical private copies, then selects current-profile bundle aliases with original IDs/configuration/expressions. Failed patches roll back before mounting.",
+    "Revert restores owned private core and alias/dependency/name fields while preserving later user configuration. Crash partial state fails closed and has a standalone explicit-home/profile recovery CLI.",
+    "Native write and backup guards reject links/junctions/other profiles/shared core; exclusive random temporary files, atomic replacement and filesystem sync for supported managed writes.",
+    "Actual community client UI injection, native Context/Loader/profile resolver, current-host RedTeam tools dependency resolution and cold module imports adapted.",
+    "Current DSH_HOME prompt/rules/skills/net scope/drill settings remain functional with managed path guards and custom prompt preservation.",
+    "RedTeam startup uses missing-only preset/skill/setup/anchor assets; automatic SQLite migration only adds schema and missing defaults, preserving legacy stages/columns/points/hits and existing field values.",
+    "Official ASAR/global CLI/deny-hook mutation/self-update/self-uninstall/automatic restart primitives and HTTP routes reject in this adaptation; plugin manager handles update/uninstall and full restart is manual."
+  ],
+  "limitations": [
+    "Apply and Revert affect only private copies owned by the current profile and require manually quitting and restarting that DSH client.",
+    "Official ASAR, global CLI, native self-update, self-uninstall and automatic restart are disabled; update/uninstall use the community plugin manager. Revert the private overlay before uninstall.",
+    "Prompt, rules and skills retain the current DSH_HOME paths, which can be shared by profiles using the same home. Existing customized prompt content is preserved on startup.",
+    "Full Electron desktop, model API, every preset and session rewind workflow have not been executed end to end; no author endorsement or universal compatibility claim.",
+    "Optional native hooks that modify host-wide deny rules are disabled. Actual web composition matched 34 patches and 11 existing matches; 30 optional or layout-specific patches were unmatched and are reported.",
+    "Existing RedTeam presets, skills and setup script are preserved on startup; existing database rows and legacy columns are not removed or automatically rewritten."
+  ],
+  "runtimeVerification": {
+    "passed": true,
+    "actualTarget": "0.2.1-alpha.1",
+    "webApply": {
+      "applied": 34,
+      "already": 11,
+      "failed": 0,
+      "unmatched": 30,
+      "privateRows": 48,
+      "mountedPackages": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "@deepseek-ai/dsh-session",
+        "@deepseek-ai/dsh-session-log-deepseek",
+        "@deepseek-ai/dsh-settings",
+        "@deepseek-ai/dsh-sandbox-local",
+        "@deepseek-ai/dsh-sandbox-policy",
+        "@deepseek-ai/dsh-permission-presets",
+        "@deepseek-ai/dsh-subagent",
+        "@deepseek-ai/dsh-repeat-tool-reminder",
+        "@deepseek-ai/dsh-tools",
+        "@deepseek-ai/dsh-system-prompt",
+        "@deepseek-ai/dsh-agent-loop",
+        "@deepseek-ai/dsh-fs-sandbox",
+        "@deepseek-ai/dsh-tool-subagent",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-deliverables",
+        "@deepseek-ai/dsh-persona",
+        "@deepseek-ai/dsh-agent-instructions",
+        "@deepseek-ai/dsh-tool-bash",
+        "@deepseek-ai/dsh-tool-pwsh",
+        "@deepseek-ai/dsh-tool-fs",
+        "@deepseek-ai/dsh-compaction-tool-result-pruner",
+        "@deepseek-ai/dsh-tool-todo",
+        "@deepseek-ai/dsh-tool-web"
+      ],
+      "unmatchedItems": [
+        {
+          "patch_id": 3,
+          "name": "SCOPE_INTRO",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-agent-instructions\\lib\\index.js",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 76,
+          "name": "PRESET_UNRESTRICTED_IDENTITY_STRIP",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 71,
+          "name": "LIANGSHEN_IDENTITY_LINE",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 2
+        },
+        {
+          "patch_id": 9,
+          "name": "APPROVAL_AUTO_GRANT",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-user-approval\\lib\\index.js",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 10,
+          "name": "APPROVAL_CONFIG_DEFAULT_NEVER",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-user-approval\\lib\\index.js",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 13,
+          "name": "ESCALATION_WIDENING_EXEMPT",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 14,
+          "name": "ESCALATION_GRANT_UNCONDITIONAL",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 17,
+          "name": "FS_OBSERVATION_INTENT_FREE",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 21,
+          "name": "BASH_TIMEOUT_RAISED",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-base\\cordis.patch.yml",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 80,
+          "name": "MINIMAL_OFFICIAL_TOOLSET",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-web-app\\presets\\minimal.patch.yml",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 28,
+          "name": "LIANGSHEN_PHASE1_KEEP_INJECT",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 34,
+          "name": "SANDBOX_HINT_NEUTRAL",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 35,
+          "name": "ESCALATION_NEVER_REJECT",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 37,
+          "name": "SUBAGENT_SCOPE_LOCK_NEUTRAL",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-subagent\\lib\\index.js",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 39,
+          "name": "SESSION_V0_PLUGIN_SUMMARY_ALIAS",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 45,
+          "name": "OFFICIAL_DESKTOP_UPDATE_HANDOFF",
+          "status": "na",
+          "path": "",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 46,
+          "name": "OFFICIAL_DESKTOP_UPDATE_ASCII",
+          "status": "na",
+          "path": "",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 47,
+          "name": "ANTHROPIC_OAUTH_NO_CLAUDE_IDENTITY",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 49,
+          "name": "ANTHROPIC_OAUTH_CLI_NEUTRAL",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 50,
+          "name": "SESSION_REFERENCE_FRAMING_NEUTRAL",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-session-reference\\lib\\index.js",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 83,
+          "name": "DESKTOP_HOST_CLOSE_NO_FATAL",
+          "status": "na",
+          "path": "",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 84,
+          "name": "DESKTOP_HOST_CLOSE_CODE0_NO_FAIL",
+          "status": "na",
+          "path": "",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 69,
+          "name": "MODEL_STREAM_RELEASE",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 72,
+          "name": "MESSAGES_SYSTEM_CURRENT",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 77,
+          "name": "REWIND_DROP_SENT_ON_APPEND",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-client-ui-conversation\\lib\\client.js",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 57,
+          "name": "DEEPSEEK_SYSTEM_ROLE",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 2
+        },
+        {
+          "patch_id": 59,
+          "name": "OFFICIAL_AUTO_REVIEW_PASSTHROUGH",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 62,
+          "name": "OFFICIAL_TOOL_ASK_FAILOPEN",
+          "status": "skipped",
+          "path": "C:\\Users\\Administrator\\Desktop\\Deepseek Plugin Market\\scratch\\purge-update-20261010\\web-bridge-1791609523200\\profiles\\web\\.dsh-purge-runtime\\46cfac7f-0b0e-4bde-aed4-a74ff865c1fb\\node_modules\\@deepseek-ai\\dsh-tools\\lib\\index.js",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        },
+        {
+          "patch_id": 78,
+          "name": "OVERLAY_RESTORE_FROM_BAK",
+          "status": "missing_file",
+          "applied": 0,
+          "already": 0,
+          "missing": 1
+        },
+        {
+          "patch_id": 82,
+          "name": "DESKTOP_SHELL_PROFILE_FALLBACK",
+          "status": "na",
+          "path": "",
+          "applied": 0,
+          "already": 0,
+          "missing": 0
+        }
+      ]
+    },
+    "actualPrivateLoaderRenderChanged": true,
+    "originalRowIdsPreserved": true,
+    "expressionValuesPreserved": 30,
+    "strictFailureBeforeMount": true,
+    "overlayChecks": 79,
+    "redteamLegacyRows": 17,
+    "redteamLegacyFields": 486,
+    "syntaxFiles": 60,
+    "boundary": "All writes used newly created scratch DSH_HOME fixtures. Actual model/API/Electron and user profiles were not started. Loader leaf activation was blocked while actual modules were resolved/imported and targeted native services/render were executed.",
+    "evidence": [
+      "alpha-contract-results.json",
+      "community-native-results.json",
+      "community-managed-results.json",
+      "community-web-bridge-results.json",
+      "community-redteam-results.json",
+      "private-overlay-results.json",
+      "private-overlay-real-core-results.json",
+      "redteam-legacy-preservation-results.json",
+      "independent-managed-path-results.json",
+      "independent-redteam-results.json",
+      "independent-redteam-update-route-results.json"
+    ]
+  },
+  "compatibilityNote": "社区维护适配 1.1.67+community.1，目标 0.2.1-alpha.1；已在隔离环境验证真实 Web/base/preset Loader、Apply/Revert、私有模块实际 render、原 ID/设置保留和数据保护。Apply 后须完全退出再重开；30 项可选或布局相关补丁未匹配并显示原因。原生官方升级、ASAR、全局 CLI 和自动重启禁用；完整 Electron、模型 API 与全部作者功能未作端到端验证，不代表作者支持社区版。",
+  "hashNote": "This provenance JSON excludes its own hash to avoid a cycle; the external final report hashes every package member including this JSON.",
+  "installationFix": "Support the launcher-owned UUID-paired temporary candidate profile and trial DSH_HOME; native Apply/Revert are forbidden until promotion. Preserve proven immutable Desktop launcher defaults/overlays and report unsupported rows; reject all unknown unowned rows."
+}

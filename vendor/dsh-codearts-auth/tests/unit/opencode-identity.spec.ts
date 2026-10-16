@@ -28,7 +28,14 @@ describe('指纹派生', () => {
       expect(id).toHaveLength(4 + 26)
     }
   })
-  it('request id 每次不同', () => {
+  it('request id 是 msg_ + 12hex + 14base62（2026-10-15 真机 1.19.0 抓包）', () => {
+    // 真机抓包实证：x-opencode-request: msg_13d406f1e001nIXjoKZX2ugXUi
+    // 1.18.22 时代「msg_ 改 req_」的旧形状被证伪。
+    for (let i = 0; i < 50; i++) {
+      const id = deriveRequestId()
+      expect(id).toMatch(/^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/)
+      expect(id).toHaveLength(4 + 26)
+    }
     expect(deriveRequestId()).not.toBe(deriveRequestId())
   })
 })
@@ -36,9 +43,11 @@ describe('指纹派生', () => {
 describe('opencodeHeaders', () => {
   const headers = opencodeHeaders({ projectId: 'p'.repeat(40), generation: 0 }, 'ses_abc', 'req_xyz', 'opencode/1.18.22')
 
-  it('带齐真实 CLI 1.18.22 的四个关联头 + UA', () => {
+  it('带齐真实 CLI 1.19.0 的关联头 + UA（2026-10-15 抓包）', () => {
     expect(headers['x-opencode-project']).toBe('p'.repeat(40))
     expect(headers['x-opencode-session']).toBe('ses_abc')
+    // ⚠️ 1.19.0 新增：session-id 与 session 同值。
+    expect(headers['x-opencode-session-id']).toBe('ses_abc')
     expect(headers['x-opencode-request']).toBe('req_xyz')
     expect(headers['x-opencode-client']).toBe('cli')
     expect(headers['user-agent']).toBe('opencode/1.18.22')

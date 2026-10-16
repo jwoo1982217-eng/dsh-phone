@@ -40,10 +40,16 @@ export async function installDesktopPeer(profile, modules) {
     for (const name of files) await cp(path.join(root, 'peer', name), path.join(staging, name));
     await cp(path.join(root, 'peer/vendor'), path.join(staging, 'vendor'), { recursive: true });
     await cp(path.join(root, 'peer/agent-cards'), path.join(staging, 'agent-cards'), { recursive: true });
+    await cp(path.join(root, 'peer/knowledge-link'), path.join(staging, 'knowledge-link'), { recursive: true });
     await cp(path.join(root, 'peer/chat-history'), path.join(staging, 'chat-history'), { recursive: true });
     await cp(path.join(root, 'peer/chat-files'), path.join(staging, 'chat-files'), { recursive: true });
+    await cp(path.join(root, 'peer/subagent-scheduler'), path.join(staging, 'subagent-scheduler'), { recursive: true });
+    await cp(path.join(root, 'peer/task-supervisor'), path.join(staging, 'task-supervisor'), { recursive: true });
     await cp(path.join(root, 'peer/memory-isolation'), path.join(staging, 'memory-isolation'), { recursive: true });
+    await cp(path.join(root, 'peer/subagent-scheduler'), path.join(staging, 'subagent-scheduler'), { recursive: true });
+    await cp(path.join(root, 'peer/task-supervisor'), path.join(staging, 'task-supervisor'), { recursive: true });
     await cp(path.join(root, 'peer/mcp-manager'), path.join(staging, 'mcp-manager'), { recursive: true });
+    await cp(path.join(root, 'peer/on-demand-tools'), path.join(staging, 'on-demand-tools'), { recursive: true });
     await cp(path.join(root, 'peer/controlled-market'), path.join(staging, 'controlled-market'), { recursive: true });
     await cp(path.join(root, 'peer/workflow-hub'), path.join(staging, 'workflow-hub'), { recursive: true });
     for (const [source, dest] of [['app/src/main/assets/dsh-phone.css', 'presentation.css'], ['app/src/main/assets/dsh-phone.js', 'presentation.js'], ['app/src/main/assets/dsh-phone.compat.js', 'browser-compat.js'], ['phone-qq/skill-import.js', 'skill-import.js']]) await cp(path.join(root, source), path.join(staging, dest));

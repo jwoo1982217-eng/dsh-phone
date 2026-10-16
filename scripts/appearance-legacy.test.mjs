@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+import {createRequire} from 'node:module';
+const require=createRequire(new URL('../runtime/package.json',import.meta.url));
+const {SlotCore}=await import(require.resolve('@deepseek-ai/dsh-client-ui-slots'));
+test('real raw settings directory contains one appearance row; removing center restores legacy',async()=>{
+ const source=await readFile(new URL('../peer/agent-cards/client-source.js',import.meta.url),'utf8');
+ const helper=source.slice(source.indexOf('function registerLegacyAppearance'),source.indexOf('/** React 18'));
+ const register=vm.runInNewContext(helper+';registerLegacyAppearance');
+ const slots=new SlotCore(),listeners=new Set();slots.register({name:'root',children:{'settings.section':{kind:'list',scope:'root'}}},()=>null);
+ slots.onMutate(key=>{for(const fn of listeners)fn(key);});
+ const ctx={slots:{inject:(key,fn)=>fn(),register:(...args)=>slots.register(...args),entriesOfSlot:key=>slots.entriesOfSlot(key)},on:(event,fn)=>{listeners.add(fn);return()=>listeners.delete(fn);}};
+ const cleanup=register(ctx,{name:'settings.section',id:'appearance',label:'外观皮肤'},()=>null);
+ assert.equal(slots.entries('settings.section').length,1);
+ const remove=slots.register({name:'settings.section',id:'appearance',label:'外观',priority:-100},()=>null);
+ assert.equal(slots.entries('settings.section').length,1);assert.equal(slots.entries('settings.section')[0].options.label,'外观');
+ slots.register({name:'settings.section',id:'another',label:'其他插件'},()=>null);assert.equal(slots.entries('settings.section').length,2);
+ remove();assert.equal(slots.entriesOfSlot('settings.section').find(e=>e.options.id==='appearance').options.label,'外观皮肤');
+ cleanup();assert.equal(slots.entries('settings.section').length,1);assert.equal(listeners.size,0);
+});

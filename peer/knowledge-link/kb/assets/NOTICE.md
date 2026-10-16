@@ -1,0 +1,1 @@
+Transformers.js 3.8.1 (Apache-2.0); ONNX Runtime Web 1.22.0-dev.20250409-89f8206ba4 (MIT). BGE-small-zh-v1.5 / Xenova 固定 revision 75c43b069aac4d136ba6bc1122f995fedcfd2781，模型文件校验见 kb-model-receipt.json。此目录仅公开程序及模型，无用户记忆。

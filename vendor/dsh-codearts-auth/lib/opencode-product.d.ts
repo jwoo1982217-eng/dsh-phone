@@ -33,6 +33,15 @@ export interface OpencodeProduct {
     readonly anonymousKey: string;
     readonly defaultUserAgent: string;
     /**
+     * UA 复合串的固定后缀（`opencode/<版本号>` 之后的部分）。
+     *
+     * ⚠️ 1.19.0 真机抓包（2026-10-15）：官方 UA =
+     * `opencode/<ver> ai-sdk/provider-utils/4.0.23 runtime/bun/1.3.14`。
+     * 后两段来自 CLI 构建环境，`opencode --version` 探测不到；CLI 升级后
+     * 若上游再变，以重新抓包为准。
+     */
+    readonly userAgentSuffix: string;
+    /**
      * 模型能力元数据源（**远端**，能力的主来源）。
      *
      * ⚠️ 不是 `/zen/v1/models` —— 实测它只返回 `id`/`object`/`created`/

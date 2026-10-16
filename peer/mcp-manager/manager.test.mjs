@@ -24,6 +24,7 @@ function fixture(t) {
   return {home,ctx,exec,defs,listeners,secrets};
 }
 test('namespace is stable and collision resistant',()=>{assert.equal(toolName('mt','mt_file_list'),'mcp__mt__mt_file_list');assert.notEqual(toolName('x','a.b'),toolName('x','a_b'));assert.ok(toolName('x','a'.repeat(100)).length<=64);});
+test('custom ADB server port is validated and persists without changing its device',async t=>{const f=fixture(t),m=new McpManager(f.ctx,f.home);t.after(()=>m.close());await assert.rejects(m.manage({action:'save',server:{id:'mt',transport:'phone-mt',serial:'fixture-device',adbServerPort:0,enabled:false}}),/端口无效/);const s=await m.manage({action:'save',server:{id:'mt',transport:'phone-mt',serial:'fixture-device',adbServerPort:5069,enabled:false}});assert.equal(s.servers.find(x=>x.id==='mt').adbServerPort,5069);assert.equal(s.servers.find(x=>x.id==='mt').serial,'fixture-device');});
 test('QQ and child identity cannot borrow local scope',t=>{const f=fixture(t);assert.throws(()=>localCaller({...f.exec,agent:{session:{id:'qq-1',header:{cwd:f.home}}}}));assert.throws(()=>localCaller({...f.exec,agent:{session:{id:'child',header:{cwd:f.home,origin:'subagent'}}}}));});
 test('real MCP client handshake requires bridge-issued execution ticket',async t=>{
   const f=fixture(t),transport=new LocalMcpTransport([{name:'test',inputSchema:{type:'object',properties:{}}}],async()=>({ok:true}));
@@ -49,7 +50,7 @@ test('quota enforced before inference and usage without price stays unknown',asy
 });
 test('failed connection replacement leaves old live tools and durable revision',async t=>{
   const f=fixture(t),m=new McpManager(f.ctx,f.home);await m.init();t.after(()=>m.close());
-  assert.equal(m.status().servers.filter(s=>s.status==='connected').length,2);const rev=m.config.revision,tool=f.defs.get('mcp__router__models');
+  assert.equal(m.status().servers.filter(s=>s.status==='connected').length,3);const rev=m.config.revision,tool=f.defs.get('mcp__router__models');
   await assert.rejects(m.manage({action:'save',server:{id:'bad',transport:'streamable-http',url:'http://127.0.0.1:1/mcp'}}),/原配置/);
   assert.equal(m.config.revision,rev);assert.equal(f.defs.get('mcp__router__models'),tool);
   await assert.rejects(m.manage({action:'save',server:{id:'router',transport:'stdio',command:'node'}}),/不能替换/);
@@ -105,6 +106,15 @@ test('stdio server annotation cannot grant itself read-only permission',async t=
   await m.manage({action:'save',server:{...m.config.servers.find(s=>s.id==='stdio'),readOnlyTools:['echo']}});
   assert.equal((await f.defs.get('mcp__stdio__echo').execute({value:'ok'},f.exec)).content[0].text,'ok');
   assert.ok(!JSON.stringify(m.status()).includes('not-echoed'));await m.manage({action:'remove',id:'stdio'});assert.ok(!f.defs.has('mcp__stdio__echo'));
+});
+test('durable home paths reconnect through the actual manager after a service restart',async t=>{
+  const f=fixture(t),dir=path.join(f.home,'extensions/mcp/test');fs.mkdirSync(dir,{recursive:true});
+  fs.copyFileSync(fileURLToPath(new URL('./stdio-fixture.mjs',import.meta.url)),path.join(dir,'server.mjs'));
+  const first=new McpManager(f.ctx,f.home);await first.init();
+  await first.manage({action:'save',server:{id:'persistent',transport:'stdio',command:process.execPath,args:['$DSH_HOME/extensions/mcp/test/server.mjs'],cwd:'$DSH_HOME/extensions/mcp/test',readOnlyTools:['echo']}});
+  const revision=first.config.revision;await first.close();const second=new McpManager(f.ctx,f.home);await second.init();t.after(()=>second.close());
+  assert.equal(second.config.revision,revision);assert.equal(second.status().servers.find(s=>s.id==='persistent').status,'connected');
+  assert.equal((await f.defs.get('mcp__persistent__echo').execute({value:'restart-survived'},f.exec)).content[0].text,'restart-survived');
 });
 test('Streamable HTTP and legacy SSE discover real tools',async t=>{
   const f=fixture(t),m=new McpManager(f.ctx,f.home);await m.init();t.after(()=>m.close());

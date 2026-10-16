@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
     <queries>
+        <intent><action android:name="android.intent.action.TTS_SERVICE" /></intent>
         <package android:name="com.termux" />
         <package android:name="moe.shizuku.privileged.api" />
         <package android:name="com.reqable.android" />

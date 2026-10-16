@@ -1,0 +1,4 @@
+interface:
+  display_name: "本机记忆检索"
+  short_description: "查询本机记忆、DSH历史和跨设备经验候选"
+  default_prompt: "检索当前问题相关的本机记忆，核对来源与时间，未命中时用关键词兜底。"

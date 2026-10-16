@@ -1,0 +1,7 @@
+{
+  "package": "dsh-opencode-palette",
+  "version": "2.0.26",
+  "source": "https://github.com/FeatherHunter/dsh-opencode-palette",
+  "sourceSha256": "b80103955ff96e6e0b80987fa2a0e8085df821424534ead7e4a60bd4b32ff67b",
+  "scope": "Pure appearance engine and 38 palettes; embedded fonts/updater/host functions excluded"
+}

@@ -1,0 +1,771 @@
+/* mario-bowser — 超级马里奥 · 库巴 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-mario-bowser], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-mario-bowser] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2b2116;
+  background-color: #f6f1e6;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] {
+  color: #f4ecdd;
+  background-color: #120d0a;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-mario-bowser] {
+  --color-primary: #d95f0e;
+  --primary: #d95f0e;
+  --primary-rgb: 217, 95, 14;
+  --color-primary-light-1: #e8803c;
+  --color-primary-light-2: #f0a26b;
+  --color-primary-light-3: #f8c5a1;
+  --color-primary-dark-1: #a8480a;
+  --brand: #d95f0e;
+  --brand-light: #fdf0e2;
+  --brand-hover: #b34e0b;
+  --color-brand-fill: #d95f0e;
+  --color-brand-bg: #fbe4cd;
+  --aou-1: #fdf0e2;
+  --aou-2: #fadcc0;
+  --aou-3: #f6c294;
+  --aou-4: #f0a264;
+  --aou-5: #e57f33;
+  --aou-6: #d95f0e;
+  --aou-7: #b34e0b;
+  --aou-8: #8c3d08;
+  --aou-9: #662c06;
+  --aou-10: #401b04;
+  --bg-base: #f6f1e6;
+  --bg-1: #efe9db;
+  --bg-2: #e7dfcd;
+  --bg-3: #ddd3bd;
+  --bg-4: #d0c4ab;
+  --bg-5: #bfb296;
+  --bg-6: #a99b7d;
+  --bg-8: #86795e;
+  --bg-9: #605641;
+  --bg-10: #3a3327;
+  --color-bg-1: #efe9db;
+  --color-bg-2: #e7dfcd;
+  --color-bg-3: #ddd3bd;
+  --color-bg-4: #d0c4ab;
+  --bg-hover: #e4dcc9;
+  --bg-active: #d9d0ba;
+  --text-primary: #2b2116;
+  --text-secondary: #5f5545;
+  --text-disabled: #a89f8c;
+  --text-0: #171209;
+  --text-white: #ffffff;
+  --color-text-1: #2b2116;
+  --color-text-2: #5f5545;
+  --color-text-3: #857c6a;
+  --color-text-4: #a89f8c;
+  --border-base: #cec2a8;
+  --border-light: #ded5c0;
+  --border-special: #eab287;
+  --color-border: #cec2a8;
+  --color-border-1: #cec2a8;
+  --color-border-2: #ded5c0;
+  --fill: #e7dfcd;
+  --color-fill: #e7dfcd;
+  --fill-0: #efe9db;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fbf8f0;
+  --inverse: #2b2116;
+  --success: #2e9e5f;
+  --warning: #d08a1d;
+  --danger: #d63c14;
+  --info: #3a6ec9;
+  --message-user-bg: #2e2a1f;
+  --message-tips-bg: #e9eddf;
+  --workspace-btn-bg: #fbe4cd;
+  --color-guid-agent-bar: #ece6d5;
+  --bowser-flame: #d95f0e;
+  --bowser-fire: #d63c14;
+  --bowser-shell: #8fb877;
+  --bowser-shell-hi: #6f9e58;
+  --bowser-ivory: #f7f1e0;
+  --bowser-mane: #c92f22;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-mario-bowser][data-ds-dark-theme] {
+  --color-primary: #f2701d;
+  --primary: #f2701d;
+  --primary-rgb: 242, 112, 29;
+  --color-primary-light-1: #f58c46;
+  --color-primary-light-2: #f9a873;
+  --color-primary-light-3: #fcc9a6;
+  --color-primary-dark-1: #c1510d;
+  --brand: #f2701d;
+  --brand-light: #3a1f0c;
+  --brand-hover: #ff8336;
+  --color-brand-fill: #f2701d;
+  --color-brand-bg: #33190a;
+  --aou-1: #2a1204;
+  --aou-2: #451c06;
+  --aou-3: #632809;
+  --aou-4: #84360c;
+  --aou-5: #b34810;
+  --aou-6: #f2701d;
+  --aou-7: #f58c46;
+  --aou-8: #f9a873;
+  --aou-9: #fcc9a6;
+  --aou-10: #ffecdc;
+  --bg-base: #120d0a;
+  --bg-1: #1a130e;
+  --bg-2: #221911;
+  --bg-3: #2b2015;
+  --bg-4: #35281b;
+  --bg-5: #413223;
+  --bg-6: #504029;
+  --bg-8: #6e5a40;
+  --bg-9: #97836a;
+  --bg-10: #c9b99e;
+  --color-bg-1: #1a130e;
+  --color-bg-2: #221911;
+  --color-bg-3: #2b2015;
+  --color-bg-4: #35281b;
+  --bg-hover: #261c12;
+  --bg-active: #2f2417;
+  --text-primary: #f4ecdd;
+  --text-secondary: #b3a68e;
+  --text-disabled: #5f5545;
+  --text-0: #faf6ec;
+  --text-white: #ffffff;
+  --color-text-1: #f4ecdd;
+  --color-text-2: #b3a68e;
+  --color-text-3: #877a64;
+  --color-text-4: #5f5545;
+  --border-base: #3a2c1d;
+  --border-light: #2c2115;
+  --border-special: #6e3512;
+  --color-border: #3a2c1d;
+  --color-border-1: #3a2c1d;
+  --color-border-2: #2c2115;
+  --fill: #221911;
+  --color-fill: #221911;
+  --fill-0: #1a130e;
+  --fill-white-to-black: #120d0a;
+  --dialog-fill-0: #1e1610;
+  --inverse: #f4ecdd;
+  --success: #57b06a;
+  --warning: #f0a53a;
+  --danger: #e8481f;
+  --info: #4f8fd0;
+  --message-user-bg: #3a2410;
+  --message-tips-bg: #201a12;
+  --workspace-btn-bg: #33190a;
+  --color-guid-agent-bar: #1c150f;
+  --bowser-flame: #f2701d;
+  --bowser-fire: #e8481f;
+  --bowser-shell: #2e6b2a;
+  --bowser-shell-hi: #4c9448;
+  --bowser-ivory: #f2ead6;
+  --bowser-mane: #c92f22;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-mario-bowser] {
+  --dsw-static-deepseek-50: #fdf0e2;
+  --dsw-static-blue-50: #fdf0e2;
+  --dsw-static-deepseek-50p: #fadcc0;
+  --dsw-static-blue-50p: #fadcc0;
+  --dsw-static-deepseek-75: #fadcc0;
+  --dsw-static-blue-75: #fadcc0;
+  --dsw-static-deepseek-100: #fadcc0;
+  --dsw-static-blue-100: #fadcc0;
+  --dsw-static-deepseek-200: #f6c294;
+  --dsw-static-blue-200: #f6c294;
+  --dsw-static-deepseek-300: #f0a264;
+  --dsw-static-blue-300: #f0a264;
+  --dsw-static-deepseek-400: #e57f33;
+  --dsw-static-blue-400: #e57f33;
+  --dsw-static-deepseek-450: #e57f33;
+  --dsw-static-blue-450: #e57f33;
+  --dsw-static-deepseek-500: #d95f0e;
+  --dsw-static-blue-500: #d95f0e;
+  --dsw-static-deepseek-600: #b34e0b;
+  --dsw-static-blue-600: #b34e0b;
+  --dsw-static-deepseek-700-delete: #8c3d08;
+  --dsw-static-deepseek-800: #8c3d08;
+  --dsw-static-blue-800: #8c3d08;
+  --dsw-static-deepseek-900: #662c06;
+  --dsw-static-blue-900: #662c06;
+  --dsw-static-deepseek-950: #401b04;
+  --dsw-static-blue-950: #401b04;
+  --dsw-static-neutral-bluish-00: #efe9db;
+  --dsw-static-neutral-00: #efe9db;
+  --dsw-static-neutral-bluish-50: #efe9db;
+  --dsw-static-neutral-50: #efe9db;
+  --dsw-static-neutral-bluish-60: #efe9db;
+  --dsw-static-neutral-60: #efe9db;
+  --dsw-static-neutral-bluish-75: #e7dfcd;
+  --dsw-static-neutral-75: #e7dfcd;
+  --dsw-static-neutral-bluish-100: #e7dfcd;
+  --dsw-static-neutral-100: #e7dfcd;
+  --dsw-static-neutral-bluish-150: #ddd3bd;
+  --dsw-static-neutral-150: #ddd3bd;
+  --dsw-static-neutral-bluish-200: #ddd3bd;
+  --dsw-static-neutral-200: #ddd3bd;
+  --dsw-static-neutral-bluish-250: #d0c4ab;
+  --dsw-static-neutral-250: #d0c4ab;
+  --dsw-static-neutral-bluish-300: #d0c4ab;
+  --dsw-static-neutral-300: #d0c4ab;
+  --dsw-static-neutral-bluish-400: #bfb296;
+  --dsw-static-neutral-400: #bfb296;
+  --dsw-static-neutral-bluish-500: #a99b7d;
+  --dsw-static-neutral-500: #a99b7d;
+  --dsw-static-neutral-bluish-550: #a99b7d;
+  --dsw-static-neutral-550: #a99b7d;
+  --dsw-static-neutral-bluish-600: #86795e;
+  --dsw-static-neutral-600: #86795e;
+  --dsw-static-neutral-bluish-700: #86795e;
+  --dsw-static-neutral-700: #86795e;
+  --dsw-static-neutral-bluish-750: #605641;
+  --dsw-static-neutral-750: #605641;
+  --dsw-static-neutral-bluish-800: #605641;
+  --dsw-static-neutral-800: #605641;
+  --dsw-static-neutral-bluish-850: #605641;
+  --dsw-static-neutral-850: #605641;
+  --dsw-static-neutral-bluish-875: #3a3327;
+  --dsw-static-neutral-875: #3a3327;
+  --dsw-static-neutral-bluish-900: #3a3327;
+  --dsw-static-neutral-900: #3a3327;
+  --dsw-static-neutral-bluish-950: #3a3327;
+  --dsw-static-neutral-950: #3a3327;
+  --dsw-static-neutral-bluish-1000: #2b2116;
+  --dsw-static-neutral-1000: #2b2116;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e5f 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e5f 20%, white);
+  --dsw-static-green-400: #2e9e5f;
+  --dsw-static-green-500: #2e9e5f;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e5f 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e5f 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d63c14 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d63c14 20%, white);
+  --dsw-static-red-400: #d63c14;
+  --dsw-static-red-500: #d63c14;
+  --dsw-static-red-600: color-mix(in srgb, #d63c14 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d63c14 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-mario-bowser][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2a1204;
+  --dsw-static-blue-50: #2a1204;
+  --dsw-static-deepseek-50p: #451c06;
+  --dsw-static-blue-50p: #451c06;
+  --dsw-static-deepseek-75: #451c06;
+  --dsw-static-blue-75: #451c06;
+  --dsw-static-deepseek-100: #451c06;
+  --dsw-static-blue-100: #451c06;
+  --dsw-static-deepseek-200: #632809;
+  --dsw-static-blue-200: #632809;
+  --dsw-static-deepseek-300: #84360c;
+  --dsw-static-blue-300: #84360c;
+  --dsw-static-deepseek-400: #b34810;
+  --dsw-static-blue-400: #b34810;
+  --dsw-static-deepseek-450: #b34810;
+  --dsw-static-blue-450: #b34810;
+  --dsw-static-deepseek-500: #f2701d;
+  --dsw-static-blue-500: #f2701d;
+  --dsw-static-deepseek-600: #f58c46;
+  --dsw-static-blue-600: #f58c46;
+  --dsw-static-deepseek-700-delete: #f9a873;
+  --dsw-static-deepseek-800: #f9a873;
+  --dsw-static-blue-800: #f9a873;
+  --dsw-static-deepseek-900: #fcc9a6;
+  --dsw-static-blue-900: #fcc9a6;
+  --dsw-static-deepseek-950: #ffecdc;
+  --dsw-static-blue-950: #ffecdc;
+  --dsw-static-neutral-bluish-00: #1a130e;
+  --dsw-static-neutral-00: #1a130e;
+  --dsw-static-neutral-bluish-50: #1a130e;
+  --dsw-static-neutral-50: #1a130e;
+  --dsw-static-neutral-bluish-60: #1a130e;
+  --dsw-static-neutral-60: #1a130e;
+  --dsw-static-neutral-bluish-75: #221911;
+  --dsw-static-neutral-75: #221911;
+  --dsw-static-neutral-bluish-100: #221911;
+  --dsw-static-neutral-100: #221911;
+  --dsw-static-neutral-bluish-150: #2b2015;
+  --dsw-static-neutral-150: #2b2015;
+  --dsw-static-neutral-bluish-200: #2b2015;
+  --dsw-static-neutral-200: #2b2015;
+  --dsw-static-neutral-bluish-250: #35281b;
+  --dsw-static-neutral-250: #35281b;
+  --dsw-static-neutral-bluish-300: #35281b;
+  --dsw-static-neutral-300: #35281b;
+  --dsw-static-neutral-bluish-400: #413223;
+  --dsw-static-neutral-400: #413223;
+  --dsw-static-neutral-bluish-500: #504029;
+  --dsw-static-neutral-500: #504029;
+  --dsw-static-neutral-bluish-550: #504029;
+  --dsw-static-neutral-550: #504029;
+  --dsw-static-neutral-bluish-600: #6e5a40;
+  --dsw-static-neutral-600: #6e5a40;
+  --dsw-static-neutral-bluish-700: #6e5a40;
+  --dsw-static-neutral-700: #6e5a40;
+  --dsw-static-neutral-bluish-750: #97836a;
+  --dsw-static-neutral-750: #97836a;
+  --dsw-static-neutral-bluish-800: #97836a;
+  --dsw-static-neutral-800: #97836a;
+  --dsw-static-neutral-bluish-850: #97836a;
+  --dsw-static-neutral-850: #97836a;
+  --dsw-static-neutral-bluish-875: #c9b99e;
+  --dsw-static-neutral-875: #c9b99e;
+  --dsw-static-neutral-bluish-900: #c9b99e;
+  --dsw-static-neutral-900: #c9b99e;
+  --dsw-static-neutral-bluish-950: #c9b99e;
+  --dsw-static-neutral-950: #c9b99e;
+  --dsw-static-neutral-bluish-1000: #f4ecdd;
+  --dsw-static-neutral-1000: #f4ecdd;
+  --dsw-static-green-50: color-mix(in srgb, #57b06a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #57b06a 20%, black);
+  --dsw-static-green-400: #57b06a;
+  --dsw-static-green-500: #57b06a;
+  --dsw-static-green-600: color-mix(in srgb, #57b06a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #57b06a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f0a53a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #f0a53a 20%, black);
+  --dsw-static-amber-400: #f0a53a;
+  --dsw-static-amber-500: #f0a53a;
+  --dsw-static-amber-600: color-mix(in srgb, #f0a53a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f0a53a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e8481f 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e8481f 20%, black);
+  --dsw-static-red-400: #e8481f;
+  --dsw-static-red-500: #e8481f;
+  --dsw-static-red-600: color-mix(in srgb, #e8481f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e8481f 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-mario-bowser] {
+  --dsw-alias-button-primary-fill: #d95f0e;
+  --dsw-alias-button-primary-hover: #b34e0b;
+  --dsw-alias-button-primary-dimmed: #fadcc0;
+  --dsw-alias-button-info-fill: #d95f0e;
+  --dsw-alias-button-info-hover: #b34e0b;
+  --dsw-alias-button-contrast-fill: #b34e0b;
+  --dsw-alias-button-ghost-active-fill: #fdf0e2;
+  --dsw-alias-button-ghost-active-hover: #fadcc0;
+  --dsw-alias-button-ghost-active-border: #f0a264;
+  --dsw-alias-button-elevated-fill: #efe9db;
+  --dsw-alias-button-floating-fill: #efe9db;
+  --dsw-alias-button-floating-hover: #e4dcc9;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(217, 95, 14, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(217, 95, 14, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(217, 95, 14, 0.6);
+  --dsw-specific-bubble: #2e2a1f;
+  --dsw-specific-bubble-highlight: #f6c294;
+  --dsw-specific-input-major: #efe9db;
+  --dsw-specific-login-input: #efe9db;
+  --dsw-specific-sidebar-fill: #d95f0e;
+  --dsw-specific-sidebar-nav-item-active: #fadcc0;
+  --dsw-specific-sidebar-nav-item-hover: #e4dcc9;
+  --dsw-specific-sidebar-nav-item-active-accent: #f0a264;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-mario-bowser][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #f2701d;
+  --dsw-alias-button-primary-hover: #ff8336;
+  --dsw-alias-button-primary-dimmed: #451c06;
+  --dsw-alias-button-info-fill: #f2701d;
+  --dsw-alias-button-info-hover: #ff8336;
+  --dsw-alias-button-contrast-fill: #f58c46;
+  --dsw-alias-button-ghost-active-fill: #3a1f0c;
+  --dsw-alias-button-ghost-active-hover: #451c06;
+  --dsw-alias-button-ghost-active-border: #84360c;
+  --dsw-alias-button-elevated-fill: #1a130e;
+  --dsw-alias-button-floating-fill: #1a130e;
+  --dsw-alias-button-floating-hover: #261c12;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(242, 112, 29, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(242, 112, 29, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(242, 112, 29, 0.6);
+  --dsw-specific-bubble: #3a2410;
+  --dsw-specific-bubble-highlight: #632809;
+  --dsw-specific-input-major: #1a130e;
+  --dsw-specific-login-input: #1a130e;
+  --dsw-specific-sidebar-fill: #f2701d;
+  --dsw-specific-sidebar-nav-item-active: #451c06;
+  --dsw-specific-sidebar-nav-item-hover: #261c12;
+  --dsw-specific-sidebar-nav-item-active-accent: #84360c;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-mario-bowser] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-bowser]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 22%, rgba(217, 95, 14, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 76% 14%, rgba(214, 60, 20, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 52% 70%, rgba(217, 95, 14, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 88%, rgba(143, 184, 119, 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(217, 95, 14, 0.06) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.7;
+}
+
+body[data-dsh-mario-bowser]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      repeating-linear-gradient(58deg, rgba(217, 95, 14, 0.5) 0 2px, transparent 2px 46px),
+      repeating-linear-gradient(-58deg, rgba(214, 60, 20, 0.45) 0 2px, transparent 2px 46px);
+    background-size: 92px 92px, 92px 92px;
+    opacity: 0.05;
+    animation: mario-bowser-bowser-lava-flow 26s linear infinite;
+}
+
+body[data-dsh-mario-bowser] [class*='sider'] [class*='session'],
+body[data-dsh-mario-bowser] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-bowser] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(111, 158, 88, 0.2);
+    box-shadow: inset 3px 0 0 0 rgba(111, 158, 88, 0.85);
+}
+
+body[data-dsh-mario-bowser] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-bowser] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(217, 95, 14, 0.18), rgba(217, 95, 14, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #d95f0e;
+}
+
+body[data-dsh-mario-bowser] button[class*='primary'],
+body[data-dsh-mario-bowser] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #b34e0b 0%, #d95f0e 55%, #e8803c 100%) !important;
+    border: 1px solid #f6c294 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(217, 95, 14, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(90, 30, 5, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-bowser] button[class*='primary']:hover,
+body[data-dsh-mario-bowser] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.06);
+    box-shadow: 0 3px 14px rgba(217, 95, 14, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: mario-bowser-bowser-btn-ember 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-bowser] pre,
+body[data-dsh-mario-bowser] .markdown-body pre {
+  background: linear-gradient(180deg, #2e271b 0%, #261f14 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #d95f0e !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(217, 95, 14, 0.14);
+}
+
+body[data-dsh-mario-bowser] pre code,
+body[data-dsh-mario-bowser] .markdown-body pre code {
+  background: transparent !important;
+    color: #ece2cc !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-bowser] code,
+body[data-dsh-mario-bowser] .markdown-body code {
+  background: rgba(111, 158, 88, 0.18);
+    color: #b34e0b;
+    border: 1px solid rgba(217, 95, 14, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-bowser]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-mario-bowser] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(58, 51, 39, 0.08), 0 0 0 1px rgba(111, 158, 88, 0.18);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-bowser] [class*='guidInputCard']:hover {
+  border-color: var(--bowser-shell-hi) !important;
+}
+
+body[data-dsh-mario-bowser] [class*='agent-bar'],
+body[data-dsh-mario-bowser] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(217, 95, 14, 0.35);
+}
+
+body[data-dsh-mario-bowser]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-bowser]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #e8803c, #a8480a);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-mario-bowser]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f0a26b, #8c3d08);
+}
+
+body[data-dsh-mario-bowser]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-bowser] .markdown-body a,
+body[data-dsh-mario-bowser] a {
+  color: #b34e0b;
+}
+
+body[data-dsh-mario-bowser] .markdown-body a:hover,
+body[data-dsh-mario-bowser] a:hover {
+  color: #d95f0e;
+}
+
+body[data-dsh-mario-bowser] .markdown-body blockquote {
+  border-left: 3px solid #d95f0e;
+    background: rgba(111, 158, 88, 0.14);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-bowser] .markdown-body hr,
+body[data-dsh-mario-bowser] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(217, 95, 14, 0.5) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(214, 60, 20, 0.45) 50%, transparent 50%);
+    background-size: 12px 6px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 6px 1px;
+    opacity: 0.55;
+}
+
+body[data-dsh-mario-bowser] .arco-btn:not(button[class*='primary']):hover {
+  color: #b34e0b !important;
+    border-color: rgba(217, 95, 14, 0.5) !important;
+    background-color: rgba(217, 95, 14, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-mario-bowser][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 22%, rgba(242, 112, 29, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 76% 14%, rgba(232, 72, 31, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 52% 70%, rgba(242, 112, 29, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 88%, rgba(232, 72, 31, 0.14) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(242, 112, 29, 0.10) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      repeating-linear-gradient(58deg, rgba(242, 112, 29, 0.5) 0 2px, transparent 2px 46px),
+      repeating-linear-gradient(-58deg, rgba(232, 72, 31, 0.45) 0 2px, transparent 2px 46px);
+    background-size: 92px 92px, 92px 92px;
+    opacity: 0.06;
+    animation: mario-bowser-bowser-lava-flow 26s linear infinite;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(76, 148, 72, 0.22);
+    box-shadow: inset 3px 0 0 0 rgba(76, 148, 72, 0.9);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(242, 112, 29, 0.3), rgba(242, 112, 29, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #f2701d;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-mario-bowser][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #c1510d 0%, #f2701d 55%, #e8481f 100%) !important;
+    border: 1px solid #f9a873 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(242, 112, 29, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(90, 30, 5, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-mario-bowser][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    box-shadow: 0 3px 16px rgba(242, 112, 29, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: mario-bowser-bowser-btn-ember 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] pre,
+body[data-dsh-mario-bowser][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #171009 0%, #120c07 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #f2701d !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(232, 72, 31, 0.16);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] pre code,
+body[data-dsh-mario-bowser][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #e8dcc4 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] code,
+body[data-dsh-mario-bowser][data-ds-dark-theme] .markdown-body code {
+  background: rgba(76, 148, 72, 0.22);
+    color: #f9a873;
+    border: 1px solid rgba(242, 112, 29, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(8, 6, 4, 0.5), 0 0 0 1px rgba(76, 148, 72, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--bowser-shell-hi) !important;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-mario-bowser][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(242, 112, 29, 0.4);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f2701d, #84360c);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff8336, #c1510d);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-mario-bowser][data-ds-dark-theme] a {
+  color: #f58c46;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-mario-bowser][data-ds-dark-theme] a:hover {
+  color: #f9a873;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #f2701d;
+    background: rgba(76, 148, 72, 0.14);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-mario-bowser][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(242, 112, 29, 0.55) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(232, 72, 31, 0.5) 50%, transparent 50%);
+    background-size: 12px 6px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 6px 1px;
+    opacity: 0.6;
+}
+
+body[data-dsh-mario-bowser][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #f9a873 !important;
+    border-color: rgba(242, 112, 29, 0.5) !important;
+    background-color: rgba(242, 112, 29, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes mario-bowser-bowser-lava-flow {
+  0% { background-position: 0 0, 46px 46px; }
+  100% { background-position: 92px 92px, 138px 138px; }
+}
+
+@keyframes mario-bowser-bowser-flame-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(217, 95, 14, 0.15); }
+  50% { box-shadow: 0 2px 15px rgba(217, 95, 14, 0.32); }
+}
+
+@keyframes mario-bowser-bowser-btn-ember {
+  0%, 100% { box-shadow: 0 3px 12px rgba(217, 95, 14, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 18px rgba(217, 95, 14, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes mario-bowser-bowser-lava-border {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

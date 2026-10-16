@@ -19,6 +19,7 @@ import { applyWorkflowHub } from './workflow-hub/index.mjs';
 import { applyChatHistory } from './chat-history/index.mjs';
 import { applyMcpManager } from './mcp-manager/index.mjs';
 import { applyChatFiles } from './chat-files/index.mjs';
+import { applyTaskSupervisor } from './task-supervisor/index.mjs';
 
 export const name = 'dsh-peer';
 export const inject = ['webServer', 'connection', 'credentials', 'settings', 'llm', 'systemPrompt', 'tools'];
@@ -33,6 +34,7 @@ export async function apply(ctx, options = {}) {
   await applyWorkflowHub(ctx, role);
   if (role === 'computer') await applyAgentCards(ctx);
   if (ctx.get('tools')) await applyMcpManager(ctx);
+  if (ctx.get('tools')) applyTaskSupervisor(ctx);
   const webPort = options.webPort ?? 3080, proxyPort = options.proxyPort ?? 3081, sharedGatewayPort = options.sharedGatewayPort ?? 8327;
   const sync = new ConfigSync(ctx.settings, ctx.credentials);
   let state = { role, name: role === 'phone' ? '我的手机' : hostname(), allowGateway: true, autoSync: false }, tunnel, proxy, disposed = false;

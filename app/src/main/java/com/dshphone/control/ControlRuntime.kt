@@ -21,7 +21,9 @@ object ControlRuntime {
     private val receipts = linkedMapOf<String, JSONObject>()
     private val receiptArgs = linkedMapOf<String, String>()
     private val cancelled = linkedSetOf<String>()
+    private val executions = linkedMapOf<String, CompletableFuture<JSONObject>>()
     private var stoppedAt = 0L
+    private var accessibilityIssue: String? = null
     private var lastResult = JSONObject().put("status", "off")
     private val ticker = object : Runnable {
         override fun run() {
@@ -30,6 +32,24 @@ object ControlRuntime {
         }
     }
     fun attach(ctx: Context) { context = ctx.applicationContext }
+    fun accessibilityConnected(instance: PhoneControlService) {
+        attach(instance); service = instance; accessibilityIssue = null
+        if (lease.current() != null) instance.showStop()
+    }
+    fun accessibilityUnavailable(instance: PhoneControlService, reason: String, disconnected: Boolean) {
+        if (disconnected) instance.clear() else instance.invalidateScreen()
+        // A late callback from the replaced service must not affect its successor.
+        if (service !== instance) return
+        if (disconnected) service = null
+        accessibilityIssue = reason; pendingAction = null; approvedAction = null
+        val result = JSONObject().put("status", "result_unknown").put("error", "无障碍连接中断；请先核对操作实际结果，不要重复提交")
+        for ((key, future) in executions.toMap()) {
+            remember(key, result); future.complete(JSONObject(result.toString()))
+        }
+        executions.clear()
+        // Accessibility is one backend, not the user's session authorization.
+        // Keep independent Termux commands and an explicit user-stop latch intact.
+    }
     fun blocked(packageName: String): Boolean {
         if (packageName in setOf(context?.packageName.orEmpty(), "android", "com.android.systemui", "com.android.settings", "moe.shizuku.privileged.api") ||
             packageName.contains("permissioncontroller") || packageName.contains("packageinstaller")) return true
@@ -52,6 +72,8 @@ object ControlRuntime {
             try {
                 val owner = payload.optString("owner")
                 when (payload.getString("command")) {
+                    "media_speech" -> future.complete(MediaSpeech.begin(ctx, payload))
+                    "media_speech_result" -> future.complete(MediaSpeech.result(ctx, payload.getString("jobId")))
                     "status" -> future.complete(status(owner))
                     "session" -> {
                         syncSession(owner, payload.getString("mode"), payload.optLong("intentAt", 0))
@@ -105,11 +127,14 @@ object ControlRuntime {
                         check(pendingAction == null) { "有待确认动作，请先在手机操作页确认或取消" }
                         check(receipts.values.none { it.optString("status") == "running" }) { "上一操作尚未结束" }
                         receiptArgs[key] = signature; remember(key, JSONObject().put("status", "running"))
+                        executions[key] = future
                         try {
                             (service ?: error("请在系统设置启用 DSH 手机操作无障碍服务")).execute(owner, grant.epoch, payload.getJSONObject("args"), false) { result ->
+                                executions.remove(key)
+                                if (future.isDone) return@execute
                                 remember(key, result); if (lease.current()?.epoch == grant.epoch) lastResult = result; future.complete(result)
                             }
-                        } catch (error: Throwable) { remember(key, failure(error)); throw error }
+                        } catch (error: Throwable) { executions.remove(key); remember(key, failure(error)); throw error }
                     }
                     "termux_start" -> { future.complete(TermuxCommands.start(ctx, owner, payload)) }
                     "termux_result" -> future.complete(TermuxCommands.result(owner, payload.getString("jobId")))
@@ -136,7 +161,7 @@ object ControlRuntime {
     fun status(owner: String = ""): JSONObject {
         val grant = lease.current(); val request = lease.currentRequest()
         if (pendingAction?.deadline?.let { SystemClock.elapsedRealtime() >= it } == true) pendingAction = null
-        return JSONObject().put("status", if (grant == null) "off" else "authorized").put("paused", stoppedAt > 0).put("permissionMode", grant?.policyMode ?: JSONObject.NULL).put("accessibilityConnected", service != null).put("logs", AppLogs.status()).put("termux", TermuxCommands.status(context ?: error("手机操作尚未启动"))).put("apps", apps())
+        return JSONObject().put("status", if (grant == null) "off" else "authorized").put("paused", stoppedAt > 0).put("stoppedAt", stoppedAt).put("permissionMode", grant?.policyMode ?: JSONObject.NULL).put("accessibilityConnected", service != null).put("accessibilityIssue", accessibilityIssue ?: JSONObject.NULL).put("logs", AppLogs.status()).put("termux", TermuxCommands.status(context ?: error("手机操作尚未启动"))).put("apps", apps())
             .put("grant", if (grant != null && (owner.isEmpty() || owner == grant.owner)) JSONObject().put("owner", grant.owner).put("task", grant.task).put("epoch", grant.epoch)
                 .put("packages", JSONArray(grant.packages.toList())).put("continuous", grant.continuous).put("allApps", grant.allApps).put("policyMode", grant.policyMode ?: JSONObject.NULL).put("remainingSeconds", if (grant.continuous) JSONObject.NULL else (grant.deadline - SystemClock.elapsedRealtime()).coerceAtLeast(0) / 1000) else JSONObject.NULL)
             .put("request", if (request != null && (owner.isEmpty() || owner == request.owner)) JSONObject().put("id", request.id).put("owner", request.owner).put("task", request.task).put("packages", JSONArray(request.packages.toList())).put("minutes", request.minutes) else JSONObject.NULL)
@@ -151,7 +176,9 @@ object ControlRuntime {
         val old = lease.current()
         if (old?.owner == owner && old.policyMode == mode) return
         check(old?.owner == owner || receipts.values.none { it.optString("status") == "running" }) { "上一操作尚未结束，请先核对结果" }
+        check(old?.owner == owner || !TermuxCommands.busy()) { "其他会话的 Termux 命令仍在运行，请先核对结果" }
         lease.claim(owner, mode); resetTaskData(); TermuxCommands.revoke(); stoppedAt = 0L
+        lastResult = JSONObject().put("status", "authorized")
         try { service?.showStop() } catch (error: Throwable) { stop("停止按钮无法显示"); throw error }
         handler.removeCallbacks(ticker); handler.postDelayed(ticker, 1000)
     }
@@ -193,6 +220,11 @@ object ControlRuntime {
             lease.stop(); handler.post { stop(reason) }; return
         }
         lease.stop(); stoppedAt = System.currentTimeMillis(); pendingAction = null; approvedAction = null
+        for ((key, future) in executions.toMap()) {
+            val result = JSONObject().put("status", "stopped_after_dispatch").put("error", "操作已停止；已提交动作请先核对实际结果")
+            remember(key, result); future.complete(result)
+        }
+        executions.clear()
         TermuxCommands.revoke()
         handler.removeCallbacks(ticker); service?.clear()
         lastResult = JSONObject().put("status", "stopped").put("reason", reason)

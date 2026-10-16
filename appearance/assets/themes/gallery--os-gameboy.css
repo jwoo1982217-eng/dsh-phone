@@ -1,0 +1,810 @@
+/* os-gameboy — Game Boy | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-os-gameboy], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-os-gameboy] {
+  --dsw-font-family: 'Courier New', 'PingFang SC', 'Microsoft YaHei', monospace;
+  color: #0f380f;
+  background-color: #9bbc0f;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] {
+  color: #c8e04a;
+  background-color: #071107;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-os-gameboy] {
+  --color-primary: #306230;
+  --primary: #306230;
+  --primary-rgb: 48, 98, 48;
+  --color-primary-light-1: #4d7f38;
+  --color-primary-light-2: #6d9a3f;
+  --color-primary-light-3: #8bac0f;
+  --color-primary-dark-1: #0f380f;
+  --brand: #306230;
+  --brand-light: #c4d46a;
+  --brand-hover: #0f380f;
+  --color-brand-fill: #306230;
+  --color-brand-bg: #a8c34a;
+  --aou-1: #9bbc0f;
+  --aou-2: #93b210;
+  --aou-3: #8bac0f;
+  --aou-4: #7a9a20;
+  --aou-5: #69852b;
+  --aou-6: #567435;
+  --aou-7: #306230;
+  --aou-8: #265126;
+  --aou-9: #1b451b;
+  --aou-10: #0f380f;
+  --bg-base: #9bbc0f;
+  --bg-1: #93b210;
+  --bg-2: #8bac0f;
+  --bg-3: #7d9c22;
+  --bg-4: #6e8c2c;
+  --bg-5: #5f7c32;
+  --bg-6: #506c33;
+  --bg-8: #3a5228;
+  --bg-9: #24401e;
+  --bg-10: #0f380f;
+  --color-bg-1: #93b210;
+  --color-bg-2: #8bac0f;
+  --color-bg-3: #7d9c22;
+  --color-bg-4: #6e8c2c;
+  --bg-hover: #a4c428;
+  --bg-active: #86a812;
+  --text-primary: #0f380f;
+  --text-secondary: #265126;
+  --text-disabled: #5f7c32;
+  --text-0: #0f380f;
+  --text-white: #9bbc0f;
+  --color-text-1: #0f380f;
+  --color-text-2: #265126;
+  --color-text-3: #306230;
+  --color-text-4: #5f7c32;
+  --border-base: #306230;
+  --border-light: #69852b;
+  --border-special: #0f380f;
+  --color-border: #306230;
+  --color-border-1: #306230;
+  --color-border-2: #69852b;
+  --fill: #8bac0f;
+  --color-fill: #8bac0f;
+  --fill-0: #93b210;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #8bac0f;
+  --inverse: #0f380f;
+  --success: #306230;
+  --warning: #6b6b00;
+  --danger: #7a1f1f;
+  --info: #1b451b;
+  --message-user-bg: #306230;
+  --message-tips-bg: #a8c34a;
+  --workspace-btn-bg: #a8c34a;
+  --color-guid-agent-bar: #93b210;
+  --gb-0: #0f380f;
+  --gb-1: #306230;
+  --gb-2: #8bac0f;
+  --gb-3: #9bbc0f;
+  --gb-led: #e02020;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-os-gameboy][data-ds-dark-theme] {
+  --color-primary: #8bac0f;
+  --primary: #8bac0f;
+  --primary-rgb: 139, 172, 15;
+  --color-primary-light-1: #9bbc0f;
+  --color-primary-light-2: #b3d12e;
+  --color-primary-light-3: #d0e85c;
+  --color-primary-dark-1: #567435;
+  --brand: #8bac0f;
+  --brand-light: #1b451b;
+  --brand-hover: #9bbc0f;
+  --color-brand-fill: #8bac0f;
+  --color-brand-bg: #142e14;
+  --aou-1: #0f380f;
+  --aou-2: #1b451b;
+  --aou-3: #265126;
+  --aou-4: #306230;
+  --aou-5: #567435;
+  --aou-6: #69852b;
+  --aou-7: #7a9a20;
+  --aou-8: #8bac0f;
+  --aou-9: #9bbc0f;
+  --aou-10: #d0e85c;
+  --bg-base: #071107;
+  --bg-1: #0f380f;
+  --bg-2: #142e14;
+  --bg-3: #1b451b;
+  --bg-4: #265126;
+  --bg-5: #306230;
+  --bg-6: #3d7038;
+  --bg-8: #69852b;
+  --bg-9: #8bac0f;
+  --bg-10: #9bbc0f;
+  --color-bg-1: #0f380f;
+  --color-bg-2: #142e14;
+  --color-bg-3: #1b451b;
+  --color-bg-4: #265126;
+  --bg-hover: #1b451b;
+  --bg-active: #265126;
+  --text-primary: #c8e04a;
+  --text-secondary: #8bac0f;
+  --text-disabled: #3d7038;
+  --text-0: #e2f47e;
+  --text-white: #ffffff;
+  --color-text-1: #c8e04a;
+  --color-text-2: #8bac0f;
+  --color-text-3: #69852b;
+  --color-text-4: #3d7038;
+  --border-base: #306230;
+  --border-light: #1b451b;
+  --border-special: #8bac0f;
+  --color-border: #306230;
+  --color-border-1: #306230;
+  --color-border-2: #1b451b;
+  --fill: #142e14;
+  --color-fill: #142e14;
+  --fill-0: #0f380f;
+  --fill-white-to-black: #071107;
+  --dialog-fill-0: #0f380f;
+  --inverse: #c8e04a;
+  --success: #8bac0f;
+  --warning: #d0c03a;
+  --danger: #e05545;
+  --info: #9bbc0f;
+  --message-user-bg: #265126;
+  --message-tips-bg: #142e14;
+  --workspace-btn-bg: #1b451b;
+  --color-guid-agent-bar: #0f380f;
+  --gb-0: #0f380f;
+  --gb-1: #306230;
+  --gb-2: #8bac0f;
+  --gb-3: #9bbc0f;
+  --gb-led: #e02020;
+  --gb-glow: rgba(155, 188, 15, 0.55);
+}
+
+/* --- static palette: light --- */
+body[data-dsh-os-gameboy] {
+  --dsw-static-deepseek-50: #9bbc0f;
+  --dsw-static-blue-50: #9bbc0f;
+  --dsw-static-deepseek-50p: #93b210;
+  --dsw-static-blue-50p: #93b210;
+  --dsw-static-deepseek-75: #93b210;
+  --dsw-static-blue-75: #93b210;
+  --dsw-static-deepseek-100: #93b210;
+  --dsw-static-blue-100: #93b210;
+  --dsw-static-deepseek-200: #8bac0f;
+  --dsw-static-blue-200: #8bac0f;
+  --dsw-static-deepseek-300: #7a9a20;
+  --dsw-static-blue-300: #7a9a20;
+  --dsw-static-deepseek-400: #69852b;
+  --dsw-static-blue-400: #69852b;
+  --dsw-static-deepseek-450: #69852b;
+  --dsw-static-blue-450: #69852b;
+  --dsw-static-deepseek-500: #567435;
+  --dsw-static-blue-500: #567435;
+  --dsw-static-deepseek-600: #306230;
+  --dsw-static-blue-600: #306230;
+  --dsw-static-deepseek-700-delete: #265126;
+  --dsw-static-deepseek-800: #265126;
+  --dsw-static-blue-800: #265126;
+  --dsw-static-deepseek-900: #1b451b;
+  --dsw-static-blue-900: #1b451b;
+  --dsw-static-deepseek-950: #0f380f;
+  --dsw-static-blue-950: #0f380f;
+  --dsw-static-neutral-bluish-00: #93b210;
+  --dsw-static-neutral-00: #93b210;
+  --dsw-static-neutral-bluish-50: #93b210;
+  --dsw-static-neutral-50: #93b210;
+  --dsw-static-neutral-bluish-60: #93b210;
+  --dsw-static-neutral-60: #93b210;
+  --dsw-static-neutral-bluish-75: #8bac0f;
+  --dsw-static-neutral-75: #8bac0f;
+  --dsw-static-neutral-bluish-100: #8bac0f;
+  --dsw-static-neutral-100: #8bac0f;
+  --dsw-static-neutral-bluish-150: #7d9c22;
+  --dsw-static-neutral-150: #7d9c22;
+  --dsw-static-neutral-bluish-200: #7d9c22;
+  --dsw-static-neutral-200: #7d9c22;
+  --dsw-static-neutral-bluish-250: #6e8c2c;
+  --dsw-static-neutral-250: #6e8c2c;
+  --dsw-static-neutral-bluish-300: #6e8c2c;
+  --dsw-static-neutral-300: #6e8c2c;
+  --dsw-static-neutral-bluish-400: #5f7c32;
+  --dsw-static-neutral-400: #5f7c32;
+  --dsw-static-neutral-bluish-500: #506c33;
+  --dsw-static-neutral-500: #506c33;
+  --dsw-static-neutral-bluish-550: #506c33;
+  --dsw-static-neutral-550: #506c33;
+  --dsw-static-neutral-bluish-600: #3a5228;
+  --dsw-static-neutral-600: #3a5228;
+  --dsw-static-neutral-bluish-700: #3a5228;
+  --dsw-static-neutral-700: #3a5228;
+  --dsw-static-neutral-bluish-750: #24401e;
+  --dsw-static-neutral-750: #24401e;
+  --dsw-static-neutral-bluish-800: #24401e;
+  --dsw-static-neutral-800: #24401e;
+  --dsw-static-neutral-bluish-850: #24401e;
+  --dsw-static-neutral-850: #24401e;
+  --dsw-static-neutral-bluish-875: #0f380f;
+  --dsw-static-neutral-875: #0f380f;
+  --dsw-static-neutral-bluish-900: #0f380f;
+  --dsw-static-neutral-900: #0f380f;
+  --dsw-static-neutral-bluish-950: #0f380f;
+  --dsw-static-neutral-950: #0f380f;
+  --dsw-static-neutral-bluish-1000: #0f380f;
+  --dsw-static-neutral-1000: #0f380f;
+  --dsw-static-green-50: color-mix(in srgb, #306230 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #306230 20%, white);
+  --dsw-static-green-400: #306230;
+  --dsw-static-green-500: #306230;
+  --dsw-static-green-600: color-mix(in srgb, #306230 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #306230 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #6b6b00 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #6b6b00 20%, white);
+  --dsw-static-amber-400: #6b6b00;
+  --dsw-static-amber-500: #6b6b00;
+  --dsw-static-amber-600: color-mix(in srgb, #6b6b00 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #6b6b00 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #7a1f1f 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #7a1f1f 20%, white);
+  --dsw-static-red-400: #7a1f1f;
+  --dsw-static-red-500: #7a1f1f;
+  --dsw-static-red-600: color-mix(in srgb, #7a1f1f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #7a1f1f 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-os-gameboy][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #0f380f;
+  --dsw-static-blue-50: #0f380f;
+  --dsw-static-deepseek-50p: #1b451b;
+  --dsw-static-blue-50p: #1b451b;
+  --dsw-static-deepseek-75: #1b451b;
+  --dsw-static-blue-75: #1b451b;
+  --dsw-static-deepseek-100: #1b451b;
+  --dsw-static-blue-100: #1b451b;
+  --dsw-static-deepseek-200: #265126;
+  --dsw-static-blue-200: #265126;
+  --dsw-static-deepseek-300: #306230;
+  --dsw-static-blue-300: #306230;
+  --dsw-static-deepseek-400: #567435;
+  --dsw-static-blue-400: #567435;
+  --dsw-static-deepseek-450: #567435;
+  --dsw-static-blue-450: #567435;
+  --dsw-static-deepseek-500: #69852b;
+  --dsw-static-blue-500: #69852b;
+  --dsw-static-deepseek-600: #7a9a20;
+  --dsw-static-blue-600: #7a9a20;
+  --dsw-static-deepseek-700-delete: #8bac0f;
+  --dsw-static-deepseek-800: #8bac0f;
+  --dsw-static-blue-800: #8bac0f;
+  --dsw-static-deepseek-900: #9bbc0f;
+  --dsw-static-blue-900: #9bbc0f;
+  --dsw-static-deepseek-950: #d0e85c;
+  --dsw-static-blue-950: #d0e85c;
+  --dsw-static-neutral-bluish-00: #0f380f;
+  --dsw-static-neutral-00: #0f380f;
+  --dsw-static-neutral-bluish-50: #0f380f;
+  --dsw-static-neutral-50: #0f380f;
+  --dsw-static-neutral-bluish-60: #0f380f;
+  --dsw-static-neutral-60: #0f380f;
+  --dsw-static-neutral-bluish-75: #142e14;
+  --dsw-static-neutral-75: #142e14;
+  --dsw-static-neutral-bluish-100: #142e14;
+  --dsw-static-neutral-100: #142e14;
+  --dsw-static-neutral-bluish-150: #1b451b;
+  --dsw-static-neutral-150: #1b451b;
+  --dsw-static-neutral-bluish-200: #1b451b;
+  --dsw-static-neutral-200: #1b451b;
+  --dsw-static-neutral-bluish-250: #265126;
+  --dsw-static-neutral-250: #265126;
+  --dsw-static-neutral-bluish-300: #265126;
+  --dsw-static-neutral-300: #265126;
+  --dsw-static-neutral-bluish-400: #306230;
+  --dsw-static-neutral-400: #306230;
+  --dsw-static-neutral-bluish-500: #3d7038;
+  --dsw-static-neutral-500: #3d7038;
+  --dsw-static-neutral-bluish-550: #3d7038;
+  --dsw-static-neutral-550: #3d7038;
+  --dsw-static-neutral-bluish-600: #69852b;
+  --dsw-static-neutral-600: #69852b;
+  --dsw-static-neutral-bluish-700: #69852b;
+  --dsw-static-neutral-700: #69852b;
+  --dsw-static-neutral-bluish-750: #8bac0f;
+  --dsw-static-neutral-750: #8bac0f;
+  --dsw-static-neutral-bluish-800: #8bac0f;
+  --dsw-static-neutral-800: #8bac0f;
+  --dsw-static-neutral-bluish-850: #8bac0f;
+  --dsw-static-neutral-850: #8bac0f;
+  --dsw-static-neutral-bluish-875: #9bbc0f;
+  --dsw-static-neutral-875: #9bbc0f;
+  --dsw-static-neutral-bluish-900: #9bbc0f;
+  --dsw-static-neutral-900: #9bbc0f;
+  --dsw-static-neutral-bluish-950: #9bbc0f;
+  --dsw-static-neutral-950: #9bbc0f;
+  --dsw-static-neutral-bluish-1000: #c8e04a;
+  --dsw-static-neutral-1000: #c8e04a;
+  --dsw-static-green-50: color-mix(in srgb, #8bac0f 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #8bac0f 20%, black);
+  --dsw-static-green-400: #8bac0f;
+  --dsw-static-green-500: #8bac0f;
+  --dsw-static-green-600: color-mix(in srgb, #8bac0f 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #8bac0f 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d0c03a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #d0c03a 20%, black);
+  --dsw-static-amber-400: #d0c03a;
+  --dsw-static-amber-500: #d0c03a;
+  --dsw-static-amber-600: color-mix(in srgb, #d0c03a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d0c03a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e05545 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e05545 20%, black);
+  --dsw-static-red-400: #e05545;
+  --dsw-static-red-500: #e05545;
+  --dsw-static-red-600: color-mix(in srgb, #e05545 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e05545 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-os-gameboy] {
+  --dsw-alias-button-primary-fill: #306230;
+  --dsw-alias-button-primary-hover: #0f380f;
+  --dsw-alias-button-primary-dimmed: #93b210;
+  --dsw-alias-button-info-fill: #306230;
+  --dsw-alias-button-info-hover: #0f380f;
+  --dsw-alias-button-contrast-fill: #306230;
+  --dsw-alias-button-ghost-active-fill: #c4d46a;
+  --dsw-alias-button-ghost-active-hover: #93b210;
+  --dsw-alias-button-ghost-active-border: #7a9a20;
+  --dsw-alias-button-elevated-fill: #93b210;
+  --dsw-alias-button-floating-fill: #93b210;
+  --dsw-alias-button-floating-hover: #a4c428;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(48, 98, 48, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(48, 98, 48, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(48, 98, 48, 0.6);
+  --dsw-specific-bubble: #306230;
+  --dsw-specific-bubble-highlight: #8bac0f;
+  --dsw-specific-input-major: #93b210;
+  --dsw-specific-login-input: #93b210;
+  --dsw-specific-sidebar-fill: #306230;
+  --dsw-specific-sidebar-nav-item-active: #93b210;
+  --dsw-specific-sidebar-nav-item-hover: #a4c428;
+  --dsw-specific-sidebar-nav-item-active-accent: #7a9a20;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-os-gameboy][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #8bac0f;
+  --dsw-alias-button-primary-hover: #9bbc0f;
+  --dsw-alias-button-primary-dimmed: #1b451b;
+  --dsw-alias-button-info-fill: #8bac0f;
+  --dsw-alias-button-info-hover: #9bbc0f;
+  --dsw-alias-button-contrast-fill: #7a9a20;
+  --dsw-alias-button-ghost-active-fill: #1b451b;
+  --dsw-alias-button-ghost-active-hover: #1b451b;
+  --dsw-alias-button-ghost-active-border: #306230;
+  --dsw-alias-button-elevated-fill: #0f380f;
+  --dsw-alias-button-floating-fill: #0f380f;
+  --dsw-alias-button-floating-hover: #1b451b;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(139, 172, 15, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(139, 172, 15, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(139, 172, 15, 0.6);
+  --dsw-specific-bubble: #265126;
+  --dsw-specific-bubble-highlight: #265126;
+  --dsw-specific-input-major: #0f380f;
+  --dsw-specific-login-input: #0f380f;
+  --dsw-specific-sidebar-fill: #8bac0f;
+  --dsw-specific-sidebar-nav-item-active: #1b451b;
+  --dsw-specific-sidebar-nav-item-hover: #1b451b;
+  --dsw-specific-sidebar-nav-item-active-accent: #306230;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-os-gameboy] {
+  background-color: var(--bg-base) !important;
+    font-family: 'Courier New', 'PingFang SC', 'Microsoft YaHei', monospace;
+}
+
+body[data-dsh-os-gameboy]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background-image:
+      conic-gradient(var(--gb-0) 25%, transparent 0 50%, var(--gb-0) 0 75%, transparent 0),
+      conic-gradient(transparent 25%, var(--gb-1) 0 50%, transparent 0 75%, var(--gb-1) 0);
+    background-size: 4px 4px, 8px 8px;
+    background-position: 0 0, 4px 4px;
+}
+
+body[data-dsh-os-gameboy]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image: repeating-linear-gradient(
+      0deg,
+      var(--gb-0) 0 1px,
+      transparent 1px 3px
+    );
+    background-size: 100% 3px;
+    animation: os-gameboy-gb-scanline-drift 6s linear infinite;
+}
+
+body[data-dsh-os-gameboy] [class*='sider'] [class*='item'] {
+  border-radius: 0;
+    transition: background-color 0.12s steps(2), box-shadow 0.12s steps(2);
+}
+
+body[data-dsh-os-gameboy] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 0 0 0 2px var(--gb-1);
+}
+
+body[data-dsh-os-gameboy] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-os-gameboy] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--gb-1) !important;
+    color: var(--gb-3) !important;
+    box-shadow: inset 4px 0 0 0 var(--gb-0), inset -2px 0 0 0 var(--gb-2);
+    font-weight: 700;
+}
+
+body[data-dsh-os-gameboy] button[class*='primary'],
+body[data-dsh-os-gameboy] button[class*='primary']:not(.arco-btn-disabled) {
+  background: var(--gb-1) !important;
+    border: 2px solid var(--gb-0) !important;
+    border-radius: 0 !important;
+    color: var(--gb-3) !important;
+    font-weight: 700;
+    font-family: 'Courier New', monospace !important;
+    letter-spacing: 0.08em;
+    text-shadow: 1px 1px 0 var(--gb-0);
+    box-shadow: 3px 3px 0 0 var(--gb-0), inset 2px 2px 0 rgba(155, 188, 15, 0.35);
+    transition: none;
+}
+
+body[data-dsh-os-gameboy] button[class*='primary']:hover,
+body[data-dsh-os-gameboy] button[class*='primary']:not(.arco-btn-disabled):hover {
+  background: var(--gb-0) !important;
+    box-shadow: 4px 4px 0 0 rgba(15, 56, 15, 0.55), inset 2px 2px 0 rgba(155, 188, 15, 0.3);
+    transform: translate(-1px, -1px);
+}
+
+body[data-dsh-os-gameboy] button[class*='primary']:active,
+body[data-dsh-os-gameboy] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 var(--gb-0), inset 2px 2px 0 rgba(15, 56, 15, 0.6);
+}
+
+body[data-dsh-os-gameboy] pre,
+body[data-dsh-os-gameboy] .markdown-body pre {
+  background: var(--gb-0) !important;
+    border: 2px solid var(--gb-1) !important;
+    border-radius: 0 !important;
+    box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5), inset -1px -1px 0 rgba(155, 188, 15, 0.2);
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      rgba(155, 188, 15, 0.06) 3px 4px
+    ) !important;
+}
+
+body[data-dsh-os-gameboy] pre code,
+body[data-dsh-os-gameboy] .markdown-body pre code {
+  background: transparent !important;
+    color: var(--gb-3) !important;
+    border: none;
+    padding: 0;
+    text-shadow: 0 0 4px rgba(155, 188, 15, 0.45);
+}
+
+body[data-dsh-os-gameboy] code,
+body[data-dsh-os-gameboy] .markdown-body code {
+  background-color: var(--gb-1);
+    color: var(--gb-3);
+    border: 1px solid var(--gb-0);
+    border-radius: 0;
+    padding: 0.1em 0.35em;
+    font-family: 'Courier New', monospace;
+}
+
+body[data-dsh-os-gameboy] [class*='agent-bar'],
+body[data-dsh-os-gameboy] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 2px solid var(--gb-1);
+}
+
+body[data-dsh-os-gameboy] .markdown-body blockquote {
+  background-color: rgba(48, 98, 48, 0.14);
+    border-left: 4px solid var(--gb-1);
+    border-radius: 0;
+    color: var(--text-secondary);
+    box-shadow: inset 1px 0 0 var(--gb-0);
+}
+
+body[data-dsh-os-gameboy] .markdown-body hr,
+body[data-dsh-os-gameboy] hr {
+  border: none;
+    height: 4px;
+    background-image: radial-gradient(circle at 2px 2px, var(--gb-1) 0 1.5px, transparent 2px);
+    background-size: 8px 4px;
+    background-repeat: repeat-x;
+    opacity: 0.7;
+}
+
+body[data-dsh-os-gameboy] .markdown-body a,
+body[data-dsh-os-gameboy] a {
+  color: var(--gb-0);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+body[data-dsh-os-gameboy] .markdown-body a:hover,
+body[data-dsh-os-gameboy] a:hover {
+  background-color: var(--gb-0);
+    color: var(--gb-3);
+    text-decoration: none;
+}
+
+body[data-dsh-os-gameboy] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--gb-0) !important;
+    border-color: var(--gb-0) !important;
+    background-color: rgba(155, 188, 15, 0.35) !important;
+    box-shadow: 2px 2px 0 0 rgba(15, 56, 15, 0.4);
+}
+
+body[data-dsh-os-gameboy]::selection {
+  background: color-mix(in srgb, var(--brand) 85%, transparent);
+    color: var(--gb-3);
+}
+
+body[data-dsh-os-gameboy]::-webkit-scrollbar {
+  width: 12px;
+    height: 12px;
+}
+
+body[data-dsh-os-gameboy]::-webkit-scrollbar-thumb {
+  background: var(--gb-1);
+    border: 2px solid var(--gb-0);
+    border-radius: 0;
+    box-shadow: inset 2px 2px 0 rgba(155, 188, 15, 0.35);
+}
+
+body[data-dsh-os-gameboy]::-webkit-scrollbar-thumb:hover {
+  background: var(--gb-0);
+}
+
+body[data-dsh-os-gameboy]::-webkit-scrollbar-track {
+  background: var(--bg-2);
+    box-shadow: inset 2px 0 0 rgba(15, 56, 15, 0.3);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-os-gameboy][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'Courier New', 'PingFang SC', 'Microsoft YaHei', monospace;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      conic-gradient(var(--gb-2) 25%, transparent 0 50%, var(--gb-2) 0 75%, transparent 0),
+      conic-gradient(transparent 25%, var(--gb-1) 0 50%, transparent 0 75%, var(--gb-1) 0);
+    background-size: 4px 4px, 8px 8px;
+    background-position: 0 0, 4px 4px;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(155, 188, 15, 0.55) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, transparent 0%, rgba(155, 188, 15, 0.35) 50%, transparent 100%);
+    background-size: 100% 3px, 100% 220px;
+    animation: os-gameboy-gb-scanline-drift 6s linear infinite, os-gameboy-gb-phosphor-sweep 9s linear infinite;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 0;
+    transition: background-color 0.12s steps(2), box-shadow 0.12s steps(2);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 0 0 0 2px var(--gb-2), 0 0 8px rgba(155, 188, 15, 0.25);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-os-gameboy][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--gb-2) !important;
+    color: var(--gb-0) !important;
+    box-shadow: inset 4px 0 0 0 var(--gb-3), 0 0 14px rgba(155, 188, 15, 0.45);
+    font-weight: 700;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-os-gameboy][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: var(--gb-2) !important;
+    border: 2px solid var(--gb-3) !important;
+    border-radius: 0 !important;
+    color: var(--gb-0) !important;
+    font-weight: 700;
+    font-family: 'Courier New', monospace !important;
+    letter-spacing: 0.08em;
+    box-shadow: 3px 3px 0 0 rgba(15, 56, 15, 0.9), 0 0 12px rgba(155, 188, 15, 0.35),
+      inset 2px 2px 0 rgba(226, 244, 126, 0.5);
+    transition: none;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-os-gameboy][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  background: var(--gb-3) !important;
+    box-shadow: 4px 4px 0 0 rgba(15, 56, 15, 0.9), 0 0 20px rgba(155, 188, 15, 0.6),
+      inset 2px 2px 0 rgba(226, 244, 126, 0.6);
+    transform: translate(-1px, -1px);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-os-gameboy][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translate(2px, 2px);
+    box-shadow: 0 0 0 0 rgba(15, 56, 15, 0.9), 0 0 8px rgba(155, 188, 15, 0.3),
+      inset 2px 2px 0 rgba(15, 56, 15, 0.4);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] pre,
+body[data-dsh-os-gameboy][data-ds-dark-theme] .markdown-body pre {
+  background: #050d05 !important;
+    border: 2px solid var(--gb-1) !important;
+    border-radius: 0 !important;
+    box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.7), 0 0 14px rgba(139, 172, 15, 0.18);
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      rgba(155, 188, 15, 0.08) 3px 4px
+    ) !important;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] pre code,
+body[data-dsh-os-gameboy][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: var(--gb-3) !important;
+    border: none;
+    padding: 0;
+    text-shadow: 0 0 5px rgba(155, 188, 15, 0.6);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] code,
+body[data-dsh-os-gameboy][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--gb-0);
+    color: var(--gb-3);
+    border: 1px solid var(--gb-1);
+    border-radius: 0;
+    padding: 0.1em 0.35em;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 4px rgba(155, 188, 15, 0.5);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-os-gameboy][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 2px solid rgba(139, 172, 15, 0.5);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] .markdown-body blockquote {
+  background-color: rgba(139, 172, 15, 0.08);
+    border-left: 4px solid var(--gb-2);
+    border-radius: 0;
+    color: var(--text-secondary);
+    box-shadow: inset 1px 0 0 rgba(155, 188, 15, 0.4);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-os-gameboy][data-ds-dark-theme] hr {
+  border: none;
+    height: 4px;
+    background-image: radial-gradient(circle at 2px 2px, var(--gb-2) 0 1.5px, transparent 2px);
+    background-size: 8px 4px;
+    background-repeat: repeat-x;
+    opacity: 0.75;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-os-gameboy][data-ds-dark-theme] a {
+  color: var(--gb-3);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-shadow: 0 0 4px rgba(155, 188, 15, 0.4);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-os-gameboy][data-ds-dark-theme] a:hover {
+  background-color: var(--gb-3);
+    color: var(--gb-0);
+    text-decoration: none;
+    text-shadow: none;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--gb-3) !important;
+    border-color: var(--gb-2) !important;
+    background-color: rgba(139, 172, 15, 0.15) !important;
+    box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.6), 0 0 8px rgba(155, 188, 15, 0.3);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 80%, transparent);
+    color: var(--gb-0);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 12px;
+    height: 12px;
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: var(--gb-1);
+    border: 2px solid var(--bg-base);
+    border-radius: 0;
+    box-shadow: inset 2px 2px 0 rgba(155, 188, 15, 0.3);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: var(--gb-2);
+    box-shadow: 0 0 8px rgba(155, 188, 15, 0.5);
+}
+
+body[data-dsh-os-gameboy][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+    box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.6);
+}
+
+/* --- keyframes --- */
+@keyframes os-gameboy-gb-scanline-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 12px; }
+}
+
+@keyframes os-gameboy-gb-led-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes os-gameboy-gb-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes os-gameboy-gb-boot-flicker {
+  0%, 100% { box-shadow: inset 3px 3px 0 rgba(15, 56, 15, 0.3), 0 0 0 2px var(--gb-2), 0 0 14px rgba(15, 56, 15, 0.45); }
+  25% { box-shadow: inset 3px 3px 0 rgba(15, 56, 15, 0.3), 0 0 0 2px var(--gb-1), 0 0 8px rgba(15, 56, 15, 0.3); }
+  50% { box-shadow: inset 3px 3px 0 rgba(15, 56, 15, 0.3), 0 0 0 2px var(--gb-0), 0 0 16px rgba(15, 56, 15, 0.55); }
+  75% { box-shadow: inset 3px 3px 0 rgba(15, 56, 15, 0.3), 0 0 0 2px var(--gb-1), 0 0 8px rgba(15, 56, 15, 0.3); }
+}
+
+@keyframes os-gameboy-gb-phosphor-sweep {
+  0% { background-position: 0 0, 0 110vh; }
+  100% { background-position: 0 0, 0 -220px; }
+}
+
+@keyframes os-gameboy-gb-backlight-pulse {
+  0%, 100% { box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.6), 0 0 0 2px var(--gb-2), 0 0 18px rgba(155, 188, 15, 0.5); }
+  25% { box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.6), 0 0 0 2px var(--gb-1), 0 0 10px rgba(155, 188, 15, 0.3); }
+  50% { box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.6), 0 0 0 2px var(--gb-3), 0 0 24px rgba(155, 188, 15, 0.65); }
+  75% { box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.6), 0 0 0 2px var(--gb-1), 0 0 10px rgba(155, 188, 15, 0.3); }
+}

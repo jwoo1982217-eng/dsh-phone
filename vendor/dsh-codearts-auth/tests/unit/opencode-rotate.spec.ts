@@ -218,11 +218,11 @@ describe('轮换：认证与形状门禁', () => {
     await expect(run(a)).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' })
   })
 
-  it('⚠️⚠️ FreeTierError 是**形状门禁**、换槽无用（根因：session id 形状）', async () => {
-    // 真实定位（2026-10-01）：session id 尾段写成 38 字符时全线 403；
-    // 改成官方真实的 26 字符后同一请求立刻成功。
-    // 形状没修好时**换 key / 换出口都无效**（每槽发的形状完全相同），
-    // 故不重试也不切槽，只如实透传 + 提示形状线索。
+  it('⚠️⚠️ FreeTierError 是**传输指纹门禁**、换槽无用（2026-10-15 上游更新）', async () => {
+    // 真机 1.19.0 抓包矩阵（2026-10-15）：官方 CLI 直连 200；Node/curl/python/
+    // npm-Bun 反代/Bun 裸 TLS + 完全复刻的头序全部 403 FreeTierError。
+    // 免费模型只认官方客户端传输指纹 ⇒ **换 key / 换出口都无效**
+    // （每槽同一套栈），故不重试也不切槽，只如实透传 + 提示绑定付费 key。
     let count = 0
     vi.stubGlobal('fetch', async () => {
       count += 1
@@ -237,9 +237,9 @@ describe('轮换：认证与形状门禁', () => {
       markLimited: async () => {},
       warn: (m) => warns.push(m),
     })
-    await expect(run(a)).rejects.toThrow(/形状/)
+    await expect(run(a)).rejects.toThrow(/付费 key/)
     expect(count).toBe(1)
-    expect(warns.join()).toContain('session id')
+    expect(warns.join()).toContain('指纹门禁')
   })
 
   it('⚠️ 认证失败且只有一个槽时直接透传（不报「所有通道均受限」）', async () => {

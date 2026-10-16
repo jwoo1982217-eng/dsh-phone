@@ -1,0 +1,733 @@
+/* everforest — Everforest | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-everforest], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-everforest] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #5c6a72;
+  background-color: #fdf6e3;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] {
+  color: #d3c6aa;
+  background-color: #232a2e;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-everforest] {
+  --color-primary: #8da101;
+  --primary: #8da101;
+  --primary-rgb: 141, 161, 1;
+  --color-primary-light-1: #a3b74a;
+  --color-primary-light-2: #bccd7a;
+  --color-primary-light-3: #d5e3ab;
+  --color-primary-dark-1: #788a01;
+  --brand: #8da101;
+  --brand-light: #f0f1d2;
+  --brand-hover: #a3b74a;
+  --color-brand-fill: #8da101;
+  --color-brand-bg: #f0f1d2;
+  --aou-1: #f3f7e0;
+  --aou-2: #e7efc9;
+  --aou-3: #d8e5a8;
+  --aou-4: #c6d984;
+  --aou-5: #a8bd4a;
+  --aou-6: #8da101;
+  --aou-7: #788a01;
+  --aou-8: #647301;
+  --aou-9: #4f5b01;
+  --aou-10: #3a4301;
+  --bg-base: #fdf6e3;
+  --bg-1: #f4f0d9;
+  --bg-2: #efebd4;
+  --bg-3: #e6e2cc;
+  --bg-4: #e0dcc7;
+  --bg-5: #d5d1bc;
+  --bg-6: #c6c2ac;
+  --bg-8: #a6b0a0;
+  --bg-9: #829181;
+  --bg-10: #5c6a72;
+  --color-bg-1: #f4f0d9;
+  --color-bg-2: #efebd4;
+  --color-bg-3: #e6e2cc;
+  --color-bg-4: #e0dcc7;
+  --bg-hover: #eef0d0;
+  --bg-active: #e6e8c2;
+  --text-primary: #5c6a72;
+  --text-secondary: #829181;
+  --text-disabled: #b6bfa9;
+  --text-0: #43525c;
+  --text-white: #fffdf2;
+  --color-text-1: #5c6a72;
+  --color-text-2: #829181;
+  --color-text-3: #939f91;
+  --color-text-4: #a6b0a0;
+  --border-base: #ddd8c0;
+  --border-light: #e8e5d0;
+  --border-special: #c9c4aa;
+  --color-border: #ddd8c0;
+  --color-border-1: #ddd8c0;
+  --color-border-2: #e8e5d0;
+  --fill: #f4f0d9;
+  --color-fill: #f4f0d9;
+  --fill-0: #fdfaee;
+  --fill-white-to-black: #fdfaee;
+  --dialog-fill-0: #fdfaee;
+  --inverse: #5c6a72;
+  --success: #8da101;
+  --warning: #dfa000;
+  --danger: #f85552;
+  --info: #3a94c5;
+  --message-user-bg: #e9f0e9;
+  --message-tips-bg: #f4f0d9;
+  --workspace-btn-bg: #f0f1d2;
+  --color-guid-agent-bar: #f4f0d9;
+  --ef-green: #8da101;
+  --ef-green-soft: #93b259;
+  --ef-aqua: #35a77c;
+  --ef-blue: #3a94c5;
+  --ef-red: #f85552;
+  --ef-orange: #f57d26;
+  --ef-yellow: #dfa000;
+  --ef-purple: #df69ba;
+  --ef-fg: #5c6a72;
+  --ef-bg-green: #f0f1d2;
+  --ef-bg-blue: #e9f0e9;
+  --ef-bg-red: #fde3da;
+  --ef-bg-yellow: #faedcd;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-everforest][data-ds-dark-theme] {
+  --color-primary: #a7c080;
+  --primary: #a7c080;
+  --primary-rgb: 167, 192, 128;
+  --color-primary-light-1: #b6cd96;
+  --color-primary-light-2: #c7daae;
+  --color-primary-light-3: #dce9c8;
+  --color-primary-dark-1: #86a05e;
+  --brand: #a7c080;
+  --brand-light: #425047;
+  --brand-hover: #b6cd96;
+  --color-brand-fill: #a7c080;
+  --color-brand-bg: #425047;
+  --aou-1: #2f3b33;
+  --aou-2: #3c4c40;
+  --aou-3: #4c5f4e;
+  --aou-4: #617a5e;
+  --aou-5: #7d9569;
+  --aou-6: #a7c080;
+  --aou-7: #b6cd96;
+  --aou-8: #c7daae;
+  --aou-9: #d8e6c5;
+  --aou-10: #e8f2db;
+  --bg-base: #232a2e;
+  --bg-1: #2d353b;
+  --bg-2: #343f44;
+  --bg-3: #3d484d;
+  --bg-4: #475258;
+  --bg-5: #4f585e;
+  --bg-6: #56635f;
+  --bg-8: #7a8478;
+  --bg-9: #9da9a0;
+  --bg-10: #d3c6aa;
+  --color-bg-1: #2d353b;
+  --color-bg-2: #343f44;
+  --color-bg-3: #3d484d;
+  --color-bg-4: #475258;
+  --bg-hover: #39443f;
+  --bg-active: #425047;
+  --text-primary: #d3c6aa;
+  --text-secondary: #9da9a0;
+  --text-disabled: #7a8478;
+  --text-0: #e0d7bd;
+  --text-white: #f0ead8;
+  --color-text-1: #d3c6aa;
+  --color-text-2: #9da9a0;
+  --color-text-3: #859289;
+  --color-text-4: #7a8478;
+  --border-base: #3d484d;
+  --border-light: #343f44;
+  --border-special: #4f585e;
+  --color-border: #3d484d;
+  --color-border-1: #3d484d;
+  --color-border-2: #343f44;
+  --fill: #343f44;
+  --color-fill: #343f44;
+  --fill-0: #2d353b;
+  --fill-white-to-black: #232a2e;
+  --dialog-fill-0: #2d353b;
+  --inverse: #d3c6aa;
+  --success: #a7c080;
+  --warning: #dbbc7f;
+  --danger: #e67e80;
+  --info: #7fbbb3;
+  --message-user-bg: #3a515d;
+  --message-tips-bg: #343f44;
+  --workspace-btn-bg: #425047;
+  --color-guid-agent-bar: #343f44;
+  --ef-green: #a7c080;
+  --ef-aqua: #83c092;
+  --ef-blue: #7fbbb3;
+  --ef-red: #e67e80;
+  --ef-orange: #e69875;
+  --ef-yellow: #dbbc7f;
+  --ef-purple: #d699b6;
+  --ef-fg: #d3c6aa;
+  --ef-bg-green: #425047;
+  --ef-bg-blue: #3a515d;
+  --ef-bg-red: #514045;
+  --ef-bg-yellow: #4d4c43;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-everforest] {
+  --dsw-static-deepseek-50: #f3f7e0;
+  --dsw-static-blue-50: #f3f7e0;
+  --dsw-static-deepseek-50p: #e7efc9;
+  --dsw-static-blue-50p: #e7efc9;
+  --dsw-static-deepseek-75: #e7efc9;
+  --dsw-static-blue-75: #e7efc9;
+  --dsw-static-deepseek-100: #e7efc9;
+  --dsw-static-blue-100: #e7efc9;
+  --dsw-static-deepseek-200: #d8e5a8;
+  --dsw-static-blue-200: #d8e5a8;
+  --dsw-static-deepseek-300: #c6d984;
+  --dsw-static-blue-300: #c6d984;
+  --dsw-static-deepseek-400: #a8bd4a;
+  --dsw-static-blue-400: #a8bd4a;
+  --dsw-static-deepseek-450: #a8bd4a;
+  --dsw-static-blue-450: #a8bd4a;
+  --dsw-static-deepseek-500: #8da101;
+  --dsw-static-blue-500: #8da101;
+  --dsw-static-deepseek-600: #788a01;
+  --dsw-static-blue-600: #788a01;
+  --dsw-static-deepseek-700-delete: #647301;
+  --dsw-static-deepseek-800: #647301;
+  --dsw-static-blue-800: #647301;
+  --dsw-static-deepseek-900: #4f5b01;
+  --dsw-static-blue-900: #4f5b01;
+  --dsw-static-deepseek-950: #3a4301;
+  --dsw-static-blue-950: #3a4301;
+  --dsw-static-neutral-bluish-00: #fdfaee;
+  --dsw-static-neutral-00: #fdfaee;
+  --dsw-static-neutral-bluish-50: #f4f0d9;
+  --dsw-static-neutral-50: #f4f0d9;
+  --dsw-static-neutral-bluish-60: #f4f0d9;
+  --dsw-static-neutral-60: #f4f0d9;
+  --dsw-static-neutral-bluish-75: #efebd4;
+  --dsw-static-neutral-75: #efebd4;
+  --dsw-static-neutral-bluish-100: #efebd4;
+  --dsw-static-neutral-100: #efebd4;
+  --dsw-static-neutral-bluish-150: #e6e2cc;
+  --dsw-static-neutral-150: #e6e2cc;
+  --dsw-static-neutral-bluish-200: #e6e2cc;
+  --dsw-static-neutral-200: #e6e2cc;
+  --dsw-static-neutral-bluish-250: #e0dcc7;
+  --dsw-static-neutral-250: #e0dcc7;
+  --dsw-static-neutral-bluish-300: #e0dcc7;
+  --dsw-static-neutral-300: #e0dcc7;
+  --dsw-static-neutral-bluish-400: #d5d1bc;
+  --dsw-static-neutral-400: #d5d1bc;
+  --dsw-static-neutral-bluish-500: #c6c2ac;
+  --dsw-static-neutral-500: #c6c2ac;
+  --dsw-static-neutral-bluish-550: #c6c2ac;
+  --dsw-static-neutral-550: #c6c2ac;
+  --dsw-static-neutral-bluish-600: #a6b0a0;
+  --dsw-static-neutral-600: #a6b0a0;
+  --dsw-static-neutral-bluish-700: #a6b0a0;
+  --dsw-static-neutral-700: #a6b0a0;
+  --dsw-static-neutral-bluish-750: #829181;
+  --dsw-static-neutral-750: #829181;
+  --dsw-static-neutral-bluish-800: #829181;
+  --dsw-static-neutral-800: #829181;
+  --dsw-static-neutral-bluish-850: #829181;
+  --dsw-static-neutral-850: #829181;
+  --dsw-static-neutral-bluish-875: #5c6a72;
+  --dsw-static-neutral-875: #5c6a72;
+  --dsw-static-neutral-bluish-900: #5c6a72;
+  --dsw-static-neutral-900: #5c6a72;
+  --dsw-static-neutral-bluish-950: #5c6a72;
+  --dsw-static-neutral-950: #5c6a72;
+  --dsw-static-neutral-bluish-1000: #5c6a72;
+  --dsw-static-neutral-1000: #5c6a72;
+  --dsw-static-green-50: color-mix(in srgb, #8da101 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #8da101 20%, white);
+  --dsw-static-green-400: #8da101;
+  --dsw-static-green-500: #8da101;
+  --dsw-static-green-600: color-mix(in srgb, #8da101 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #8da101 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #dfa000 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #dfa000 20%, white);
+  --dsw-static-amber-400: #dfa000;
+  --dsw-static-amber-500: #dfa000;
+  --dsw-static-amber-600: color-mix(in srgb, #dfa000 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #dfa000 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f85552 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #f85552 20%, white);
+  --dsw-static-red-400: #f85552;
+  --dsw-static-red-500: #f85552;
+  --dsw-static-red-600: color-mix(in srgb, #f85552 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f85552 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-everforest][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2f3b33;
+  --dsw-static-blue-50: #2f3b33;
+  --dsw-static-deepseek-50p: #3c4c40;
+  --dsw-static-blue-50p: #3c4c40;
+  --dsw-static-deepseek-75: #3c4c40;
+  --dsw-static-blue-75: #3c4c40;
+  --dsw-static-deepseek-100: #3c4c40;
+  --dsw-static-blue-100: #3c4c40;
+  --dsw-static-deepseek-200: #4c5f4e;
+  --dsw-static-blue-200: #4c5f4e;
+  --dsw-static-deepseek-300: #617a5e;
+  --dsw-static-blue-300: #617a5e;
+  --dsw-static-deepseek-400: #7d9569;
+  --dsw-static-blue-400: #7d9569;
+  --dsw-static-deepseek-450: #7d9569;
+  --dsw-static-blue-450: #7d9569;
+  --dsw-static-deepseek-500: #a7c080;
+  --dsw-static-blue-500: #a7c080;
+  --dsw-static-deepseek-600: #b6cd96;
+  --dsw-static-blue-600: #b6cd96;
+  --dsw-static-deepseek-700-delete: #c7daae;
+  --dsw-static-deepseek-800: #c7daae;
+  --dsw-static-blue-800: #c7daae;
+  --dsw-static-deepseek-900: #d8e6c5;
+  --dsw-static-blue-900: #d8e6c5;
+  --dsw-static-deepseek-950: #e8f2db;
+  --dsw-static-blue-950: #e8f2db;
+  --dsw-static-neutral-bluish-00: #2d353b;
+  --dsw-static-neutral-00: #2d353b;
+  --dsw-static-neutral-bluish-50: #2d353b;
+  --dsw-static-neutral-50: #2d353b;
+  --dsw-static-neutral-bluish-60: #2d353b;
+  --dsw-static-neutral-60: #2d353b;
+  --dsw-static-neutral-bluish-75: #343f44;
+  --dsw-static-neutral-75: #343f44;
+  --dsw-static-neutral-bluish-100: #343f44;
+  --dsw-static-neutral-100: #343f44;
+  --dsw-static-neutral-bluish-150: #3d484d;
+  --dsw-static-neutral-150: #3d484d;
+  --dsw-static-neutral-bluish-200: #3d484d;
+  --dsw-static-neutral-200: #3d484d;
+  --dsw-static-neutral-bluish-250: #475258;
+  --dsw-static-neutral-250: #475258;
+  --dsw-static-neutral-bluish-300: #475258;
+  --dsw-static-neutral-300: #475258;
+  --dsw-static-neutral-bluish-400: #4f585e;
+  --dsw-static-neutral-400: #4f585e;
+  --dsw-static-neutral-bluish-500: #56635f;
+  --dsw-static-neutral-500: #56635f;
+  --dsw-static-neutral-bluish-550: #56635f;
+  --dsw-static-neutral-550: #56635f;
+  --dsw-static-neutral-bluish-600: #7a8478;
+  --dsw-static-neutral-600: #7a8478;
+  --dsw-static-neutral-bluish-700: #7a8478;
+  --dsw-static-neutral-700: #7a8478;
+  --dsw-static-neutral-bluish-750: #9da9a0;
+  --dsw-static-neutral-750: #9da9a0;
+  --dsw-static-neutral-bluish-800: #9da9a0;
+  --dsw-static-neutral-800: #9da9a0;
+  --dsw-static-neutral-bluish-850: #9da9a0;
+  --dsw-static-neutral-850: #9da9a0;
+  --dsw-static-neutral-bluish-875: #d3c6aa;
+  --dsw-static-neutral-875: #d3c6aa;
+  --dsw-static-neutral-bluish-900: #d3c6aa;
+  --dsw-static-neutral-900: #d3c6aa;
+  --dsw-static-neutral-bluish-950: #d3c6aa;
+  --dsw-static-neutral-950: #d3c6aa;
+  --dsw-static-neutral-bluish-1000: #d3c6aa;
+  --dsw-static-neutral-1000: #d3c6aa;
+  --dsw-static-green-50: color-mix(in srgb, #a7c080 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #a7c080 20%, black);
+  --dsw-static-green-400: #a7c080;
+  --dsw-static-green-500: #a7c080;
+  --dsw-static-green-600: color-mix(in srgb, #a7c080 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #a7c080 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #dbbc7f 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #dbbc7f 20%, black);
+  --dsw-static-amber-400: #dbbc7f;
+  --dsw-static-amber-500: #dbbc7f;
+  --dsw-static-amber-600: color-mix(in srgb, #dbbc7f 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #dbbc7f 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e67e80 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e67e80 20%, black);
+  --dsw-static-red-400: #e67e80;
+  --dsw-static-red-500: #e67e80;
+  --dsw-static-red-600: color-mix(in srgb, #e67e80 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e67e80 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-everforest] {
+  --dsw-alias-button-primary-fill: #8da101;
+  --dsw-alias-button-primary-hover: #a3b74a;
+  --dsw-alias-button-primary-dimmed: #e7efc9;
+  --dsw-alias-button-info-fill: #8da101;
+  --dsw-alias-button-info-hover: #a3b74a;
+  --dsw-alias-button-contrast-fill: #788a01;
+  --dsw-alias-button-ghost-active-fill: #f0f1d2;
+  --dsw-alias-button-ghost-active-hover: #e7efc9;
+  --dsw-alias-button-ghost-active-border: #c6d984;
+  --dsw-alias-button-elevated-fill: #fdfaee;
+  --dsw-alias-button-floating-fill: #fdfaee;
+  --dsw-alias-button-floating-hover: #eef0d0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(141, 161, 1, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(141, 161, 1, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(141, 161, 1, 0.6);
+  --dsw-specific-bubble: #e9f0e9;
+  --dsw-specific-bubble-highlight: #d8e5a8;
+  --dsw-specific-input-major: #fdfaee;
+  --dsw-specific-login-input: #fdfaee;
+  --dsw-specific-sidebar-fill: #8da101;
+  --dsw-specific-sidebar-nav-item-active: #e7efc9;
+  --dsw-specific-sidebar-nav-item-hover: #eef0d0;
+  --dsw-specific-sidebar-nav-item-active-accent: #c6d984;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-everforest][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #a7c080;
+  --dsw-alias-button-primary-hover: #b6cd96;
+  --dsw-alias-button-primary-dimmed: #3c4c40;
+  --dsw-alias-button-info-fill: #a7c080;
+  --dsw-alias-button-info-hover: #b6cd96;
+  --dsw-alias-button-contrast-fill: #b6cd96;
+  --dsw-alias-button-ghost-active-fill: #425047;
+  --dsw-alias-button-ghost-active-hover: #3c4c40;
+  --dsw-alias-button-ghost-active-border: #617a5e;
+  --dsw-alias-button-elevated-fill: #2d353b;
+  --dsw-alias-button-floating-fill: #2d353b;
+  --dsw-alias-button-floating-hover: #39443f;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(167, 192, 128, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(167, 192, 128, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(167, 192, 128, 0.6);
+  --dsw-specific-bubble: #3a515d;
+  --dsw-specific-bubble-highlight: #4c5f4e;
+  --dsw-specific-input-major: #2d353b;
+  --dsw-specific-login-input: #2d353b;
+  --dsw-specific-sidebar-fill: #a7c080;
+  --dsw-specific-sidebar-nav-item-active: #3c4c40;
+  --dsw-specific-sidebar-nav-item-hover: #39443f;
+  --dsw-specific-sidebar-nav-item-active-accent: #617a5e;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-everforest] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-everforest]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.6;
+    background-image:
+      radial-gradient(ellipse 42% 30% at 12% -6%, rgba(147, 178, 89, 0.08), transparent 70%),
+      radial-gradient(ellipse 38% 28% at 88% 4%, rgba(58, 148, 197, 0.06), transparent 70%),
+      radial-gradient(ellipse 50% 34% at 50% 110%, rgba(240, 241, 210, 0.7), transparent 75%);
+}
+
+body[data-dsh-everforest]::after {
+  content: '';
+    position: fixed;
+    inset: -40px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image:
+      radial-gradient(circle, var(--ef-green) 0 2px, transparent 3px),
+      radial-gradient(circle, var(--ef-yellow) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle, var(--ef-aqua) 0 1.5px, transparent 2.5px);
+    background-size: 170px 170px, 130px 130px, 210px 210px;
+    background-position: 0 0, 65px 80px, 120px 40px;
+    animation: everforest-ef-pollen-drift 14s ease-in-out infinite alternate;
+}
+
+body[data-dsh-everforest] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-everforest] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--ef-yellow);
+}
+
+body[data-dsh-everforest] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-everforest] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--ef-green);
+    font-weight: 600;
+}
+
+body[data-dsh-everforest] button[class*='primary'],
+body[data-dsh-everforest] button[class*='primary']:not(.arco-btn-disabled) {
+  position: relative;
+    background-color: var(--ef-green) !important;
+    background-image: linear-gradient(180deg, #a3b74a 0%, var(--ef-green) 55%, #788a01 100%) !important;
+    border: 1px solid #647301 !important;
+    border-bottom-width: 3px !important;
+    border-radius: 10px !important;
+    color: #fffdf2 !important;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(79, 91, 1, 0.4);
+    box-shadow: 0 2px 8px rgba(141, 161, 1, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+body[data-dsh-everforest] button[class*='primary']:hover,
+body[data-dsh-everforest] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(141, 161, 1, 0.35), 0 0 10px rgba(141, 161, 1, 0.2);
+}
+
+body[data-dsh-everforest] button[class*='primary']:active,
+body[data-dsh-everforest] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+    border-bottom-width: 1px !important;
+    box-shadow: 0 1px 4px rgba(141, 161, 1, 0.2);
+}
+
+body[data-dsh-everforest] pre,
+body[data-dsh-everforest] .markdown-body pre {
+  background: linear-gradient(180deg, #f2efdc 0%, #ece8d2 100%) !important;
+    border: 1px solid #d5d1bc !important;
+    border-left: 4px solid var(--ef-green) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 1px 4px rgba(92, 106, 114, 0.1);
+}
+
+body[data-dsh-everforest] pre code,
+body[data-dsh-everforest] .markdown-body pre code {
+  background: transparent !important;
+    color: var(--ef-fg) !important;
+    text-shadow: none;
+}
+
+body[data-dsh-everforest] code,
+body[data-dsh-everforest] .markdown-body code {
+  background-color: var(--brand-light);
+    color: #647301;
+    border: 1px solid #dde3bc;
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-everforest] pre code,
+body[data-dsh-everforest] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-everforest] .markdown-body blockquote {
+  background-color: rgba(141, 161, 1, 0.07);
+    border-left: 4px solid var(--success);
+    border-radius: 0 10px 10px 0;
+}
+
+body[data-dsh-everforest]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
+body[data-dsh-everforest]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-everforest]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a3b74a, #788a01);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-everforest]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #bccd7a, var(--ef-green));
+}
+
+body[data-dsh-everforest]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-everforest][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+    background-image:
+      radial-gradient(ellipse 42% 30% at 12% -6%, rgba(167, 192, 128, 0.06), transparent 70%),
+      radial-gradient(ellipse 38% 28% at 88% 4%, rgba(127, 187, 179, 0.05), transparent 70%),
+      radial-gradient(ellipse 50% 34% at 50% 110%, rgba(66, 80, 71, 0.5), transparent 75%);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: -40px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle, var(--ef-green) 0 2px, transparent 3px),
+      radial-gradient(circle, var(--ef-yellow) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle, var(--ef-aqua) 0 1.5px, transparent 2.5px);
+    background-size: 170px 170px, 130px 130px, 210px 210px;
+    background-position: 0 0, 65px 80px, 120px 40px;
+    animation: everforest-ef-firefly-drift 14s ease-in-out infinite alternate;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--ef-yellow);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-everforest][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--ef-green);
+    font-weight: 600;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-everforest][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  position: relative;
+    background-color: var(--ef-green) !important;
+    background-image: linear-gradient(180deg, #b6cd96 0%, var(--ef-green) 55%, #8fa768 100%) !important;
+    border: 1px solid #7d9569 !important;
+    border-bottom-width: 3px !important;
+    border-radius: 10px !important;
+    color: #2d353b !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(167, 192, 128, 0.22);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-everforest][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(167, 192, 128, 0.35), 0 0 12px rgba(167, 192, 128, 0.3);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-everforest][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+    border-bottom-width: 1px !important;
+    box-shadow: 0 1px 4px rgba(167, 192, 128, 0.2);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] pre,
+body[data-dsh-everforest][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #272e33 0%, #1e2528 100%) !important;
+    border: 1px solid #3d484d !important;
+    border-left: 4px solid var(--ef-green) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] pre code,
+body[data-dsh-everforest][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: var(--ef-fg) !important;
+    text-shadow: none;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] code,
+body[data-dsh-everforest][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--brand-light);
+    color: #c9e0a4;
+    border: 1px solid #4c5f4e;
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] pre code,
+body[data-dsh-everforest][data-ds-dark-theme] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme] .markdown-body blockquote {
+  background-color: rgba(167, 192, 128, 0.08);
+    border-left: 4px solid var(--success);
+    border-radius: 0 10px 10px 0;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-everforest][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8fa768, #617a5e);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--ef-green), #7d9569);
+}
+
+body[data-dsh-everforest][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes everforest-ef-pollen-drift {
+  0% { transform: translateY(0); opacity: 0.07; }
+  50% { opacity: 0.12; }
+  100% { transform: translateY(26px); opacity: 0.07; }
+}
+
+@keyframes everforest-ef-morning-light {
+  0% { left: -30%; }
+  55% { left: 110%; }
+  100% { left: 110%; }
+}
+
+@keyframes everforest-ef-dew-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}
+
+@keyframes everforest-ef-firefly-drift {
+  0% { transform: translateY(0); opacity: 0.08; }
+  50% { opacity: 0.13; }
+  100% { transform: translateY(26px); opacity: 0.08; }
+}
+
+@keyframes everforest-ef-canopy-light {
+  0% { left: -30%; }
+  55% { left: 110%; }
+  100% { left: 110%; }
+}
+
+@keyframes everforest-ef-mist-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

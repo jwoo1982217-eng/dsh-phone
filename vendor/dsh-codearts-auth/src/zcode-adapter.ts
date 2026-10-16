@@ -68,6 +68,7 @@ import { settingsNamespaceFor } from './settings-compat.js'
 import { collectImages, serializeMessages } from './openai-compat.js'
 import { rotationRequest } from './account-rotation.js'
 import { streamZcodeOrganization } from './zcode-source-stream.js'
+import { ZCODE_STANDARD_MODELS, isOrganizationFlow, zcodeStandardModelIds } from './zcode-plan-models.js'
 import { projectRequestImage, type ImageRequestTarget } from './image-budget.js'
 import type { ZcodeCredential } from './zcode.js'
 import { ZCODE, type ZcodeFallbackModel, type ZcodeProduct, type ZcodeRemoteModelLike } from './zcode-product.js'
@@ -391,7 +392,7 @@ export class ZcodeAdapter extends LlmAdapter {
    * （`AGENTS.md` 记过 Raccoon 的同款用户报障）。
    */
   listAllModels(): readonly { id: string; name: string }[] {
-    const source = this.remoteModels ?? this.product.fallbackModels.map(fallbackToRemote)
+    const source = this.modelsForSources(this.remoteModels ?? this.product.fallbackModels.map(fallbackToRemote))
     return source.map((model) => ({ id: model.id, name: model.name }))
   }
 
@@ -439,6 +440,14 @@ export class ZcodeAdapter extends LlmAdapter {
     }
   }
 
+  private modelsForSources(managed: readonly ZcodeRemoteModel[]): ZcodeRemoteModel[] {
+    const accounts = this.options.accountPool?.listAccountsByProvider?.(this.product.id)?.filter(a => a.enabled) ?? []
+    if (!accounts.some(a => isOrganizationFlow(a.zcodeSource))) return [...managed]
+    const standard = ZCODE_STANDARD_MODELS.map(model => ({ ...model, name: model.name + ' · 机构流量' }))
+    if (accounts.every(a => isOrganizationFlow(a.zcodeSource))) return standard
+    return [...new Map([...managed, ...standard].map(model => [model.id.toLowerCase(), model])).values()]
+  }
+
   async listModels(_provider: string): Promise<readonly LlmModelInfo[]> {
     // ⚠ 未就绪时返回 `[]` → DSH 的 buildModelCatalog 把整个 provider 分组隐藏。
     // **必须返回空数组而不能抛错**（抛错会被归入 catalog 的 failures，
@@ -446,7 +455,7 @@ export class ZcodeAdapter extends LlmAdapter {
     if (!await this.ready()) return []
     if (!await providerCatalogVisible(this.options.accountPool, this.product.id)) return []
 
-    const all = await this.loadModels()
+    const all = this.modelsForSources(await this.loadModels())
     const disabled = this.options.accountPool?.disabledModelsFor(this.product.id)
     const listed = disabled === undefined || disabled.size === 0
       ? all
@@ -465,8 +474,8 @@ export class ZcodeAdapter extends LlmAdapter {
     model: string,
     _signal?: AbortSignal,
   ): Promise<LlmResolvedModelInfo> {
-    const all = await this.loadModels()
-    const entry = all.find((item) => item.id === model)
+    const all = this.modelsForSources(await this.loadModels())
+    const entry = all.find((item) => item.id.toLowerCase() === model.toLowerCase())
     const fallback = this.fallbackIndex.get(model)
     const resolved: LlmResolvedModelInfo = {
       provider,
@@ -1402,6 +1411,11 @@ export class ZcodeAdapter extends LlmAdapter {
         + '（本插件只用它自己的授权流程，不会读取本机 ZCode 客户端的登录态）',
         'MISSING_CREDENTIAL',
       )
+    }
+    if (credential.source_selection && credential.source_selection.kind !== 'organization-flow'
+      && zcodeStandardModelIds.has(options.model.toLowerCase())
+      && !(await this.loadModels()).some(model => model.id.toLowerCase() === options.model.toLowerCase())) {
+      throw new LlmError('ZCode 当前所选 Plan 不提供这个普通 API 模型，请从切换后的模型目录重新选择；不会改用其他计费来源', 'INVALID_REQUEST')
     }
     return credential
   }

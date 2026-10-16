@@ -1,0 +1,19 @@
+# 独立 Purge 界面、人设注入和演练台服务停用。
+# 技能增量已归入用户原有技能库；私有 SDK 修复目录保留。
+- insert:
+    - id: dsh-purge
+      name: dsh-purge
+      disabled: true
+      config:
+        enabled: false
+        autoApplyOnStart: false
+        autoUpdateOnStart: false
+    - id: dsh-purge-redteam
+      name: dsh-purge/redteam
+      disabled: true
+    - id: dsh-purge-redteam-store
+      name: dsh-purge/redteam/store
+      disabled: true
+    - id: dsh-purge-redteam-ui
+      name: dsh-purge/redteam/ui
+      disabled: true

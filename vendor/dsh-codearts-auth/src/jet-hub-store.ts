@@ -420,6 +420,7 @@ class MemoryStore implements JetHubStore {
  * / `opencode` / `gemini`。
  */
 const REF_PREFIX_TO_PROVIDER: ReadonlyArray<readonly [string, string]> = [
+  ['ORCATERM', 'orcaterm'],
   ['CODEARTS', 'codearts'],
   ['BUDDY', 'buddy'],
   ['WORKBUDDY', 'workbuddy'],

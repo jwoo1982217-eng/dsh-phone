@@ -112,8 +112,13 @@ export class ModelRouter {
     }
     return result;
   }
-  async eligible(routes) {
-    const models=await this.models(), requested=routes?.length?routes:models.filter(r=>!/(?:auto|phone-gateway|jet-hub|aggregate)/i.test(routeKey(r)));
+  preferred(capability, models) {
+    const scheduler=this.ctx.get('dshSubagentScheduler');
+    if(!scheduler?.config.enabled||!scheduler.config.routes.length)return models;
+    return scheduler.candidates(capability,models);
+  }
+  async eligible(routes,capability='text') {
+    const models=await this.models(), requested=routes?.length?routes:this.preferred(capability,models).filter(r=>!/(?:auto|phone-gateway|jet-hub|aggregate)/i.test(routeKey(r)));
     check(requested.length,'暂无可探测的精确模型线路');
     const selected=[];
     for (const route of requested.slice(0,3)) {
@@ -162,7 +167,7 @@ export class ModelRouter {
   }
   async probe(owner,{capability='text',routes,force=false}={}) {
     check(CAPABILITIES.includes(capability),'未知能力'); this.admit(this.load(owner));
-    const selected=await this.eligible(routes), results=[];
+    const selected=await this.eligible(routes,capability), results=[];
     for(const route of selected) {
       let state=this.load(owner);
       const blocked=state.profiles.find(p=>p.route===routeKey(route)&&p.capability===capability&&p.quarantined);
@@ -193,10 +198,11 @@ export class ModelRouter {
       cost:profile.samples.reduce((sum,s)=>sum+(s.cost?.estimate||0),0),ms:profile.samples.reduce((sum,s)=>sum+s.ms,0)};
   }
   async dispatch(owner,{capability='text',prompt,mode='answer',maxTokens=2048}) {
+    this.ctx.get('dshSubagentScheduler')?.assertDelegation();
     check(typeof prompt==='string'&&prompt.length>0&&prompt.length<=24000,'任务文字为空或过长');
     check(['answer','agent'].includes(mode),'未知派单方式'); check(Number.isInteger(maxTokens)&&maxTokens>=128&&maxTokens<=4096,'输出预算无效');
-    const available=await this.models(), known=this.load(owner).profiles.filter(p=>p.capability===capability&&p.passed&&!p.quarantined&&Date.now()-Date.parse(p.at)<86400000&&available.some(r=>r.provider===p.provider&&r.model===p.model));
-    const profiles=await this.probe(owner,{capability,routes:known.length?known.slice(0,3).map(p=>({provider:p.provider,model:p.model})):undefined});
+    const available=this.preferred(capability,await this.models()), known=this.load(owner).profiles.filter(p=>p.capability===capability&&p.passed&&!p.quarantined&&Date.now()-Date.parse(p.at)<86400000&&available.some(r=>r.provider===p.provider&&r.model===p.model));
+    const profiles=await this.probe(owner,{capability,routes:known.length?known.slice(0,3).map(p=>({provider:p.provider,model:p.model})):available.slice(0,3)});
     const qualified=profiles.filter(p=>p.passed&&!p.quarantined),scores=qualified.map(p=>this.score(p));
     const compareMoney=scores.every(s=>s.money)&&new Set(scores.map(s=>s.currency)).size===1;
     const ranked=qualified.sort((a,b)=>{
@@ -205,7 +211,7 @@ export class ModelRouter {
     });
     check(ranked.length,'候选均未通过小样例，请主代理接回任务并查看失败记录');
     let last;
-    for(const chosen of ranked.slice(0,2)) {
+    for(const chosen of (this.ctx.get('dshSubagentScheduler')?.rank(ranked)||ranked).slice(0,2)) {
       try {
         if(mode==='agent') {
           const subagents=this.ctx.get('subagents'); check(subagents,'本机子代理服务未就绪');

@@ -432,20 +432,18 @@ export class OpencodeAdapter extends LlmAdapter {
 
         const info = classifyOpencodeFailure(error)
         if (info.kind === 'free_tier') {
-          // ⚠️⚠️ 根因是 **session id 形状**，不是「伪装不被认可」（真实报障
-          // 2026-10-01 定位）。证据：尾段写成 38 字符（12hex + 26 base62）时
-          // 一律 403；改成官方真实的 26 字符（12hex + 14 base62）后**同样的
-          // 请求立刻成功**（`tests/unit/opencode-identity.spec.ts` 有形状回归锁）。
-          //
-          // ⇒ 若这里还收到 FreeTierError，说明形状又错了（或上游加了新门禁）。
-          // **换槽/换 key 无用**（每槽发的形状完全相同），故不重试，
-          // 直接把「形状」这条线索写进文案，便于一眼定位。
+          // ⚠️⚠️ 2026-10-15 起根因 = **上游传输指纹门禁**，不是 session id 形状。
+          // 真机 1.19.0 抓包矩阵实证：官方 CLI 直连 200；Node/curl/python/
+          // npm-Bun 反代/Bun 裸 TLS + 完全复刻的头序全部 403 FreeTierError。
+          // 免费模型只认官方 CLI 的 TLS/HTTP 指纹 —— **换槽/换 key/换出口都无效**
+          // （每槽发的同一套栈），故不重试，把唯一有效动作写进文案。
           this.options.warn?.(
-            `opencode: 免费通道被 FreeTierError 拒绝 —— 检查 session id 形状（应为 ses_ + 12hex + 14base62）：${info.detail}`,
+            `opencode: 免费通道被 FreeTierError 拒绝 —— 上游 2026-10-15 起对免费模型启用官方客户端传输指纹门禁：${info.detail}`,
           )
           throw new LlmError(
-            `opencode: 免费通道被上游拒绝（FreeTierError）。`
-            + '该错误由请求形状触发（session id 形状不对时出现），换 API key 或换出口都无效。',
+            'opencode: 免费通道被上游拒绝（FreeTierError）。'
+            + '免费模型现在只允许官方 OpenCode 客户端的传输指纹调用，第三方直发一律 403；'
+            + '换 key、换代理都无效。请为通道绑定 Zen/Console 付费 key 后重试。',
             'AUTH',
             { status: 403 },
           )

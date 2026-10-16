@@ -110,7 +110,9 @@ class PhoneControlNativeTest {
         reject { read() }; reject { action(JSONObject().put("action", "launch").put("package", "com.example.app")) }
     }
     private fun continuous() {
-        epoch = ControlRuntime.lease.claim(owner, "danger-full-access").epoch
+        val request = ControlRuntime.call(service, JSONObject().put("command", "session").put("owner", owner).put("mode", "danger-full-access").put("intentAt", System.currentTimeMillis() + 1000))
+        shadowOf(Looper.getMainLooper()).idle(); assertEquals("authorized", request.get().getString("status"))
+        epoch = ControlRuntime.lease.current()!!.epoch
     }
     @Test fun continuousSensitiveButtonsExecuteRepeatedlyWithoutApprovalButStopRevokesThem() {
         continuous(); button.text = "发送"; assertEquals("performed", action(click(read())).getString("status"))
@@ -165,5 +167,32 @@ class PhoneControlNativeTest {
         ControlRuntime.stop("human stop"); val old = sync(0); shadowOf(Looper.getMainLooper()).idle(); assertTrue(old.isCompletedExceptionally)
         val next = sync(System.currentTimeMillis() + 1000); shadowOf(Looper.getMainLooper()).idle(); assertEquals("authorized", next.get().getString("status"))
         epoch = ControlRuntime.lease.current()!!.epoch; button.text = "发送"; assertEquals("performed", action(click(read())).getString("status"))
+    }
+    @Test fun backendDisconnectKeepsSessionAuthorityButInvalidatesItsOldScreen() {
+        continuous(); val prior = click(read()); val grantEpoch = ControlRuntime.lease.current()!!.epoch
+        service.onDestroy()
+        assertNull(ControlRuntime.service); assertEquals(grantEpoch, ControlRuntime.lease.current()!!.epoch)
+        val next = Robolectric.buildService(PhoneControlService::class.java).create().get()
+        shadowOf(next).setRootInActiveWindow(root); ControlRuntime.accessibilityConnected(next); service = next
+        reject { action(prior) }
+        assertEquals("performed", action(click(read())).getString("status"))
+    }
+    @Test fun aLateOldServiceDestroyCannotDisconnectItsReplacementOrCancelAUserStop() {
+        continuous(); val old = service
+        val next = Robolectric.buildService(PhoneControlService::class.java).create().get()
+        shadowOf(next).setRootInActiveWindow(root); ControlRuntime.accessibilityConnected(next); service = next
+        old.onDestroy(); assertSame(next, ControlRuntime.service); assertNotNull(ControlRuntime.lease.current())
+        ControlRuntime.stop("human stop"); next.onInterrupt(); old.onDestroy()
+        assertNull(ControlRuntime.lease.current()); assertTrue(ControlRuntime.status().getBoolean("paused"))
+    }
+    @Test fun backendLossSettlesAnInflightGestureAsUnknownAndLateCompletionCannotReportSuccess() {
+        continuous()
+        val args = JSONObject().put("action", "swipe").put("snapshotId", read().getString("snapshotId")).put("x", 100).put("y", 200).put("endX", 100).put("endY", 800)
+        val call = ControlRuntime.call(service, JSONObject().put("command", "execute").put("owner", owner).put("epoch", epoch).put("requestId", java.util.UUID.randomUUID().toString()).put("args", args))
+        shadowOf(Looper.getMainLooper()).idle(); assertFalse(call.isDone)
+        val gesture = shadowOf(service).gesturesDispatched.single()
+        service.onDestroy(); assertEquals("result_unknown", call.get().getString("status"))
+        gesture.callback().onCompleted(gesture.description())
+        assertEquals("result_unknown", call.get().getString("status")); assertNotNull(ControlRuntime.lease.current())
     }
 }

@@ -1,19 +1,6 @@
-/**
- * Jet Hub 多账号管理的 RPC 端点注册。
- *
- * 新 Connection 使用独立 RPC 通道 /jet-hub → /jet-hub/manage；
- * 旧 Fetch 注册器同时保留 /api/jet-hub，兼容旧客户端。
- * 端点方法：account.list / account.create / account.update / account.delete /
- *           account.reorder / account.refresh / account.retest / account.retestAll /
- *           account.test / account.reset / account.resetAll / login.poll /
- *           credits.status / credits.claimAll / credits.balances /
- *           model.list / model.setDisabled /
- *           captcha.demand / captcha.carrierUrl / captcha.contribute（内部载体，
- *           载体页见 src/zcode-carrier-page.ts 与 src/captcha-carrier-server.ts）/
- *           backup.export / backup.import / backup.status
- * 另有一条 GET 路由 `/api/jet-hub/captcha-carrier`：渲染内部载体的载体页
- * （⚠ 手工诊断用；guest 加载不到它，见该路由注释里的主进程取证）。
- */
+import { ORCATerm } from './orcaterm-product.js';
+import { parseCredentialText } from './orcaterm-credential.js';
+import { serializeOrcaTermCredential, orcaTermNickname } from './orcaterm-login.js';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { isGatewayEnabled } from './openai-gateway/config.js';
 import { collectGatewayEffortViews, collectGatewayModels, toGatewayModelIds } from './openai-gateway/models.js';
@@ -1157,6 +1144,18 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
         if (autoclawResult !== undefined)
             return autoclawResult;
         switch (method) {
+            case 'zcode.resetStatus':
+            case 'zcode.resetOpportunity':
+            case 'zcode.resetUse': {
+                const req = payload;
+                if (typeof req.accountId !== 'string' || typeof req.sourceId !== 'string')
+                    throw new Error('额度重置账号或套餐无效');
+                const action = method === 'zcode.resetStatus' ? 'status' : method === 'zcode.resetOpportunity' ? 'opportunity' : 'use';
+                const value = await zcodeSources(ctx, pool).reset(req.accountId, req.sourceId, action, req);
+                if (action === 'use')
+                    usageBadge.clear();
+                return { ok: true, value };
+            }
             case 'zcode.sources': {
                 const req = payload;
                 return { ok: true, value: await zcodeSources(ctx, pool).list(req.accountId, req.refresh === true) };
@@ -1167,6 +1166,7 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
                     throw new Error('额度来源参数无效');
                 await zcodeSources(ctx, pool).select(req.accountId, req.sourceId);
                 usageBadge.clear();
+                ctx.emit('llm/adapters-updated');
                 return { ok: true, value: { selected: req.sourceId } };
             }
             case 'account.list': {
@@ -1180,6 +1180,15 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
                 const id = `${provider}-${shortId()}`;
                 const suffix = shortId().toUpperCase();
                 const refName = `${provider.toUpperCase()}_ACCOUNT_${suffix}`;
+                if (provider === ORCATerm.id) {
+                    for (const pending of await pool.listAccounts(provider)) {
+                        const stored = await ctx.credentials.resolve(credentialRef(pending.credentialRef));
+                        if (!stored)
+                            return { ok: true, value: { accountId: pending.id, loginUrl: '', needsManualCredential: true } };
+                    }
+                    await pool.addAccount({ id, provider, nickname: id, enabled: true, credentialRef: refName, refreshable: false, createdAt: Date.now() });
+                    return { ok: true, value: { accountId: id, loginUrl: '', needsManualCredential: true } };
+                }
                 // CodeBuddy 系（buddy / workbuddy）共用两步登录流程：
                 // 只获取 loginUrl 和 state 立即返回，后台用同一个 state 异步执行
                 // 完整登录流程。两者的差异只在产品配置（platform、登录 URL 附加
@@ -1738,6 +1747,19 @@ function registerJetHubEndpoints(ctx, pool, codearts, buddy, workbuddy, lobstera
                 else {
                     return { ok: false, error: { code: 'bad-request', message: `unknown provider: ${provider}` } };
                 }
+            }
+            case 'account.setCookie': {
+                const req = payload;
+                const entry = (await pool.listAllAccounts()).find(x => x.id === req.accountId);
+                if (!entry || entry.provider !== ORCATerm.id)
+                    throw new Error('腾讯云账号不存在');
+                const credential = parseCredentialText(String(req.value ?? ''));
+                if (!credential)
+                    throw new Error('腾讯云登录态缺少有效 uin/skey 或 ot_session');
+                await ctx.credentials.set(credentialRef(entry.credentialRef), serializeOrcaTermCredential(credential));
+                await pool.updateAccount(entry.id, { nickname: orcaTermNickname(credential) });
+                ctx.emit('llm/adapters-updated');
+                return { ok: true, value: { done: true, success: true } };
             }
             case 'account.update': {
                 const req = payload;

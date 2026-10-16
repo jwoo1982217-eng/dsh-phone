@@ -1,0 +1,711 @@
+/* zzz-burnice — 绝区零 · 柏妮思 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-zzz-burnice], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-zzz-burnice] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #3a2214;
+  background-color: #f7efe2;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] {
+  color: #f5e6d8;
+  background-color: #120a07;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-zzz-burnice] {
+  --color-primary: #e0631a;
+  --primary: #e0631a;
+  --primary-rgb: 224, 99, 26;
+  --color-primary-light-1: #ff7a1f;
+  --color-primary-light-2: #ff9a4d;
+  --color-primary-light-3: #ffb97e;
+  --color-primary-dark-1: #b34e10;
+  --brand: #e0631a;
+  --brand-light: #ffe9d6;
+  --brand-hover: #c95212;
+  --color-brand-fill: #e0631a;
+  --color-brand-bg: #ffefe0;
+  --aou-1: #ffe9d6;
+  --aou-2: #ffd4ae;
+  --aou-3: #ffb97e;
+  --aou-4: #ff9a4d;
+  --aou-5: #ff7a1f;
+  --aou-6: #e0631a;
+  --aou-7: #c95212;
+  --aou-8: #a8481a;
+  --aou-9: #7e3410;
+  --aou-10: #5c2409;
+  --bg-base: #f7efe2;
+  --bg-1: #fffdf8;
+  --bg-2: #fdf6ea;
+  --bg-3: #f8eddb;
+  --bg-4: #f2e2c9;
+  --bg-5: #ead3b4;
+  --bg-6: #dfc09c;
+  --bg-8: #c69e73;
+  --bg-9: #a67c52;
+  --bg-10: #855c39;
+  --color-bg-1: #fffdf8;
+  --color-bg-2: #fdf6ea;
+  --color-bg-3: #f8eddb;
+  --color-bg-4: #f2e2c9;
+  --bg-hover: #f5e6cd;
+  --bg-active: #eed9b8;
+  --text-primary: #3a2214;
+  --text-secondary: #7a5a40;
+  --text-disabled: #bfa288;
+  --text-0: #241208;
+  --text-white: #fff9f0;
+  --color-text-1: #3a2214;
+  --color-text-2: #7a5a40;
+  --color-text-3: #a3805e;
+  --color-text-4: #bfa288;
+  --border-base: #e4cfa9;
+  --border-light: #efe1c5;
+  --border-special: #d98a4a;
+  --color-border: #e4cfa9;
+  --color-border-1: #e4cfa9;
+  --color-border-2: #efe1c5;
+  --fill: #f8eddb;
+  --color-fill: #f8eddb;
+  --fill-0: #f2e2c9;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fffdf8;
+  --inverse: #2b1a14;
+  --success: #4a9e2a;
+  --warning: #d98a00;
+  --danger: #e03a2a;
+  --info: #0fa2b8;
+  --message-user-bg: #e0631a;
+  --message-tips-bg: #f5e6cd;
+  --workspace-btn-bg: #ffe9d6;
+  --color-guid-agent-bar: #fff8ec;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-zzz-burnice][data-ds-dark-theme] {
+  --color-primary: #ff7a1f;
+  --primary: #ff7a1f;
+  --primary-rgb: 255, 122, 31;
+  --color-primary-light-1: #ff9a4d;
+  --color-primary-light-2: #ffb97e;
+  --color-primary-light-3: #ffd4ae;
+  --color-primary-dark-1: #d95e0e;
+  --brand: #ff7a1f;
+  --brand-light: #3a2214;
+  --brand-hover: #ff9038;
+  --color-brand-fill: #ff7a1f;
+  --color-brand-bg: #33190c;
+  --aou-1: #2a1206;
+  --aou-2: #4a1d08;
+  --aou-3: #6e2a0c;
+  --aou-4: #943a10;
+  --aou-5: #bf4d14;
+  --aou-6: #ff7a1f;
+  --aou-7: #ff9a4d;
+  --aou-8: #ffb97e;
+  --aou-9: #ffd4ae;
+  --aou-10: #ffe9d6;
+  --bg-base: #120a07;
+  --bg-1: #1a0f0a;
+  --bg-2: #221410;
+  --bg-3: #2b1a14;
+  --bg-4: #34211a;
+  --bg-5: #3f2a20;
+  --bg-6: #4c3527;
+  --bg-8: #6b4c36;
+  --bg-9: #8f6a4b;
+  --bg-10: #b98f68;
+  --color-bg-1: #1a0f0a;
+  --color-bg-2: #221410;
+  --color-bg-3: #2b1a14;
+  --color-bg-4: #34211a;
+  --bg-hover: #2b1a14;
+  --bg-active: #3a2418;
+  --text-primary: #f5e6d8;
+  --text-secondary: #c2a58c;
+  --text-disabled: #6f5a49;
+  --text-0: #fff9f0;
+  --text-white: #fff9f0;
+  --color-text-1: #f5e6d8;
+  --color-text-2: #c2a58c;
+  --color-text-3: #96785f;
+  --color-text-4: #6f5a49;
+  --border-base: #3d281b;
+  --border-light: #2a1a12;
+  --border-special: #8a4a1e;
+  --color-border: #3d281b;
+  --color-border-1: #3d281b;
+  --color-border-2: #2a1a12;
+  --fill: #221410;
+  --color-fill: #221410;
+  --fill-0: #2b1a14;
+  --fill-white-to-black: #120a07;
+  --dialog-fill-0: #1a0f0a;
+  --inverse: #f5e6d8;
+  --success: #7ec850;
+  --warning: #ffc44d;
+  --danger: #ff4d3d;
+  --info: #35d0e0;
+  --message-user-bg: #a8481a;
+  --message-tips-bg: #2b1a14;
+  --workspace-btn-bg: #3a2214;
+  --color-guid-agent-bar: #241410;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-zzz-burnice] {
+  --dsw-static-deepseek-50: #ffe9d6;
+  --dsw-static-blue-50: #ffe9d6;
+  --dsw-static-deepseek-50p: #ffd4ae;
+  --dsw-static-blue-50p: #ffd4ae;
+  --dsw-static-deepseek-75: #ffd4ae;
+  --dsw-static-blue-75: #ffd4ae;
+  --dsw-static-deepseek-100: #ffd4ae;
+  --dsw-static-blue-100: #ffd4ae;
+  --dsw-static-deepseek-200: #ffb97e;
+  --dsw-static-blue-200: #ffb97e;
+  --dsw-static-deepseek-300: #ff9a4d;
+  --dsw-static-blue-300: #ff9a4d;
+  --dsw-static-deepseek-400: #ff7a1f;
+  --dsw-static-blue-400: #ff7a1f;
+  --dsw-static-deepseek-450: #ff7a1f;
+  --dsw-static-blue-450: #ff7a1f;
+  --dsw-static-deepseek-500: #e0631a;
+  --dsw-static-blue-500: #e0631a;
+  --dsw-static-deepseek-600: #c95212;
+  --dsw-static-blue-600: #c95212;
+  --dsw-static-deepseek-700-delete: #a8481a;
+  --dsw-static-deepseek-800: #a8481a;
+  --dsw-static-blue-800: #a8481a;
+  --dsw-static-deepseek-900: #7e3410;
+  --dsw-static-blue-900: #7e3410;
+  --dsw-static-deepseek-950: #5c2409;
+  --dsw-static-blue-950: #5c2409;
+  --dsw-static-neutral-bluish-00: #f2e2c9;
+  --dsw-static-neutral-00: #f2e2c9;
+  --dsw-static-neutral-bluish-50: #fffdf8;
+  --dsw-static-neutral-50: #fffdf8;
+  --dsw-static-neutral-bluish-60: #fffdf8;
+  --dsw-static-neutral-60: #fffdf8;
+  --dsw-static-neutral-bluish-75: #fdf6ea;
+  --dsw-static-neutral-75: #fdf6ea;
+  --dsw-static-neutral-bluish-100: #fdf6ea;
+  --dsw-static-neutral-100: #fdf6ea;
+  --dsw-static-neutral-bluish-150: #f8eddb;
+  --dsw-static-neutral-150: #f8eddb;
+  --dsw-static-neutral-bluish-200: #f8eddb;
+  --dsw-static-neutral-200: #f8eddb;
+  --dsw-static-neutral-bluish-250: #f2e2c9;
+  --dsw-static-neutral-250: #f2e2c9;
+  --dsw-static-neutral-bluish-300: #f2e2c9;
+  --dsw-static-neutral-300: #f2e2c9;
+  --dsw-static-neutral-bluish-400: #ead3b4;
+  --dsw-static-neutral-400: #ead3b4;
+  --dsw-static-neutral-bluish-500: #dfc09c;
+  --dsw-static-neutral-500: #dfc09c;
+  --dsw-static-neutral-bluish-550: #dfc09c;
+  --dsw-static-neutral-550: #dfc09c;
+  --dsw-static-neutral-bluish-600: #c69e73;
+  --dsw-static-neutral-600: #c69e73;
+  --dsw-static-neutral-bluish-700: #c69e73;
+  --dsw-static-neutral-700: #c69e73;
+  --dsw-static-neutral-bluish-750: #a67c52;
+  --dsw-static-neutral-750: #a67c52;
+  --dsw-static-neutral-bluish-800: #a67c52;
+  --dsw-static-neutral-800: #a67c52;
+  --dsw-static-neutral-bluish-850: #a67c52;
+  --dsw-static-neutral-850: #a67c52;
+  --dsw-static-neutral-bluish-875: #855c39;
+  --dsw-static-neutral-875: #855c39;
+  --dsw-static-neutral-bluish-900: #855c39;
+  --dsw-static-neutral-900: #855c39;
+  --dsw-static-neutral-bluish-950: #855c39;
+  --dsw-static-neutral-950: #855c39;
+  --dsw-static-neutral-bluish-1000: #2b1a14;
+  --dsw-static-neutral-1000: #2b1a14;
+  --dsw-static-green-50: color-mix(in srgb, #4a9e2a 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #4a9e2a 20%, white);
+  --dsw-static-green-400: #4a9e2a;
+  --dsw-static-green-500: #4a9e2a;
+  --dsw-static-green-600: color-mix(in srgb, #4a9e2a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4a9e2a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d98a00 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d98a00 20%, white);
+  --dsw-static-amber-400: #d98a00;
+  --dsw-static-amber-500: #d98a00;
+  --dsw-static-amber-600: color-mix(in srgb, #d98a00 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d98a00 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e03a2a 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e03a2a 20%, white);
+  --dsw-static-red-400: #e03a2a;
+  --dsw-static-red-500: #e03a2a;
+  --dsw-static-red-600: color-mix(in srgb, #e03a2a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e03a2a 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-zzz-burnice][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2a1206;
+  --dsw-static-blue-50: #2a1206;
+  --dsw-static-deepseek-50p: #4a1d08;
+  --dsw-static-blue-50p: #4a1d08;
+  --dsw-static-deepseek-75: #4a1d08;
+  --dsw-static-blue-75: #4a1d08;
+  --dsw-static-deepseek-100: #4a1d08;
+  --dsw-static-blue-100: #4a1d08;
+  --dsw-static-deepseek-200: #6e2a0c;
+  --dsw-static-blue-200: #6e2a0c;
+  --dsw-static-deepseek-300: #943a10;
+  --dsw-static-blue-300: #943a10;
+  --dsw-static-deepseek-400: #bf4d14;
+  --dsw-static-blue-400: #bf4d14;
+  --dsw-static-deepseek-450: #bf4d14;
+  --dsw-static-blue-450: #bf4d14;
+  --dsw-static-deepseek-500: #ff7a1f;
+  --dsw-static-blue-500: #ff7a1f;
+  --dsw-static-deepseek-600: #ff9a4d;
+  --dsw-static-blue-600: #ff9a4d;
+  --dsw-static-deepseek-700-delete: #ffb97e;
+  --dsw-static-deepseek-800: #ffb97e;
+  --dsw-static-blue-800: #ffb97e;
+  --dsw-static-deepseek-900: #ffd4ae;
+  --dsw-static-blue-900: #ffd4ae;
+  --dsw-static-deepseek-950: #ffe9d6;
+  --dsw-static-blue-950: #ffe9d6;
+  --dsw-static-neutral-bluish-00: #2b1a14;
+  --dsw-static-neutral-00: #2b1a14;
+  --dsw-static-neutral-bluish-50: #1a0f0a;
+  --dsw-static-neutral-50: #1a0f0a;
+  --dsw-static-neutral-bluish-60: #1a0f0a;
+  --dsw-static-neutral-60: #1a0f0a;
+  --dsw-static-neutral-bluish-75: #221410;
+  --dsw-static-neutral-75: #221410;
+  --dsw-static-neutral-bluish-100: #221410;
+  --dsw-static-neutral-100: #221410;
+  --dsw-static-neutral-bluish-150: #2b1a14;
+  --dsw-static-neutral-150: #2b1a14;
+  --dsw-static-neutral-bluish-200: #2b1a14;
+  --dsw-static-neutral-200: #2b1a14;
+  --dsw-static-neutral-bluish-250: #34211a;
+  --dsw-static-neutral-250: #34211a;
+  --dsw-static-neutral-bluish-300: #34211a;
+  --dsw-static-neutral-300: #34211a;
+  --dsw-static-neutral-bluish-400: #3f2a20;
+  --dsw-static-neutral-400: #3f2a20;
+  --dsw-static-neutral-bluish-500: #4c3527;
+  --dsw-static-neutral-500: #4c3527;
+  --dsw-static-neutral-bluish-550: #4c3527;
+  --dsw-static-neutral-550: #4c3527;
+  --dsw-static-neutral-bluish-600: #6b4c36;
+  --dsw-static-neutral-600: #6b4c36;
+  --dsw-static-neutral-bluish-700: #6b4c36;
+  --dsw-static-neutral-700: #6b4c36;
+  --dsw-static-neutral-bluish-750: #8f6a4b;
+  --dsw-static-neutral-750: #8f6a4b;
+  --dsw-static-neutral-bluish-800: #8f6a4b;
+  --dsw-static-neutral-800: #8f6a4b;
+  --dsw-static-neutral-bluish-850: #8f6a4b;
+  --dsw-static-neutral-850: #8f6a4b;
+  --dsw-static-neutral-bluish-875: #b98f68;
+  --dsw-static-neutral-875: #b98f68;
+  --dsw-static-neutral-bluish-900: #b98f68;
+  --dsw-static-neutral-900: #b98f68;
+  --dsw-static-neutral-bluish-950: #b98f68;
+  --dsw-static-neutral-950: #b98f68;
+  --dsw-static-neutral-bluish-1000: #f5e6d8;
+  --dsw-static-neutral-1000: #f5e6d8;
+  --dsw-static-green-50: color-mix(in srgb, #7ec850 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #7ec850 20%, black);
+  --dsw-static-green-400: #7ec850;
+  --dsw-static-green-500: #7ec850;
+  --dsw-static-green-600: color-mix(in srgb, #7ec850 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #7ec850 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #ffc44d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #ffc44d 20%, black);
+  --dsw-static-amber-400: #ffc44d;
+  --dsw-static-amber-500: #ffc44d;
+  --dsw-static-amber-600: color-mix(in srgb, #ffc44d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #ffc44d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #ff4d3d 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #ff4d3d 20%, black);
+  --dsw-static-red-400: #ff4d3d;
+  --dsw-static-red-500: #ff4d3d;
+  --dsw-static-red-600: color-mix(in srgb, #ff4d3d 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #ff4d3d 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-zzz-burnice] {
+  --dsw-alias-button-primary-fill: #e0631a;
+  --dsw-alias-button-primary-hover: #c95212;
+  --dsw-alias-button-primary-dimmed: #ffd4ae;
+  --dsw-alias-button-info-fill: #e0631a;
+  --dsw-alias-button-info-hover: #c95212;
+  --dsw-alias-button-contrast-fill: #c95212;
+  --dsw-alias-button-ghost-active-fill: #ffe9d6;
+  --dsw-alias-button-ghost-active-hover: #ffd4ae;
+  --dsw-alias-button-ghost-active-border: #ff9a4d;
+  --dsw-alias-button-elevated-fill: #f2e2c9;
+  --dsw-alias-button-floating-fill: #f2e2c9;
+  --dsw-alias-button-floating-hover: #f5e6cd;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(224, 99, 26, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(224, 99, 26, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(224, 99, 26, 0.6);
+  --dsw-specific-bubble: #e0631a;
+  --dsw-specific-bubble-highlight: #ffb97e;
+  --dsw-specific-input-major: #f2e2c9;
+  --dsw-specific-login-input: #f2e2c9;
+  --dsw-specific-sidebar-fill: #e0631a;
+  --dsw-specific-sidebar-nav-item-active: #ffd4ae;
+  --dsw-specific-sidebar-nav-item-hover: #f5e6cd;
+  --dsw-specific-sidebar-nav-item-active-accent: #ff9a4d;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-zzz-burnice][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #ff7a1f;
+  --dsw-alias-button-primary-hover: #ff9038;
+  --dsw-alias-button-primary-dimmed: #4a1d08;
+  --dsw-alias-button-info-fill: #ff7a1f;
+  --dsw-alias-button-info-hover: #ff9038;
+  --dsw-alias-button-contrast-fill: #ff9a4d;
+  --dsw-alias-button-ghost-active-fill: #3a2214;
+  --dsw-alias-button-ghost-active-hover: #4a1d08;
+  --dsw-alias-button-ghost-active-border: #943a10;
+  --dsw-alias-button-elevated-fill: #2b1a14;
+  --dsw-alias-button-floating-fill: #2b1a14;
+  --dsw-alias-button-floating-hover: #2b1a14;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(255, 122, 31, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(255, 122, 31, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(255, 122, 31, 0.6);
+  --dsw-specific-bubble: #a8481a;
+  --dsw-specific-bubble-highlight: #6e2a0c;
+  --dsw-specific-input-major: #2b1a14;
+  --dsw-specific-login-input: #2b1a14;
+  --dsw-specific-sidebar-fill: #ff7a1f;
+  --dsw-specific-sidebar-nav-item-active: #4a1d08;
+  --dsw-specific-sidebar-nav-item-hover: #2b1a14;
+  --dsw-specific-sidebar-nav-item-active-accent: #943a10;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-zzz-burnice] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-zzz-burnice]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(224, 99, 26, 0.14) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 70% 10%, rgba(217, 138, 0, 0.12) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 85% 65%, rgba(224, 58, 122, 0.1) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 32% 80%, rgba(224, 99, 26, 0.11) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 45%, rgba(255, 154, 77, 0.1) 0 2px, transparent 3.5px),
+      repeating-linear-gradient(45deg, rgba(224, 99, 26, 0.09) 0 2px, transparent 2px 26px);
+    background-size: 520px 520px, 600px 600px, 560px 560px, 640px 640px, 500px 500px, 100% 100%;
+    opacity: 0.42;
+}
+
+body[data-dsh-zzz-burnice]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle, transparent 3px, rgba(217, 138, 0, 0.4) 3px 4px, transparent 4.5px),
+      radial-gradient(circle, transparent 5px, rgba(224, 58, 122, 0.28) 5px 6.5px, transparent 7px),
+      radial-gradient(circle, rgba(224, 99, 26, 0.32) 0 1.5px, transparent 2.5px);
+    background-size: 180px 180px, 260px 260px, 140px 140px;
+    background-position: 0 0, 60px 80px, 30px 40px;
+    opacity: 0.09;
+    animation: zzz-burnice-burnice-bubble-rise 16s linear infinite;
+}
+
+body[data-dsh-zzz-burnice]::selection {
+  background: color-mix(in srgb, #ffc44d 45%, transparent);
+}
+
+body[data-dsh-zzz-burnice] button[class*='primary'] {
+  background: linear-gradient(180deg, #f0700f 0%, #cf5410 100%) !important;
+    border: 1px solid #ffc44d !important;
+    border-radius: 8px !important;
+    color: #fff9f0 !important;
+    font-weight: 600 !important;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    box-shadow: 0 2px 8px rgba(224, 99, 26, 0.35), inset 0 1px 0 rgba(255, 233, 214, 0.4);
+    text-shadow: 0 1px 2px rgba(120, 40, 0, 0.45);
+}
+
+body[data-dsh-zzz-burnice] button[class*='primary']:hover,
+body[data-dsh-zzz-burnice] button[class*='primary']:focus {
+  background: linear-gradient(120deg, #e0631a, #ff9a4d, #ffc44d, #e0631a) !important;
+    background-size: 300% 100% !important;
+    color: #fff9f0 !important;
+    border-color: #ffe9c2 !important;
+    box-shadow: 0 0 16px rgba(224, 99, 26, 0.45), 0 0 26px rgba(224, 58, 122, 0.2) !important;
+    animation: zzz-burnice-burnice-btn-sweep 2.8s linear infinite;
+}
+
+body[data-dsh-zzz-burnice] button[class*='primary']:active {
+  transform: translateY(1px);
+    box-shadow: 0 1px 4px rgba(224, 99, 26, 0.35) !important;
+}
+
+body[data-dsh-zzz-burnice] pre,
+body[data-dsh-zzz-burnice] .markdown-body pre {
+  background: #2b1a14 !important;
+    border: 1px solid var(--border-base) !important;
+    border-radius: 10px !important;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(224, 99, 26, 0.85) 0 5px,
+      rgba(255, 196, 77, 0.85) 5px 10px
+    ) !important;
+    background-size: 4px 100% !important;
+    background-repeat: no-repeat !important;
+    padding-left: 14px !important;
+    box-shadow: 0 2px 10px rgba(133, 92, 57, 0.2), inset 0 0 24px rgba(0, 0, 0, 0.35);
+}
+
+body[data-dsh-zzz-burnice] code,
+body[data-dsh-zzz-burnice] .markdown-body code,
+body[data-dsh-zzz-burnice] .markdown-body pre code {
+  color: #ffd4ae !important;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+}
+
+body[data-dsh-zzz-burnice] .markdown-body pre code {
+  background: transparent !important;
+    text-shadow: 0 0 6px rgba(255, 154, 77, 0.25);
+}
+
+body[data-dsh-zzz-burnice] :not(pre) > code,
+body[data-dsh-zzz-burnice] .markdown-body :not(pre) > code {
+  background: rgba(224, 58, 122, 0.1);
+    border: 1px solid rgba(224, 58, 122, 0.28);
+    border-radius: 5px;
+    padding: 1px 5px;
+    color: #b02863 !important;
+}
+
+body[data-dsh-zzz-burnice] .markdown-body blockquote {
+  background: linear-gradient(90deg, rgba(255, 196, 77, 0.14), transparent 70%);
+    border-left: 3px solid var(--warning);
+    border-radius: 0 8px 8px 0;
+    color: var(--color-text-2);
+}
+
+body[data-dsh-zzz-burnice] a,
+body[data-dsh-zzz-burnice] .markdown-body a {
+  color: var(--color-primary);
+    text-decoration-color: rgba(224, 99, 26, 0.45);
+}
+
+body[data-dsh-zzz-burnice] a:hover,
+body[data-dsh-zzz-burnice] .markdown-body a:hover {
+  color: var(--color-primary-dark-1);
+    text-shadow: 0 0 8px rgba(224, 99, 26, 0.3);
+}
+
+body[data-dsh-zzz-burnice]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-zzz-burnice]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff9a4d, #c95212);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-zzz-burnice]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff7a1f, #b34e10);
+    box-shadow: 0 0 8px rgba(224, 99, 26, 0.5);
+}
+
+body[data-dsh-zzz-burnice]::-webkit-scrollbar-track {
+  background: var(--bg-2);
+}
+
+body[data-dsh-zzz-burnice]::-webkit-scrollbar-corner {
+  background: var(--bg-base);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-zzz-burnice][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255, 122, 31, 0.22) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 70% 10%, rgba(255, 196, 77, 0.18) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 85% 65%, rgba(255, 61, 129, 0.14) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 32% 80%, rgba(255, 122, 31, 0.16) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 45%, rgba(255, 154, 77, 0.12) 0 2px, transparent 3.5px),
+      repeating-linear-gradient(45deg, rgba(255, 122, 31, 0.16) 0 2px, transparent 2px 26px);
+    background-size: 520px 520px, 600px 600px, 560px 560px, 640px 640px, 500px 500px, 100% 100%;
+    opacity: 0.55;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle, transparent 3px, rgba(255, 196, 77, 0.55) 3px 4px, transparent 4.5px),
+      radial-gradient(circle, transparent 5px, rgba(255, 61, 129, 0.4) 5px 6.5px, transparent 7px),
+      radial-gradient(circle, rgba(255, 154, 77, 0.45) 0 1.5px, transparent 2.5px);
+    background-size: 180px 180px, 260px 260px, 140px 140px;
+    background-position: 0 0, 60px 80px, 30px 40px;
+    opacity: 0.12;
+    animation: zzz-burnice-burnice-bubble-rise 16s linear infinite;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, #ffc44d 40%, transparent);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] button[class*='primary'] {
+  background: linear-gradient(180deg, #ff9038 0%, #e0631a 100%) !important;
+    border: 1px solid #ffc44d !important;
+    border-radius: 8px !important;
+    color: #fff9f0 !important;
+    font-weight: 600 !important;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    box-shadow: 0 0 10px rgba(255, 122, 31, 0.4), inset 0 1px 0 rgba(255, 233, 214, 0.35);
+    text-shadow: 0 1px 2px rgba(120, 40, 0, 0.5);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-zzz-burnice][data-ds-dark-theme] button[class*='primary']:focus {
+  background: linear-gradient(120deg, #ff7a1f, #ffb97e, #ffc44d, #ff7a1f) !important;
+    background-size: 300% 100% !important;
+    color: #fff9f0 !important;
+    border-color: #ffe9c2 !important;
+    box-shadow: 0 0 18px rgba(255, 122, 31, 0.55), 0 0 30px rgba(255, 61, 129, 0.25) !important;
+    animation: zzz-burnice-burnice-btn-sweep 2.8s linear infinite;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] button[class*='primary']:active {
+  transform: translateY(1px);
+    box-shadow: 0 0 6px rgba(255, 122, 31, 0.4) !important;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] pre,
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body pre {
+  background: #170d08 !important;
+    border: 1px solid var(--border-base) !important;
+    border-radius: 10px !important;
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255, 122, 31, 0.85) 0 5px,
+      rgba(255, 196, 77, 0.85) 5px 10px
+    ) !important;
+    background-size: 4px 100% !important;
+    background-repeat: no-repeat !important;
+    padding-left: 14px !important;
+    box-shadow: 0 0 10px rgba(255, 122, 31, 0.12), inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] code,
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body code,
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body pre code {
+  color: #ffd4ae !important;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    text-shadow: 0 0 6px rgba(255, 154, 77, 0.25);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] :not(pre) > code,
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body :not(pre) > code {
+  background: rgba(255, 61, 129, 0.14);
+    border: 1px solid rgba(255, 61, 129, 0.3);
+    border-radius: 5px;
+    padding: 1px 5px;
+    color: #ffb3cf;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body blockquote {
+  background: linear-gradient(90deg, rgba(255, 196, 77, 0.08), transparent 70%);
+    border-left: 3px solid var(--warning);
+    border-radius: 0 8px 8px 0;
+    color: var(--color-text-2);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] a,
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body a {
+  color: var(--color-primary-light-1);
+    text-decoration-color: rgba(255, 122, 31, 0.5);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme] a:hover,
+body[data-dsh-zzz-burnice][data-ds-dark-theme] .markdown-body a:hover {
+  color: var(--color-primary-light-2);
+    text-shadow: 0 0 8px rgba(255, 122, 31, 0.5);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff9a4d, #c95212);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ffb97e, #e0631a);
+    box-shadow: 0 0 8px rgba(255, 122, 31, 0.6);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-zzz-burnice][data-ds-dark-theme]::-webkit-scrollbar-corner {
+  background: var(--bg-base);
+}
+
+/* --- keyframes --- */
+@keyframes zzz-burnice-burnice-flame-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}
+
+@keyframes zzz-burnice-burnice-bubble-rise {
+  0% { background-position: 0 0, 60px 80px, 30px 40px; }
+  100% { background-position: 0 -360px, 60px -440px, 30px -240px; }
+}
+
+@keyframes zzz-burnice-burnice-neon-breathe {
+  0%, 100% { text-shadow: 0 2px 6px rgba(120, 40, 0, 0.55), 0 0 8px rgba(255, 196, 77, 0.3); }
+  50% { text-shadow: 0 2px 6px rgba(120, 40, 0, 0.55), 0 0 14px rgba(255, 196, 77, 0.5), 0 0 24px rgba(224, 58, 122, 0.25); }
+}
+
+@keyframes zzz-burnice-burnice-btn-sweep {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}

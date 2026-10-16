@@ -1,0 +1,37 @@
+node_modules/
+dist/
+*.log
+*.tgz
+.DS_Store
+Thumbs.db
+
+# Local verification scratch: isolated DSH_HOME, app output, profile backups.
+.verify/
+.aio-backup/
+.probe-*
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Co-paid lane minting: plaintext lives outside the repo.
+scripts/eac-vault-mint.mjs
+
+# Gateway deployment secrets (self-hosted form) never get committed.
+worker/.env
+c3099.txt
+stats.json
+
+# 本地代码索引及工具状态，不进入仓库。
+.aoci/
+/aoci.txt
+/aoci.code.txt
+/aoci.meta.txt
+
+# PR 审查截图保留在本地，按需作为 PR 附件上传。
+.pr-screenshots/
+
+# AOCI agent host integration (machine-bound; do not commit)
+.codex/config.toml
+.codex/config.toml.backup.*

@@ -1,0 +1,831 @@
+/* festival-newyear — 跨年夜 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-festival-newyear], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-festival-newyear] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #232a3f;
+  background-color: #f8f4ea;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] {
+  color: #f0f2f8;
+  background-color: #060a18;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-festival-newyear] {
+  --color-primary: #a87b1f;
+  --primary: #a87b1f;
+  --primary-rgb: 168, 123, 31;
+  --color-primary-light-1: #c19036;
+  --color-primary-light-2: #d9ad55;
+  --color-primary-light-3: #eccc85;
+  --color-primary-dark-1: #7a5a14;
+  --brand: #a87b1f;
+  --brand-light: #f3e6c4;
+  --brand-hover: #c19036;
+  --color-brand-fill: #a87b1f;
+  --color-brand-bg: #f3e6c4;
+  --aou-1: #fbf3dd;
+  --aou-2: #f7e8bd;
+  --aou-3: #f0d894;
+  --aou-4: #e6c368;
+  --aou-5: #d9ad45;
+  --aou-6: #c19036;
+  --aou-7: #a87b1f;
+  --aou-8: #8a6416;
+  --aou-9: #6b4e12;
+  --aou-10: #4a360c;
+  --bg-base: #f8f4ea;
+  --bg-1: #f1ebdd;
+  --bg-2: #e9e1cf;
+  --bg-3: #ded4bd;
+  --bg-4: #d2c6a9;
+  --bg-5: #c4b691;
+  --bg-6: #b3a37b;
+  --bg-8: #8d7f5b;
+  --bg-9: #6a5f42;
+  --bg-10: #4a422e;
+  --color-bg-1: #f1ebdd;
+  --color-bg-2: #e9e1cf;
+  --color-bg-3: #ded4bd;
+  --color-bg-4: #d2c6a9;
+  --bg-hover: #ece4d0;
+  --bg-active: #e2d7bc;
+  --text-primary: #232a3f;
+  --text-secondary: #556080;
+  --text-disabled: #a0a8c0;
+  --text-0: #101528;
+  --text-white: #ffffff;
+  --color-text-1: #232a3f;
+  --color-text-2: #556080;
+  --color-text-3: #7e88a8;
+  --color-text-4: #a0a8c0;
+  --border-base: #d0c4a4;
+  --border-light: #e0d6bc;
+  --border-special: #b39452;
+  --color-border: #d0c4a4;
+  --color-border-1: #d0c4a4;
+  --color-border-2: #e0d6bc;
+  --fill: #e9e1cf;
+  --color-fill: #e9e1cf;
+  --fill-0: #f1ebdd;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #f4efe2;
+  --inverse: #232a3f;
+  --success: #1f9e6e;
+  --warning: #a87b1f;
+  --danger: #d0383e;
+  --info: #2f6fd0;
+  --message-user-bg: #ecd294;
+  --message-tips-bg: #e9e1cf;
+  --workspace-btn-bg: #f3e6c4;
+  --color-guid-agent-bar: #f0e9d8;
+  --ny-gold: #a87b1f;
+  --ny-gold-hi: #c19036;
+  --ny-midnight: #232a3f;
+  --ny-firework-red: #d0383e;
+  --ny-firework-blue: #2f6fd0;
+  --ny-firework-green: #1f9e6e;
+  --ny-champagne: #f5e3b3;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-festival-newyear][data-ds-dark-theme] {
+  --color-primary: #e6b84c;
+  --primary: #e6b84c;
+  --primary-rgb: 230, 184, 76;
+  --color-primary-light-1: #f0cd7e;
+  --color-primary-light-2: #f7dfa8;
+  --color-primary-light-3: #fbeecb;
+  --color-primary-dark-1: #b8892e;
+  --brand: #e6b84c;
+  --brand-light: #2e2410;
+  --brand-hover: #f0cd7e;
+  --color-brand-fill: #e6b84c;
+  --color-brand-bg: #2e2410;
+  --aou-1: #241a08;
+  --aou-2: #3a2a0d;
+  --aou-3: #553d14;
+  --aou-4: #74541c;
+  --aou-5: #97702a;
+  --aou-6: #c19036;
+  --aou-7: #e6b84c;
+  --aou-8: #f0cd7e;
+  --aou-9: #f7dfa8;
+  --aou-10: #fdf5e0;
+  --bg-base: #060a18;
+  --bg-1: #0b1124;
+  --bg-2: #111832;
+  --bg-3: #182142;
+  --bg-4: #202c54;
+  --bg-5: #2a3868;
+  --bg-6: #36477e;
+  --bg-8: #4f63a0;
+  --bg-9: #7b8cc0;
+  --bg-10: #b3bde0;
+  --color-bg-1: #0b1124;
+  --color-bg-2: #111832;
+  --color-bg-3: #182142;
+  --color-bg-4: #202c54;
+  --bg-hover: #151d3a;
+  --bg-active: #1d2748;
+  --text-primary: #f0f2f8;
+  --text-secondary: #aab2cc;
+  --text-disabled: #566080;
+  --text-0: #ffffff;
+  --text-white: #ffffff;
+  --color-text-1: #f0f2f8;
+  --color-text-2: #aab2cc;
+  --color-text-3: #7e88a8;
+  --color-text-4: #566080;
+  --border-base: #2a3560;
+  --border-light: #1c2547;
+  --border-special: #553d14;
+  --color-border: #2a3560;
+  --color-border-1: #2a3560;
+  --color-border-2: #1c2547;
+  --fill: #111832;
+  --color-fill: #111832;
+  --fill-0: #0b1124;
+  --fill-white-to-black: #060a18;
+  --dialog-fill-0: #0d1428;
+  --inverse: #f0f2f8;
+  --success: #4fd6a5;
+  --warning: #e6b84c;
+  --danger: #f06a6a;
+  --info: #6fa8ff;
+  --message-user-bg: #3a2a0d;
+  --message-tips-bg: #111832;
+  --workspace-btn-bg: #2e2410;
+  --color-guid-agent-bar: #0d1428;
+  --ny-gold: #e6b84c;
+  --ny-gold-hi: #f7dfa8;
+  --ny-midnight: #060a18;
+  --ny-firework-red: #ff7a8a;
+  --ny-firework-blue: #6fa8ff;
+  --ny-firework-green: #7fe0b8;
+  --ny-champagne: #f5e3b3;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-festival-newyear] {
+  --dsw-static-deepseek-50: #fbf3dd;
+  --dsw-static-blue-50: #fbf3dd;
+  --dsw-static-deepseek-50p: #f7e8bd;
+  --dsw-static-blue-50p: #f7e8bd;
+  --dsw-static-deepseek-75: #f7e8bd;
+  --dsw-static-blue-75: #f7e8bd;
+  --dsw-static-deepseek-100: #f7e8bd;
+  --dsw-static-blue-100: #f7e8bd;
+  --dsw-static-deepseek-200: #f0d894;
+  --dsw-static-blue-200: #f0d894;
+  --dsw-static-deepseek-300: #e6c368;
+  --dsw-static-blue-300: #e6c368;
+  --dsw-static-deepseek-400: #d9ad45;
+  --dsw-static-blue-400: #d9ad45;
+  --dsw-static-deepseek-450: #d9ad45;
+  --dsw-static-blue-450: #d9ad45;
+  --dsw-static-deepseek-500: #c19036;
+  --dsw-static-blue-500: #c19036;
+  --dsw-static-deepseek-600: #a87b1f;
+  --dsw-static-blue-600: #a87b1f;
+  --dsw-static-deepseek-700-delete: #8a6416;
+  --dsw-static-deepseek-800: #8a6416;
+  --dsw-static-blue-800: #8a6416;
+  --dsw-static-deepseek-900: #6b4e12;
+  --dsw-static-blue-900: #6b4e12;
+  --dsw-static-deepseek-950: #4a360c;
+  --dsw-static-blue-950: #4a360c;
+  --dsw-static-neutral-bluish-00: #f1ebdd;
+  --dsw-static-neutral-00: #f1ebdd;
+  --dsw-static-neutral-bluish-50: #f1ebdd;
+  --dsw-static-neutral-50: #f1ebdd;
+  --dsw-static-neutral-bluish-60: #f1ebdd;
+  --dsw-static-neutral-60: #f1ebdd;
+  --dsw-static-neutral-bluish-75: #e9e1cf;
+  --dsw-static-neutral-75: #e9e1cf;
+  --dsw-static-neutral-bluish-100: #e9e1cf;
+  --dsw-static-neutral-100: #e9e1cf;
+  --dsw-static-neutral-bluish-150: #ded4bd;
+  --dsw-static-neutral-150: #ded4bd;
+  --dsw-static-neutral-bluish-200: #ded4bd;
+  --dsw-static-neutral-200: #ded4bd;
+  --dsw-static-neutral-bluish-250: #d2c6a9;
+  --dsw-static-neutral-250: #d2c6a9;
+  --dsw-static-neutral-bluish-300: #d2c6a9;
+  --dsw-static-neutral-300: #d2c6a9;
+  --dsw-static-neutral-bluish-400: #c4b691;
+  --dsw-static-neutral-400: #c4b691;
+  --dsw-static-neutral-bluish-500: #b3a37b;
+  --dsw-static-neutral-500: #b3a37b;
+  --dsw-static-neutral-bluish-550: #b3a37b;
+  --dsw-static-neutral-550: #b3a37b;
+  --dsw-static-neutral-bluish-600: #8d7f5b;
+  --dsw-static-neutral-600: #8d7f5b;
+  --dsw-static-neutral-bluish-700: #8d7f5b;
+  --dsw-static-neutral-700: #8d7f5b;
+  --dsw-static-neutral-bluish-750: #6a5f42;
+  --dsw-static-neutral-750: #6a5f42;
+  --dsw-static-neutral-bluish-800: #6a5f42;
+  --dsw-static-neutral-800: #6a5f42;
+  --dsw-static-neutral-bluish-850: #6a5f42;
+  --dsw-static-neutral-850: #6a5f42;
+  --dsw-static-neutral-bluish-875: #4a422e;
+  --dsw-static-neutral-875: #4a422e;
+  --dsw-static-neutral-bluish-900: #4a422e;
+  --dsw-static-neutral-900: #4a422e;
+  --dsw-static-neutral-bluish-950: #4a422e;
+  --dsw-static-neutral-950: #4a422e;
+  --dsw-static-neutral-bluish-1000: #232a3f;
+  --dsw-static-neutral-1000: #232a3f;
+  --dsw-static-green-50: color-mix(in srgb, #1f9e6e 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #1f9e6e 20%, white);
+  --dsw-static-green-400: #1f9e6e;
+  --dsw-static-green-500: #1f9e6e;
+  --dsw-static-green-600: color-mix(in srgb, #1f9e6e 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #1f9e6e 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #a87b1f 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #a87b1f 20%, white);
+  --dsw-static-amber-400: #a87b1f;
+  --dsw-static-amber-500: #a87b1f;
+  --dsw-static-amber-600: color-mix(in srgb, #a87b1f 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #a87b1f 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d0383e 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d0383e 20%, white);
+  --dsw-static-red-400: #d0383e;
+  --dsw-static-red-500: #d0383e;
+  --dsw-static-red-600: color-mix(in srgb, #d0383e 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d0383e 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-festival-newyear][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #241a08;
+  --dsw-static-blue-50: #241a08;
+  --dsw-static-deepseek-50p: #3a2a0d;
+  --dsw-static-blue-50p: #3a2a0d;
+  --dsw-static-deepseek-75: #3a2a0d;
+  --dsw-static-blue-75: #3a2a0d;
+  --dsw-static-deepseek-100: #3a2a0d;
+  --dsw-static-blue-100: #3a2a0d;
+  --dsw-static-deepseek-200: #553d14;
+  --dsw-static-blue-200: #553d14;
+  --dsw-static-deepseek-300: #74541c;
+  --dsw-static-blue-300: #74541c;
+  --dsw-static-deepseek-400: #97702a;
+  --dsw-static-blue-400: #97702a;
+  --dsw-static-deepseek-450: #97702a;
+  --dsw-static-blue-450: #97702a;
+  --dsw-static-deepseek-500: #c19036;
+  --dsw-static-blue-500: #c19036;
+  --dsw-static-deepseek-600: #e6b84c;
+  --dsw-static-blue-600: #e6b84c;
+  --dsw-static-deepseek-700-delete: #f0cd7e;
+  --dsw-static-deepseek-800: #f0cd7e;
+  --dsw-static-blue-800: #f0cd7e;
+  --dsw-static-deepseek-900: #f7dfa8;
+  --dsw-static-blue-900: #f7dfa8;
+  --dsw-static-deepseek-950: #fdf5e0;
+  --dsw-static-blue-950: #fdf5e0;
+  --dsw-static-neutral-bluish-00: #0b1124;
+  --dsw-static-neutral-00: #0b1124;
+  --dsw-static-neutral-bluish-50: #0b1124;
+  --dsw-static-neutral-50: #0b1124;
+  --dsw-static-neutral-bluish-60: #0b1124;
+  --dsw-static-neutral-60: #0b1124;
+  --dsw-static-neutral-bluish-75: #111832;
+  --dsw-static-neutral-75: #111832;
+  --dsw-static-neutral-bluish-100: #111832;
+  --dsw-static-neutral-100: #111832;
+  --dsw-static-neutral-bluish-150: #182142;
+  --dsw-static-neutral-150: #182142;
+  --dsw-static-neutral-bluish-200: #182142;
+  --dsw-static-neutral-200: #182142;
+  --dsw-static-neutral-bluish-250: #202c54;
+  --dsw-static-neutral-250: #202c54;
+  --dsw-static-neutral-bluish-300: #202c54;
+  --dsw-static-neutral-300: #202c54;
+  --dsw-static-neutral-bluish-400: #2a3868;
+  --dsw-static-neutral-400: #2a3868;
+  --dsw-static-neutral-bluish-500: #36477e;
+  --dsw-static-neutral-500: #36477e;
+  --dsw-static-neutral-bluish-550: #36477e;
+  --dsw-static-neutral-550: #36477e;
+  --dsw-static-neutral-bluish-600: #4f63a0;
+  --dsw-static-neutral-600: #4f63a0;
+  --dsw-static-neutral-bluish-700: #4f63a0;
+  --dsw-static-neutral-700: #4f63a0;
+  --dsw-static-neutral-bluish-750: #7b8cc0;
+  --dsw-static-neutral-750: #7b8cc0;
+  --dsw-static-neutral-bluish-800: #7b8cc0;
+  --dsw-static-neutral-800: #7b8cc0;
+  --dsw-static-neutral-bluish-850: #7b8cc0;
+  --dsw-static-neutral-850: #7b8cc0;
+  --dsw-static-neutral-bluish-875: #b3bde0;
+  --dsw-static-neutral-875: #b3bde0;
+  --dsw-static-neutral-bluish-900: #b3bde0;
+  --dsw-static-neutral-900: #b3bde0;
+  --dsw-static-neutral-bluish-950: #b3bde0;
+  --dsw-static-neutral-950: #b3bde0;
+  --dsw-static-neutral-bluish-1000: #f0f2f8;
+  --dsw-static-neutral-1000: #f0f2f8;
+  --dsw-static-green-50: color-mix(in srgb, #4fd6a5 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4fd6a5 20%, black);
+  --dsw-static-green-400: #4fd6a5;
+  --dsw-static-green-500: #4fd6a5;
+  --dsw-static-green-600: color-mix(in srgb, #4fd6a5 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4fd6a5 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e6b84c 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e6b84c 20%, black);
+  --dsw-static-amber-400: #e6b84c;
+  --dsw-static-amber-500: #e6b84c;
+  --dsw-static-amber-600: color-mix(in srgb, #e6b84c 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e6b84c 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f06a6a 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #f06a6a 20%, black);
+  --dsw-static-red-400: #f06a6a;
+  --dsw-static-red-500: #f06a6a;
+  --dsw-static-red-600: color-mix(in srgb, #f06a6a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f06a6a 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-festival-newyear] {
+  --dsw-alias-button-primary-fill: #a87b1f;
+  --dsw-alias-button-primary-hover: #c19036;
+  --dsw-alias-button-primary-dimmed: #f7e8bd;
+  --dsw-alias-button-info-fill: #a87b1f;
+  --dsw-alias-button-info-hover: #c19036;
+  --dsw-alias-button-contrast-fill: #a87b1f;
+  --dsw-alias-button-ghost-active-fill: #f3e6c4;
+  --dsw-alias-button-ghost-active-hover: #f7e8bd;
+  --dsw-alias-button-ghost-active-border: #e6c368;
+  --dsw-alias-button-elevated-fill: #f1ebdd;
+  --dsw-alias-button-floating-fill: #f1ebdd;
+  --dsw-alias-button-floating-hover: #ece4d0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(168, 123, 31, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(168, 123, 31, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(168, 123, 31, 0.6);
+  --dsw-specific-bubble: #ecd294;
+  --dsw-specific-bubble-highlight: #f0d894;
+  --dsw-specific-input-major: #f1ebdd;
+  --dsw-specific-login-input: #f1ebdd;
+  --dsw-specific-sidebar-fill: #a87b1f;
+  --dsw-specific-sidebar-nav-item-active: #f7e8bd;
+  --dsw-specific-sidebar-nav-item-hover: #ece4d0;
+  --dsw-specific-sidebar-nav-item-active-accent: #e6c368;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-festival-newyear][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #e6b84c;
+  --dsw-alias-button-primary-hover: #f0cd7e;
+  --dsw-alias-button-primary-dimmed: #3a2a0d;
+  --dsw-alias-button-info-fill: #e6b84c;
+  --dsw-alias-button-info-hover: #f0cd7e;
+  --dsw-alias-button-contrast-fill: #e6b84c;
+  --dsw-alias-button-ghost-active-fill: #2e2410;
+  --dsw-alias-button-ghost-active-hover: #3a2a0d;
+  --dsw-alias-button-ghost-active-border: #74541c;
+  --dsw-alias-button-elevated-fill: #0b1124;
+  --dsw-alias-button-floating-fill: #0b1124;
+  --dsw-alias-button-floating-hover: #151d3a;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(230, 184, 76, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(230, 184, 76, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(230, 184, 76, 0.6);
+  --dsw-specific-bubble: #3a2a0d;
+  --dsw-specific-bubble-highlight: #553d14;
+  --dsw-specific-input-major: #0b1124;
+  --dsw-specific-login-input: #0b1124;
+  --dsw-specific-sidebar-fill: #e6b84c;
+  --dsw-specific-sidebar-nav-item-active: #3a2a0d;
+  --dsw-specific-sidebar-nav-item-hover: #151d3a;
+  --dsw-specific-sidebar-nav-item-active-accent: #74541c;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-festival-newyear] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-newyear]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image:
+      radial-gradient(circle at 50% 50%, var(--ny-gold-hi) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 50% 50%, var(--ny-firework-red) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 50% 50%, var(--ny-firework-blue) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 50% 50%, var(--ny-gold) 0 1.2px, transparent 2.2px);
+    background-size: 44px 44px, 64px 64px, 88px 88px, 120px 120px;
+    background-position: 12% 16%, 74% 10%, 84% 58%, 30% 74%;
+    background-repeat: no-repeat;
+    animation: festival-newyear-nyl-firework-bloom 4.6s ease-in-out infinite;
+}
+
+body[data-dsh-festival-newyear]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(circle, var(--ny-gold) 0 2px, transparent 3px),
+      radial-gradient(circle, var(--ny-firework-red) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle, var(--ny-firework-blue) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle, var(--ny-firework-green) 0 1.4px, transparent 2.4px);
+    background-size: 130px 130px, 170px 170px, 210px 210px, 150px 150px;
+    background-position: 0 0, 60px 30px, 120px 80px, 30px 100px;
+    animation: festival-newyear-nyl-confetti-fall 34s linear infinite;
+}
+
+body[data-dsh-festival-newyear] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-newyear] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--ny-firework-blue);
+}
+
+body[data-dsh-festival-newyear] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-newyear] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(168, 123, 31, 0.2), rgba(168, 123, 31, 0.05) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--ny-gold);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-newyear] button[class*='primary'],
+body[data-dsh-festival-newyear] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 84% 16%, rgba(255, 255, 255, 0.75) 0 2px, transparent 3.5px),
+      linear-gradient(135deg, #c19036 0%, #d9ad45 55%, #eccc85 100%) !important;
+    border: 1px solid var(--ny-gold) !important;
+    border-radius: 10px !important;
+    color: #241a08 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(168, 123, 31, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-newyear] button[class*='primary']:hover,
+body[data-dsh-festival-newyear] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.05);
+    animation: festival-newyear-nyl-btn-pop 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-newyear] pre,
+body[data-dsh-festival-newyear] .markdown-body pre {
+  background: linear-gradient(180deg, #101528 0%, #0b1120 100%) !important;
+    border: 1px solid var(--border-special) !important;
+    border-left: 4px solid var(--ny-gold-hi) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 12px rgba(35, 42, 63, 0.25);
+}
+
+body[data-dsh-festival-newyear] pre code,
+body[data-dsh-festival-newyear] .markdown-body pre code {
+  background: transparent !important;
+    color: #ece6d2 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-newyear] code,
+body[data-dsh-festival-newyear] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--color-primary-dark-1);
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-newyear]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-festival-newyear] [class*='agent-bar'],
+body[data-dsh-festival-newyear] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(168, 123, 31, 0.3);
+}
+
+body[data-dsh-festival-newyear] .markdown-body blockquote {
+  border-left: 3px solid var(--ny-gold);
+    background: rgba(168, 123, 31, 0.08);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-newyear] .markdown-body hr,
+body[data-dsh-festival-newyear] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 5px 5px, rgba(168, 123, 31, 0.85) 0 2px, transparent 3px),
+      linear-gradient(90deg, transparent, rgba(168, 123, 31, 0.3), transparent);
+    background-size: 22px 10px, 100% 1px;
+    background-position: 0 0, 0 5px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.75;
+}
+
+body[data-dsh-festival-newyear] .markdown-body a,
+body[data-dsh-festival-newyear] a {
+  color: var(--ny-firework-blue);
+}
+
+body[data-dsh-festival-newyear] .markdown-body a:hover,
+body[data-dsh-festival-newyear] a:hover {
+  color: #1f56a8;
+    text-shadow: 0 0 6px rgba(47, 111, 208, 0.3);
+}
+
+body[data-dsh-festival-newyear] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-dark-1) !important;
+    border-color: rgba(168, 123, 31, 0.55) !important;
+    background-color: rgba(168, 123, 31, 0.1) !important;
+}
+
+body[data-dsh-festival-newyear]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-newyear]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--ny-gold-hi), var(--ny-gold));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-newyear]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--color-primary-light-2), var(--ny-gold-hi));
+    box-shadow: 0 0 8px rgba(168, 123, 31, 0.4);
+}
+
+body[data-dsh-festival-newyear]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-festival-newyear][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 50% 50%, var(--ny-gold-hi) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 50% 50%, var(--ny-firework-red) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 50% 50%, var(--ny-firework-blue) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 50% 50%, var(--ny-gold) 0 1.2px, transparent 2.2px);
+    background-size: 44px 44px, 64px 64px, 88px 88px, 120px 120px;
+    background-position: 12% 16%, 74% 10%, 84% 58%, 30% 74%;
+    background-repeat: no-repeat;
+    animation: festival-newyear-ny-firework-bloom 4.6s ease-in-out infinite;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(circle, var(--ny-gold) 0 2px, transparent 3px),
+      radial-gradient(circle, var(--ny-firework-red) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle, var(--ny-firework-blue) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle, var(--ny-firework-green) 0 1.4px, transparent 2.4px);
+    background-size: 130px 130px, 170px 170px, 210px 210px, 150px 150px;
+    background-position: 0 0, 60px 30px, 120px 80px, 30px 100px;
+    animation: festival-newyear-ny-confetti-fall 34s linear infinite;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--ny-firework-blue), 3px 0 10px rgba(111, 168, 255, 0.15);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-newyear][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(230, 184, 76, 0.26), rgba(230, 184, 76, 0.07) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--ny-gold), 3px 0 12px rgba(230, 184, 76, 0.28);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-festival-newyear][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 84% 16%, rgba(255, 255, 255, 0.65) 0 2px, transparent 3.5px),
+      linear-gradient(135deg, #b8892e 0%, var(--ny-gold) 55%, var(--ny-gold-hi) 100%) !important;
+    border: 1px solid var(--ny-gold-hi) !important;
+    border-radius: 10px !important;
+    color: #241a08 !important;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(230, 184, 76, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-festival-newyear][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    animation: festival-newyear-ny-btn-pop 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] pre,
+body[data-dsh-festival-newyear][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0a0f20 0%, var(--ny-midnight) 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--ny-gold) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 14px rgba(230, 184, 76, 0.1);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] pre code,
+body[data-dsh-festival-newyear][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #e8e4d2 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] code,
+body[data-dsh-festival-newyear][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--ny-gold-hi);
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-festival-newyear][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(230, 184, 76, 0.35);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--ny-gold);
+    background: rgba(230, 184, 76, 0.07);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-festival-newyear][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      radial-gradient(circle at 5px 5px, rgba(230, 184, 76, 0.9) 0 2px, transparent 3px),
+      linear-gradient(90deg, transparent, rgba(230, 184, 76, 0.35), transparent);
+    background-size: 22px 10px, 100% 1px;
+    background-position: 0 0, 0 5px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.7;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-festival-newyear][data-ds-dark-theme] a {
+  color: var(--ny-firework-blue);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-festival-newyear][data-ds-dark-theme] a:hover {
+  color: #a8ccff;
+    text-shadow: 0 0 8px rgba(111, 168, 255, 0.5);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-light-2) !important;
+    border-color: rgba(230, 184, 76, 0.5) !important;
+    background-color: rgba(230, 184, 76, 0.1) !important;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--ny-gold), #553d14);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--ny-gold-hi), var(--ny-gold));
+    box-shadow: 0 0 8px rgba(230, 184, 76, 0.5);
+}
+
+body[data-dsh-festival-newyear][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes festival-newyear-nyl-firework-bloom {
+  0%, 100% { opacity: 0.04; }
+  45% { opacity: 0.11; }
+  70% { opacity: 0.07; }
+}
+
+@keyframes festival-newyear-nyl-confetti-fall {
+  0% { background-position: 0 -130px, 60px -140px, 120px -130px, 30px -50px; }
+  100% { background-position: 0 130px, 60px 140px, 120px 130px, 30px 250px; }
+}
+
+@keyframes festival-newyear-nyl-gold-breathe {
+  0%, 100% { box-shadow: 0 2px 10px rgba(168, 123, 31, 0.16); }
+  50% { box-shadow: 0 2px 18px rgba(168, 123, 31, 0.38); }
+}
+
+@keyframes festival-newyear-nyl-spark-sweep {
+  0% { left: -12%; opacity: 0; }
+  5% { opacity: 1; }
+  28% { left: 106%; opacity: 1; }
+  34% { left: 110%; opacity: 0; }
+  100% { left: 110%; opacity: 0; }
+}
+
+@keyframes festival-newyear-nyl-btn-pop {
+  0%, 100% { box-shadow: 0 2px 12px rgba(168, 123, 31, 0.4), 0 0 22px rgba(208, 56, 62, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.42); }
+  50% { box-shadow: 0 3px 18px rgba(168, 123, 31, 0.55), 0 0 36px rgba(208, 56, 62, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+}
+
+@keyframes festival-newyear-nyl-ribbon-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+@keyframes festival-newyear-nyl-ring-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}
+
+@keyframes festival-newyear-ny-firework-bloom {
+  0%, 100% { opacity: 0.05; }
+  45% { opacity: 0.12; }
+  70% { opacity: 0.08; }
+}
+
+@keyframes festival-newyear-ny-confetti-fall {
+  0% { background-position: 0 -130px, 60px -140px, 120px -130px, 30px -50px; }
+  100% { background-position: 0 130px, 60px 140px, 120px 130px, 30px 250px; }
+}
+
+@keyframes festival-newyear-ny-gold-breathe {
+  0%, 100% { box-shadow: 0 2px 12px rgba(230, 184, 76, 0.24); }
+  50% { box-shadow: 0 2px 20px rgba(230, 184, 76, 0.5); }
+}
+
+@keyframes festival-newyear-ny-spark-sweep {
+  0% { left: -12%; opacity: 0; }
+  5% { opacity: 1; }
+  28% { left: 106%; opacity: 1; }
+  34% { left: 110%; opacity: 0; }
+  100% { left: 110%; opacity: 0; }
+}
+
+@keyframes festival-newyear-ny-btn-pop {
+  0%, 100% { box-shadow: 0 0 14px rgba(230, 184, 76, 0.55), 0 0 28px rgba(255, 122, 138, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.38); }
+  50% { box-shadow: 0 0 22px rgba(230, 184, 76, 0.85), 0 0 44px rgba(255, 122, 138, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+}
+
+@keyframes festival-newyear-ny-ribbon-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+@keyframes festival-newyear-ny-ring-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

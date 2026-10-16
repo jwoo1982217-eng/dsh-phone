@@ -1,0 +1,714 @@
+/* one — One Light | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-one], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-one] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #383a42;
+  background-color: #fafafa;
+}
+
+body[data-dsh-one][data-ds-dark-theme] {
+  color: #abb2bf;
+  background-color: #282c34;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-one] {
+  --color-primary: #4078f2;
+  --primary: #4078f2;
+  --primary-rgb: 64, 120, 242;
+  --color-primary-light-1: #6e98f5;
+  --color-primary-light-2: #9bb8f8;
+  --color-primary-light-3: #c8d9fc;
+  --color-primary-dark-1: #2e58b4;
+  --brand: #4078f2;
+  --brand-light: #e7effe;
+  --brand-hover: #5b8bf4;
+  --color-brand-fill: #4078f2;
+  --color-brand-bg: #e7effe;
+  --aou-1: #e7effe;
+  --aou-2: #c8d9fc;
+  --aou-3: #9bb8f8;
+  --aou-4: #6e98f5;
+  --aou-5: #5b8bf4;
+  --aou-6: #4078f2;
+  --aou-7: #3869d5;
+  --aou-8: #2e58b4;
+  --aou-9: #234590;
+  --aou-10: #183168;
+  --bg-base: #fafafa;
+  --bg-1: #f0f0f2;
+  --bg-2: #e5e5e6;
+  --bg-3: #dbdcdf;
+  --bg-4: #cfcfd4;
+  --bg-5: #bdbdc4;
+  --bg-6: #a5a6ae;
+  --bg-8: #6e7078;
+  --bg-9: #44464d;
+  --bg-10: #23252b;
+  --color-bg-1: #f0f0f2;
+  --color-bg-2: #e5e5e6;
+  --color-bg-3: #dbdcdf;
+  --color-bg-4: #cfcfd4;
+  --bg-hover: #ececf0;
+  --bg-active: #e2e3e8;
+  --text-primary: #383a42;
+  --text-secondary: #696c77;
+  --text-disabled: #a0a1a7;
+  --text-0: #1d2129;
+  --text-white: #ffffff;
+  --color-text-1: #383a42;
+  --color-text-2: #696c77;
+  --color-text-3: #86888f;
+  --color-text-4: #a0a1a7;
+  --border-base: #d3d4d8;
+  --border-light: #e5e5e6;
+  --border-special: #b9bbc2;
+  --color-border: #d3d4d8;
+  --color-border-1: #d3d4d8;
+  --color-border-2: #e5e5e6;
+  --fill: #f0f0f2;
+  --color-fill: #f0f0f2;
+  --fill-0: #ffffff;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #ffffff;
+  --inverse: #383a42;
+  --success: #50a14f;
+  --warning: #c18401;
+  --danger: #e45649;
+  --info: #0184bc;
+  --message-user-bg: #d8e4fd;
+  --message-tips-bg: #f3e8d4;
+  --workspace-btn-bg: #e7effe;
+  --color-guid-agent-bar: #eef1f9;
+  --one-blue: #4078f2;
+  --one-blue-dark: #2e58b4;
+  --one-purple: #a626a4;
+  --one-cyan: #0184bc;
+  --one-green: #50a14f;
+  --one-red: #e45649;
+  --one-orange: #986801;
+  --one-yellow: #c18401;
+  --one-dark-bg: #282c34;
+  --one-dark-fg: #abb2bf;
+  --one-mono3: #a0a1a7;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-one][data-ds-dark-theme] {
+  --color-primary: #61afef;
+  --primary: #61afef;
+  --primary-rgb: 97, 175, 239;
+  --color-primary-light-1: #7cbef2;
+  --color-primary-light-2: #9bcdf6;
+  --color-primary-light-3: #bedef9;
+  --color-primary-dark-1: #4d9de0;
+  --brand: #61afef;
+  --brand-light: #253349;
+  --brand-hover: #7cbef2;
+  --color-brand-fill: #61afef;
+  --color-brand-bg: #253349;
+  --aou-1: #1f3751;
+  --aou-2: #2d5071;
+  --aou-3: #3a6892;
+  --aou-4: #4881b2;
+  --aou-5: #5599d3;
+  --aou-6: #61afef;
+  --aou-7: #85c2f3;
+  --aou-8: #aad4f7;
+  --aou-9: #cee6fb;
+  --aou-10: #e6f3fe;
+  --bg-base: #282c34;
+  --bg-1: #2e333d;
+  --bg-2: #353b47;
+  --bg-3: #3d4453;
+  --bg-4: #474f61;
+  --bg-5: #555e73;
+  --bg-6: #69738c;
+  --bg-8: #99a3ba;
+  --bg-9: #c4cbd9;
+  --bg-10: #eaedf3;
+  --color-bg-1: #2e333d;
+  --color-bg-2: #353b47;
+  --color-bg-3: #3d4453;
+  --color-bg-4: #474f61;
+  --bg-hover: #333a47;
+  --bg-active: #3c4454;
+  --text-primary: #abb2bf;
+  --text-secondary: #8d94a6;
+  --text-disabled: #5c6370;
+  --text-0: #d7dae0;
+  --text-white: #f4f6fb;
+  --color-text-1: #abb2bf;
+  --color-text-2: #8d94a6;
+  --color-text-3: #6b7280;
+  --color-text-4: #5c6370;
+  --border-base: #3e4451;
+  --border-light: #353b45;
+  --border-special: #4b5263;
+  --color-border: #3e4451;
+  --color-border-1: #3e4451;
+  --color-border-2: #353b45;
+  --fill: #353b47;
+  --color-fill: #353b47;
+  --fill-0: #2e333d;
+  --fill-white-to-black: #14161c;
+  --dialog-fill-0: #2b303b;
+  --inverse: #abb2bf;
+  --success: #98c379;
+  --warning: #e5c07b;
+  --danger: #e06c75;
+  --info: #56b6c2;
+  --message-user-bg: #314f78;
+  --message-tips-bg: #3d4453;
+  --workspace-btn-bg: #253349;
+  --color-guid-agent-bar: #2b303b;
+  --one-blue: #61afef;
+  --one-blue-dark: #4d9de0;
+  --one-purple: #c678dd;
+  --one-cyan: #56b6c2;
+  --one-green: #98c379;
+  --one-red: #e06c75;
+  --one-orange: #d19a66;
+  --one-yellow: #e5c07b;
+  --one-bg-dark: #21252b;
+  --one-mono3: #5c6370;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-one] {
+  --dsw-static-deepseek-50: #e7effe;
+  --dsw-static-blue-50: #e7effe;
+  --dsw-static-deepseek-50p: #c8d9fc;
+  --dsw-static-blue-50p: #c8d9fc;
+  --dsw-static-deepseek-75: #c8d9fc;
+  --dsw-static-blue-75: #c8d9fc;
+  --dsw-static-deepseek-100: #c8d9fc;
+  --dsw-static-blue-100: #c8d9fc;
+  --dsw-static-deepseek-200: #9bb8f8;
+  --dsw-static-blue-200: #9bb8f8;
+  --dsw-static-deepseek-300: #6e98f5;
+  --dsw-static-blue-300: #6e98f5;
+  --dsw-static-deepseek-400: #5b8bf4;
+  --dsw-static-blue-400: #5b8bf4;
+  --dsw-static-deepseek-450: #5b8bf4;
+  --dsw-static-blue-450: #5b8bf4;
+  --dsw-static-deepseek-500: #4078f2;
+  --dsw-static-blue-500: #4078f2;
+  --dsw-static-deepseek-600: #3869d5;
+  --dsw-static-blue-600: #3869d5;
+  --dsw-static-deepseek-700-delete: #2e58b4;
+  --dsw-static-deepseek-800: #2e58b4;
+  --dsw-static-blue-800: #2e58b4;
+  --dsw-static-deepseek-900: #234590;
+  --dsw-static-blue-900: #234590;
+  --dsw-static-deepseek-950: #183168;
+  --dsw-static-blue-950: #183168;
+  --dsw-static-neutral-bluish-00: #ffffff;
+  --dsw-static-neutral-00: #ffffff;
+  --dsw-static-neutral-bluish-50: #f0f0f2;
+  --dsw-static-neutral-50: #f0f0f2;
+  --dsw-static-neutral-bluish-60: #f0f0f2;
+  --dsw-static-neutral-60: #f0f0f2;
+  --dsw-static-neutral-bluish-75: #e5e5e6;
+  --dsw-static-neutral-75: #e5e5e6;
+  --dsw-static-neutral-bluish-100: #e5e5e6;
+  --dsw-static-neutral-100: #e5e5e6;
+  --dsw-static-neutral-bluish-150: #dbdcdf;
+  --dsw-static-neutral-150: #dbdcdf;
+  --dsw-static-neutral-bluish-200: #dbdcdf;
+  --dsw-static-neutral-200: #dbdcdf;
+  --dsw-static-neutral-bluish-250: #cfcfd4;
+  --dsw-static-neutral-250: #cfcfd4;
+  --dsw-static-neutral-bluish-300: #cfcfd4;
+  --dsw-static-neutral-300: #cfcfd4;
+  --dsw-static-neutral-bluish-400: #bdbdc4;
+  --dsw-static-neutral-400: #bdbdc4;
+  --dsw-static-neutral-bluish-500: #a5a6ae;
+  --dsw-static-neutral-500: #a5a6ae;
+  --dsw-static-neutral-bluish-550: #a5a6ae;
+  --dsw-static-neutral-550: #a5a6ae;
+  --dsw-static-neutral-bluish-600: #6e7078;
+  --dsw-static-neutral-600: #6e7078;
+  --dsw-static-neutral-bluish-700: #6e7078;
+  --dsw-static-neutral-700: #6e7078;
+  --dsw-static-neutral-bluish-750: #44464d;
+  --dsw-static-neutral-750: #44464d;
+  --dsw-static-neutral-bluish-800: #44464d;
+  --dsw-static-neutral-800: #44464d;
+  --dsw-static-neutral-bluish-850: #44464d;
+  --dsw-static-neutral-850: #44464d;
+  --dsw-static-neutral-bluish-875: #23252b;
+  --dsw-static-neutral-875: #23252b;
+  --dsw-static-neutral-bluish-900: #23252b;
+  --dsw-static-neutral-900: #23252b;
+  --dsw-static-neutral-bluish-950: #23252b;
+  --dsw-static-neutral-950: #23252b;
+  --dsw-static-neutral-bluish-1000: #383a42;
+  --dsw-static-neutral-1000: #383a42;
+  --dsw-static-green-50: color-mix(in srgb, #50a14f 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #50a14f 20%, white);
+  --dsw-static-green-400: #50a14f;
+  --dsw-static-green-500: #50a14f;
+  --dsw-static-green-600: color-mix(in srgb, #50a14f 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #50a14f 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #c18401 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #c18401 20%, white);
+  --dsw-static-amber-400: #c18401;
+  --dsw-static-amber-500: #c18401;
+  --dsw-static-amber-600: color-mix(in srgb, #c18401 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #c18401 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e45649 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e45649 20%, white);
+  --dsw-static-red-400: #e45649;
+  --dsw-static-red-500: #e45649;
+  --dsw-static-red-600: color-mix(in srgb, #e45649 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e45649 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-one][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #1f3751;
+  --dsw-static-blue-50: #1f3751;
+  --dsw-static-deepseek-50p: #2d5071;
+  --dsw-static-blue-50p: #2d5071;
+  --dsw-static-deepseek-75: #2d5071;
+  --dsw-static-blue-75: #2d5071;
+  --dsw-static-deepseek-100: #2d5071;
+  --dsw-static-blue-100: #2d5071;
+  --dsw-static-deepseek-200: #3a6892;
+  --dsw-static-blue-200: #3a6892;
+  --dsw-static-deepseek-300: #4881b2;
+  --dsw-static-blue-300: #4881b2;
+  --dsw-static-deepseek-400: #5599d3;
+  --dsw-static-blue-400: #5599d3;
+  --dsw-static-deepseek-450: #5599d3;
+  --dsw-static-blue-450: #5599d3;
+  --dsw-static-deepseek-500: #61afef;
+  --dsw-static-blue-500: #61afef;
+  --dsw-static-deepseek-600: #85c2f3;
+  --dsw-static-blue-600: #85c2f3;
+  --dsw-static-deepseek-700-delete: #aad4f7;
+  --dsw-static-deepseek-800: #aad4f7;
+  --dsw-static-blue-800: #aad4f7;
+  --dsw-static-deepseek-900: #cee6fb;
+  --dsw-static-blue-900: #cee6fb;
+  --dsw-static-deepseek-950: #e6f3fe;
+  --dsw-static-blue-950: #e6f3fe;
+  --dsw-static-neutral-bluish-00: #2e333d;
+  --dsw-static-neutral-00: #2e333d;
+  --dsw-static-neutral-bluish-50: #2e333d;
+  --dsw-static-neutral-50: #2e333d;
+  --dsw-static-neutral-bluish-60: #2e333d;
+  --dsw-static-neutral-60: #2e333d;
+  --dsw-static-neutral-bluish-75: #353b47;
+  --dsw-static-neutral-75: #353b47;
+  --dsw-static-neutral-bluish-100: #353b47;
+  --dsw-static-neutral-100: #353b47;
+  --dsw-static-neutral-bluish-150: #3d4453;
+  --dsw-static-neutral-150: #3d4453;
+  --dsw-static-neutral-bluish-200: #3d4453;
+  --dsw-static-neutral-200: #3d4453;
+  --dsw-static-neutral-bluish-250: #474f61;
+  --dsw-static-neutral-250: #474f61;
+  --dsw-static-neutral-bluish-300: #474f61;
+  --dsw-static-neutral-300: #474f61;
+  --dsw-static-neutral-bluish-400: #555e73;
+  --dsw-static-neutral-400: #555e73;
+  --dsw-static-neutral-bluish-500: #69738c;
+  --dsw-static-neutral-500: #69738c;
+  --dsw-static-neutral-bluish-550: #69738c;
+  --dsw-static-neutral-550: #69738c;
+  --dsw-static-neutral-bluish-600: #99a3ba;
+  --dsw-static-neutral-600: #99a3ba;
+  --dsw-static-neutral-bluish-700: #99a3ba;
+  --dsw-static-neutral-700: #99a3ba;
+  --dsw-static-neutral-bluish-750: #c4cbd9;
+  --dsw-static-neutral-750: #c4cbd9;
+  --dsw-static-neutral-bluish-800: #c4cbd9;
+  --dsw-static-neutral-800: #c4cbd9;
+  --dsw-static-neutral-bluish-850: #c4cbd9;
+  --dsw-static-neutral-850: #c4cbd9;
+  --dsw-static-neutral-bluish-875: #eaedf3;
+  --dsw-static-neutral-875: #eaedf3;
+  --dsw-static-neutral-bluish-900: #eaedf3;
+  --dsw-static-neutral-900: #eaedf3;
+  --dsw-static-neutral-bluish-950: #eaedf3;
+  --dsw-static-neutral-950: #eaedf3;
+  --dsw-static-neutral-bluish-1000: #abb2bf;
+  --dsw-static-neutral-1000: #abb2bf;
+  --dsw-static-green-50: color-mix(in srgb, #98c379 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #98c379 20%, black);
+  --dsw-static-green-400: #98c379;
+  --dsw-static-green-500: #98c379;
+  --dsw-static-green-600: color-mix(in srgb, #98c379 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #98c379 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e5c07b 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e5c07b 20%, black);
+  --dsw-static-amber-400: #e5c07b;
+  --dsw-static-amber-500: #e5c07b;
+  --dsw-static-amber-600: color-mix(in srgb, #e5c07b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e5c07b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e06c75 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e06c75 20%, black);
+  --dsw-static-red-400: #e06c75;
+  --dsw-static-red-500: #e06c75;
+  --dsw-static-red-600: color-mix(in srgb, #e06c75 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e06c75 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-one] {
+  --dsw-alias-button-primary-fill: #4078f2;
+  --dsw-alias-button-primary-hover: #5b8bf4;
+  --dsw-alias-button-primary-dimmed: #c8d9fc;
+  --dsw-alias-button-info-fill: #4078f2;
+  --dsw-alias-button-info-hover: #5b8bf4;
+  --dsw-alias-button-contrast-fill: #3869d5;
+  --dsw-alias-button-ghost-active-fill: #e7effe;
+  --dsw-alias-button-ghost-active-hover: #c8d9fc;
+  --dsw-alias-button-ghost-active-border: #6e98f5;
+  --dsw-alias-button-elevated-fill: #ffffff;
+  --dsw-alias-button-floating-fill: #ffffff;
+  --dsw-alias-button-floating-hover: #ececf0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(64, 120, 242, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(64, 120, 242, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(64, 120, 242, 0.6);
+  --dsw-specific-bubble: #d8e4fd;
+  --dsw-specific-bubble-highlight: #9bb8f8;
+  --dsw-specific-input-major: #ffffff;
+  --dsw-specific-login-input: #ffffff;
+  --dsw-specific-sidebar-fill: #4078f2;
+  --dsw-specific-sidebar-nav-item-active: #c8d9fc;
+  --dsw-specific-sidebar-nav-item-hover: #ececf0;
+  --dsw-specific-sidebar-nav-item-active-accent: #6e98f5;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-one][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #61afef;
+  --dsw-alias-button-primary-hover: #7cbef2;
+  --dsw-alias-button-primary-dimmed: #2d5071;
+  --dsw-alias-button-info-fill: #61afef;
+  --dsw-alias-button-info-hover: #7cbef2;
+  --dsw-alias-button-contrast-fill: #85c2f3;
+  --dsw-alias-button-ghost-active-fill: #253349;
+  --dsw-alias-button-ghost-active-hover: #2d5071;
+  --dsw-alias-button-ghost-active-border: #4881b2;
+  --dsw-alias-button-elevated-fill: #2e333d;
+  --dsw-alias-button-floating-fill: #2e333d;
+  --dsw-alias-button-floating-hover: #333a47;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(97, 175, 239, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(97, 175, 239, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(97, 175, 239, 0.6);
+  --dsw-specific-bubble: #314f78;
+  --dsw-specific-bubble-highlight: #3a6892;
+  --dsw-specific-input-major: #2e333d;
+  --dsw-specific-login-input: #2e333d;
+  --dsw-specific-sidebar-fill: #61afef;
+  --dsw-specific-sidebar-nav-item-active: #2d5071;
+  --dsw-specific-sidebar-nav-item-hover: #333a47;
+  --dsw-specific-sidebar-nav-item-active-accent: #4881b2;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-one] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-one]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--one-mono3) 0 1px,
+      transparent 1px 96px
+    );
+    background-size: 96px 100%;
+}
+
+body[data-dsh-one]::after {
+  content: '';
+    position: fixed;
+    inset: -60px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      radial-gradient(ellipse 420px 260px at 18% 22%, rgba(64, 120, 242, 0.5), transparent 70%),
+      radial-gradient(ellipse 380px 240px at 82% 30%, rgba(166, 38, 164, 0.42), transparent 70%),
+      radial-gradient(ellipse 360px 220px at 55% 85%, rgba(1, 132, 188, 0.4), transparent 70%);
+    background-size: 100% 100%;
+    animation: one-aurora-drift 14s ease-in-out infinite alternate;
+}
+
+body[data-dsh-one] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-one] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--one-cyan);
+}
+
+body[data-dsh-one] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-one] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--one-blue), inset 4px 0 0 0 var(--one-purple);
+    font-weight: 600;
+}
+
+body[data-dsh-one] button[class*='primary'],
+body[data-dsh-one] button[class*='primary']:not(.arco-btn-disabled) {
+  position: relative;
+    background-color: var(--one-blue) !important;
+    background-image: linear-gradient(180deg, #5b8bf4 0%, var(--one-blue) 55%, var(--one-blue-dark) 100%) !important;
+    border: 1px solid var(--one-blue-dark) !important;
+    border-bottom: 3px solid var(--one-blue-dark) !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    text-shadow: 0 1px 1px rgba(24, 49, 104, 0.35);
+    box-shadow: 0 2px 8px rgba(64, 120, 242, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+body[data-dsh-one] button[class*='primary']:hover,
+body[data-dsh-one] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(64, 120, 242, 0.4), 0 0 12px rgba(166, 38, 164, 0.18);
+}
+
+body[data-dsh-one] button[class*='primary']:active,
+body[data-dsh-one] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+    border-bottom-width: 1px !important;
+    box-shadow: 0 1px 4px rgba(64, 120, 242, 0.25);
+}
+
+body[data-dsh-one] pre,
+body[data-dsh-one] .markdown-body pre {
+  background: linear-gradient(180deg, var(--one-dark-bg) 0%, #21252b 100%) !important;
+    border: 1px solid #3e4451 !important;
+    border-left: 4px solid transparent !important;
+    border-image: linear-gradient(180deg, #61afef, #c678dd, #56b6c2) 1 !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(56, 58, 66, 0.15);
+}
+
+body[data-dsh-one] pre code,
+body[data-dsh-one] .markdown-body pre code {
+  background: transparent !important;
+    color: var(--one-dark-fg) !important;
+    text-shadow: none;
+}
+
+body[data-dsh-one] code,
+body[data-dsh-one] .markdown-body code {
+  background-color: rgba(166, 38, 164, 0.08);
+    color: var(--one-purple);
+    border: 1px solid rgba(166, 38, 164, 0.25);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-one] pre code,
+body[data-dsh-one] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-one] .markdown-body blockquote {
+  background-color: rgba(152, 104, 1, 0.07);
+    border-left: 4px solid var(--one-orange);
+    border-radius: 0 8px 8px 0;
+}
+
+body[data-dsh-one]::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+body[data-dsh-one]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-one]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #b9bbc2, var(--one-mono3));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-one]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--one-blue), var(--one-blue-dark));
+}
+
+body[data-dsh-one]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-one][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-one][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--one-mono3) 0 1px,
+      transparent 1px 96px
+    );
+    background-size: 96px 100%;
+}
+
+body[data-dsh-one][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: -60px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image:
+      radial-gradient(ellipse 420px 260px at 18% 22%, rgba(97, 175, 239, 0.55), transparent 70%),
+      radial-gradient(ellipse 380px 240px at 82% 30%, rgba(198, 120, 221, 0.5), transparent 70%),
+      radial-gradient(ellipse 360px 220px at 55% 85%, rgba(86, 182, 194, 0.45), transparent 70%);
+    background-size: 100% 100%;
+    animation: one-aurora-drift 14s ease-in-out infinite alternate;
+}
+
+body[data-dsh-one][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-one][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--one-cyan);
+}
+
+body[data-dsh-one][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-one][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--one-blue), inset 4px 0 0 0 var(--one-purple);
+    font-weight: 600;
+}
+
+body[data-dsh-one][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-one][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  position: relative;
+    background-color: var(--one-blue) !important;
+    background-image: linear-gradient(180deg, #85c2f3 0%, var(--one-blue) 55%, var(--one-blue-dark) 100%) !important;
+    border: 1px solid var(--one-blue-dark) !important;
+    border-bottom: 3px solid var(--one-blue-dark) !important;
+    border-radius: 8px !important;
+    color: #1c2430 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(97, 175, 239, 0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+body[data-dsh-one][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-one][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(97, 175, 239, 0.4), 0 0 12px rgba(198, 120, 221, 0.25);
+}
+
+body[data-dsh-one][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-one][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+    border-bottom-width: 1px !important;
+    box-shadow: 0 1px 4px rgba(97, 175, 239, 0.25);
+}
+
+body[data-dsh-one][data-ds-dark-theme] pre,
+body[data-dsh-one][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, var(--one-bg-dark) 0%, #1b1f27 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid transparent !important;
+    border-image: linear-gradient(180deg, var(--one-blue), var(--one-purple), var(--one-cyan)) 1 !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+body[data-dsh-one][data-ds-dark-theme] pre code,
+body[data-dsh-one][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #abb2bf !important;
+    text-shadow: none;
+}
+
+body[data-dsh-one][data-ds-dark-theme] code,
+body[data-dsh-one][data-ds-dark-theme] .markdown-body code {
+  background-color: rgba(198, 120, 221, 0.14);
+    color: var(--one-purple);
+    border: 1px solid rgba(198, 120, 221, 0.3);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-one][data-ds-dark-theme] pre code,
+body[data-dsh-one][data-ds-dark-theme] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-one][data-ds-dark-theme] .markdown-body blockquote {
+  background-color: rgba(209, 154, 102, 0.08);
+    border-left: 4px solid var(--one-orange);
+    border-radius: 0 8px 8px 0;
+}
+
+body[data-dsh-one][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+}
+
+body[data-dsh-one][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-one][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--one-mono3), #454c5c);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-one][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--one-blue), var(--one-blue-dark));
+}
+
+body[data-dsh-one][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes one-aurora-drift {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(24px, -18px, 0); }
+}
+
+@keyframes one-caret-blink {
+  0%, 54% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+
+@keyframes one-syntax-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

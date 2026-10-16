@@ -326,6 +326,7 @@ const GEMINI_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53M
 const AGGREGATE_ICON = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGNpcmNsZSBjeD0iNSIgY3k9IjUiIHI9IjIuNiIgZmlsbD0iIzRGOERGNyIvPjxjaXJjbGUgY3g9IjUiIGN5PSIxOSIgcj0iMi42IiBmaWxsPSIjOUI3MkNCIi8+PGNpcmNsZSBjeD0iMTkiIGN5PSIxMiIgcj0iMi42IiBmaWxsPSIjNEY4REY3Ii8+PHBhdGggZD0iTTcgNi4yIDE2LjQgMTFNNyAxNy44IDE2LjQgMTMiIHN0cm9rZT0iIzlCNzJDQiIgc3Ryb2tlLXdpZHRoPSIxLjciIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEuNSIgZmlsbD0iIzlCNzJDQiIvPjwvc3ZnPg==';
 
 const PROVIDERS = Object.freeze([
+  { id: 'orcaterm', label: '腾讯 OrcaTerm (腾讯云)', monogram: 'TX', logoClass: 'orcaterm' },
   { id: 'chatgpt-plan', label: 'ChatGPT 会员', monogram: 'GPT', logoClass: 'chatgpt', externalAccount: true },
   { id: 'codearts', label: 'CodeArts (华为云)', icon: CODEARTS_ICON, logoClass: 'codearts' },
   { id: 'buddy', label: 'CodeBuddy (腾讯)', icon: CODEBUDDY_ICON, logoClass: 'buddy' },
@@ -873,7 +874,7 @@ function AccountCard({ account, index, order, provider, onToggle, onDelete, onRe
     provider === 'zcode' ? React.createElement(ZcodeSourcePanel, { account, rpcCall, onChanged: onSourceChanged }) : null,
     rateLimits.length > 0
       ? React.createElement('div', { className: 'dim-jh-rateLimits' },
-          React.createElement('span', { className: 'dim-jh-rateLimitsLabel' }, '限额重置'),
+          React.createElement('span', { className: 'dim-jh-rateLimitsLabel' }, provider === 'zcode' ? '本地限流标记' : '限额重置'),
           rateLimits.map(([modelId, resetAt]) =>
             React.createElement('span', {
               key: modelId,
@@ -953,7 +954,7 @@ function AccountCard({ account, index, order, provider, onToggle, onDelete, onRe
             title: RESET_HELP,
             disabled: busy || !hasAnyLimit,
             onClick: () => onReset(account.id),
-          }, '重置')
+          }, provider === 'zcode' ? '清除本地限流' : '重置')
         : null,
       React.createElement('button', {
         className: 'dim-jh-btn',
@@ -2692,6 +2693,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
   // 「显示列表」：控制模型列表面板的展开状态。关闭时不挂载面板，避免
   // 每次进入面板都白白发一次 model.list 请求。
   const [showModels, setShowModels] = React.useState(false);
+  const [modelCatalogVersion, setModelCatalogVersion] = React.useState(0);
   // 「订阅额度」：控制额度/请求记录弹窗的展开状态。同样关闭即不挂载，
   // 避免每次进入面板都发 cline.quota / cline.requestLog（那两发在非 Cline
   // 渠道会直接 bad-request）。
@@ -2956,6 +2958,23 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
       //   其余 provider 的载荷与接入渠道弹窗前**逐字节相同**。
       const res = await rpcCall('account.create', { ...buildCreateAccountPayload(provider, zcodeProvider), newAccount: accounts.length > 0 });
       accountId = res.accountId;
+      if (provider === 'orcaterm' && window.__dshPhonePresentation === true) {
+        window.__dshOrcaTermLogin = (raw) => {
+          let result;
+          try { result = JSON.parse(String(raw)); } catch { return; }
+          if (result?.accountId !== accountId) return;
+          void rpcCall('account.setCookie', { accountId, value: String(result.value ?? '') }).then(async () => {
+            delete window.__dshOrcaTermLogin;
+            await loadAccounts();
+            void loadCredits();
+          }).catch(error => setError('腾讯云登录失败：' + error.message));
+        };
+        location.assign('dsh-phone://orcaterm/login?account=' + encodeURIComponent(accountId)
+          + '&url=' + encodeURIComponent('https://orcaterm.cloud.tencent.com/terminal'));
+        setPhase('ready');
+        return;
+      }
+
       loginUrl = res.loginUrl;
       console.log('[jet-hub] account.create ok, provider =', provider, ', accountId =', accountId);
       // ⚠ **`reused` 分支必判**：后端若声明「复用了池里已有条目、新建条目与登录 URL」，
@@ -3402,7 +3421,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
               title: RESET_ALL_HELP,
               disabled: probeBusy !== null || accounts.length === 0,
               onClick: () => void runLimitAction('resetAll'),
-            }, '重置所有')
+            }, provider === 'zcode' ? '清除本地限流（全部）' : '重置所有')
           : null,
         // 锁定永久积分：只消耗会近期作废的积分，保住长期积分。
         // 文案按 provider 给（Loomy 是「每日赠送额度」，两个 buddy 是
@@ -3639,7 +3658,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
                 // 卡片级「重测 / 重置」：只对会返回限流错误的 provider 渲染。
                 showRateLimitActions: supportsRateLimit(provider),
                 rpcCall,
-                onSourceChanged: async () => { await loadAccounts(); await loadCredits(); },
+                onSourceChanged: async () => { await loadAccounts(); await loadCredits(); setModelCatalogVersion(v => v + 1); },
                 onToggle: toggleAccount,
                 onDelete: deleteAccount,
                 onRetest: (id) => void runLimitAction('retest', id),
@@ -3672,6 +3691,7 @@ function ProviderPanel({ provider, rpcCall, isolatedLoginCall }) {
     // 实际靠 fixed 定位浮在整个面板之上，不再挤占账号池的版面。
     showModels
       ? React.createElement(ModelListPanel, {
+          key: provider + ':' + modelCatalogVersion,
           provider,
           rpcCall,
           onClose: () => setShowModels(false),

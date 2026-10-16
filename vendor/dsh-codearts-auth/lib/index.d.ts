@@ -22,11 +22,7 @@ export declare const inject: string[];
  * `TypeError: ... .toJSON is not a function`，进而使所有依赖 settings 的界面
  * （模型设置页、sidebar 的 settings.get/shell.get）全部失败。
  */
-export declare const Config: Schema<Schemastery.ObjectS<NoInfer<{
-    providers: Schema<NoInfer<import("@deepseek-ai/cosmokit").Dict<any, string>>, NoInfer<import("@deepseek-ai/cosmokit").Dict<any, string>>, "volatile-defined">;
-}>>, Schemastery.ObjectT<NoInfer<{
-    providers: Schema<NoInfer<import("@deepseek-ai/cosmokit").Dict<any, string>>, NoInfer<import("@deepseek-ai/cosmokit").Dict<any, string>>, "volatile-defined">;
-}>>, "plain">;
+export declare const Config: Schema;
 /**
  * 图片附件桥接：把持久化图片读成原始字节供适配器内联。
  *

@@ -3,6 +3,7 @@
   if (window.__dshPhonePresentation) return;
   window.__dshPhonePresentation = true;
   const media = window.matchMedia('(max-width: 700px)');
+  const fileReceivers = new WeakMap();
   // These two same-origin settings documents have a natural-height body.
   // Measure that body, not documentElement.scrollHeight (which is at least
   // the old iframe viewport height and would preserve its empty space).
@@ -23,7 +24,7 @@
           if (!media.matches || !frame.isConnected) return;
           try {
             const doc = frame.contentDocument, body = doc?.body;
-            if (!body || !['/agent-cards','/controlled-market','/phone-tools','/hermes-remote'].includes(new URL(doc.URL).pathname)) return;
+            if (!body || !['/agent-cards','/controlled-market','/phone-tools','/hermes-remote','/appearance-center'].includes(new URL(doc.URL).pathname)) return;
             const styles = doc.defaultView.getComputedStyle(body);
             const height = Math.ceil(body.getBoundingClientRect().height + (parseFloat(styles.marginTop) || 0) + (parseFloat(styles.marginBottom) || 0));
             if (height > 0 && frame.style.getPropertyValue('--dsh-phone-embed-height') !== height+'px') frame.style.setProperty('--dsh-phone-embed-height', height+'px');
@@ -40,7 +41,7 @@
           state.disconnect(); frame.style.removeProperty('--dsh-phone-embed-height');
           try {
             const doc = frame.contentDocument, body = doc?.body;
-            if (!body || !['/agent-cards','/controlled-market','/phone-tools','/hermes-remote'].includes(new URL(doc.URL).pathname)) return;
+            if (!body || !['/agent-cards','/controlled-market','/phone-tools','/hermes-remote','/appearance-center'].includes(new URL(doc.URL).pathname)) return;
             const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
             const mutations = new MutationObserver(schedule);
             resize?.observe(body); mutations.observe(body, {childList:true, subtree:true, characterData:true, attributes:true});
@@ -59,7 +60,9 @@
     const files = Array.from(event.clipboardData?.files || []);
     if (!event.isTrusted || !input || !files.length) return;
     event.preventDefault(); event.stopImmediatePropagation();
+    const receive = fileReceivers.get(input.closest('[data-composer-card]'));
     try {
+      if (receive) { await receive(files, event.clipboardData.getData('text/plain')); return; }
       const { normalizeChatImage } = await import('/phone-skill-import.js');
       const transfer = new DataTransfer();
       for (const file of files) transfer.items.add(await normalizeChatImage(file) || file);
@@ -119,16 +122,16 @@
       button.type = 'button'; button.className = 'dsh-phone-feed'; button.textContent = '投喂技能';
       button.title = '选择技能 ZIP、Markdown 或 TXT，自动导入共享技能';
       button.style.cssText = 'border:0;border-radius:8px;padding:4px 7px;background:#eaf2ff;color:#2563eb;font:12px system-ui;white-space:nowrap';
-      picker.type = 'file'; picker.accept = '.zip,.md,.txt,application/zip,application/x-zip-compressed,text/plain,text/markdown'; picker.hidden = true;
+      picker.type = 'file'; picker.className = 'dsh-phone-skill-picker'; picker.accept = '.zip,.md,.txt,application/zip,application/x-zip-compressed,text/plain,text/markdown'; picker.hidden = true;
       const notice = document.createElement('small'); notice.setAttribute('role', 'status');
       notice.style.cssText = 'display:none;padding:4px 14px;color:#2563eb;overflow-wrap:anywhere';
       card.append(notice); tools.append(button, picker);
       const uploadButton = document.createElement('button'), uploadPicker = document.createElement('input');
       uploadButton.type = 'button'; uploadButton.className = 'dsh-phone-upload'; uploadButton.textContent = '上传';
-      uploadButton.title = '选择上传图片或文件，文件支持技能包'; uploadButton.setAttribute('aria-label', '上传图片或文件');
+      uploadButton.title = '选择图片或待分析文件'; uploadButton.setAttribute('aria-label', '上传图片或文件');
       uploadButton.style.cssText = button.style.cssText;
       uploadPicker.type = 'file'; uploadPicker.multiple = true; uploadPicker.hidden = true; uploadPicker.className = 'dsh-phone-upload-picker';
-      uploadPicker.accept = '.zip,.md,.txt,.csv,.tsv,.json,.jsonl,.xml,.yaml,.yml,.log,.js,.mjs,.cjs,.ts,.tsx,.jsx,.py,.sh,.html,.css,.java,.kt,.c,.cpp,.h,.sql,.ini,.toml,image/png,image/jpeg,image/webp,image/gif';
+      uploadPicker.accept = ''; // Ordinary attachments accept every file type.
       tools.insertBefore(uploadButton, button); tools.append(uploadPicker);
       const imagePicker = document.createElement('input'), fileButton = document.createElement('button');
       imagePicker.type = 'file'; imagePicker.accept = 'image/png,image/jpeg,image/webp,image/gif'; imagePicker.multiple = true; imagePicker.hidden = true;
@@ -136,7 +139,7 @@
       const imageButton = document.createElement('button'); imageButton.type = 'button'; imageButton.className = 'dsh-phone-image-upload'; imageButton.textContent = '上传图片';
       imageButton.title = '从相册选择图片，可一次选择多张'; imageButton.hidden = true; tools.append(imageButton);
       fileButton.type = 'button'; fileButton.className = 'dsh-phone-document-upload'; fileButton.textContent = '上传文件';
-      fileButton.title = '选择文档、图片或技能 ZIP，自动识别技能包'; fileButton.hidden = true; tools.append(fileButton);
+      fileButton.title = '选择待分析文件，不会安装技能或人设卡'; fileButton.hidden = true; tools.append(fileButton);
       button.hidden = true;
       const appendDraft = text => {
         if (input instanceof HTMLTextAreaElement) {
@@ -192,9 +195,12 @@
       };
       const receiveFiles = async picker => {
         const files = Array.from(picker.files); if (!files.length) return;
+        if (card.dataset.dshFileUploadPending) {
+          notice.style.display = 'block'; notice.textContent = '正在上传文件，请完成后再选择其他文件。'; picker.value = ''; return;
+        }
         uploadButton.disabled = fileButton.disabled = imageButton.disabled = button.disabled = true; card.dataset.dshFileUploadPending = 'true'; notice.style.display = 'block'; notice.textContent = '正在读取文件…';
         try {
-          const { prepareChatFiles, uploadChatDocuments, chatDocumentText } = await import('/phone-skill-import.js');
+          const { prepareChatFiles, uploadChatDocuments, chatDocumentReferences } = await import('/phone-skill-import.js');
           const prepared = await prepareChatFiles(files);
           if (!input.isConnected || input.disabled || input.readOnly) throw Error('会话状态已变化，请等任务结束后重新上传');
           const documents = await uploadChatDocuments(prepared.documents, { upload: async file => {
@@ -206,18 +212,41 @@
           if (!input.isConnected || input.disabled || input.readOnly) throw Error('会话状态已变化，文件尚未加入草稿，请重新选择');
           const imported = [];
           for (const file of prepared.skillFiles) imported.push(await importSkillFile(file));
-          if (documents.length) appendDraft(chatDocumentText(documents));
+          if (documents.length) {
+            const detail = { references: chatDocumentReferences(documents), accepted: false };
+            card.dispatchEvent(new CustomEvent('dsh:insert-file-references', { detail }));
+            if (!detail.accepted) throw Error('文件已上传，输入框尚未就绪；请保留当前草稿并重新选择附件。');
+          }
           if (prepared.images.length) {
             const transfer = new DataTransfer(); prepared.images.forEach(file => transfer.items.add(file));
             input.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: transfer }));
           }
-          notice.textContent = [...imported, prepared.images.length ? '图片已加入草稿，可预览或移除；请选支持看图的模型后发送。' : documents.some(file => file.stored) ? '完整文件已上传并加入草稿，写下分析要求后发送。' : documents.length ? '文件原文已加入草稿，写下分析要求后发送。' : ''].filter(Boolean).join(' ');
+          notice.textContent = [...imported, prepared.images.length ? '图片已加入草稿，可预览或移除；请选支持看图的模型后发送。' : documents.length ? '附件已保存，可点击文件查看；写下分析要求后发送。' : ''].filter(Boolean).join(' ');
           input.focus();
         } catch (error) { notice.textContent = error.message; }
         finally { delete card.dataset.dshFileUploadPending; uploadButton.disabled = fileButton.disabled = imageButton.disabled = button.disabled = false; picker.value = ''; }
       };
       uploadPicker.onchange = () => receiveFiles(uploadPicker);
       imagePicker.onchange = () => receiveFiles(imagePicker);
+      fileReceivers.set(card, async (files, text = '') => {
+        if (text) appendDraft(text);
+        await receiveFiles({ files, value:'' });
+      });
+      // The native picker emits a path-only file reference. Route its bytes
+      // through the same intake as the labeled upload entry.
+      card.addEventListener('change', event => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement) || target.type !== 'file'
+          || [picker, uploadPicker, imagePicker].includes(target) || !target.files?.length) return;
+        event.stopImmediatePropagation();
+        void receiveFiles(target);
+      }, true);
+      card.addEventListener('drop', event => {
+        const files = Array.from(event.dataTransfer?.files || []);
+        if (!files.length) return;
+        event.preventDefault(); event.stopImmediatePropagation();
+        void receiveFiles({ files, value:'' });
+      }, true);
       button.onclick = event => { event.stopPropagation(); selectFile(picker); };
       picker.onchange = async () => {
         const file = picker.files[0]; if (!file) return;
@@ -234,7 +263,7 @@
       const menu = card.querySelector('[data-trigger-menu]'), list = menu?.querySelector('[role=listbox]');
       if (!list || menu.querySelector('.dsh-phone-upload-actions') || !list.querySelector('._3e4SsG_itemAlias')?.textContent.includes('file')) return;
       const actions = document.createElement('div'); actions.className = 'dsh-phone-upload-actions'; actions.setAttribute('role', 'group'); actions.setAttribute('aria-label', '上传');
-      for (const [selector, label, hint] of [['.dsh-phone-image-upload', '上传图片', '相册 · 可选多张'], ['.dsh-phone-document-upload', '上传文件', '文档 · 自动识别技能 ZIP']]) {
+      for (const [selector, label, hint] of [['.dsh-phone-image-upload', '上传图片', '相册 · 可选多张'], ['.dsh-phone-document-upload', '上传分析文件', '任意文件 · APK、文档、压缩包等'], ['.dsh-phone-feed', '导入技能', '安装技能 ZIP 或方法文档']]) {
         const target = card.querySelector(selector), action = document.createElement('button'); action.type = 'button'; action.disabled = target.disabled;
         const title = document.createElement('strong'), description = document.createElement('small'); title.textContent = label; description.textContent = hint;
         action.append(title, description); action.onmousedown = event => { event.preventDefault(); event.stopPropagation(); }; action.onclick = event => { event.stopPropagation(); target.click(); }; actions.append(action);

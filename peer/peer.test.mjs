@@ -187,8 +187,8 @@ async function proxyFixture(t, { computerHeaders, computerReusableScripts = [], 
   return { ...f, ui, gateway, uiProxyPort, remoteGatewayPort, webPort, phoneProxy, computerProxy, denyGateway() { allowed = false; } };
 }
 
-test('ordinary file uploads above the old 16 MB proxy cap preserve all bytes through the encrypted relay', async t => {
-  const f = await proxyFixture(t), bytes = Buffer.alloc(20*1024*1024, 65); let received;
+test('ordinary file uploads above the old 64 MB proxy cap preserve all bytes through the encrypted relay', async t => {
+  const f = await proxyFixture(t), bytes = Buffer.alloc(70*1024*1024, 65); let received;
   f.ui.on('request', async (req,res) => {
     const chunks=[];for await (const chunk of req) chunks.push(chunk);
     received=Buffer.concat(chunks);res.writeHead(200,{'content-type':'application/json'});res.end('{"ok":true}');
