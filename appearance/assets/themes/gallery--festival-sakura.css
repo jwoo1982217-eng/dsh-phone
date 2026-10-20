@@ -1,0 +1,809 @@
+/* festival-sakura — 樱花季 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-festival-sakura], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-festival-sakura] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #43252f;
+  background-color: #fdf8f9;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] {
+  color: #f5e9ee;
+  background-color: #150e14;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-festival-sakura] {
+  --color-primary: #c94f6d;
+  --primary: #c94f6d;
+  --primary-rgb: 201, 79, 109;
+  --color-primary-light-1: #d77288;
+  --color-primary-light-2: #e395a6;
+  --color-primary-light-3: #f3c3cd;
+  --color-primary-dark-1: #a03a54;
+  --brand: #c94f6d;
+  --brand-light: #f9dfe6;
+  --brand-hover: #b8435f;
+  --color-brand-fill: #c94f6d;
+  --color-brand-bg: #f9dfe6;
+  --aou-1: #fdf0f3;
+  --aou-2: #f9dfe6;
+  --aou-3: #f3c3cd;
+  --aou-4: #eba2b1;
+  --aou-5: #e07f95;
+  --aou-6: #d45f7d;
+  --aou-7: #c94f6d;
+  --aou-8: #a03a54;
+  --aou-9: #7c2c40;
+  --aou-10: #581e2d;
+  --bg-base: #fdf8f9;
+  --bg-1: #faf1f3;
+  --bg-2: #f5e8ec;
+  --bg-3: #efdde3;
+  --bg-4: #e7d0d8;
+  --bg-5: #dcc0ca;
+  --bg-6: #cfadb9;
+  --bg-8: #b38a97;
+  --bg-9: #94626f;
+  --bg-10: #6e4551;
+  --color-bg-1: #faf1f3;
+  --color-bg-2: #f5e8ec;
+  --color-bg-3: #efdde3;
+  --color-bg-4: #e7d0d8;
+  --bg-hover: #f3e4e9;
+  --bg-active: #ecd6de;
+  --text-primary: #43252f;
+  --text-secondary: #7a5560;
+  --text-disabled: #b79aa3;
+  --text-0: #2e161e;
+  --text-white: #ffffff;
+  --color-text-1: #43252f;
+  --color-text-2: #7a5560;
+  --color-text-3: #9d7c86;
+  --color-text-4: #b79aa3;
+  --border-base: #e8ccd5;
+  --border-light: #f1dde3;
+  --border-special: #d99aac;
+  --color-border: #e8ccd5;
+  --color-border-1: #e8ccd5;
+  --color-border-2: #f1dde3;
+  --fill: #f5e8ec;
+  --color-fill: #f5e8ec;
+  --fill-0: #faf1f3;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #ffffff;
+  --inverse: #43252f;
+  --success: #3e9e6c;
+  --warning: #d9912e;
+  --danger: #d0455a;
+  --info: #4a7fc9;
+  --message-user-bg: #fadfe7;
+  --message-tips-bg: #f6e9ee;
+  --workspace-btn-bg: #f3c3cd;
+  --color-guid-agent-bar: #faf1f3;
+  --sakura-pink: #f2a7bc;
+  --sakura-deep: #c94f6d;
+  --sakura-pale: #fceef2;
+  --sakura-leaf: #7ba86b;
+  --sakura-bark: #6e4551;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-festival-sakura][data-ds-dark-theme] {
+  --color-primary: #f08bb0;
+  --primary: #f08bb0;
+  --primary-rgb: 240, 139, 176;
+  --color-primary-light-1: #f4a5c1;
+  --color-primary-light-2: #f8bfd3;
+  --color-primary-light-3: #fcd9e5;
+  --color-primary-dark-1: #c9688d;
+  --brand: #f08bb0;
+  --brand-light: #4a2433;
+  --brand-hover: #f7a9c4;
+  --color-brand-fill: #f08bb0;
+  --color-brand-bg: #3d1f2b;
+  --aou-1: #381523;
+  --aou-2: #4f2033;
+  --aou-3: #662b42;
+  --aou-4: #833a55;
+  --aou-5: #a04a68;
+  --aou-6: #c9688d;
+  --aou-7: #f08bb0;
+  --aou-8: #f4a5c1;
+  --aou-9: #f8bfd3;
+  --aou-10: #fde8ef;
+  --bg-base: #150e14;
+  --bg-1: #1d141c;
+  --bg-2: #251a24;
+  --bg-3: #2e212d;
+  --bg-4: #382937;
+  --bg-5: #453244;
+  --bg-6: #533d52;
+  --bg-8: #70586f;
+  --bg-9: #957e94;
+  --bg-10: #c4b3c3;
+  --color-bg-1: #1d141c;
+  --color-bg-2: #251a24;
+  --color-bg-3: #2e212d;
+  --color-bg-4: #382937;
+  --bg-hover: #2b1f2a;
+  --bg-active: #352634;
+  --text-primary: #f5e9ee;
+  --text-secondary: #c4aab6;
+  --text-disabled: #6e5560;
+  --text-0: #fdf6f9;
+  --text-white: #ffffff;
+  --color-text-1: #f5e9ee;
+  --color-text-2: #c4aab6;
+  --color-text-3: #9d8490;
+  --color-text-4: #6e5560;
+  --border-base: #3d2c39;
+  --border-light: #2e212c;
+  --border-special: #6b3a50;
+  --color-border: #3d2c39;
+  --color-border-1: #3d2c39;
+  --color-border-2: #2e212c;
+  --fill: #251a24;
+  --color-fill: #251a24;
+  --fill-0: #1d141c;
+  --fill-white-to-black: #150e14;
+  --dialog-fill-0: #201721;
+  --inverse: #f5e9ee;
+  --success: #5cc98f;
+  --warning: #e0a94e;
+  --danger: #f06a80;
+  --info: #6fa8e0;
+  --message-user-bg: #5c2438;
+  --message-tips-bg: #2a1b28;
+  --workspace-btn-bg: #3d1f2b;
+  --color-guid-agent-bar: #1a111a;
+  --sakura-pink: #f08bb0;
+  --sakura-deep: #c9688d;
+  --sakura-glow: #ffd9e6;
+  --sakura-lantern: #e8b45a;
+  --sakura-night: #150e14;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-festival-sakura] {
+  --dsw-static-deepseek-50: #fdf0f3;
+  --dsw-static-blue-50: #fdf0f3;
+  --dsw-static-deepseek-50p: #f9dfe6;
+  --dsw-static-blue-50p: #f9dfe6;
+  --dsw-static-deepseek-75: #f9dfe6;
+  --dsw-static-blue-75: #f9dfe6;
+  --dsw-static-deepseek-100: #f9dfe6;
+  --dsw-static-blue-100: #f9dfe6;
+  --dsw-static-deepseek-200: #f3c3cd;
+  --dsw-static-blue-200: #f3c3cd;
+  --dsw-static-deepseek-300: #eba2b1;
+  --dsw-static-blue-300: #eba2b1;
+  --dsw-static-deepseek-400: #e07f95;
+  --dsw-static-blue-400: #e07f95;
+  --dsw-static-deepseek-450: #e07f95;
+  --dsw-static-blue-450: #e07f95;
+  --dsw-static-deepseek-500: #d45f7d;
+  --dsw-static-blue-500: #d45f7d;
+  --dsw-static-deepseek-600: #c94f6d;
+  --dsw-static-blue-600: #c94f6d;
+  --dsw-static-deepseek-700-delete: #a03a54;
+  --dsw-static-deepseek-800: #a03a54;
+  --dsw-static-blue-800: #a03a54;
+  --dsw-static-deepseek-900: #7c2c40;
+  --dsw-static-blue-900: #7c2c40;
+  --dsw-static-deepseek-950: #581e2d;
+  --dsw-static-blue-950: #581e2d;
+  --dsw-static-neutral-bluish-00: #faf1f3;
+  --dsw-static-neutral-00: #faf1f3;
+  --dsw-static-neutral-bluish-50: #faf1f3;
+  --dsw-static-neutral-50: #faf1f3;
+  --dsw-static-neutral-bluish-60: #faf1f3;
+  --dsw-static-neutral-60: #faf1f3;
+  --dsw-static-neutral-bluish-75: #f5e8ec;
+  --dsw-static-neutral-75: #f5e8ec;
+  --dsw-static-neutral-bluish-100: #f5e8ec;
+  --dsw-static-neutral-100: #f5e8ec;
+  --dsw-static-neutral-bluish-150: #efdde3;
+  --dsw-static-neutral-150: #efdde3;
+  --dsw-static-neutral-bluish-200: #efdde3;
+  --dsw-static-neutral-200: #efdde3;
+  --dsw-static-neutral-bluish-250: #e7d0d8;
+  --dsw-static-neutral-250: #e7d0d8;
+  --dsw-static-neutral-bluish-300: #e7d0d8;
+  --dsw-static-neutral-300: #e7d0d8;
+  --dsw-static-neutral-bluish-400: #dcc0ca;
+  --dsw-static-neutral-400: #dcc0ca;
+  --dsw-static-neutral-bluish-500: #cfadb9;
+  --dsw-static-neutral-500: #cfadb9;
+  --dsw-static-neutral-bluish-550: #cfadb9;
+  --dsw-static-neutral-550: #cfadb9;
+  --dsw-static-neutral-bluish-600: #b38a97;
+  --dsw-static-neutral-600: #b38a97;
+  --dsw-static-neutral-bluish-700: #b38a97;
+  --dsw-static-neutral-700: #b38a97;
+  --dsw-static-neutral-bluish-750: #94626f;
+  --dsw-static-neutral-750: #94626f;
+  --dsw-static-neutral-bluish-800: #94626f;
+  --dsw-static-neutral-800: #94626f;
+  --dsw-static-neutral-bluish-850: #94626f;
+  --dsw-static-neutral-850: #94626f;
+  --dsw-static-neutral-bluish-875: #6e4551;
+  --dsw-static-neutral-875: #6e4551;
+  --dsw-static-neutral-bluish-900: #6e4551;
+  --dsw-static-neutral-900: #6e4551;
+  --dsw-static-neutral-bluish-950: #6e4551;
+  --dsw-static-neutral-950: #6e4551;
+  --dsw-static-neutral-bluish-1000: #43252f;
+  --dsw-static-neutral-1000: #43252f;
+  --dsw-static-green-50: color-mix(in srgb, #3e9e6c 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #3e9e6c 20%, white);
+  --dsw-static-green-400: #3e9e6c;
+  --dsw-static-green-500: #3e9e6c;
+  --dsw-static-green-600: color-mix(in srgb, #3e9e6c 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3e9e6c 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d9912e 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d9912e 20%, white);
+  --dsw-static-amber-400: #d9912e;
+  --dsw-static-amber-500: #d9912e;
+  --dsw-static-amber-600: color-mix(in srgb, #d9912e 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d9912e 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d0455a 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d0455a 20%, white);
+  --dsw-static-red-400: #d0455a;
+  --dsw-static-red-500: #d0455a;
+  --dsw-static-red-600: color-mix(in srgb, #d0455a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d0455a 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-festival-sakura][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #381523;
+  --dsw-static-blue-50: #381523;
+  --dsw-static-deepseek-50p: #4f2033;
+  --dsw-static-blue-50p: #4f2033;
+  --dsw-static-deepseek-75: #4f2033;
+  --dsw-static-blue-75: #4f2033;
+  --dsw-static-deepseek-100: #4f2033;
+  --dsw-static-blue-100: #4f2033;
+  --dsw-static-deepseek-200: #662b42;
+  --dsw-static-blue-200: #662b42;
+  --dsw-static-deepseek-300: #833a55;
+  --dsw-static-blue-300: #833a55;
+  --dsw-static-deepseek-400: #a04a68;
+  --dsw-static-blue-400: #a04a68;
+  --dsw-static-deepseek-450: #a04a68;
+  --dsw-static-blue-450: #a04a68;
+  --dsw-static-deepseek-500: #c9688d;
+  --dsw-static-blue-500: #c9688d;
+  --dsw-static-deepseek-600: #f08bb0;
+  --dsw-static-blue-600: #f08bb0;
+  --dsw-static-deepseek-700-delete: #f4a5c1;
+  --dsw-static-deepseek-800: #f4a5c1;
+  --dsw-static-blue-800: #f4a5c1;
+  --dsw-static-deepseek-900: #f8bfd3;
+  --dsw-static-blue-900: #f8bfd3;
+  --dsw-static-deepseek-950: #fde8ef;
+  --dsw-static-blue-950: #fde8ef;
+  --dsw-static-neutral-bluish-00: #1d141c;
+  --dsw-static-neutral-00: #1d141c;
+  --dsw-static-neutral-bluish-50: #1d141c;
+  --dsw-static-neutral-50: #1d141c;
+  --dsw-static-neutral-bluish-60: #1d141c;
+  --dsw-static-neutral-60: #1d141c;
+  --dsw-static-neutral-bluish-75: #251a24;
+  --dsw-static-neutral-75: #251a24;
+  --dsw-static-neutral-bluish-100: #251a24;
+  --dsw-static-neutral-100: #251a24;
+  --dsw-static-neutral-bluish-150: #2e212d;
+  --dsw-static-neutral-150: #2e212d;
+  --dsw-static-neutral-bluish-200: #2e212d;
+  --dsw-static-neutral-200: #2e212d;
+  --dsw-static-neutral-bluish-250: #382937;
+  --dsw-static-neutral-250: #382937;
+  --dsw-static-neutral-bluish-300: #382937;
+  --dsw-static-neutral-300: #382937;
+  --dsw-static-neutral-bluish-400: #453244;
+  --dsw-static-neutral-400: #453244;
+  --dsw-static-neutral-bluish-500: #533d52;
+  --dsw-static-neutral-500: #533d52;
+  --dsw-static-neutral-bluish-550: #533d52;
+  --dsw-static-neutral-550: #533d52;
+  --dsw-static-neutral-bluish-600: #70586f;
+  --dsw-static-neutral-600: #70586f;
+  --dsw-static-neutral-bluish-700: #70586f;
+  --dsw-static-neutral-700: #70586f;
+  --dsw-static-neutral-bluish-750: #957e94;
+  --dsw-static-neutral-750: #957e94;
+  --dsw-static-neutral-bluish-800: #957e94;
+  --dsw-static-neutral-800: #957e94;
+  --dsw-static-neutral-bluish-850: #957e94;
+  --dsw-static-neutral-850: #957e94;
+  --dsw-static-neutral-bluish-875: #c4b3c3;
+  --dsw-static-neutral-875: #c4b3c3;
+  --dsw-static-neutral-bluish-900: #c4b3c3;
+  --dsw-static-neutral-900: #c4b3c3;
+  --dsw-static-neutral-bluish-950: #c4b3c3;
+  --dsw-static-neutral-950: #c4b3c3;
+  --dsw-static-neutral-bluish-1000: #f5e9ee;
+  --dsw-static-neutral-1000: #f5e9ee;
+  --dsw-static-green-50: color-mix(in srgb, #5cc98f 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #5cc98f 20%, black);
+  --dsw-static-green-400: #5cc98f;
+  --dsw-static-green-500: #5cc98f;
+  --dsw-static-green-600: color-mix(in srgb, #5cc98f 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #5cc98f 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e0a94e 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e0a94e 20%, black);
+  --dsw-static-amber-400: #e0a94e;
+  --dsw-static-amber-500: #e0a94e;
+  --dsw-static-amber-600: color-mix(in srgb, #e0a94e 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e0a94e 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f06a80 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #f06a80 20%, black);
+  --dsw-static-red-400: #f06a80;
+  --dsw-static-red-500: #f06a80;
+  --dsw-static-red-600: color-mix(in srgb, #f06a80 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f06a80 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-festival-sakura] {
+  --dsw-alias-button-primary-fill: #c94f6d;
+  --dsw-alias-button-primary-hover: #b8435f;
+  --dsw-alias-button-primary-dimmed: #f9dfe6;
+  --dsw-alias-button-info-fill: #c94f6d;
+  --dsw-alias-button-info-hover: #b8435f;
+  --dsw-alias-button-contrast-fill: #c94f6d;
+  --dsw-alias-button-ghost-active-fill: #f9dfe6;
+  --dsw-alias-button-ghost-active-hover: #f9dfe6;
+  --dsw-alias-button-ghost-active-border: #eba2b1;
+  --dsw-alias-button-elevated-fill: #faf1f3;
+  --dsw-alias-button-floating-fill: #faf1f3;
+  --dsw-alias-button-floating-hover: #f3e4e9;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(201, 79, 109, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(201, 79, 109, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(201, 79, 109, 0.6);
+  --dsw-specific-bubble: #fadfe7;
+  --dsw-specific-bubble-highlight: #f3c3cd;
+  --dsw-specific-input-major: #faf1f3;
+  --dsw-specific-login-input: #faf1f3;
+  --dsw-specific-sidebar-fill: #c94f6d;
+  --dsw-specific-sidebar-nav-item-active: #f9dfe6;
+  --dsw-specific-sidebar-nav-item-hover: #f3e4e9;
+  --dsw-specific-sidebar-nav-item-active-accent: #eba2b1;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-festival-sakura][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #f08bb0;
+  --dsw-alias-button-primary-hover: #f7a9c4;
+  --dsw-alias-button-primary-dimmed: #4f2033;
+  --dsw-alias-button-info-fill: #f08bb0;
+  --dsw-alias-button-info-hover: #f7a9c4;
+  --dsw-alias-button-contrast-fill: #f08bb0;
+  --dsw-alias-button-ghost-active-fill: #4a2433;
+  --dsw-alias-button-ghost-active-hover: #4f2033;
+  --dsw-alias-button-ghost-active-border: #833a55;
+  --dsw-alias-button-elevated-fill: #1d141c;
+  --dsw-alias-button-floating-fill: #1d141c;
+  --dsw-alias-button-floating-hover: #2b1f2a;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(240, 139, 176, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(240, 139, 176, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(240, 139, 176, 0.6);
+  --dsw-specific-bubble: #5c2438;
+  --dsw-specific-bubble-highlight: #662b42;
+  --dsw-specific-input-major: #1d141c;
+  --dsw-specific-login-input: #1d141c;
+  --dsw-specific-sidebar-fill: #f08bb0;
+  --dsw-specific-sidebar-nav-item-active: #4f2033;
+  --dsw-specific-sidebar-nav-item-hover: #2b1f2a;
+  --dsw-specific-sidebar-nav-item-active-accent: #833a55;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-festival-sakura] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-sakura]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(ellipse 7px 4px at 18% 24%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 5px 3px at 24% 27%, var(--sakura-deep) 0 55%, transparent 68%),
+      radial-gradient(ellipse 8px 4px at 72% 14%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 6px 3px at 84% 58%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 5px 3px at 40% 82%, var(--sakura-deep) 0 55%, transparent 68%),
+      radial-gradient(ellipse 7px 4px at 60% 44%, var(--sakura-pink) 0 55%, transparent 68%);
+    background-size: 560px 560px, 560px 560px, 640px 640px, 520px 520px, 600px 600px, 480px 480px;
+    animation: festival-sakura-sakura-breeze-sway 5.5s ease-in-out infinite;
+}
+
+body[data-dsh-festival-sakura]::after {
+  content: '';
+    position: fixed;
+    inset: -480px 0 0 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image:
+      radial-gradient(ellipse 6px 3.5px at 12% 18%, var(--sakura-deep) 0 55%, transparent 68%),
+      radial-gradient(ellipse 5px 3px at 46% 36%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 7px 4px at 78% 8%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 5px 3px at 30% 62%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 6px 3.5px at 90% 74%, var(--sakura-deep) 0 55%, transparent 68%),
+      radial-gradient(ellipse 4px 2.5px at 62% 88%, var(--sakura-pink) 0 55%, transparent 68%);
+    background-size: 480px 480px;
+    animation: festival-sakura-sakura-petal-fall 16s linear infinite;
+}
+
+body[data-dsh-festival-sakura] [class*='sider'] [class*='session'],
+body[data-dsh-festival-sakura] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-sakura] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--sakura-pink);
+}
+
+body[data-dsh-festival-sakura] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-sakura] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(201, 79, 109, 0.2), rgba(201, 79, 109, 0.05) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--sakura-deep);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-sakura] button[class*='primary'],
+body[data-dsh-festival-sakura] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.5) 0 2px, transparent 3.5px),
+      linear-gradient(135deg, #a03a54 0%, var(--sakura-deep) 55%, #d77288 100%) !important;
+    border: 1px solid #e395a6 !important;
+    border-radius: 10px !important;
+    color: var(--text-white) !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(201, 79, 109, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-sakura] button[class*='primary']:hover,
+body[data-dsh-festival-sakura] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 14px rgba(201, 79, 109, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    animation: festival-sakura-sakura-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-festival-sakura] pre,
+body[data-dsh-festival-sakura] .markdown-body pre {
+  background: linear-gradient(180deg, #fdf4f6 0%, #f9e8ed 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--sakura-deep) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 1px 6px rgba(201, 79, 109, 0.06);
+}
+
+body[data-dsh-festival-sakura] pre code,
+body[data-dsh-festival-sakura] .markdown-body pre code {
+  background: transparent !important;
+    color: #4a2733 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-sakura] code,
+body[data-dsh-festival-sakura] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--aou-9);
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-sakura]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-festival-sakura] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 1px 4px rgba(201, 79, 109, 0.05), 0 0 0 1px rgba(201, 79, 109, 0.06);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-sakura] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-festival-sakura] [class*='agent-bar'],
+body[data-dsh-festival-sakura] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(201, 79, 109, 0.35);
+}
+
+body[data-dsh-festival-sakura] .markdown-body blockquote {
+  border-left: 3px solid var(--sakura-deep);
+    background: rgba(242, 167, 188, 0.14);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-sakura] .markdown-body hr,
+body[data-dsh-festival-sakura] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      radial-gradient(ellipse 4px 2.5px at 6px 4px, rgba(201, 79, 109, 0.55) 0 60%, transparent 70%),
+      linear-gradient(90deg, transparent, rgba(242, 167, 188, 0.4), transparent);
+    background-size: 24px 8px, 100% 1px;
+    background-position: 0 0, 0 4px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.7;
+}
+
+body[data-dsh-festival-sakura] .markdown-body a,
+body[data-dsh-festival-sakura] a {
+  color: var(--aou-8);
+}
+
+body[data-dsh-festival-sakura] .markdown-body a:hover,
+body[data-dsh-festival-sakura] a:hover {
+  color: var(--sakura-deep);
+    text-shadow: 0 0 8px rgba(242, 167, 188, 0.5);
+}
+
+body[data-dsh-festival-sakura] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--aou-8) !important;
+    border-color: rgba(201, 79, 109, 0.5) !important;
+    background-color: rgba(201, 79, 109, 0.08) !important;
+}
+
+body[data-dsh-festival-sakura]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-sakura]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--sakura-deep), #7c2c40);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-sakura]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d77288, var(--sakura-deep));
+    box-shadow: 0 0 8px rgba(201, 79, 109, 0.4);
+}
+
+body[data-dsh-festival-sakura]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-festival-sakura][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(ellipse 40% 28% at 16% 18%, var(--sakura-deep) 0%, transparent 70%),
+      radial-gradient(ellipse 34% 26% at 84% 12%, var(--sakura-lantern) 0%, transparent 70%),
+      radial-gradient(ellipse 44% 32% at 76% 84%, var(--sakura-pink) 0%, transparent 70%),
+      radial-gradient(ellipse 36% 28% at 22% 88%, var(--sakura-deep) 0%, transparent 72%);
+    background-size: 160% 160%, 150% 150%, 170% 170%, 155% 155%;
+    animation: festival-sakura-sakura-lantern-drift 32s ease-in-out infinite alternate;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: -480px 0 0 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.11;
+    background-image:
+      radial-gradient(ellipse 6px 3.5px at 14% 16%, var(--sakura-glow) 0 55%, transparent 68%),
+      radial-gradient(ellipse 5px 3px at 48% 38%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 7px 4px at 80% 10%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 5px 3px at 28% 64%, var(--sakura-glow) 0 55%, transparent 68%),
+      radial-gradient(ellipse 6px 3.5px at 88% 72%, var(--sakura-pink) 0 55%, transparent 68%),
+      radial-gradient(ellipse 4px 2.5px at 60% 90%, var(--sakura-lantern) 0 55%, transparent 68%);
+    background-size: 480px 480px;
+    animation: festival-sakura-sakura-petal-fall 14s linear infinite;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--sakura-deep), 3px 0 10px rgba(240, 139, 176, 0.12);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(240, 139, 176, 0.24), rgba(240, 139, 176, 0.06) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--sakura-pink), 3px 0 12px rgba(240, 139, 176, 0.25);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-festival-sakura][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 80% 20%, rgba(255, 217, 230, 0.55) 0 2px, transparent 3.5px),
+      linear-gradient(135deg, #c9688d 0%, var(--sakura-pink) 55%, #f7a9c4 100%) !important;
+    border: 1px solid #f8bfd3 !important;
+    border-radius: 10px !important;
+    color: #38101e !important;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(240, 139, 176, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-festival-sakura][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 0 18px rgba(240, 139, 176, 0.6), 0 0 34px rgba(232, 180, 90, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.38);
+    animation: festival-sakura-sakura-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] pre,
+body[data-dsh-festival-sakura][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #1a1019 0%, var(--sakura-night) 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--sakura-pink) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.55), 0 0 14px rgba(240, 139, 176, 0.08);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] pre code,
+body[data-dsh-festival-sakura][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #f2dde6 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] code,
+body[data-dsh-festival-sakura][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--sakura-glow);
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 8px rgba(6, 3, 6, 0.55), 0 0 0 1px rgba(240, 139, 176, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-festival-sakura][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(240, 139, 176, 0.32);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--sakura-pink);
+    background: rgba(240, 139, 176, 0.08);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-festival-sakura][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      radial-gradient(ellipse 4px 2.5px at 6px 4px, rgba(240, 139, 176, 0.65) 0 60%, transparent 70%),
+      radial-gradient(circle at 18px 4px, rgba(232, 180, 90, 0.5) 0 1.6px, transparent 2.6px),
+      linear-gradient(90deg, transparent, rgba(240, 139, 176, 0.28), transparent);
+    background-size: 28px 8px, 28px 8px, 100% 1px;
+    background-position: 0 0, 0 0, 0 4px;
+    background-repeat: repeat-x, repeat-x, no-repeat;
+    opacity: 0.7;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-festival-sakura][data-ds-dark-theme] a {
+  color: var(--sakura-pink);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-festival-sakura][data-ds-dark-theme] a:hover {
+  color: var(--sakura-glow);
+    text-shadow: 0 0 8px rgba(240, 139, 176, 0.5);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-light-2) !important;
+    border-color: rgba(240, 139, 176, 0.5) !important;
+    background-color: rgba(240, 139, 176, 0.1) !important;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--sakura-pink), #662b42);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--sakura-glow), var(--sakura-pink));
+    box-shadow: 0 0 8px rgba(240, 139, 176, 0.5);
+}
+
+body[data-dsh-festival-sakura][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes festival-sakura-sakura-breeze-sway {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(6px, 3px); }
+}
+
+@keyframes festival-sakura-sakura-petal-fall {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(48px, 480px); }
+}
+
+@keyframes festival-sakura-sakura-noren-breathe {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes festival-sakura-sakura-btn-glow {
+  0%, 100% { box-shadow: 0 3px 12px rgba(201, 79, 109, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 20px rgba(201, 79, 109, 0.65), 0 0 26px rgba(242, 167, 188, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.38); }
+}
+
+@keyframes festival-sakura-sakura-ring-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}
+
+@keyframes festival-sakura-sakura-lantern-drift {
+  0% { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; }
+  100% { background-position: 5% 4%, 95% 5%, 96% 95%, 4% 96%; }
+}

@@ -1,0 +1,618 @@
+Now I have a very clear picture. Let me lay out the two root causes.
+
+**Problem 1: LobsterAI 额度用完不换号（真实缺陷）**
+
+The web error message was:
+```
+重试延迟：7270毫秒
+失败原因：lobsterai: 免费额度已用完，请升级套餐
+本轮运行失败lobsterai: 免费额度已用完，请升级套餐
+```
+
+The message template `lobsterai: ${...}` — let's see which throw sites produce exactly `lobsterai: <message>` with no other decoration:
+- Line 1147: `lobsterai: ${data.error.message ?? 'unknown error'}` → produces exactly `lobsterai: 免费额度已用完，请升级套餐` if `data.error.message === '免费额度已用完，请升级套餐'`. ✓ EXACT MATCH
+- Line 1013: `lobsterai: 积分不足（...）` — has parentheses, doesn't match
+- Line 1015: `lobsterai: ${errorDetail(errorText)}` — would match if errorDetail returned exactly that string (i.e., body is plain text, not JSON). Possible too!
+- Line 1004: `lobsterai: 模型 ... 所有账号均不可用（...）` — doesn't match
+
+So two candidates: line 1147 (SSE in-stream error) or line 1015 (HTTP non-2xx with plain-text body).
+
+Critical: The `classifyLobsteraiError` hard-credit marker list contains `'额度不足'` and `'积分用完'` etc., but the actual message is **`免费额度已用完，请升级套餐`**.
+
+Let's check: does `免费额度已用完，请升级套餐` contain any of the hard-credit markers?
+- '积分不足' no
+- '额度不足' no (it's 额度已用完)
+- '余额不足' no
+- '积分用完' no (it's 额度已用完)
+- '额度用尽' no (it's 额度已用完 — 用尽 vs 用完! different)
+- '没有积分' no
+- '积分耗尽' no
+- English: no
+
+**NONE of the markers match!** So `classifyLobsteraiError` returns:
+- If status is 200 → 'none'
+- If status is 402 → 'hard-credit' (but then errorDetail path... actually 402 → line 1013 `积分不足（...）` — doesn't match observed text)
+- If status is 400 → 'client'
+- If status is 429 → 'soft-rate'
+- If 5xx → 'server'
+
+Now, the observed message matches line 1015 template `lobsterai: ${errorDetail(errorText)}` OR line 1147.
+
+**Case A: HTTP 200 with SSE error frame (line 1147).**
+This is thrown **inside `consumeSse`**, which is called at line 990 (`yield* this.consumeSse(response, options)`) after a successful response (`response.ok` true). So this error **bypasses the entire rotation logic**! The rotation loop is inside `if (!response.ok)`. A 200 response with an error frame in the SSE body → `response.ok === true` → goes straight to `consumeSse` → throws `lobsterai: 免费额度已用完，请升级套餐` with code `SERVER`.
+
+**This perfectly explains the bug**: the account's free quota is exhausted, but the upstream returns **HTTP 200** with the error embedded in the SSE stream. Therefore:
+1. No rotation happens (rotation only on `!response.ok`).
+2. No rate-limit badge recorded.
+3. User sees the raw error and the run fails, even though 2 other accounts are available.
+
+Also note: "重试延迟：7270毫秒" — DSH retried, and each retry hit the same account (same first credential from pool), so it kept failing. Actually wait — DSH retry would call `stream()` again, which calls `resolveCredential()` → `getAvailableAccount(LOBSTERAI.id, '')` → returns first enabled account. Since no rate-limit marker was written for that account+model, the same exhausted account is picked every time. So it retries forever with the same dead account. That's consistent with "重试延迟" and "本轮运行失败".
+
+**Case B: HTTP non-2xx with plain-text body.** Then `response.ok` false, and rotation would happen if `shouldRotateLobsteraiAccount(kind)` — which is true for everything except 'none'. So rotation WOULD happen... unless `accountPool` is undefined, or `currentAccountId` handling. Hmm, but rotation would occur and try other accounts. If all others succeeded, no error. So Case B wouldn't produce "还有2个能用的" failure — unless `classifyLobsteraiError` returned... no, all non-2xx return non-none. Actually wait: if status is 200 but body is... no.
+
+Hmm, but actually there's a subtlety: what if status is 200 and body contains the error? `response.ok` is true. So Case A is the one that explains "no rotation".
+
+Let me double check: is it plausible that LobsterAI returns HTTP 200 + SSE error frame for quota exhaustion? The adapter's own comment at line 1146-1148 handles `data.error` — and the existing test "上游把错误放进 SSE 帧时抛出 SERVER 错误" confirms this path exists and was observed. So yes, highly plausible.
+
+Moreover, the classification markers clearly don't cover `免费额度已用完`. So even in Case B, we'd get `client` (if 400) which WOULD rotate... Let me re-check rotation for 'client': `shouldRotateLobsteraiAccount('client')` → `kind !== 'none'` → true. So it rotates. Hmm.
+
+So for the symptom "没有自动切换", Case A (HTTP 200 SSE error) is the only explanation. And the message template matches line 1147 exactly.
+
+Wait — but I should double-check: could it be that the error came from the SSE stream and the message is exactly `lobsterai: 免费额度已用完，请升级套餐`? Line 1147: `throw new LlmError(\`lobsterai: ${data.error.message ?? 'unknown error'}\`, 'SERVER')`. Yes → exactly `lobsterai: 免费额度已用完，请升级套餐`. 
+
+**So root cause #1 is confirmed:**
+- The upstream signals quota exhaustion as an **in-stream SSE error frame on an HTTP 200 response**.
+- `stream()` only rotates accounts inside `if (!response.ok)`.
+- So a 200-with-error-frame never triggers rotation, never records the rate-limit badge, and the error propagates to the user.
+- Additionally, `classifyLobsteraiError`'s hard-credit marker list doesn't include `免费额度已用完` / `请升级套餐` (nor `额度已用完`), so even if we route it into classification, it'd be misclassified.
+
+**Fix design for #1:**
+1. Add the missing markers to `LOBSTERAI_HARD_CREDIT_MARKERS`: `'免费额度已用完'`, `'额度已用完'`, `'请升级套餐'`, maybe `'免费额度'`... careful. Let's add: `'额度已用完'`, `'免费额度已用完'`, `'请升级套餐'`, `'升级套餐'`, `'免费额度用完'`, `'quota used up'`, `'free quota'`? Better to be precise: `'额度已用完'` covers `免费额度已用完`; `'请升级套餐'` / `'升级套餐'` covers the upgrade prompt. Also `'免费次数已用完'`? Let's add a few safe ones.
+
+2. Restructure `stream()` so that **SSE in-stream errors also participate in account rotation**. This is the real fix. The cleanest approach: extract the rotation into a helper that takes a "failure signal" (status + body) and can be invoked both for `!response.ok` and for a stream-level error.
+
+Design: Currently:
+```
+let response = await this.send(credential, body, options)
+if (!response.ok && 401/403) { refresh; resend }
+if (!response.ok) { ...rotation loop...; throw }
+yield* this.consumeSse(response, options)
+```
+
+New design: wrap the whole thing in a rotation loop. A helper that:
+- sends with credential
+- if !ok → classify from status+text
+- if ok → try consumeSse; if it throws an LlmError that is a *rotatable upstream error*, classify from the error message and treat as failure
+
+But careful: `consumeSse` may have already yielded chunks before throwing. If we've already yielded content to DSH, we can't cleanly rotate — re-sending would duplicate content. So rotation on stream errors is only safe if **no chunks have been yielded yet**.
+
+The observed case: error frame arrives as the first frame (quota check happens before generation). So: rotate only if no chunks yielded yet.
+
+Implementation approach: make `consumeSse` throw a distinguishable error carrying the raw message, and in `stream()` catch it around the consume call. Track whether any chunk was yielded.
+
+Let me design concretely:
+
+```ts
+// helper: classify a stream-level error message
+```
+
+Actually cleaner: have `consumeSse` throw a special `LobsteraiStreamError` (or set a flag on LlmError) that includes the raw upstream message. Then in `stream()`:
+
+```ts
+// 消费 SSE；若在**尚未产出任何 chunk** 时收到上游内嵌错误，
+// 视同请求失败并参与换号。
+let yieldedAny = false
+try {
+  for await (const chunk of this.consumeSse(response, options)) {
+    yieldedAny = true
+    yield chunk
+  }
+  return
+} catch (error) {
+  if (yieldedAny || !isRotatableStreamError(error)) throw error
+  // 归一成 (status, body) 交给换号循环
+  ...
+}
+```
+
+Hmm, but restructuring the whole rotation into a loop that handles both cases is cleaner. Let me restructure:
+
+```ts
+async *stream(options) {
+  ... images, credential, currentAccountId, body ...
+
+  let credential = ...
+  let currentAccountId = ...
+
+  // 统一的「一次尝试」结果
+  // 换号循环：attempt 0 用当前凭据，后续从池取
+  const tried = new Set<string>()
+  if (currentAccountId) tried.add(currentAccountId)
+  let lastStatus = 0
+  let lastKind: LobsteraiErrorKind = 'none'
+  let lastDetail = ''
+  let rotated = false
+
+  const maxAttempts = this.options.accountPool ? LOBSTERAI_MAX_ROTATE : 1
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    let response = await this.send(credential, body, options)
+    if (!response.ok && (response.status === 401 || 403)) { refresh; resend }
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '')
+      lastStatus = response.status
+      lastKind = classifyLobsteraiError(response.status, errorText)
+      lastDetail = errorDetail(errorText)
+      // 记录徽章（针对当前账号）
+      if (currentAccountId && recordsLobsteraiRateLimit(lastKind)) { ... }
+    } else {
+      // 200：消费流；捕获「流内错误帧」
+      let yieldedAny = false
+      try {
+        for await (const chunk of this.consumeSse(response, options)) {
+          yieldedAny = true
+          yield chunk
+        }
+        return
+      } catch (error) {
+        if (yieldedAny || !(error instanceof LobsteraiUpstreamError)) throw error
+        lastStatus = error.status
+        lastKind = classifyLobsteraiError(error.status, error.body)
+        lastDetail = errorDetail(error.body)
+        if (currentAccountId && recordsLobsteraiRateLimit(lastKind)) { ...record... }
+      }
+    }
+    
+    // 是否需要换号
+    if (!this.options.accountPool || !shouldRotateLobsteraiAccount(lastKind)) break
+    const next = await this.options.accountPool.getAvailableAccount(this.product.id, options.model, tried)
+    if (!next || tried.has(next.entry.id)) break
+    tried.add(next.entry.id)
+    credential = next.credential
+    currentAccountId = next.entry.id
+    rotated = true
+  }
+
+  // 构造最终错误
+  ...
+}
+```
+
+Wait but there's the 401/403 refresh-retry which currently happens before the `!response.ok` check and is a separate resend. Need to keep it.
+
+Also need to preserve exact existing error messages/behavior for tests:
+- Existing tests expect `error.message` to match `/所有账号均不可用/` in some cases and `/频率限制/`.
+
+Let me check tests carefully. `lobsterai-adapter.spec.ts:1079-1083`:
+```
+expect(error.message).toMatch(/所有账号均不可用/)
+expect(error.message).toMatch(/频率限制/)
+```
+
+And rotation-exhaustion test expects `/余额不足/`.
+And review-fixes expects specific codes.
+
+Hmm, the current code has TWO different final error shapes:
+1. Inside rotation branch: `lobsterai: 模型 ${model} 所有账号均不可用（${errorDetail(errorText)}）`
+2. Outside (no pool or not rotatable): `lobsterai: 积分不足（...）` or `lobsterai: ${errorDetail}`
+
+Test at 1079 expects "所有账号均不可用" — that's the rotation branch. Test at rotation-exhaustion expects "余额不足" (matches errorDetail of 402 body '第二个账号的原因：余额不足').
+
+I should keep the same message shapes to avoid breaking tests. Let me structure so that:
+- If pool exists and we attempted rotation (i.e., shouldRotate was true and pool present) → message `lobsterai: 模型 ${model} 所有账号均不可用（${lastDetail}）`, code based on lastKind.
+- Else → if lastKind === 'hard-credit' → `lobsterai: 积分不足（${lastDetail}）` QUOTA_EXCEEDED; else `lobsterai: ${lastDetail}` + httpErrorCode.
+
+Hmm, careful: the "所有账号均不可用" branch currently triggers whenever `this.options.accountPool && shouldRotateLobsteraiAccount(lastKind)`. Even if there's only one account and getAvailableAccount returns null immediately. So I should keep that: if pool present && shouldRotate → "所有账号均不可用" shape.
+
+Let me now also double-check: for the stream-error case, what `status` to use for classification? The SSE error frame has no HTTP status (it's 200). We should classify by **body text only**, with a status that doesn't accidentally trigger a status-based branch. Using status 200 → classify returns 'none' unless body markers match. That's exactly right: after adding the missing markers, `免费额度已用完` → 'hard-credit' → rotate + record badge. 
+
+And `httpErrorCode(200)` would return `HTTP_200` — weird for final error. But for hard-credit we use QUOTA_EXCEEDED. For other stream errors (e.g. '模型不可用'), status 200 → kind 'none' → shouldRotate false → we break and throw the original error. Good — preserves existing test "上游把错误放进 SSE 帧时抛出 SERVER 错误" which expects throw matching /模型不可用/ and code SERVER.
+
+Hmm, that test: `JSON.stringify({ error: { message: '模型不可用' } })`. With my design: consumeSse throws LobsteraiUpstreamError with body = '模型不可用'? Then classify(200, '模型不可用') → 'none' → break → throw. But what error do I throw? I need to preserve code 'SERVER' and message containing '模型不可用'. 
+
+If I rethrow the original LlmError (code SERVER, message `lobsterai: 模型不可用`), that's exactly preserved. Good. So: when kind === 'none' for a stream error, rethrow the original error unchanged.
+
+Actually simpler: in the catch, if the error is a LobsteraiUpstreamError AND (pool exists) AND classify says rotatable → treat as failure for rotation. Otherwise rethrow original.
+
+Let me be careful about `yieldedAny`: if we already yielded text and then hit an error frame, we must rethrow (can't rotate — would duplicate). Good.
+
+Now, should stream errors record rate-limit badges? For hard-credit yes (that's the whole point — so the exhausted account gets marked and next request picks another). Definitely yes.
+
+Now, there's another consideration: even with rotation working, the **first** account is picked by `getAvailableAccount(LOBSTERAI.id, '')` with empty modelId in index.ts resolveCredential — no rate-limit filtering. But the rotation path uses `getAvailableAccount(this.product.id, options.model, tried)` which DOES filter by model rate limits. So after we record the badge for account A on model M, the next request's `resolveCredential()` (empty modelId) would still pick A! Hmm.
+
+Wait: index.ts line 241-246: `resolveCredential: async () => { const available = await pool.getAvailableAccount(LOBSTERAI.id, '') ... }`. Empty modelId → no rate-limit filter → picks first enabled account = A again. So the badge wouldn't help the next turn!
+
+Hmm, but that's a separate concern — the adapter's own rotation loop within a single `stream()` call handles it. Within one call: attempt 0 with A fails (stream error, hard-credit) → record badge for A → getAvailableAccount(model, tried={A}) → filters out A? No! The filter is `modelRateLimits[modelId]` resetAt in future → excluded. We just wrote A's resetAt → so A is excluded. Plus `tried` excludes A. So it picks B. 
+
+So within a single stream() call, rotation now works. That's the user-visible fix: "应该能自动切换".
+
+But also for the next turn, `resolveCredential` with empty modelId would still return A. That's a pre-existing design (documented in account-pool.ts: "空 modelId 时不做限流过滤"). Hmm, that means next turn starts with A again, fails, rotates to B... which works but wastes a request. That's acceptable and pre-existing. Actually, should I improve index.ts to pass the model? It can't — resolveCredential has no model info at that point (it's called before options.model is known... actually `stream(options)` knows options.model but calls `this.options.resolveCredential()` which is a no-arg closure). Changing that is a bigger refactor. 
+
+Hmm, but wait. Actually there's a real concern: the user said "账号还有2个能用的" and expected auto-switch. With my fix, the switch happens within the call. Good enough, and it's the minimal correct fix.
+
+But hold on — I should reconsider whether to also make `resolveCredential` model-aware. The adapter could, instead of relying on the closure, resolve the credential from the pool itself using `options.model`. But `resolveCredential` is the injected abstraction. Hmm. Actually the adapter could prefer: if accountPool exists, use `accountPool.getAvailableAccount(product.id, options.model)` directly and fall back to `resolveCredential()`. That would make the *first* pick model-aware too, so an account already known-exhausted for this model is skipped at the start of the next turn. That's a meaningful improvement and low risk... but it changes credential resolution semantics and could break tests that inject accountPool with only some methods (e.g. `findAccountIdByCredential`, `updateModelRateLimit`, `getAvailableAccount` — actually those tests do provide getAvailableAccount). 
+
+Hmm, risk: `tests/unit/lobsterai-rotation-exhaustion.spec.ts` first test provides getAvailableAccount returning acc-2 always. If I changed the initial pick to use getAvailableAccount, then credential would be AT-2 from the start... and `resolveCredential` returns AT-1. That would change `findAccountIdByCredential`... it's a stub returning 'acc-1'. It'd still work but the test's intent (first request uses resolveCredential's credential) would break. Actually the test asserts message matches /余额不足/ which is the second response (402). If initial pick were AT-2 and first response is 429... hmm the sequence is by call order not account. It'd still pass probably. But risky.
+
+Let me be conservative and NOT change the initial credential resolution. Keep the fix focused: make stream-level errors participate in rotation. That's the root cause.
+
+Hmm, but actually, wait. Let me reconsider. Is it enough? The user's complaint: "一个账号用完出错但是没有从账号切换，应该能自动切换". With the fix, within the failing call it switches to another account and completes the task. That directly addresses it. Yes, enough. And I can additionally note the `resolveCredential` empty-modelId thing.
+
+Actually, hmm, let me reconsider once more. Let me re-read: does DSH retry the whole turn? "重试延迟：7270毫秒 / 失败原因 / 本轮运行失败". If DSH retries the turn, each retry calls stream() fresh → resolveCredential → account A (badge written but empty modelId ignores it) → fails → now rotates to B → succeeds. So retry would succeed. Good.
+
+Actually wait, is the badge even relevant for the first pick? No (empty modelId). So each turn: try A (fail, ~seconds), then B (success). Slightly wasteful but functional. Hmm, I could improve by making the initial pick model-aware. Let me think about whether that's low-risk and high-value... 
+
+The user explicitly complains about auto-switch not working. The core fix is rotation on stream errors. I'll do that. I'll also consider adding model-aware initial pick as it directly prevents the wasted round-trip and is arguably part of "自动切换" being effective. Let me look at how index.ts does it for other providers — they all use `getAvailableAccount(id, '')`. So changing only lobsterai would be inconsistent. I'll leave it and mention it.
+
+Hmm, actually — wait. There's a subtlety I should verify: does `resolveCredential` in index.ts return the *first* account even if it's rate-limited? Yes. But here's the thing: **within** `stream()`, after getting credential from `resolveCredential()`, `currentAccountId` is found via `findAccountIdByCredential`. Then on failure, rotation excludes it. Fine.
+
+OK. Now **Problem 2: Qoder qwen3.8-flash XML 泄露 / 任务终止**.
+
+The user says: "使用本插件的qoder的qwen3.8-flash，执行任务出现任务调用xml泄露任务终止的情况" — using Qoder's qwen3.8-flash, task execution shows tool-call XML leaking (i.e., the model emits tool calls as raw XML text instead of proper tool_calls), and the task terminates.
+
+Root cause: **The Qoder adapter never sends tools!** 
+
+Look: `QoderAdapter.stream()` builds `buildRequest` with `prepareInfer({ modelKey, userText, systemText, isReasoning, history, maxTokens, reasoningEffort, isVl, displayName, maxInputTokens, business })` — **no `tools`**. And `qoder-wasm.ts` line 561 hardcodes `tools: []` in the payload.
+
+Also `history` is built only from messages with `typeof m.content === 'string'` — tool calls/results are dropped entirely (serializeMessages produces assistant messages with `content: null` + `tool_calls`, and `role: 'tool'` messages with string content; the assistant ones have content null → filtered out; tool messages have string content → included as role 'tool' with content... hmm, that's actually malformed: a `role: 'tool'` message without the preceding assistant tool_calls, and no tool_call_id).
+
+So: DSH gives the adapter tools; the adapter silently drops them. The model (Qwen3.8-Flash) then has no function-calling channel, so when the system prompt/instructions ask it to use tools, it emits the tool call as **XML text** (a very common Qwen behavior when tools aren't declared). That XML text leaks into the visible answer, and the harness sees no tool call → task terminates (nothing to execute / model finishes without acting).
+
+That's exactly "任务调用xml泄露任务终止".
+
+Evidence to strengthen:
+1. `qoder-wasm.ts:561` `tools: []` hardcoded.
+2. `QoderInferAsk` has no `tools` field.
+3. `qoder-adapter.ts` never references `options.tools`.
+4. `openai-compat.ts` `serializeMessages` DOES produce `tool_calls` for assistant messages and `role:'tool'` messages — so the shared serializer supports tools, but qoder's adapter drops the assistant ones via the `typeof m.content === 'string'` filter and never passes tools.
+
+Let me verify by grepping for `tool` in qoder-adapter.ts and qoder-wasm.ts.
+
+Let me also check whether `tools` is even supported by the encrypted endpoint. The design doc §2.5 lists `tools: []` in the official payload — so yes, the field exists and is presumably supported. The official `G4A()` includes `tools`.
+
+Hmm, but I should be careful: is sending tools via the encrypted endpoint actually verified to work? Unknown. The AGENTS.md warns about verifying model behavior. Adding tools support is a substantive change. Let me check git log / docs for any note about qoder tools.
+
+Actually, let me first gather more evidence before concluding. Let me grep the repo for tool-related handling in qoder.
+
+Let me do that now.
+
+Also, let me check the Qoder model table: `qfmodel` = Qwen3.8-Flash. And check `fallbackModels` entries.
+
+Let me run greps.
+
+Also important: I should verify my claim about the Qoder error path / the XML leak. Let me search the docs and README for "xml" or "工具调用".
+
+Let me do these greps in parallel.
+
+Also, I realize I should double check the LobsterAI finding by looking at whether `consumeSse` errors are the only path. Let me also check: is there any chance the observed message came from `parseRateLimitError`/retry? No.
+
+Let me now gather the Qoder evidence.
+
+Let me also reconsider: the user's report mentions two things in one message. The first line about "任务调用xml泄露任务终止" is about qoder qwen3.8-flash. The rest is about lobsterai. So two bugs to fix.
+
+Hmm, wait. Let me re-read the user's message more carefully:
+
+"使用本插件的qoder的qwen3.8-flash，执行任务出现任务调用xml泄露任务终止的情况："
+then
+"本插件出现lobsteria一个账号用完出错但是没有从账号是切换的问题，应该能自动切换，web显示：..."
+
+So yes, two issues. The first: Qoder qwen3.8-flash — tool call XML leak, task terminated.
+
+Hmm, actually "任务调用xml泄露" — could also be interpreted as: the tool-call XML is leaked (into output). And "任务终止" = task terminated.
+
+So root cause = tools not being sent → model emits XML.
+
+Let me verify with greps and check the model table for qfmodel.
+
+Let me proceed.
+
+Actually, let me also consider an alternative/additional root cause for the XML leak: maybe the model is Qwen and the harness's tool definitions are passed but the **encrypted endpoint's `tools` field requires a specific format**. But since we send `tools: []`, there's no ambiguity — tools are definitely not sent. That's the primary root cause.
+
+Let me confirm `qoder-adapter.ts` truly ignores `options.tools`.
+
+From my earlier read of qoder-adapter.ts: `buildRequest` → `client.prepareInfer({ modelKey, userText, systemText, isReasoning, history, maxTokens, reasoningEffort, isVl, displayName, maxInputTokens, business })`. No tools. Confirmed by reading. And `options.tools` — grep found no matches for `tools` in qoder-adapter.ts. Confirmed.
+
+So Qoder adapter: tools never sent, tool_calls in history dropped.
+
+Now let me design the fix for #2:
+
+1. Add `tools` to `QoderInferAsk` and to the payload in `prepareInfer`.
+2. Add a `tools` parameter to `prepareInfer` call from the adapter, mapping `options.tools` to the official format.
+3. Preserve tool history: assistant `tool_calls` and `role:'tool'` messages with `tool_call_id`.
+
+What's the official tools format? Per design doc §2.5, the payload has `"tools": []`. The OpenAI-compatible public endpoint uses standard `tools: [{type:'function', function:{name, description, parameters}}]`. The official `G4A()` — we don't know exactly. But `model_config.format: 'openai'` suggests OpenAI format. Given the request is `format: 'openai'`, standard OpenAI tools format is the reasonable choice.
+
+Hmm, this is where I must be careful — I can't verify without a live request. The user has credentials though. There's an e2e probe `tests/e2e/qoder-chat-probe.e2e.spec.ts` gated by env vars.
+
+Given the risk, maybe I should implement it in the most standard way and add tests, then tell the user to verify with the e2e probe. Also there's `scripts/probe-reasoning-efforts.mjs` etc.
+
+Let me look at the messages format more: `QoderInferMessage { role, content: string }`. For tool calls we'd need content to be nullable and add `tool_calls` / `tool_call_id`. The design doc §2.5 says: "消息支持 `reasoning_content` / `reasoning_item` / `tool_calls` / `tool_call_id`" — that's for the **public** endpoint's serializer (`Sfn`). For the encrypted endpoint, official `messages` are `[{role, content}]`... but it likely passes through the same backend.
+
+Given the uncertainty, the safest minimal fix that addresses the root cause: **send the tools**. Even if tool-call history formatting is imperfect, declaring tools is what stops the XML leak (the model will emit proper tool_calls). Actually no — if tools are declared but the *results* can't be sent back, multi-step tasks break. But DSH's flow: step 1 model emits tool_calls → harness executes → step 2 sends history including assistant tool_calls + tool results. If we can't serialize those, the model won't see results.
+
+So I need both: declare tools AND serialize tool history.
+
+Let me look at how `serializeMessages` output looks and how to map to Qoder messages:
+- assistant: `{role:'assistant', content: null|string, tool_calls:[{id,type:'function',function:{name,arguments}}], reasoning_content?}`
+- tool: `{role:'tool', tool_call_id, content: string}`
+- user: `{role:'user', content: string|parts[]}`
+- system: `{role:'system', content: string}`
+
+Current qoder code:
+```ts
+const userMessages = messages.filter((m) => m.role === 'user')
+const lastUser = userMessages.at(-1)
+const userText = typeof lastUser?.content === 'string' ? lastUser.content : ''
+const history = messages
+  .filter((m): m is { role: string; content: string } =>
+    typeof m.role === 'string' && typeof m.content === 'string')
+  .map((m) => ({ role: m.role, content: m.content }))
+```
+
+Note: if the last user message content is an array (multimodal), `userText` is ''. Hmm, that's another latent issue but out of scope.
+
+Wait — important: `userText` is used as `chat_context.text`, and `history` includes ALL messages with string content (including that last user message). So the last user text appears twice? `history` includes the last user message, and `chat_context.text` also has it. Looking at prepareInfer: `for (const m of ask.history ?? []) messages.push(...)`; `if (messages.length === 0) messages.push({role:'user', content:text})`. So messages = history (all string-content msgs), and `text` is separate in chat_context. OK.
+
+So to support tools, I need to:
+1. Pass `tools` into `prepareInfer`.
+2. Change `history` type to allow richer messages: `{role, content, tool_calls?, tool_call_id?, reasoning_content?}`.
+3. In the adapter, build history from `messages` preserving tool_calls and tool messages.
+
+This is a moderately sized change touching `qoder-wasm.ts` (which has strict WASM constraints — but `tools` is just a JSON field in the plaintext body, so it's safe: we build the payload object in JS and pass `JSON.stringify(payload)` to WASM. Adding a field to the payload is low-risk).
+
+Let me now check the `QoderInferAsk` and payload more carefully, and decide the tools format.
+
+Actually, hold on. Let me reconsider the scope. The user reported TWO bugs. Both need fixing. But I should verify the Qoder one more before making a big change. Let me look for any evidence in the repo about qoder tools being unsupported or the XML leak.
+
+Let me grep for 'tool' in qoder files and tests.
+
+Let me do that now. I'll also check the qoder model table.
+
+Let me run the greps.
+
+Actually, let me step back on effort/scope. This is a big task: two bugs, one requiring a non-trivial restructure (LobsterAI rotation) and one requiring adding tool support to a WASM-based adapter (Qoder). I should:
+1. Finish investigation (a couple more greps).
+2. Ask the user to confirm scope/priority? The instructions say to ask when needed. But the task is clear: fix both. I think I should just fix both, with tests.
+
+Hmm, but the Qoder tools fix carries real uncertainty (unverified wire format). Given AGENTS.md's strong emphasis on verifying with real requests, and that I can't run live requests without credentials... Actually I might be able to — there are credentials in `~/.dsh/.credentials.yaml`. But e2e probes are gated and consume quota. The AGENTS.md says qfmodel is free (`price_factor: 0`). So a live probe would be free!
+
+Let me check if there's a way to run a live probe. `scripts/` has probe scripts. And `tests/e2e/qoder-chat-probe.e2e.spec.ts` requires `DSH_QODER_CHAT_E2E=1` + confirm.
+
+I could write a probe script that sends a request with tools declared and see if the model emits proper tool_calls. That would be strong verification. Let me consider doing that after implementing.
+
+OK let me proceed with evidence gathering, then implement, then verify.
+
+Let me run the greps now.
+
+Let me also reconsider: maybe the XML leak has a different cause. Let me think about what DSH does. DSH's system prompt includes instructions about tools. If the adapter declares no tools... wait, actually, does DSH even know qoder has no tools? `resolveModel` returns no `tools` capability declaration. Hmm, DSH's tool availability is global (harness tools), and the adapter receives `options.tools`. If the adapter ignores them, the model doesn't know about them → but the system prompt might still describe them? Actually DSH injects tool descriptions via the `tools` parameter, not the system prompt, typically. Hmm.
+
+But actually — Qwen models are known to emit tool calls as XML (`<tool_call>...</tool_call>`) when the prompt contains tool descriptions in text form. If DSH's system prompt lists tools... Actually DSH does put tool instructions in the system prompt in some setups.
+
+Regardless, the adapter dropping `options.tools` is a definite defect: the model can't do function calling. Let me verify there's no other tool path.
+
+Let me grep.
+
+I'll do the greps and read the qoder product model table.
+
+Let me batch these.
+
+Then I'll write a plan/todos and implement.
+
+Let me be efficient now.
+
+One more thought on the LobsterAI fix: I should double check the `event: error` SSE form. The envelope code mentions `event:error` with `data:{"stackTrace":[...],"message":"...","statusCodeValue":400}` for qoder. For LobsterAI, the adapter handles `data.error.message`. But what if LobsterAI sends `{"error":{"message":"免费额度已用完，请升级套餐"}}`? Then line 1147 → matches. Or maybe the frame is `{"code":40103,"message":"免费额度已用完，请升级套餐"}` (top-level code/message like Qoder) — then line 1146 `data.error === undefined` → not caught! Then the frame is treated as "no content" and silently skipped → stream ends → finish stop → **task terminates with no output**. Hmm! That's the "任务终止" pattern but for LobsterAI.
+
+But the user's web output shows the message DID surface: "失败原因：lobsterai: 免费额度已用完，请升级套餐". So it was thrown. Which template? `lobsterai: ${data.error.message}` (line 1147) exactly. So it IS `data.error.message`. Good.
+
+Unless it's line 1015 with plain-text body: `lobsterai: ${errorDetail(errorText)}` → errorDetail on non-JSON returns body as-is. So if upstream returned HTTP 400 with plain text `免费额度已用完，请升级套餐`, we'd get exactly that message too.
+
+Hmm! So Case B is also possible. Let me think about which is more likely and whether the fix should cover both.
+
+If Case B (HTTP 400 + plain text): `response.ok` false → `classifyLobsteraiError(400, '免费额度已用完，请升级套餐')`:
+- markers: none match → not hard-credit
+- session-dead: no
+- 400 not 429/404/≥500 → `status >= 400` → 'client'
+→ `shouldRotateLobsteraiAccount('client')` = true → **rotation WOULD happen**.
+
+But wait — would it? `if (this.options.accountPool && shouldRotateLobsteraiAccount(lastKind))`. accountPool is present (user has multiple accounts). So rotation happens: tried={A}, getAvailableAccount(model, {A}) → B. Send → if B works, success. So Case B would NOT produce "no switch". 
+
+Unless... `currentAccountId` is '' (credential not matched to pool) — then tried is empty, and getAvailableAccount returns the FIRST account which might be A again → `tried.has(next.entry.id)` false (tried empty) → tried.add(A) → credential = A's credential → same account! Then response fails again → next round → getAvailableAccount(model, {A}) → B → ... Actually with maxRotate=2 rounds it'd try A then B. Hmm, would eventually work.
+
+Hmm, but if `currentAccountId === ''`, the first round picks A again (same as current) — wasteful but then round 2 picks B. So still switches.
+
+So Case B doesn't explain the failure. **Case A (HTTP 200 + SSE error frame) is the explanation**, because it bypasses rotation entirely.
+
+This also matches "重试延迟：7270毫秒" — DSH retried and failed repeatedly because every attempt re-picked account A.
+
+Great, Case A confirmed as the root cause. And the fix must handle in-stream errors.
+
+Additionally, the marker list missing `额度已用完` matters: in Case A, even after routing the stream error into classification, without the marker it'd be 'none' → no rotation. So BOTH changes are needed. 
+
+Now let me also make sure: should a stream-level error with kind 'none' (e.g., '模型不可用') still rotate? Per `shouldRotateLobsteraiAccount`, only kind !== 'none'. For '模型不可用' → none → no rotate → rethrow original SERVER error. Preserves existing test. But is that ideal? Go rotates on any non-2xx; a 200-with-error-frame is a business error. Hmm, for robustness maybe treat *any* stream error frame as rotatable? But then the existing test "上游把错误放进 SSE 帧时抛出 SERVER 错误" (no accountPool configured) — with no pool, no rotation, rethrow. That test has no accountPool, so it'd still pass.
+
+Hmm, should I rotate on unknown stream errors when a pool exists? Arguably yes (defensive: another account might work). But it could mask real errors. Let me be principled: classify by body; if kind is 'none' (unrecognized), treat as a **client/business error** → rotatable? 
+
+I think the cleanest: for in-stream error frames, classify with status 200; if the classification yields 'none', fall back to 'client' (it IS an error frame, so it's not "none"). Then rotation applies. But then the final thrown error for the no-pool case must still be the original SERVER error (to preserve the test).
+
+Hmm, this is getting complex. Let me simplify:
+
+- In `consumeSse`, when an error frame is seen, throw `LobsteraiUpstreamError` (extends LlmError) carrying `rawBody` (the message text) and keeping code SERVER, message `lobsterai: <msg>`.
+- In `stream()`, catch around consume. If no chunk yielded yet and accountPool exists:
+  - `kind = classifyLobsteraiError(200, rawBody)`; if kind === 'none' → use 'client' (an explicit error frame is never "success"); 
+  - Hmm, but 'client' → httpErrorCode(200) = 'HTTP_200'. Ugly for the final message if all accounts fail.
+  
+  Let me handle final error construction: for stream errors, final code should be SERVER (as before) unless hard-credit → QUOTA_EXCEEDED.
+
+OK here's a cleaner design. Let me define the "attempt outcome" as either:
+- `{ ok: true }` 
+- `{ ok: false, status, kind, detail, code }` where `code` is the harness code to use if this is the final failure.
+
+For HTTP failures: code = httpErrorCode(status), except hard-credit → QUOTA_EXCEEDED (handled at throw site as today).
+For stream failures: code = 'SERVER' (as today), status = 200.
+
+And rotation decision uses `kind`, where for stream failures we classify with a status that yields rotatable kinds. Let me just classify with `status = 402` if... no, hacky.
+
+Alternative: classify stream errors by body markers only, but default unknown error frames to 'client' for rotation purposes while keeping code SERVER. I can express that as: `const kind = classifyLobsteraiError(200, rawBody)` then `const rotateKind = kind === 'none' ? 'client' : kind`. Hmm, but then `recordsLobsteraiRateLimit('client')` is false → no badge for unknown errors. That's correct (don't write fake badges). And for hard-credit → badge written. 
+
+Actually simpler and more honest: `classifyLobsteraiError(200, body)` returns 'none' only when no markers matched. An error frame with an unrecognized message is a business/client error. So map to 'client'. I'll do that explicitly with a comment.
+
+Hmm, wait. But there's a risk: rotating on every unrecognized stream error means a genuine "model not available" error causes 2 extra requests. That's what Go does (rotates on everything). Acceptable and consistent with the module's documented philosophy ("除成功外的每一类都换号").
+
+Now, about preserving the existing test at lobsterai-adapter.spec.ts:960: no accountPool → no rotation → rethrow original error (message /模型不可用/, code SERVER). My design: if no pool, rethrow original. ✓
+
+And the rotation-exhaustion tests: they use HTTP non-2xx, unaffected. ✓
+
+Let me now write the code.
+
+Restructure `stream()`:
+
+```ts
+    // 4. 发送请求并消费（失败时换号重试）
+    let response = await this.send(credential, body, options)
+    if (!response.ok && (response.status === 401 || response.status === 403)) {
+      await this.options.refresh()
+      const refreshed = await this.options.resolveCredential()
+      if (refreshed === undefined || refreshed.access_token.length === 0) {
+        throw new LlmError('lobsterai: credential expired and refresh failed', 'AUTH', { status: response.status })
+      }
+      credential = refreshed
+      response = await this.send(credential, body, options)
+    }
+```
+
+Hmm, the 401 refresh path calls `this.options.resolveCredential()` which may return the pool's first account again — a pre-existing quirk. Keep.
+
+Now the main loop. Let me write it as a helper method `attemptOnce` maybe. Actually let me restructure minimally:
+
+Replace from `if (!response.ok) {` (line 924) through the end (line 1019) with:
+
+```ts
+    // 本轮失败的成组状态（status / kind / detail / code 必须同源）。
+    let lastStatus = response.status
+    let lastKind: LobsteraiErrorKind = 'none'
+    let lastDetail = ''
+    let lastCode = 'SERVER'
+    let sawFailure = false
+
+    const tried = new Set<string>()
+    if (currentAccountId) tried.add(currentAccountId)
+
+    // 换号次数上限...
+    const maxAttempts = this.options.accountPool ? LOBSTERAI_MAX_ROTATE : 1
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '')
+        lastStatus = response.status
+        lastKind = classifyLobsteraiError(response.status, errorText)
+        lastDetail = errorDetail(errorText)
+        lastCode = lastKind === 'hard-credit' ? 'QUOTA_EXCEEDED' : httpErrorCode(response.status)
+        sawFailure = true
+      } else {
+        // HTTP 200 也可能在 SSE 流里下发错误帧（实测：额度耗尽）。
+        let yielded = false
+        try {
+          for await (const chunk of this.consumeSse(response, options)) {
+            yielded = true
+            yield chunk
+          }
+          return
+        } catch (error) {
+          if (yielded) throw error
+          if (!(error instanceof LobsteraiStreamError)) throw error
+          // 流内错误帧没有 HTTP 状态码 → 按 200 分类（只靠 body 关键词）。
+          lastStatus = 200
+          const rawKind = classifyLobsteraiError(200, error.upstreamBody)
+          // 明确的错误帧绝不是「成功」；未登记的关键词按 client 处理，
+          // 与 Go「非成功即换号」的语义一致。
+          lastKind = rawKind === 'none' ? 'client' : rawKind
+          lastDetail = error.upstreamBody
+          lastCode = lastKind === 'hard-credit' ? 'QUOTA_EXCEEDED' : 'SERVER'
+          sawFailure = true
+        }
+      }
+
+      // 记录徽章...
+      if (currentAccountId && recordsLobsteraiRateLimit(lastKind)) { ... }
+
+      if (!this.options.accountPool || !shouldRotateLobsteraiAccount(lastKind)) break
+      const next = await this.options.accountPool.getAvailableAccount(this.product.id, options.model, tried)
+      if (!next || tried.has(next.entry.id)) break
+      tried.add(next.entry.id)
+      credential = next.credential as LobsteraiCredential
+      currentAccountId = next.entry.id
+      response = await this.send(credential, body, options)
+    }
+
+    if (!sawFailure) throw new LlmError('lobsterai: 请求未产生响应', 'SERVER')  // 不可达
+
+    // 池存在且可轮转 → 「均不可用」；否则单账号语义。
+    if (this.options.accountPool && shouldRotateLobsteraiAccount(lastKind)) {
+      throw new LlmError(
+        `lobsterai: 模型 ${options.model} 所有账号均不可用（${lastDetail}）`,
+        lastCode,
+        { status: lastStatus },
+      )
+    }
+    if (lastKind === 'hard-credit') {
+      throw new LlmError(`lobsterai: 积分不足（${lastDetail}）`, 'QUOTA_EXCEEDED', { status: lastStatus })
+    }
+    throw new LlmError(`lobsterai: ${lastDetail}`, lastCode, { status: lastStatus })
+```
+
+Wait, there's an issue with `lastCode` when the last failure is a stream error: I set 'SERVER'. And `httpErrorCode(lastStatus)` where lastStatus=200 → 'HTTP_200'. For the "所有账号均不可用" branch, code should be lastCode. For hard-credit → QUOTA_EXCEEDED (lastCode already set). Good.
+
+Hmm, but for the non-pool stream-error case (`!shouldRotate`), lastKind='client' → not hard-credit → `throw LlmError(\`lobsterai: ${lastDetail}\`, lastCode='SERVER', {status:200})`. Message = `lobsterai: 模型不可用` ✓ code SERVER ✓. 
+
+But wait: `shouldRotateLobsteraiAccount('client')` is TRUE. So for the no-pool case, the `if (this.options.accountPool && shouldRotate(...))` is false → falls to hard-credit check → then generic throw with lastCode SERVER. ✓ matches existing test.
+
+Hmm, but careful: in the no-pool case with an HTTP failure, e.g. 400 '参数非法': lastKind='client', lastCode=httpErrorCode(400)='INVALID_REQUEST' → generic throw `lobsterai: 参数非法` INVALID_REQUEST. Same as before ✓.
+
+Now `maxAttempts`: previously the code did `const maxRotate = LOBSTERAI_MAX_ROTATE - 1` and looped that many times, after already having sent once. Total sends = 1 + 2 = 3. In my restructure, the first send happens BEFORE the loop. So the loop must do at most 2 more sends. Let me set `maxRotate = LOBSTERAI_MAX_ROTATE - 1` and loop `round < maxRotate`, where each iteration: evaluate the CURRENT response (already sent), then possibly rotate and send a new one.
+
+Let me re-examine: at loop entry, `response` holds the result of a send. Iteration 0: evaluate response → if rotate → send new response (that's send #2). Iteration 1: evaluate response (#2) → if rotate → send (#3). Then loop ends. Total sends = 3 ✓.
+
+So the structure is: for round in 0..maxRotate-1: { evaluate current response; maybe rotate+send }. And after the loop, we need to evaluate the LAST response if it was never evaluated? Let's trace with maxRotate=2:
+- send#1 before loop.
+- round 0: evaluate send#1 → rotate → send#2.
+- round 1: evaluate send#2 → rotate → send#3.
+- loop ends. send#3 NEVER evaluated! 
+
+That's a bug. Need to evaluate after loop too, or restructure.
+
+Better: make the loop `for (round = 0; round < maxAttempts; round++)` where maxAttempts = 3 (LOBSTERAI_MAX_ROTATE) and the loop body does: evaluate current response; if success → return; else rotate (for next iteration) and send. But the last iteration's send would be wasted.
+
+Cleanest: do the send at the TOP of the loop.
+
+```
+let credential = <initial>
+let currentAccountId = <initial>
+let response: Response | undefined
+for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  if (attempt > 0) {
+    // 换号
+    const next = await pool.getAvailableAccount(...)
+    if (!next || tried.has(next.entry.id)) break
+    tried.add(...); credential = next.credential; currentAccountId = next.entry.id
+  }
+  response = await this.send(credential, body, options)
+  // 401 refresh (only on attempt 0? or any) 
+  ...
+  evaluate(response)
+  if (success) return
+  if (!shouldRotate) break
+}
+```
+
+Hmm, but the 401-refresh resend complicates. Let me keep the initial send + 401 handling before the loop, then structure the loop as "evaluate current, rotate, send" but ensure the final response is evaluated.
+
+Alternative cleaner approach: keep the existing structure but extract the "evaluate + rotate" into a loop that sends at the end, and after the loop, if the last action was a send that hasn't been evaluated, evaluate it. Messy.
+
+Let me instead restructure so that the send is at the top of the loop, and handle 401 inside:
+
+```ts
+    // 首次凭据已就绪；换号循环把「发送 → 判定 → 换号」收敛到一处。
+    let response: Response | undefined
+    let lastStatus = 0
+    let lastKind: LobsteraiErrorKind = 'none'
+    let lastDetail = ''
+    let l

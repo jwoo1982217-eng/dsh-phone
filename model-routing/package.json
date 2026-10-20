@@ -1,0 +1,26 @@
+{
+  "name": "dsh-model-routing",
+  "version": "0.2.0",
+  "description": "DSH 模型路由组：智能、顺序、轮换、使用量、额度、权重与手动选择；桌面和手机共用。",
+  "type": "module",
+  "main": "./index.js",
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "*"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  }
+}

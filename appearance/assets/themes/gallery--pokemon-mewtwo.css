@@ -1,0 +1,770 @@
+/* pokemon-mewtwo — 宝可梦 · 超梦 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-pokemon-mewtwo], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-pokemon-mewtwo] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #241c33;
+  background-color: #f5f2fa;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] {
+  color: #ece8f5;
+  background-color: #0d0a14;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-pokemon-mewtwo] {
+  --color-primary: #7a4ac0;
+  --primary: #7a4ac0;
+  --primary-rgb: 122, 74, 192;
+  --color-primary-light-1: #9673d3;
+  --color-primary-light-2: #b094ec;
+  --color-primary-light-3: #cbb5f2;
+  --color-primary-dark-1: #5f3492;
+  --brand: #7a4ac0;
+  --brand-light: #f2ecfc;
+  --brand-hover: #663da6;
+  --color-brand-fill: #7a4ac0;
+  --color-brand-bg: #ece1fa;
+  --aou-1: #f2ecfc;
+  --aou-2: #e2d4f8;
+  --aou-3: #cbb5f2;
+  --aou-4: #b094ec;
+  --aou-5: #9673d3;
+  --aou-6: #7a4ac0;
+  --aou-7: #663da6;
+  --aou-8: #513185;
+  --aou-9: #3e2666;
+  --aou-10: #2b1a47;
+  --bg-base: #f5f2fa;
+  --bg-1: #ede8f5;
+  --bg-2: #e5def0;
+  --bg-3: #dcd3e9;
+  --bg-4: #cfc4e0;
+  --bg-5: #bfb0d3;
+  --bg-6: #ac9cc2;
+  --bg-8: #8b7ca1;
+  --bg-9: #6a5d7e;
+  --bg-10: #453a55;
+  --color-bg-1: #ede8f5;
+  --color-bg-2: #e5def0;
+  --color-bg-3: #dcd3e9;
+  --color-bg-4: #cfc4e0;
+  --bg-hover: #e3dcee;
+  --bg-active: #d9d0e6;
+  --text-primary: #241c33;
+  --text-secondary: #574d68;
+  --text-disabled: #a49ab5;
+  --text-0: #161021;
+  --text-white: #ffffff;
+  --color-text-1: #241c33;
+  --color-text-2: #574d68;
+  --color-text-3: #7e7490;
+  --color-text-4: #a49ab5;
+  --border-base: #cbc0da;
+  --border-light: #ddd5e8;
+  --border-special: #b094ec;
+  --color-border: #cbc0da;
+  --color-border-1: #cbc0da;
+  --color-border-2: #ddd5e8;
+  --fill: #e5def0;
+  --color-fill: #e5def0;
+  --fill-0: #ede8f5;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #faf8fd;
+  --inverse: #241c33;
+  --success: #2e9e66;
+  --warning: #d08a1d;
+  --danger: #d23545;
+  --info: #4a6fd0;
+  --message-user-bg: #2e2148;
+  --message-tips-bg: #e9e4f2;
+  --workspace-btn-bg: #ece1fa;
+  --color-guid-agent-bar: #eae4f3;
+  --mewtwo-purple: #7a4ac0;
+  --mewtwo-purple-soft: rgba(122, 74, 192, 0.3);
+  --mewtwo-tail: #5f3492;
+  --mewtwo-body: #cfc3e8;
+  --mewtwo-tank: #9fc3cb;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] {
+  --color-primary: #9668e0;
+  --primary: #9668e0;
+  --primary-rgb: 150, 104, 224;
+  --color-primary-light-1: #ab85ea;
+  --color-primary-light-2: #c2a6f1;
+  --color-primary-light-3: #dacaf8;
+  --color-primary-dark-1: #6d43ad;
+  --brand: #9668e0;
+  --brand-light: #221536;
+  --brand-hover: #a97cec;
+  --color-brand-fill: #9668e0;
+  --color-brand-bg: #1d1130;
+  --aou-1: #1d1030;
+  --aou-2: #311a4d;
+  --aou-3: #47266e;
+  --aou-4: #5f3492;
+  --aou-5: #7a4ab8;
+  --aou-6: #9668e0;
+  --aou-7: #ab85ea;
+  --aou-8: #c2a6f1;
+  --aou-9: #dacaf8;
+  --aou-10: #f0e9fd;
+  --bg-base: #0d0a14;
+  --bg-1: #141021;
+  --bg-2: #1b1628;
+  --bg-3: #231d33;
+  --bg-4: #2c2540;
+  --bg-5: #382f4e;
+  --bg-6: #463c5e;
+  --bg-8: #635579;
+  --bg-9: #857a99;
+  --bg-10: #b7aec4;
+  --color-bg-1: #141021;
+  --color-bg-2: #1b1628;
+  --color-bg-3: #231d33;
+  --color-bg-4: #2c2540;
+  --bg-hover: #1f1930;
+  --bg-active: #292140;
+  --text-primary: #ece8f5;
+  --text-secondary: #a89fb8;
+  --text-disabled: #5c5468;
+  --text-0: #f7f5fc;
+  --text-white: #ffffff;
+  --color-text-1: #ece8f5;
+  --color-text-2: #a89fb8;
+  --color-text-3: #7d7490;
+  --color-text-4: #5c5468;
+  --border-base: #312a45;
+  --border-light: #262033;
+  --border-special: #553a80;
+  --color-border: #312a45;
+  --color-border-1: #312a45;
+  --color-border-2: #262033;
+  --fill: #1b1628;
+  --color-fill: #1b1628;
+  --fill-0: #141021;
+  --fill-white-to-black: #0d0a14;
+  --dialog-fill-0: #171226;
+  --inverse: #ece8f5;
+  --success: #4caf7d;
+  --warning: #e8a33d;
+  --danger: #e05260;
+  --info: #6a8fe0;
+  --message-user-bg: #221a35;
+  --message-tips-bg: #1e1830;
+  --workspace-btn-bg: #1d1130;
+  --color-guid-agent-bar: #171226;
+  --mewtwo-purple: #9668e0;
+  --mewtwo-purple-soft: rgba(150, 104, 224, 0.35);
+  --mewtwo-tail: #5f3492;
+  --mewtwo-body: #cfc3e8;
+  --mewtwo-tank: #2e5a66;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-pokemon-mewtwo] {
+  --dsw-static-deepseek-50: #f2ecfc;
+  --dsw-static-blue-50: #f2ecfc;
+  --dsw-static-deepseek-50p: #e2d4f8;
+  --dsw-static-blue-50p: #e2d4f8;
+  --dsw-static-deepseek-75: #e2d4f8;
+  --dsw-static-blue-75: #e2d4f8;
+  --dsw-static-deepseek-100: #e2d4f8;
+  --dsw-static-blue-100: #e2d4f8;
+  --dsw-static-deepseek-200: #cbb5f2;
+  --dsw-static-blue-200: #cbb5f2;
+  --dsw-static-deepseek-300: #b094ec;
+  --dsw-static-blue-300: #b094ec;
+  --dsw-static-deepseek-400: #9673d3;
+  --dsw-static-blue-400: #9673d3;
+  --dsw-static-deepseek-450: #9673d3;
+  --dsw-static-blue-450: #9673d3;
+  --dsw-static-deepseek-500: #7a4ac0;
+  --dsw-static-blue-500: #7a4ac0;
+  --dsw-static-deepseek-600: #663da6;
+  --dsw-static-blue-600: #663da6;
+  --dsw-static-deepseek-700-delete: #513185;
+  --dsw-static-deepseek-800: #513185;
+  --dsw-static-blue-800: #513185;
+  --dsw-static-deepseek-900: #3e2666;
+  --dsw-static-blue-900: #3e2666;
+  --dsw-static-deepseek-950: #2b1a47;
+  --dsw-static-blue-950: #2b1a47;
+  --dsw-static-neutral-bluish-00: #ede8f5;
+  --dsw-static-neutral-00: #ede8f5;
+  --dsw-static-neutral-bluish-50: #ede8f5;
+  --dsw-static-neutral-50: #ede8f5;
+  --dsw-static-neutral-bluish-60: #ede8f5;
+  --dsw-static-neutral-60: #ede8f5;
+  --dsw-static-neutral-bluish-75: #e5def0;
+  --dsw-static-neutral-75: #e5def0;
+  --dsw-static-neutral-bluish-100: #e5def0;
+  --dsw-static-neutral-100: #e5def0;
+  --dsw-static-neutral-bluish-150: #dcd3e9;
+  --dsw-static-neutral-150: #dcd3e9;
+  --dsw-static-neutral-bluish-200: #dcd3e9;
+  --dsw-static-neutral-200: #dcd3e9;
+  --dsw-static-neutral-bluish-250: #cfc4e0;
+  --dsw-static-neutral-250: #cfc4e0;
+  --dsw-static-neutral-bluish-300: #cfc4e0;
+  --dsw-static-neutral-300: #cfc4e0;
+  --dsw-static-neutral-bluish-400: #bfb0d3;
+  --dsw-static-neutral-400: #bfb0d3;
+  --dsw-static-neutral-bluish-500: #ac9cc2;
+  --dsw-static-neutral-500: #ac9cc2;
+  --dsw-static-neutral-bluish-550: #ac9cc2;
+  --dsw-static-neutral-550: #ac9cc2;
+  --dsw-static-neutral-bluish-600: #8b7ca1;
+  --dsw-static-neutral-600: #8b7ca1;
+  --dsw-static-neutral-bluish-700: #8b7ca1;
+  --dsw-static-neutral-700: #8b7ca1;
+  --dsw-static-neutral-bluish-750: #6a5d7e;
+  --dsw-static-neutral-750: #6a5d7e;
+  --dsw-static-neutral-bluish-800: #6a5d7e;
+  --dsw-static-neutral-800: #6a5d7e;
+  --dsw-static-neutral-bluish-850: #6a5d7e;
+  --dsw-static-neutral-850: #6a5d7e;
+  --dsw-static-neutral-bluish-875: #453a55;
+  --dsw-static-neutral-875: #453a55;
+  --dsw-static-neutral-bluish-900: #453a55;
+  --dsw-static-neutral-900: #453a55;
+  --dsw-static-neutral-bluish-950: #453a55;
+  --dsw-static-neutral-950: #453a55;
+  --dsw-static-neutral-bluish-1000: #241c33;
+  --dsw-static-neutral-1000: #241c33;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e66 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e66 20%, white);
+  --dsw-static-green-400: #2e9e66;
+  --dsw-static-green-500: #2e9e66;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e66 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e66 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d23545 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d23545 20%, white);
+  --dsw-static-red-400: #d23545;
+  --dsw-static-red-500: #d23545;
+  --dsw-static-red-600: color-mix(in srgb, #d23545 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d23545 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #1d1030;
+  --dsw-static-blue-50: #1d1030;
+  --dsw-static-deepseek-50p: #311a4d;
+  --dsw-static-blue-50p: #311a4d;
+  --dsw-static-deepseek-75: #311a4d;
+  --dsw-static-blue-75: #311a4d;
+  --dsw-static-deepseek-100: #311a4d;
+  --dsw-static-blue-100: #311a4d;
+  --dsw-static-deepseek-200: #47266e;
+  --dsw-static-blue-200: #47266e;
+  --dsw-static-deepseek-300: #5f3492;
+  --dsw-static-blue-300: #5f3492;
+  --dsw-static-deepseek-400: #7a4ab8;
+  --dsw-static-blue-400: #7a4ab8;
+  --dsw-static-deepseek-450: #7a4ab8;
+  --dsw-static-blue-450: #7a4ab8;
+  --dsw-static-deepseek-500: #9668e0;
+  --dsw-static-blue-500: #9668e0;
+  --dsw-static-deepseek-600: #ab85ea;
+  --dsw-static-blue-600: #ab85ea;
+  --dsw-static-deepseek-700-delete: #c2a6f1;
+  --dsw-static-deepseek-800: #c2a6f1;
+  --dsw-static-blue-800: #c2a6f1;
+  --dsw-static-deepseek-900: #dacaf8;
+  --dsw-static-blue-900: #dacaf8;
+  --dsw-static-deepseek-950: #f0e9fd;
+  --dsw-static-blue-950: #f0e9fd;
+  --dsw-static-neutral-bluish-00: #141021;
+  --dsw-static-neutral-00: #141021;
+  --dsw-static-neutral-bluish-50: #141021;
+  --dsw-static-neutral-50: #141021;
+  --dsw-static-neutral-bluish-60: #141021;
+  --dsw-static-neutral-60: #141021;
+  --dsw-static-neutral-bluish-75: #1b1628;
+  --dsw-static-neutral-75: #1b1628;
+  --dsw-static-neutral-bluish-100: #1b1628;
+  --dsw-static-neutral-100: #1b1628;
+  --dsw-static-neutral-bluish-150: #231d33;
+  --dsw-static-neutral-150: #231d33;
+  --dsw-static-neutral-bluish-200: #231d33;
+  --dsw-static-neutral-200: #231d33;
+  --dsw-static-neutral-bluish-250: #2c2540;
+  --dsw-static-neutral-250: #2c2540;
+  --dsw-static-neutral-bluish-300: #2c2540;
+  --dsw-static-neutral-300: #2c2540;
+  --dsw-static-neutral-bluish-400: #382f4e;
+  --dsw-static-neutral-400: #382f4e;
+  --dsw-static-neutral-bluish-500: #463c5e;
+  --dsw-static-neutral-500: #463c5e;
+  --dsw-static-neutral-bluish-550: #463c5e;
+  --dsw-static-neutral-550: #463c5e;
+  --dsw-static-neutral-bluish-600: #635579;
+  --dsw-static-neutral-600: #635579;
+  --dsw-static-neutral-bluish-700: #635579;
+  --dsw-static-neutral-700: #635579;
+  --dsw-static-neutral-bluish-750: #857a99;
+  --dsw-static-neutral-750: #857a99;
+  --dsw-static-neutral-bluish-800: #857a99;
+  --dsw-static-neutral-800: #857a99;
+  --dsw-static-neutral-bluish-850: #857a99;
+  --dsw-static-neutral-850: #857a99;
+  --dsw-static-neutral-bluish-875: #b7aec4;
+  --dsw-static-neutral-875: #b7aec4;
+  --dsw-static-neutral-bluish-900: #b7aec4;
+  --dsw-static-neutral-900: #b7aec4;
+  --dsw-static-neutral-bluish-950: #b7aec4;
+  --dsw-static-neutral-950: #b7aec4;
+  --dsw-static-neutral-bluish-1000: #ece8f5;
+  --dsw-static-neutral-1000: #ece8f5;
+  --dsw-static-green-50: color-mix(in srgb, #4caf7d 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4caf7d 20%, black);
+  --dsw-static-green-400: #4caf7d;
+  --dsw-static-green-500: #4caf7d;
+  --dsw-static-green-600: color-mix(in srgb, #4caf7d 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf7d 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8a33d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8a33d 20%, black);
+  --dsw-static-amber-400: #e8a33d;
+  --dsw-static-amber-500: #e8a33d;
+  --dsw-static-amber-600: color-mix(in srgb, #e8a33d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8a33d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e05260 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e05260 20%, black);
+  --dsw-static-red-400: #e05260;
+  --dsw-static-red-500: #e05260;
+  --dsw-static-red-600: color-mix(in srgb, #e05260 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e05260 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-pokemon-mewtwo] {
+  --dsw-alias-button-primary-fill: #7a4ac0;
+  --dsw-alias-button-primary-hover: #663da6;
+  --dsw-alias-button-primary-dimmed: #e2d4f8;
+  --dsw-alias-button-info-fill: #7a4ac0;
+  --dsw-alias-button-info-hover: #663da6;
+  --dsw-alias-button-contrast-fill: #663da6;
+  --dsw-alias-button-ghost-active-fill: #f2ecfc;
+  --dsw-alias-button-ghost-active-hover: #e2d4f8;
+  --dsw-alias-button-ghost-active-border: #b094ec;
+  --dsw-alias-button-elevated-fill: #ede8f5;
+  --dsw-alias-button-floating-fill: #ede8f5;
+  --dsw-alias-button-floating-hover: #e3dcee;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(122, 74, 192, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(122, 74, 192, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(122, 74, 192, 0.6);
+  --dsw-specific-bubble: #2e2148;
+  --dsw-specific-bubble-highlight: #cbb5f2;
+  --dsw-specific-input-major: #ede8f5;
+  --dsw-specific-login-input: #ede8f5;
+  --dsw-specific-sidebar-fill: #7a4ac0;
+  --dsw-specific-sidebar-nav-item-active: #e2d4f8;
+  --dsw-specific-sidebar-nav-item-hover: #e3dcee;
+  --dsw-specific-sidebar-nav-item-active-accent: #b094ec;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #9668e0;
+  --dsw-alias-button-primary-hover: #a97cec;
+  --dsw-alias-button-primary-dimmed: #311a4d;
+  --dsw-alias-button-info-fill: #9668e0;
+  --dsw-alias-button-info-hover: #a97cec;
+  --dsw-alias-button-contrast-fill: #ab85ea;
+  --dsw-alias-button-ghost-active-fill: #221536;
+  --dsw-alias-button-ghost-active-hover: #311a4d;
+  --dsw-alias-button-ghost-active-border: #5f3492;
+  --dsw-alias-button-elevated-fill: #141021;
+  --dsw-alias-button-floating-fill: #141021;
+  --dsw-alias-button-floating-hover: #1f1930;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(150, 104, 224, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(150, 104, 224, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(150, 104, 224, 0.6);
+  --dsw-specific-bubble: #221a35;
+  --dsw-specific-bubble-highlight: #47266e;
+  --dsw-specific-input-major: #141021;
+  --dsw-specific-login-input: #141021;
+  --dsw-specific-sidebar-fill: #9668e0;
+  --dsw-specific-sidebar-nav-item-active: #311a4d;
+  --dsw-specific-sidebar-nav-item-hover: #1f1930;
+  --dsw-specific-sidebar-nav-item-active-accent: #5f3492;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-pokemon-mewtwo] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pokemon-mewtwo]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(122, 74, 192, 0.12) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 70% 85%, rgba(159, 195, 203, 0.6) 0 3px, transparent 5px),
+      radial-gradient(circle at 45% 90%, rgba(122, 74, 192, 0.1) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 15%, rgba(176, 148, 236, 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse at 10% 10%, rgba(122, 74, 192, 0.07) 0%, transparent 40%);
+    background-size: 520px 520px, 600px 600px, 460px 460px, 100% 100%, 100% 100%;
+    opacity: 0.75;
+    animation: pokemon-mewtwo-mewtwo-bubble-rise 9s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-mewtwo]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      repeating-radial-gradient(circle at 82% 18%, rgba(122, 74, 192, 0.85) 0 1.5px, transparent 1.5px 26px),
+      repeating-radial-gradient(circle at 12% 78%, rgba(95, 52, 146, 0.5) 0 1px, transparent 1px 32px);
+    opacity: 0.06;
+    animation: pokemon-mewtwo-mewtwo-psy-pulse 4.5s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-mewtwo] [class*='sider'] [class*='session'],
+body[data-dsh-pokemon-mewtwo] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-pokemon-mewtwo] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(159, 195, 203, 0.3);
+    box-shadow: inset 3px 0 0 0 rgba(120, 160, 170, 0.9);
+}
+
+body[data-dsh-pokemon-mewtwo] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-pokemon-mewtwo] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(122, 74, 192, 0.2), rgba(122, 74, 192, 0.06) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #7a4ac0;
+}
+
+body[data-dsh-pokemon-mewtwo] button[class*='primary'],
+body[data-dsh-pokemon-mewtwo] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #663da6 0%, #7a4ac0 55%, #9673d3 100%) !important;
+    border: 1px solid #cbb5f2 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(122, 74, 192, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(40, 20, 70, 0.55);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-pokemon-mewtwo] button[class*='primary']:hover,
+body[data-dsh-pokemon-mewtwo] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.06);
+    box-shadow: 0 3px 14px rgba(122, 74, 192, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: pokemon-mewtwo-mewtwo-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-mewtwo] pre,
+body[data-dsh-pokemon-mewtwo] .markdown-body pre {
+  background: linear-gradient(180deg, #2b2140 0%, #231a34 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #7a4ac0 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(122, 74, 192, 0.2);
+}
+
+body[data-dsh-pokemon-mewtwo] pre code,
+body[data-dsh-pokemon-mewtwo] .markdown-body pre code {
+  background: transparent !important;
+    color: #e2daef !important;
+    text-shadow: none;
+}
+
+body[data-dsh-pokemon-mewtwo] code,
+body[data-dsh-pokemon-mewtwo] .markdown-body code {
+  background: rgba(176, 148, 236, 0.22);
+    color: #663da6;
+    border: 1px solid rgba(122, 74, 192, 0.32);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pokemon-mewtwo]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-pokemon-mewtwo] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(69, 58, 85, 0.08), 0 0 0 1px rgba(122, 74, 192, 0.14);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-pokemon-mewtwo] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-pokemon-mewtwo] [class*='agent-bar'],
+body[data-dsh-pokemon-mewtwo] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(122, 74, 192, 0.35);
+}
+
+body[data-dsh-pokemon-mewtwo]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pokemon-mewtwo]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9673d3, #513185);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pokemon-mewtwo]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #b094ec, #3e2666);
+}
+
+body[data-dsh-pokemon-mewtwo]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pokemon-mewtwo] .markdown-body a,
+body[data-dsh-pokemon-mewtwo] a {
+  color: #663da6;
+}
+
+body[data-dsh-pokemon-mewtwo] .markdown-body a:hover,
+body[data-dsh-pokemon-mewtwo] a:hover {
+  color: #7a4ac0;
+}
+
+body[data-dsh-pokemon-mewtwo] .markdown-body blockquote {
+  border-left: 3px solid #7a4ac0;
+    background: rgba(176, 148, 236, 0.18);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-pokemon-mewtwo] .markdown-body hr,
+body[data-dsh-pokemon-mewtwo] hr {
+  border: none;
+    height: 10px;
+    background-image: repeating-radial-gradient(circle at 50% 5px, rgba(122, 74, 192, 0.55) 0 1.5px, transparent 1.5px 12px);
+    background-size: 100% 24px;
+    background-position: 0 -19px;
+    background-repeat: repeat-x;
+    opacity: 0.5;
+}
+
+body[data-dsh-pokemon-mewtwo] .arco-btn:not(button[class*='primary']):hover {
+  color: #663da6 !important;
+    border-color: rgba(122, 74, 192, 0.5) !important;
+    background-color: rgba(122, 74, 192, 0.1) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 20% 80%, rgba(150, 104, 224, 0.12) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 70% 85%, rgba(46, 90, 102, 0.5) 0 3px, transparent 5px),
+      radial-gradient(circle at 45% 90%, rgba(150, 104, 224, 0.1) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 15%, rgba(95, 52, 146, 0.28) 0%, transparent 45%),
+      radial-gradient(ellipse at 10% 10%, rgba(150, 104, 224, 0.08) 0%, transparent 40%);
+    background-size: 520px 520px, 600px 600px, 460px 460px, 100% 100%, 100% 100%;
+    opacity: 0.85;
+    animation: pokemon-mewtwo-mewtwo-bubble-rise 9s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      repeating-radial-gradient(circle at 82% 18%, rgba(150, 104, 224, 0.9) 0 1.5px, transparent 1.5px 26px),
+      repeating-radial-gradient(circle at 12% 78%, rgba(207, 195, 232, 0.55) 0 1px, transparent 1px 32px);
+    opacity: 0.07;
+    animation: pokemon-mewtwo-mewtwo-psy-pulse 4.5s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(46, 90, 102, 0.32);
+    box-shadow: inset 3px 0 0 0 rgba(46, 90, 102, 0.9);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(150, 104, 224, 0.3), rgba(150, 104, 224, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #9668e0;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #7a4ab8 0%, #9668e0 55%, #a97cec 100%) !important;
+    border: 1px solid #c2a6f1 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(150, 104, 224, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(40, 20, 70, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(150, 104, 224, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: pokemon-mewtwo-mewtwo-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] pre,
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #121020 0%, #0e0c19 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #9668e0 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(95, 52, 146, 0.3);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] pre code,
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d9d2ec !important;
+    text-shadow: none;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] code,
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .markdown-body code {
+  background: rgba(95, 52, 146, 0.35);
+    color: #c2a6f1;
+    border: 1px solid rgba(150, 104, 224, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(8, 6, 16, 0.5), 0 0 0 1px rgba(150, 104, 224, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(150, 104, 224, 0.4);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9668e0, #47266e);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a97cec, #5f3492);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] a {
+  color: #ab85ea;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] a:hover {
+  color: #c2a6f1;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #9668e0;
+    background: rgba(95, 52, 146, 0.2);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image: repeating-radial-gradient(circle at 50% 5px, rgba(150, 104, 224, 0.6) 0 1.5px, transparent 1.5px 12px);
+    background-size: 100% 24px;
+    background-position: 0 -19px;
+    background-repeat: repeat-x;
+    opacity: 0.55;
+}
+
+body[data-dsh-pokemon-mewtwo][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #c2a6f1 !important;
+    border-color: rgba(150, 104, 224, 0.5) !important;
+    background-color: rgba(150, 104, 224, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes pokemon-mewtwo-mewtwo-bubble-rise {
+  0%, 100% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+  50% { background-position: 0 -22px, 0 -34px, 0 -16px, 0 0, 0 0; }
+}
+
+@keyframes pokemon-mewtwo-mewtwo-psy-pulse {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.1; }
+}
+
+@keyframes pokemon-mewtwo-mewtwo-ribbon-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(122, 74, 192, 0.15); }
+  50% { box-shadow: 0 2px 14px rgba(122, 74, 192, 0.32); }
+}
+
+@keyframes pokemon-mewtwo-mewtwo-btn-sheen {
+  0%, 100% { box-shadow: 0 3px 12px rgba(122, 74, 192, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 20px rgba(122, 74, 192, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes pokemon-mewtwo-mewtwo-psy-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

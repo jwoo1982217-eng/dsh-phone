@@ -1,0 +1,5 @@
+{
+  "plugin-src/client/index.js": "8aa065c0bec8691b7fc38fdd45b7f0c7f40ad6e0e22b5cc25f81ac8ccd4cdc0a",
+  "plugin-src/client/jet-hub.js": "dfc7c59a4995c2bb5ff060a7810770e617a77e048dfa8f33c67230048dc647c3",
+  "plugin-src/client/jet-hub-styles.js": "38859adebbf33b231331bbfb2c2f116c3779532c83b216364285eb318f092cac"
+}

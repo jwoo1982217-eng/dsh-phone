@@ -1,0 +1,819 @@
+/* style-macaron — 马卡龙 Macaron | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-style-macaron], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-style-macaron] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #40302f;
+  background-color: #fdf7f2;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] {
+  color: #f7edf0;
+  background-color: #241a20;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-style-macaron] {
+  --color-primary: #d75a8a;
+  --primary: #d75a8a;
+  --primary-rgb: 215, 90, 138;
+  --color-primary-light-1: #e87ba5;
+  --color-primary-light-2: #f09cbd;
+  --color-primary-light-3: #f6bdd3;
+  --color-primary-dark-1: #b84371;
+  --brand: #d75a8a;
+  --brand-light: #fdeef4;
+  --brand-hover: #e87ba5;
+  --color-brand-fill: #d75a8a;
+  --color-brand-bg: #fdeef4;
+  --aou-1: #fdeef4;
+  --aou-2: #fad9e6;
+  --aou-3: #f6bdd3;
+  --aou-4: #f09cbd;
+  --aou-5: #e87ba5;
+  --aou-6: #d75a8a;
+  --aou-7: #b84371;
+  --aou-8: #96335b;
+  --aou-9: #742646;
+  --aou-10: #521931;
+  --bg-base: #fdf7f2;
+  --bg-1: #f9efe8;
+  --bg-2: #f4e6dd;
+  --bg-3: #eeddd2;
+  --bg-4: #e6d2c5;
+  --bg-5: #dcc4b5;
+  --bg-6: #cfb3a2;
+  --bg-8: #b3907e;
+  --bg-9: #8f6e5e;
+  --bg-10: #6b4e41;
+  --color-bg-1: #f9efe8;
+  --color-bg-2: #f4e6dd;
+  --color-bg-3: #eeddd2;
+  --color-bg-4: #e6d2c5;
+  --bg-hover: #f7e9e0;
+  --bg-active: #f2ddd4;
+  --text-primary: #40302f;
+  --text-secondary: #7a635f;
+  --text-disabled: #b5a29e;
+  --text-0: #2c1f1e;
+  --text-white: #ffffff;
+  --color-text-1: #40302f;
+  --color-text-2: #7a635f;
+  --color-text-3: #9c8783;
+  --color-text-4: #b5a29e;
+  --border-base: #ead3c8;
+  --border-light: #f2e2da;
+  --border-special: #f09cbd;
+  --color-border: #ead3c8;
+  --color-border-1: #ead3c8;
+  --color-border-2: #f2e2da;
+  --fill: #f4e6dd;
+  --color-fill: #f4e6dd;
+  --fill-0: #f9efe8;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fffdfa;
+  --inverse: #2c1f1e;
+  --success: #3fa37c;
+  --warning: #d99a26;
+  --danger: #d6455b;
+  --info: #5a8fc4;
+  --message-user-bg: #fad9e6;
+  --message-tips-bg: #f4e9ef;
+  --workspace-btn-bg: #fdeef4;
+  --color-guid-agent-bar: #f9efe8;
+  --mac-rose: #d75a8a;
+  --mac-mint: #5cb896;
+  --mac-blue: #7fb3dd;
+  --mac-lemon: #e8b93e;
+  --mac-cream: #fffdfa;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-style-macaron][data-ds-dark-theme] {
+  --color-primary: #ee7fae;
+  --primary: #ee7fae;
+  --primary-rgb: 238, 127, 174;
+  --color-primary-light-1: #f3a1c4;
+  --color-primary-light-2: #f9c4da;
+  --color-primary-light-3: #fde3ee;
+  --color-primary-dark-1: #b8527d;
+  --brand: #ee7fae;
+  --brand-light: #4a1e33;
+  --brand-hover: #f3a1c4;
+  --color-brand-fill: #ee7fae;
+  --color-brand-bg: #4a1e33;
+  --aou-1: #4a1e33;
+  --aou-2: #61283f;
+  --aou-3: #7b3350;
+  --aou-4: #984064;
+  --aou-5: #b8527d;
+  --aou-6: #d4679a;
+  --aou-7: #ee7fae;
+  --aou-8: #f3a1c4;
+  --aou-9: #f9c4da;
+  --aou-10: #fde3ee;
+  --bg-base: #241a20;
+  --bg-1: #2b2028;
+  --bg-2: #33262f;
+  --bg-3: #3c2d38;
+  --bg-4: #463442;
+  --bg-5: #533f4e;
+  --bg-6: #634c5d;
+  --bg-8: #8a6a80;
+  --bg-9: #ab8ba1;
+  --bg-10: #cdb2c4;
+  --color-bg-1: #2b2028;
+  --color-bg-2: #33262f;
+  --color-bg-3: #3c2d38;
+  --color-bg-4: #463442;
+  --bg-hover: #3a2c36;
+  --bg-active: #45353f;
+  --text-primary: #f7edf0;
+  --text-secondary: #c4aeba;
+  --text-disabled: #6e5a66;
+  --text-0: #fdf7f9;
+  --text-white: #ffffff;
+  --color-text-1: #f7edf0;
+  --color-text-2: #c4aeba;
+  --color-text-3: #96808c;
+  --color-text-4: #6e5a66;
+  --border-base: #463442;
+  --border-light: #33262f;
+  --border-special: #6b3a54;
+  --color-border: #463442;
+  --color-border-1: #463442;
+  --color-border-2: #33262f;
+  --fill: #33262f;
+  --color-fill: #33262f;
+  --fill-0: #2b2028;
+  --fill-white-to-black: #1c1318;
+  --dialog-fill-0: #2b2028;
+  --inverse: #f7edf0;
+  --success: #6fceaa;
+  --warning: #f2d06b;
+  --danger: #e86070;
+  --info: #8fbce8;
+  --message-user-bg: #7c2f4e;
+  --message-tips-bg: #33262f;
+  --workspace-btn-bg: #4a1e33;
+  --color-guid-agent-bar: #2b2028;
+  --mac-rose: #ee7fae;
+  --mac-mint: #6fceaa;
+  --mac-blue: #8fbce8;
+  --mac-lemon: #f2d06b;
+  --mac-cream: #fffdfa;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-style-macaron] {
+  --dsw-static-deepseek-50: #fdeef4;
+  --dsw-static-blue-50: #fdeef4;
+  --dsw-static-deepseek-50p: #fad9e6;
+  --dsw-static-blue-50p: #fad9e6;
+  --dsw-static-deepseek-75: #fad9e6;
+  --dsw-static-blue-75: #fad9e6;
+  --dsw-static-deepseek-100: #fad9e6;
+  --dsw-static-blue-100: #fad9e6;
+  --dsw-static-deepseek-200: #f6bdd3;
+  --dsw-static-blue-200: #f6bdd3;
+  --dsw-static-deepseek-300: #f09cbd;
+  --dsw-static-blue-300: #f09cbd;
+  --dsw-static-deepseek-400: #e87ba5;
+  --dsw-static-blue-400: #e87ba5;
+  --dsw-static-deepseek-450: #e87ba5;
+  --dsw-static-blue-450: #e87ba5;
+  --dsw-static-deepseek-500: #d75a8a;
+  --dsw-static-blue-500: #d75a8a;
+  --dsw-static-deepseek-600: #b84371;
+  --dsw-static-blue-600: #b84371;
+  --dsw-static-deepseek-700-delete: #96335b;
+  --dsw-static-deepseek-800: #96335b;
+  --dsw-static-blue-800: #96335b;
+  --dsw-static-deepseek-900: #742646;
+  --dsw-static-blue-900: #742646;
+  --dsw-static-deepseek-950: #521931;
+  --dsw-static-blue-950: #521931;
+  --dsw-static-neutral-bluish-00: #f9efe8;
+  --dsw-static-neutral-00: #f9efe8;
+  --dsw-static-neutral-bluish-50: #f9efe8;
+  --dsw-static-neutral-50: #f9efe8;
+  --dsw-static-neutral-bluish-60: #f9efe8;
+  --dsw-static-neutral-60: #f9efe8;
+  --dsw-static-neutral-bluish-75: #f4e6dd;
+  --dsw-static-neutral-75: #f4e6dd;
+  --dsw-static-neutral-bluish-100: #f4e6dd;
+  --dsw-static-neutral-100: #f4e6dd;
+  --dsw-static-neutral-bluish-150: #eeddd2;
+  --dsw-static-neutral-150: #eeddd2;
+  --dsw-static-neutral-bluish-200: #eeddd2;
+  --dsw-static-neutral-200: #eeddd2;
+  --dsw-static-neutral-bluish-250: #e6d2c5;
+  --dsw-static-neutral-250: #e6d2c5;
+  --dsw-static-neutral-bluish-300: #e6d2c5;
+  --dsw-static-neutral-300: #e6d2c5;
+  --dsw-static-neutral-bluish-400: #dcc4b5;
+  --dsw-static-neutral-400: #dcc4b5;
+  --dsw-static-neutral-bluish-500: #cfb3a2;
+  --dsw-static-neutral-500: #cfb3a2;
+  --dsw-static-neutral-bluish-550: #cfb3a2;
+  --dsw-static-neutral-550: #cfb3a2;
+  --dsw-static-neutral-bluish-600: #b3907e;
+  --dsw-static-neutral-600: #b3907e;
+  --dsw-static-neutral-bluish-700: #b3907e;
+  --dsw-static-neutral-700: #b3907e;
+  --dsw-static-neutral-bluish-750: #8f6e5e;
+  --dsw-static-neutral-750: #8f6e5e;
+  --dsw-static-neutral-bluish-800: #8f6e5e;
+  --dsw-static-neutral-800: #8f6e5e;
+  --dsw-static-neutral-bluish-850: #8f6e5e;
+  --dsw-static-neutral-850: #8f6e5e;
+  --dsw-static-neutral-bluish-875: #6b4e41;
+  --dsw-static-neutral-875: #6b4e41;
+  --dsw-static-neutral-bluish-900: #6b4e41;
+  --dsw-static-neutral-900: #6b4e41;
+  --dsw-static-neutral-bluish-950: #6b4e41;
+  --dsw-static-neutral-950: #6b4e41;
+  --dsw-static-neutral-bluish-1000: #2c1f1e;
+  --dsw-static-neutral-1000: #2c1f1e;
+  --dsw-static-green-50: color-mix(in srgb, #3fa37c 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #3fa37c 20%, white);
+  --dsw-static-green-400: #3fa37c;
+  --dsw-static-green-500: #3fa37c;
+  --dsw-static-green-600: color-mix(in srgb, #3fa37c 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3fa37c 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d99a26 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d99a26 20%, white);
+  --dsw-static-amber-400: #d99a26;
+  --dsw-static-amber-500: #d99a26;
+  --dsw-static-amber-600: color-mix(in srgb, #d99a26 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d99a26 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d6455b 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d6455b 20%, white);
+  --dsw-static-red-400: #d6455b;
+  --dsw-static-red-500: #d6455b;
+  --dsw-static-red-600: color-mix(in srgb, #d6455b 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d6455b 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-style-macaron][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #4a1e33;
+  --dsw-static-blue-50: #4a1e33;
+  --dsw-static-deepseek-50p: #61283f;
+  --dsw-static-blue-50p: #61283f;
+  --dsw-static-deepseek-75: #61283f;
+  --dsw-static-blue-75: #61283f;
+  --dsw-static-deepseek-100: #61283f;
+  --dsw-static-blue-100: #61283f;
+  --dsw-static-deepseek-200: #7b3350;
+  --dsw-static-blue-200: #7b3350;
+  --dsw-static-deepseek-300: #984064;
+  --dsw-static-blue-300: #984064;
+  --dsw-static-deepseek-400: #b8527d;
+  --dsw-static-blue-400: #b8527d;
+  --dsw-static-deepseek-450: #b8527d;
+  --dsw-static-blue-450: #b8527d;
+  --dsw-static-deepseek-500: #d4679a;
+  --dsw-static-blue-500: #d4679a;
+  --dsw-static-deepseek-600: #ee7fae;
+  --dsw-static-blue-600: #ee7fae;
+  --dsw-static-deepseek-700-delete: #f3a1c4;
+  --dsw-static-deepseek-800: #f3a1c4;
+  --dsw-static-blue-800: #f3a1c4;
+  --dsw-static-deepseek-900: #f9c4da;
+  --dsw-static-blue-900: #f9c4da;
+  --dsw-static-deepseek-950: #fde3ee;
+  --dsw-static-blue-950: #fde3ee;
+  --dsw-static-neutral-bluish-00: #2b2028;
+  --dsw-static-neutral-00: #2b2028;
+  --dsw-static-neutral-bluish-50: #2b2028;
+  --dsw-static-neutral-50: #2b2028;
+  --dsw-static-neutral-bluish-60: #2b2028;
+  --dsw-static-neutral-60: #2b2028;
+  --dsw-static-neutral-bluish-75: #33262f;
+  --dsw-static-neutral-75: #33262f;
+  --dsw-static-neutral-bluish-100: #33262f;
+  --dsw-static-neutral-100: #33262f;
+  --dsw-static-neutral-bluish-150: #3c2d38;
+  --dsw-static-neutral-150: #3c2d38;
+  --dsw-static-neutral-bluish-200: #3c2d38;
+  --dsw-static-neutral-200: #3c2d38;
+  --dsw-static-neutral-bluish-250: #463442;
+  --dsw-static-neutral-250: #463442;
+  --dsw-static-neutral-bluish-300: #463442;
+  --dsw-static-neutral-300: #463442;
+  --dsw-static-neutral-bluish-400: #533f4e;
+  --dsw-static-neutral-400: #533f4e;
+  --dsw-static-neutral-bluish-500: #634c5d;
+  --dsw-static-neutral-500: #634c5d;
+  --dsw-static-neutral-bluish-550: #634c5d;
+  --dsw-static-neutral-550: #634c5d;
+  --dsw-static-neutral-bluish-600: #8a6a80;
+  --dsw-static-neutral-600: #8a6a80;
+  --dsw-static-neutral-bluish-700: #8a6a80;
+  --dsw-static-neutral-700: #8a6a80;
+  --dsw-static-neutral-bluish-750: #ab8ba1;
+  --dsw-static-neutral-750: #ab8ba1;
+  --dsw-static-neutral-bluish-800: #ab8ba1;
+  --dsw-static-neutral-800: #ab8ba1;
+  --dsw-static-neutral-bluish-850: #ab8ba1;
+  --dsw-static-neutral-850: #ab8ba1;
+  --dsw-static-neutral-bluish-875: #cdb2c4;
+  --dsw-static-neutral-875: #cdb2c4;
+  --dsw-static-neutral-bluish-900: #cdb2c4;
+  --dsw-static-neutral-900: #cdb2c4;
+  --dsw-static-neutral-bluish-950: #cdb2c4;
+  --dsw-static-neutral-950: #cdb2c4;
+  --dsw-static-neutral-bluish-1000: #f7edf0;
+  --dsw-static-neutral-1000: #f7edf0;
+  --dsw-static-green-50: color-mix(in srgb, #6fceaa 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #6fceaa 20%, black);
+  --dsw-static-green-400: #6fceaa;
+  --dsw-static-green-500: #6fceaa;
+  --dsw-static-green-600: color-mix(in srgb, #6fceaa 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #6fceaa 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f2d06b 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #f2d06b 20%, black);
+  --dsw-static-amber-400: #f2d06b;
+  --dsw-static-amber-500: #f2d06b;
+  --dsw-static-amber-600: color-mix(in srgb, #f2d06b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f2d06b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e86070 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e86070 20%, black);
+  --dsw-static-red-400: #e86070;
+  --dsw-static-red-500: #e86070;
+  --dsw-static-red-600: color-mix(in srgb, #e86070 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e86070 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-style-macaron] {
+  --dsw-alias-button-primary-fill: #d75a8a;
+  --dsw-alias-button-primary-hover: #e87ba5;
+  --dsw-alias-button-primary-dimmed: #fad9e6;
+  --dsw-alias-button-info-fill: #d75a8a;
+  --dsw-alias-button-info-hover: #e87ba5;
+  --dsw-alias-button-contrast-fill: #b84371;
+  --dsw-alias-button-ghost-active-fill: #fdeef4;
+  --dsw-alias-button-ghost-active-hover: #fad9e6;
+  --dsw-alias-button-ghost-active-border: #f09cbd;
+  --dsw-alias-button-elevated-fill: #f9efe8;
+  --dsw-alias-button-floating-fill: #f9efe8;
+  --dsw-alias-button-floating-hover: #f7e9e0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(215, 90, 138, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(215, 90, 138, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(215, 90, 138, 0.6);
+  --dsw-specific-bubble: #fad9e6;
+  --dsw-specific-bubble-highlight: #f6bdd3;
+  --dsw-specific-input-major: #f9efe8;
+  --dsw-specific-login-input: #f9efe8;
+  --dsw-specific-sidebar-fill: #d75a8a;
+  --dsw-specific-sidebar-nav-item-active: #fad9e6;
+  --dsw-specific-sidebar-nav-item-hover: #f7e9e0;
+  --dsw-specific-sidebar-nav-item-active-accent: #f09cbd;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-style-macaron][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #ee7fae;
+  --dsw-alias-button-primary-hover: #f3a1c4;
+  --dsw-alias-button-primary-dimmed: #61283f;
+  --dsw-alias-button-info-fill: #ee7fae;
+  --dsw-alias-button-info-hover: #f3a1c4;
+  --dsw-alias-button-contrast-fill: #ee7fae;
+  --dsw-alias-button-ghost-active-fill: #4a1e33;
+  --dsw-alias-button-ghost-active-hover: #61283f;
+  --dsw-alias-button-ghost-active-border: #984064;
+  --dsw-alias-button-elevated-fill: #2b2028;
+  --dsw-alias-button-floating-fill: #2b2028;
+  --dsw-alias-button-floating-hover: #3a2c36;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(238, 127, 174, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(238, 127, 174, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(238, 127, 174, 0.6);
+  --dsw-specific-bubble: #7c2f4e;
+  --dsw-specific-bubble-highlight: #7b3350;
+  --dsw-specific-input-major: #2b2028;
+  --dsw-specific-login-input: #2b2028;
+  --dsw-specific-sidebar-fill: #ee7fae;
+  --dsw-specific-sidebar-nav-item-active: #61283f;
+  --dsw-specific-sidebar-nav-item-hover: #3a2c36;
+  --dsw-specific-sidebar-nav-item-active-accent: #984064;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-style-macaron] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-macaron]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(ellipse at 20% 30%, var(--mac-rose) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 70% 60%, var(--mac-mint) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 45% 85%, var(--mac-blue) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 15%, var(--mac-lemon) 0 2px, transparent 3.5px);
+    background-size: 260px 220px, 300px 260px, 240px 280px, 320px 240px;
+    animation: style-macaron-macaron-sprinkle-twinkle 5s ease-in-out infinite;
+}
+
+body[data-dsh-style-macaron]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      radial-gradient(circle at 50% 50%, var(--mac-rose) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 50%, var(--mac-mint) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 50%, var(--mac-blue) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 50%, var(--mac-lemon) 0 9px, transparent 10px);
+    background-size: 160px 160px;
+    background-position: 0 0, 80px 40px, 40px 120px, 120px 80px;
+    animation: style-macaron-macaron-dot-drift 30s linear infinite;
+}
+
+body[data-dsh-style-macaron] [class*='sider'] [class*='session'],
+body[data-dsh-style-macaron] [class*='sider'] [class*='item'] {
+  border-radius: 12px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-macaron] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(92, 184, 150, 0.16);
+    box-shadow: inset 4px 0 0 0 var(--mac-mint);
+}
+
+body[data-dsh-style-macaron] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-macaron] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(215, 90, 138, 0.2), rgba(215, 90, 138, 0.07) 60%, transparent) !important;
+    box-shadow: inset 4px 0 0 0 var(--mac-rose);
+    font-weight: 600;
+}
+
+body[data-dsh-style-macaron] button[class*='primary'],
+body[data-dsh-style-macaron] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(180deg, #e87ba5 0%, var(--mac-rose) 60%, #c74a7c 100%) !important;
+    border: 1px solid #b84371 !important;
+    border-radius: 999px !important;
+    color: var(--text-white) !important;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(116, 38, 70, 0.45);
+    box-shadow: 0 2px 8px rgba(215, 90, 138, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition: box-shadow 0.3s ease, filter 0.3s ease, transform 0.15s ease;
+}
+
+body[data-dsh-style-macaron] button[class*='primary']:hover,
+body[data-dsh-style-macaron] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.06);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(215, 90, 138, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    animation: style-macaron-macaron-btn-glaze 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-style-macaron] button[class*='primary']:active,
+body[data-dsh-style-macaron] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+    box-shadow: 0 1px 5px rgba(215, 90, 138, 0.35);
+}
+
+body[data-dsh-style-macaron] pre,
+body[data-dsh-style-macaron] .markdown-body pre {
+  background: linear-gradient(180deg, #fbf3ea 0%, #f6ead9 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--mac-mint) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 8px rgba(107, 78, 65, 0.1);
+}
+
+body[data-dsh-style-macaron] pre code,
+body[data-dsh-style-macaron] .markdown-body pre code {
+  background: transparent !important;
+    color: #4a3532 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-style-macaron] code,
+body[data-dsh-style-macaron] .markdown-body code {
+  background: rgba(215, 90, 138, 0.12);
+    color: #8f2f57;
+    border: 1px solid rgba(215, 90, 138, 0.3);
+    border-radius: 6px;
+    padding: 1px 6px;
+}
+
+body[data-dsh-style-macaron] pre code,
+body[data-dsh-style-macaron] .markdown-body pre code {
+  background: transparent !important;
+}
+
+body[data-dsh-style-macaron]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
+body[data-dsh-style-macaron] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 16px;
+    box-shadow: inset 0 2px 6px rgba(107, 78, 65, 0.08), 0 0 0 1px rgba(240, 156, 189, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-macaron] [class*='guidInputCard']:hover {
+  border-color: var(--color-primary-light-2) !important;
+}
+
+body[data-dsh-style-macaron] [class*='agent-bar'],
+body[data-dsh-style-macaron] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(215, 90, 138, 0.35);
+}
+
+body[data-dsh-style-macaron]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-macaron]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--color-primary-light-1), var(--mac-rose));
+    border-radius: 999px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-macaron]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--mac-rose), var(--color-primary-dark-1));
+}
+
+body[data-dsh-style-macaron]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-macaron] .markdown-body a,
+body[data-dsh-style-macaron] a {
+  color: var(--color-primary-dark-1);
+}
+
+body[data-dsh-style-macaron] .markdown-body a:hover,
+body[data-dsh-style-macaron] a:hover {
+  color: var(--mac-rose);
+}
+
+body[data-dsh-style-macaron] .markdown-body blockquote {
+  border-left: 4px solid var(--mac-mint);
+    background: rgba(92, 184, 150, 0.12);
+    border-radius: 0 12px 12px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-macaron] .markdown-body hr,
+body[data-dsh-style-macaron] hr {
+  border: none;
+    height: 4px;
+    border-radius: 2px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--mac-rose) 0 10px, transparent 10px 14px,
+      var(--mac-mint) 14px 24px, transparent 24px 28px,
+      var(--mac-blue) 28px 38px, transparent 38px 42px,
+      var(--mac-lemon) 42px 52px, transparent 52px 56px
+    );
+    opacity: 0.7;
+}
+
+body[data-dsh-style-macaron] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--mac-rose) !important;
+    border-color: rgba(215, 90, 138, 0.45) !important;
+    background-color: rgba(215, 90, 138, 0.1) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-style-macaron][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+    background-image:
+      radial-gradient(ellipse at 20% 30%, var(--mac-rose) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 70% 60%, var(--mac-mint) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 45% 85%, var(--mac-blue) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 15%, var(--mac-lemon) 0 2px, transparent 3.5px);
+    background-size: 260px 220px, 300px 260px, 240px 280px, 320px 240px;
+    animation: style-macaron-macaron-sprinkle-twinkle 5s ease-in-out infinite;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image:
+      radial-gradient(circle at 50% 50%, var(--mac-rose) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 50%, var(--mac-mint) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 50%, var(--mac-blue) 0 9px, transparent 10px),
+      radial-gradient(circle at 50% 50%, var(--mac-lemon) 0 9px, transparent 10px);
+    background-size: 160px 160px;
+    background-position: 0 0, 80px 40px, 40px 120px, 120px 80px;
+    animation: style-macaron-macaron-dot-drift 30s linear infinite;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 12px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(111, 206, 170, 0.14);
+    box-shadow: inset 4px 0 0 0 var(--mac-mint);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(238, 127, 174, 0.24), rgba(238, 127, 174, 0.08) 60%, transparent) !important;
+    box-shadow: inset 4px 0 0 0 var(--mac-rose);
+    font-weight: 600;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-style-macaron][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(180deg, #f3a1c4 0%, var(--mac-rose) 60%, #d4679a 100%) !important;
+    border: 1px solid #b8527d !important;
+    border-radius: 999px !important;
+    color: #4a1e33 !important;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    box-shadow: 0 2px 10px rgba(238, 127, 174, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease, transform 0.15s ease;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-style-macaron][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 18px rgba(238, 127, 174, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    animation: style-macaron-macaron-btn-glaze 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-style-macaron][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(1px);
+    box-shadow: 0 1px 6px rgba(238, 127, 174, 0.4);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] pre,
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #1f161c 0%, #191118 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--mac-mint) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] pre code,
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #f2e4ea !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] code,
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body code {
+  background: rgba(111, 206, 170, 0.16);
+    color: #8fe0c0;
+    border: 1px solid rgba(111, 206, 170, 0.35);
+    border-radius: 6px;
+    padding: 1px 6px;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] pre code,
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 16px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(238, 127, 174, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-style-macaron][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(238, 127, 174, 0.35);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--mac-rose), var(--color-primary-dark-1));
+    border-radius: 999px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--color-primary-light-1), var(--mac-rose));
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-style-macaron][data-ds-dark-theme] a {
+  color: var(--color-primary-light-1);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-style-macaron][data-ds-dark-theme] a:hover {
+  color: var(--color-primary-light-2);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 4px solid var(--mac-mint);
+    background: rgba(111, 206, 170, 0.1);
+    border-radius: 0 12px 12px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-style-macaron][data-ds-dark-theme] hr {
+  border: none;
+    height: 4px;
+    border-radius: 2px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--mac-rose) 0 10px, transparent 10px 14px,
+      var(--mac-mint) 14px 24px, transparent 24px 28px,
+      var(--mac-blue) 28px 38px, transparent 38px 42px,
+      var(--mac-lemon) 42px 52px, transparent 52px 56px
+    );
+    opacity: 0.6;
+}
+
+body[data-dsh-style-macaron][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-light-1) !important;
+    border-color: rgba(238, 127, 174, 0.5) !important;
+    background-color: rgba(238, 127, 174, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes style-macaron-macaron-sprinkle-twinkle {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.045; }
+}
+
+@keyframes style-macaron-macaron-dot-drift {
+  0% { background-position: 0 0, 80px 40px, 40px 120px, 120px 80px; }
+  100% { background-position: 160px 160px, 240px 200px, 200px 280px, 280px 240px; }
+}
+
+@keyframes style-macaron-macaron-titlebar-sheen {
+  0% { left: -30%; }
+  55% { left: 110%; }
+  100% { left: 110%; }
+}
+
+@keyframes style-macaron-macaron-btn-glaze {
+  0%, 100% { box-shadow: 0 4px 14px rgba(215, 90, 138, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+  50% { box-shadow: 0 4px 22px rgba(215, 90, 138, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+}
+
+@keyframes style-macaron-macaron-frosting-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

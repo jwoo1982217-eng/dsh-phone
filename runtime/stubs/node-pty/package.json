@@ -1,0 +1,6 @@
+{
+  "name": "node-pty-stub",
+  "version": "0.0.0-stub",
+  "main": "index.js",
+  "description": "Android/Bionic 万能桩：dsh 手机 profile 用，替代原生模块（koffi/node-pty/sharp），仅保证 import 成功与惰性调用不崩，运行时功能不可用。"
+}

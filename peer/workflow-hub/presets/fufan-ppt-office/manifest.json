@@ -1,0 +1,8 @@
+{
+  "format": "dsh-preset",
+  "version": 1,
+  "id": "dsh-motion-deck-studio",
+  "name": "DSH 动效演示导演",
+  "description": "赋范官方 PPT Office 工作流：1 套 Agent Preset、1 个 Skill 与内置动效运行适配器。",
+  "sourceDshVersion": "0.1.0-rc.8"
+}

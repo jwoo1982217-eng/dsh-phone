@@ -1,0 +1,776 @@
+/* game-cyberpunk2077 — 赛博朋克2077 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-game-cyberpunk2077], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-game-cyberpunk2077] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1f1e14;
+  background-color: #f5f3ea;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] {
+  color: #f0f1e9;
+  background-color: #0a0b0f;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-game-cyberpunk2077] {
+  --color-primary: #b8a300;
+  --primary: #b8a300;
+  --primary-rgb: 184, 163, 0;
+  --color-primary-light-1: #d4bd00;
+  --color-primary-light-2: #ecd800;
+  --color-primary-light-3: #fdf06a;
+  --color-primary-dark-1: #8f8000;
+  --brand: #b8a300;
+  --brand-light: #fbf3c8;
+  --brand-hover: #8f8000;
+  --color-brand-fill: #fcee0a;
+  --color-brand-bg: #f8efba;
+  --aou-1: #fdf8d9;
+  --aou-2: #faf0a8;
+  --aou-3: #f6e573;
+  --aou-4: #f0d93a;
+  --aou-5: #e3cd00;
+  --aou-6: #b8a300;
+  --aou-7: #9a8900;
+  --aou-8: #7c6e00;
+  --aou-9: #5e5400;
+  --aou-10: #403a00;
+  --bg-base: #f5f3ea;
+  --bg-1: #eeece1;
+  --bg-2: #e6e3d5;
+  --bg-3: #dcd8c7;
+  --bg-4: #cfcab6;
+  --bg-5: #bfb9a2;
+  --bg-6: #aaa48c;
+  --bg-8: #88826c;
+  --bg-9: #625c49;
+  --bg-10: #3b372a;
+  --color-bg-1: #eeece1;
+  --color-bg-2: #e6e3d5;
+  --color-bg-3: #dcd8c7;
+  --color-bg-4: #cfcab6;
+  --bg-hover: #e3dfd0;
+  --bg-active: #d8d3bf;
+  --text-primary: #1f1e14;
+  --text-secondary: #56523e;
+  --text-disabled: #a09a82;
+  --text-0: #121106;
+  --text-white: #ffffff;
+  --color-text-1: #1f1e14;
+  --color-text-2: #56523e;
+  --color-text-3: #7d7760;
+  --color-text-4: #a09a82;
+  --border-base: #c9c3ac;
+  --border-light: #dbd6c2;
+  --border-special: #d8c95e;
+  --color-border: #c9c3ac;
+  --color-border-1: #c9c3ac;
+  --color-border-2: #dbd6c2;
+  --fill: #e6e3d5;
+  --color-fill: #e6e3d5;
+  --fill-0: #eeece1;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #faf8f1;
+  --inverse: #1f1e14;
+  --success: #1f9e57;
+  --warning: #d08a00;
+  --danger: #e00036;
+  --info: #008fb3;
+  --message-user-bg: #14150f;
+  --message-tips-bg: #e4e9e4;
+  --workspace-btn-bg: #f8efba;
+  --color-guid-agent-bar: #eae7da;
+  --cp-yellow: #b8a300;
+  --cp-yellow-bright: #fcee0a;
+  --cp-yellow-soft: rgba(184, 163, 0, 0.3);
+  --cp-cyan: #0099b3;
+  --cp-magenta: #d6175a;
+  --cp-relic: #e00036;
+  --cp-black: #14150f;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] {
+  --color-primary: #fcee0a;
+  --primary: #fcee0a;
+  --primary-rgb: 252, 238, 10;
+  --color-primary-light-1: #fdf13d;
+  --color-primary-light-2: #fef571;
+  --color-primary-light-3: #fef9a6;
+  --color-primary-dark-1: #c9b808;
+  --brand: #fcee0a;
+  --brand-light: #2b2807;
+  --brand-hover: #fdf13d;
+  --color-brand-fill: #fcee0a;
+  --color-brand-bg: #262307;
+  --aou-1: #221f07;
+  --aou-2: #3a340a;
+  --aou-3: #554b0e;
+  --aou-4: #736513;
+  --aou-5: #c9b808;
+  --aou-6: #fcee0a;
+  --aou-7: #fdf13d;
+  --aou-8: #fef571;
+  --aou-9: #fef9a6;
+  --aou-10: #fffdd9;
+  --bg-base: #0a0b0f;
+  --bg-1: #101218;
+  --bg-2: #15181f;
+  --bg-3: #1b1f28;
+  --bg-4: #232834;
+  --bg-5: #2d3342;
+  --bg-6: #3a4152;
+  --bg-8: #555e73;
+  --bg-9: #7c8599;
+  --bg-10: #b8bfcf;
+  --color-bg-1: #101218;
+  --color-bg-2: #15181f;
+  --color-bg-3: #1b1f28;
+  --color-bg-4: #232834;
+  --bg-hover: #1c2029;
+  --bg-active: #252a35;
+  --text-primary: #f0f1e9;
+  --text-secondary: #a9aebe;
+  --text-disabled: #565d6b;
+  --text-0: #f8f9f2;
+  --text-white: #ffffff;
+  --color-text-1: #f0f1e9;
+  --color-text-2: #a9aebe;
+  --color-text-3: #7d8494;
+  --color-text-4: #565d6b;
+  --border-base: #2a3040;
+  --border-light: #1e232e;
+  --border-special: #6b6109;
+  --color-border: #2a3040;
+  --color-border-1: #2a3040;
+  --color-border-2: #1e232e;
+  --fill: #15181f;
+  --color-fill: #15181f;
+  --fill-0: #101218;
+  --fill-white-to-black: #0a0b0f;
+  --dialog-fill-0: #12151c;
+  --inverse: #f0f1e9;
+  --success: #2fd671;
+  --warning: #ffb020;
+  --danger: #ff003c;
+  --info: #00e5ff;
+  --message-user-bg: #fcee0a;
+  --message-tips-bg: #131a20;
+  --workspace-btn-bg: #262307;
+  --color-guid-agent-bar: #11141b;
+  --cp-yellow: #fcee0a;
+  --cp-yellow-soft: rgba(252, 238, 10, 0.35);
+  --cp-cyan: #00e5ff;
+  --cp-magenta: #ff2a6d;
+  --cp-relic: #ff003c;
+  --cp-black: #0a0b0f;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-game-cyberpunk2077] {
+  --dsw-static-deepseek-50: #fdf8d9;
+  --dsw-static-blue-50: #fdf8d9;
+  --dsw-static-deepseek-50p: #faf0a8;
+  --dsw-static-blue-50p: #faf0a8;
+  --dsw-static-deepseek-75: #faf0a8;
+  --dsw-static-blue-75: #faf0a8;
+  --dsw-static-deepseek-100: #faf0a8;
+  --dsw-static-blue-100: #faf0a8;
+  --dsw-static-deepseek-200: #f6e573;
+  --dsw-static-blue-200: #f6e573;
+  --dsw-static-deepseek-300: #f0d93a;
+  --dsw-static-blue-300: #f0d93a;
+  --dsw-static-deepseek-400: #e3cd00;
+  --dsw-static-blue-400: #e3cd00;
+  --dsw-static-deepseek-450: #e3cd00;
+  --dsw-static-blue-450: #e3cd00;
+  --dsw-static-deepseek-500: #b8a300;
+  --dsw-static-blue-500: #b8a300;
+  --dsw-static-deepseek-600: #9a8900;
+  --dsw-static-blue-600: #9a8900;
+  --dsw-static-deepseek-700-delete: #7c6e00;
+  --dsw-static-deepseek-800: #7c6e00;
+  --dsw-static-blue-800: #7c6e00;
+  --dsw-static-deepseek-900: #5e5400;
+  --dsw-static-blue-900: #5e5400;
+  --dsw-static-deepseek-950: #403a00;
+  --dsw-static-blue-950: #403a00;
+  --dsw-static-neutral-bluish-00: #eeece1;
+  --dsw-static-neutral-00: #eeece1;
+  --dsw-static-neutral-bluish-50: #eeece1;
+  --dsw-static-neutral-50: #eeece1;
+  --dsw-static-neutral-bluish-60: #eeece1;
+  --dsw-static-neutral-60: #eeece1;
+  --dsw-static-neutral-bluish-75: #e6e3d5;
+  --dsw-static-neutral-75: #e6e3d5;
+  --dsw-static-neutral-bluish-100: #e6e3d5;
+  --dsw-static-neutral-100: #e6e3d5;
+  --dsw-static-neutral-bluish-150: #dcd8c7;
+  --dsw-static-neutral-150: #dcd8c7;
+  --dsw-static-neutral-bluish-200: #dcd8c7;
+  --dsw-static-neutral-200: #dcd8c7;
+  --dsw-static-neutral-bluish-250: #cfcab6;
+  --dsw-static-neutral-250: #cfcab6;
+  --dsw-static-neutral-bluish-300: #cfcab6;
+  --dsw-static-neutral-300: #cfcab6;
+  --dsw-static-neutral-bluish-400: #bfb9a2;
+  --dsw-static-neutral-400: #bfb9a2;
+  --dsw-static-neutral-bluish-500: #aaa48c;
+  --dsw-static-neutral-500: #aaa48c;
+  --dsw-static-neutral-bluish-550: #aaa48c;
+  --dsw-static-neutral-550: #aaa48c;
+  --dsw-static-neutral-bluish-600: #88826c;
+  --dsw-static-neutral-600: #88826c;
+  --dsw-static-neutral-bluish-700: #88826c;
+  --dsw-static-neutral-700: #88826c;
+  --dsw-static-neutral-bluish-750: #625c49;
+  --dsw-static-neutral-750: #625c49;
+  --dsw-static-neutral-bluish-800: #625c49;
+  --dsw-static-neutral-800: #625c49;
+  --dsw-static-neutral-bluish-850: #625c49;
+  --dsw-static-neutral-850: #625c49;
+  --dsw-static-neutral-bluish-875: #3b372a;
+  --dsw-static-neutral-875: #3b372a;
+  --dsw-static-neutral-bluish-900: #3b372a;
+  --dsw-static-neutral-900: #3b372a;
+  --dsw-static-neutral-bluish-950: #3b372a;
+  --dsw-static-neutral-950: #3b372a;
+  --dsw-static-neutral-bluish-1000: #1f1e14;
+  --dsw-static-neutral-1000: #1f1e14;
+  --dsw-static-green-50: color-mix(in srgb, #1f9e57 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #1f9e57 20%, white);
+  --dsw-static-green-400: #1f9e57;
+  --dsw-static-green-500: #1f9e57;
+  --dsw-static-green-600: color-mix(in srgb, #1f9e57 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #1f9e57 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a00 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a00 20%, white);
+  --dsw-static-amber-400: #d08a00;
+  --dsw-static-amber-500: #d08a00;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a00 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a00 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e00036 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e00036 20%, white);
+  --dsw-static-red-400: #e00036;
+  --dsw-static-red-500: #e00036;
+  --dsw-static-red-600: color-mix(in srgb, #e00036 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e00036 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #221f07;
+  --dsw-static-blue-50: #221f07;
+  --dsw-static-deepseek-50p: #3a340a;
+  --dsw-static-blue-50p: #3a340a;
+  --dsw-static-deepseek-75: #3a340a;
+  --dsw-static-blue-75: #3a340a;
+  --dsw-static-deepseek-100: #3a340a;
+  --dsw-static-blue-100: #3a340a;
+  --dsw-static-deepseek-200: #554b0e;
+  --dsw-static-blue-200: #554b0e;
+  --dsw-static-deepseek-300: #736513;
+  --dsw-static-blue-300: #736513;
+  --dsw-static-deepseek-400: #c9b808;
+  --dsw-static-blue-400: #c9b808;
+  --dsw-static-deepseek-450: #c9b808;
+  --dsw-static-blue-450: #c9b808;
+  --dsw-static-deepseek-500: #fcee0a;
+  --dsw-static-blue-500: #fcee0a;
+  --dsw-static-deepseek-600: #fdf13d;
+  --dsw-static-blue-600: #fdf13d;
+  --dsw-static-deepseek-700-delete: #fef571;
+  --dsw-static-deepseek-800: #fef571;
+  --dsw-static-blue-800: #fef571;
+  --dsw-static-deepseek-900: #fef9a6;
+  --dsw-static-blue-900: #fef9a6;
+  --dsw-static-deepseek-950: #fffdd9;
+  --dsw-static-blue-950: #fffdd9;
+  --dsw-static-neutral-bluish-00: #101218;
+  --dsw-static-neutral-00: #101218;
+  --dsw-static-neutral-bluish-50: #101218;
+  --dsw-static-neutral-50: #101218;
+  --dsw-static-neutral-bluish-60: #101218;
+  --dsw-static-neutral-60: #101218;
+  --dsw-static-neutral-bluish-75: #15181f;
+  --dsw-static-neutral-75: #15181f;
+  --dsw-static-neutral-bluish-100: #15181f;
+  --dsw-static-neutral-100: #15181f;
+  --dsw-static-neutral-bluish-150: #1b1f28;
+  --dsw-static-neutral-150: #1b1f28;
+  --dsw-static-neutral-bluish-200: #1b1f28;
+  --dsw-static-neutral-200: #1b1f28;
+  --dsw-static-neutral-bluish-250: #232834;
+  --dsw-static-neutral-250: #232834;
+  --dsw-static-neutral-bluish-300: #232834;
+  --dsw-static-neutral-300: #232834;
+  --dsw-static-neutral-bluish-400: #2d3342;
+  --dsw-static-neutral-400: #2d3342;
+  --dsw-static-neutral-bluish-500: #3a4152;
+  --dsw-static-neutral-500: #3a4152;
+  --dsw-static-neutral-bluish-550: #3a4152;
+  --dsw-static-neutral-550: #3a4152;
+  --dsw-static-neutral-bluish-600: #555e73;
+  --dsw-static-neutral-600: #555e73;
+  --dsw-static-neutral-bluish-700: #555e73;
+  --dsw-static-neutral-700: #555e73;
+  --dsw-static-neutral-bluish-750: #7c8599;
+  --dsw-static-neutral-750: #7c8599;
+  --dsw-static-neutral-bluish-800: #7c8599;
+  --dsw-static-neutral-800: #7c8599;
+  --dsw-static-neutral-bluish-850: #7c8599;
+  --dsw-static-neutral-850: #7c8599;
+  --dsw-static-neutral-bluish-875: #b8bfcf;
+  --dsw-static-neutral-875: #b8bfcf;
+  --dsw-static-neutral-bluish-900: #b8bfcf;
+  --dsw-static-neutral-900: #b8bfcf;
+  --dsw-static-neutral-bluish-950: #b8bfcf;
+  --dsw-static-neutral-950: #b8bfcf;
+  --dsw-static-neutral-bluish-1000: #f0f1e9;
+  --dsw-static-neutral-1000: #f0f1e9;
+  --dsw-static-green-50: color-mix(in srgb, #2fd671 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #2fd671 20%, black);
+  --dsw-static-green-400: #2fd671;
+  --dsw-static-green-500: #2fd671;
+  --dsw-static-green-600: color-mix(in srgb, #2fd671 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2fd671 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #ffb020 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #ffb020 20%, black);
+  --dsw-static-amber-400: #ffb020;
+  --dsw-static-amber-500: #ffb020;
+  --dsw-static-amber-600: color-mix(in srgb, #ffb020 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #ffb020 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #ff003c 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #ff003c 20%, black);
+  --dsw-static-red-400: #ff003c;
+  --dsw-static-red-500: #ff003c;
+  --dsw-static-red-600: color-mix(in srgb, #ff003c 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #ff003c 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-game-cyberpunk2077] {
+  --dsw-alias-button-primary-fill: #b8a300;
+  --dsw-alias-button-primary-hover: #8f8000;
+  --dsw-alias-button-primary-dimmed: #faf0a8;
+  --dsw-alias-button-info-fill: #b8a300;
+  --dsw-alias-button-info-hover: #8f8000;
+  --dsw-alias-button-contrast-fill: #9a8900;
+  --dsw-alias-button-ghost-active-fill: #fbf3c8;
+  --dsw-alias-button-ghost-active-hover: #faf0a8;
+  --dsw-alias-button-ghost-active-border: #f0d93a;
+  --dsw-alias-button-elevated-fill: #eeece1;
+  --dsw-alias-button-floating-fill: #eeece1;
+  --dsw-alias-button-floating-hover: #e3dfd0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(184, 163, 0, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(184, 163, 0, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(184, 163, 0, 0.6);
+  --dsw-specific-bubble: #14150f;
+  --dsw-specific-bubble-highlight: #f6e573;
+  --dsw-specific-input-major: #eeece1;
+  --dsw-specific-login-input: #eeece1;
+  --dsw-specific-sidebar-fill: #b8a300;
+  --dsw-specific-sidebar-nav-item-active: #faf0a8;
+  --dsw-specific-sidebar-nav-item-hover: #e3dfd0;
+  --dsw-specific-sidebar-nav-item-active-accent: #f0d93a;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #fcee0a;
+  --dsw-alias-button-primary-hover: #fdf13d;
+  --dsw-alias-button-primary-dimmed: #3a340a;
+  --dsw-alias-button-info-fill: #fcee0a;
+  --dsw-alias-button-info-hover: #fdf13d;
+  --dsw-alias-button-contrast-fill: #fdf13d;
+  --dsw-alias-button-ghost-active-fill: #2b2807;
+  --dsw-alias-button-ghost-active-hover: #3a340a;
+  --dsw-alias-button-ghost-active-border: #736513;
+  --dsw-alias-button-elevated-fill: #101218;
+  --dsw-alias-button-floating-fill: #101218;
+  --dsw-alias-button-floating-hover: #1c2029;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(252, 238, 10, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(252, 238, 10, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(252, 238, 10, 0.6);
+  --dsw-specific-bubble: #fcee0a;
+  --dsw-specific-bubble-highlight: #554b0e;
+  --dsw-specific-input-major: #101218;
+  --dsw-specific-login-input: #101218;
+  --dsw-specific-sidebar-fill: #fcee0a;
+  --dsw-specific-sidebar-nav-item-active: #3a340a;
+  --dsw-specific-sidebar-nav-item-hover: #1c2029;
+  --dsw-specific-sidebar-nav-item-active-accent: #736513;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-game-cyberpunk2077] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-cyberpunk2077]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(ellipse at 82% 12%, rgba(0, 153, 179, 0.10) 0%, transparent 42%),
+      radial-gradient(ellipse at 12% 85%, rgba(214, 23, 90, 0.07) 0%, transparent 40%),
+      radial-gradient(ellipse at 55% 55%, rgba(184, 163, 0, 0.08) 0%, transparent 48%),
+      radial-gradient(circle at 20% 25%, rgba(0, 153, 179, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 74% 66%, rgba(224, 0, 54, 0.08) 0 2px, transparent 3.5px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 520px 520px, 600px 600px;
+    opacity: 0.7;
+}
+
+body[data-dsh-game-cyberpunk2077]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(20, 21, 15, 0.5) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(0deg, rgba(0, 153, 179, 0.4) 0 1px, transparent 1px 96px);
+    background-size: 100% 4px, 100% 96px;
+    opacity: 0.05;
+    animation: game-cyberpunk2077-cp-scanline-drift 12s linear infinite;
+}
+
+body[data-dsh-game-cyberpunk2077] [class*='sider'] [class*='session'],
+body[data-dsh-game-cyberpunk2077] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-cyberpunk2077] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(0, 153, 179, 0.12);
+    box-shadow: inset 3px 0 0 0 rgba(0, 153, 179, 0.8);
+}
+
+body[data-dsh-game-cyberpunk2077] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-cyberpunk2077] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(184, 163, 0, 0.2), rgba(184, 163, 0, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #b8a300;
+}
+
+body[data-dsh-game-cyberpunk2077] button[class*='primary'],
+body[data-dsh-game-cyberpunk2077] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #e3cd00 0%, #fcee0a 55%, #fdf13d 100%) !important;
+    border: 1px solid #c9b400 !important;
+    color: #14150f !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(184, 163, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-cyberpunk2077] button[class*='primary']:hover,
+body[data-dsh-game-cyberpunk2077] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.05);
+    box-shadow: 0 3px 14px rgba(184, 163, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    animation: game-cyberpunk2077-cp-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-cyberpunk2077] pre,
+body[data-dsh-game-cyberpunk2077] .markdown-body pre {
+  background: linear-gradient(180deg, #171a15 0%, #12150f 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #e00036 !important;
+    border-radius: 6px;
+    box-shadow: inset 0 0 20px rgba(0, 153, 179, 0.08), -3px 0 10px rgba(224, 0, 54, 0.2);
+}
+
+body[data-dsh-game-cyberpunk2077] pre code,
+body[data-dsh-game-cyberpunk2077] .markdown-body pre code {
+  background: transparent !important;
+    color: #dce8da !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-cyberpunk2077] code,
+body[data-dsh-game-cyberpunk2077] .markdown-body code {
+  background: rgba(0, 153, 179, 0.12);
+    color: #007a91;
+    border: 1px solid rgba(0, 153, 179, 0.35);
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-cyberpunk2077]::selection {
+  background: color-mix(in srgb, #fcee0a 55%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-game-cyberpunk2077] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 6px rgba(59, 55, 42, 0.08), 0 0 0 1px rgba(0, 153, 179, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-cyberpunk2077] [class*='guidInputCard']:hover {
+  border-color: rgba(0, 153, 179, 0.55) !important;
+}
+
+body[data-dsh-game-cyberpunk2077] [class*='agent-bar'],
+body[data-dsh-game-cyberpunk2077] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(184, 163, 0, 0.4);
+}
+
+body[data-dsh-game-cyberpunk2077]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-cyberpunk2077]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d4bd00, #7c6e00);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-cyberpunk2077]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #e3cd00, #5e5400);
+}
+
+body[data-dsh-game-cyberpunk2077]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-cyberpunk2077] .markdown-body a,
+body[data-dsh-game-cyberpunk2077] a {
+  color: #007a91;
+}
+
+body[data-dsh-game-cyberpunk2077] .markdown-body a:hover,
+body[data-dsh-game-cyberpunk2077] a:hover {
+  color: #0099b3;
+}
+
+body[data-dsh-game-cyberpunk2077] .markdown-body blockquote {
+  border-left: 3px solid #e00036;
+    background: rgba(224, 0, 54, 0.06);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-cyberpunk2077] .markdown-body hr,
+body[data-dsh-game-cyberpunk2077] hr {
+  border: none;
+    height: 6px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(184, 163, 0, 0.7) 0 24px, transparent 24px 30px,
+      rgba(184, 163, 0, 0.7) 30px 36px, transparent 36px 44px,
+      rgba(224, 0, 54, 0.55) 44px 50px, transparent 50px 58px
+    );
+    background-position: 0 2px;
+    background-repeat: repeat-x;
+    opacity: 0.55;
+}
+
+body[data-dsh-game-cyberpunk2077] .arco-btn:not(button[class*='primary']):hover {
+  color: #8f8000 !important;
+    border-color: rgba(184, 163, 0, 0.55) !important;
+    background-color: rgba(184, 163, 0, 0.1) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(ellipse at 82% 12%, rgba(0, 229, 255, 0.10) 0%, transparent 42%),
+      radial-gradient(ellipse at 12% 85%, rgba(255, 42, 109, 0.08) 0%, transparent 40%),
+      radial-gradient(ellipse at 55% 55%, rgba(252, 238, 10, 0.05) 0%, transparent 48%),
+      radial-gradient(circle at 20% 25%, rgba(0, 229, 255, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 74% 66%, rgba(255, 0, 60, 0.10) 0 2px, transparent 3.5px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 520px 520px, 600px 600px;
+    opacity: 0.9;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(240, 241, 233, 0.55) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.4) 0 1px, transparent 1px 96px);
+    background-size: 100% 4px, 100% 96px;
+    opacity: 0.07;
+    animation: game-cyberpunk2077-cp-scanline-drift 12s linear infinite;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(0, 229, 255, 0.1);
+    box-shadow: inset 3px 0 0 0 rgba(0, 229, 255, 0.85);
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(252, 238, 10, 0.24), rgba(252, 238, 10, 0.06) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #fcee0a;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #d9cf08 0%, #fcee0a 55%, #fdf13d 100%) !important;
+    border: 1px solid #fef571 !important;
+    color: #0a0b0f !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(252, 238, 10, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 16px rgba(252, 238, 10, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    animation: game-cyberpunk2077-cp-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] pre,
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0d1016 0%, #0a0d12 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #ff003c !important;
+    border-radius: 6px;
+    box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.06), -3px 0 12px rgba(255, 0, 60, 0.25);
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] pre code,
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d8e6dc !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] code,
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .markdown-body code {
+  background: rgba(0, 229, 255, 0.12);
+    color: #7deeff;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 85%, transparent);
+    color: #0a0b0f;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 8px rgba(5, 7, 10, 0.5), 0 0 0 1px rgba(0, 229, 255, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: rgba(0, 229, 255, 0.5) !important;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(252, 238, 10, 0.4);
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #fcee0a, #736513);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #fdf13d, #94800f);
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] a {
+  color: #4deaff;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] a:hover {
+  color: #8ff2ff;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #ff003c;
+    background: rgba(255, 0, 60, 0.08);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] hr {
+  border: none;
+    height: 6px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(252, 238, 10, 0.7) 0 24px, transparent 24px 30px,
+      rgba(252, 238, 10, 0.7) 30px 36px, transparent 36px 44px,
+      rgba(255, 0, 60, 0.6) 44px 50px, transparent 50px 58px
+    );
+    background-position: 0 2px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-game-cyberpunk2077][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #fdf13d !important;
+    border-color: rgba(252, 238, 10, 0.55) !important;
+    background-color: rgba(252, 238, 10, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes game-cyberpunk2077-cp-scanline-drift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 0 4px, 0 96px; }
+}
+
+@keyframes game-cyberpunk2077-cp-neon-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(184, 163, 0, 0.15); }
+  50% { box-shadow: 0 2px 14px rgba(184, 163, 0, 0.3); }
+}
+
+@keyframes game-cyberpunk2077-cp-btn-sheen {
+  0%, 100% { box-shadow: 0 3px 12px rgba(184, 163, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+  50% { box-shadow: 0 3px 18px rgba(184, 163, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+}
+
+@keyframes game-cyberpunk2077-cp-neon-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

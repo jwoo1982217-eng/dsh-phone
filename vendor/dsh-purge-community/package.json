@@ -1,0 +1,177 @@
+{
+  "name": "dsh-purge",
+  "version": "1.1.68-community.stable-dock-entry.2.plus-fixes.6.cards-mode.1",
+  "description": "DeepSeek Harness 破甲：让所有模型都能破甲，不同模型可换不同提示词；默认提示词面向国模「小码酱」。Jailbreak for every model — swap prompts per model. 求 Star 收藏 ⭐ 如要二开，请查看署名要求部分",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": "./client.js",
+    "./redteam": "./lib/redteam/index.js",
+    "./redteam/store": "./lib/redteam/store.js",
+    "./redteam/ui": "./lib/redteam/ui.js",
+    "./redteam/tools": "./lib/redteam/tools.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "dsh-purge": "bin/dsh-purge.js",
+    "dsh-purge-community-recover": "./lib/community-recover.js"
+  },
+  "files": [
+    "lib",
+    "!lib/default-prompt-inject.md",
+    "bin",
+    "docs",
+    "presets",
+    "skills",
+    "scripts",
+    "client.js",
+    "cordis.patch.yml",
+    "screenshots.json",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "COMMUNITY-ADAPTATION.md",
+    "COMMUNITY-ADAPTATION.json"
+  ],
+  "scripts": {
+    "embed-prompt": "node scripts/embed-default-prompt.mjs",
+    "build:client": "node scripts/build-client.mjs"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "dsh-plugins",
+    "网络安全",
+    "红队评测",
+    "llm-security",
+    "harness-security",
+    "deepseek-harness",
+    "red-team",
+    "instructions",
+    "rules",
+    "prompt-eval",
+    "agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YuJunZhiXue/dsh-purge.git"
+  },
+  "homepage": "https://github.com/YuJunZhiXue/dsh-purge#readme",
+  "bugs": {
+    "url": "https://github.com/YuJunZhiXue/dsh-purge/issues"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "install": {
+      "preferred": "tarball",
+      "tarball": "https://github.com/YuJunZhiXue/dsh-purge/archive/refs/heads/master.tar.gz",
+      "zip": "https://github.com/YuJunZhiXue/dsh-purge/archive/refs/heads/master.zip",
+      "git": "https://github.com/YuJunZhiXue/dsh-purge.git"
+    },
+    "communityAdaptation": {
+      "revision": "strict-client-owners.1",
+      "target": "0.2.1-alpha.1",
+      "publisher": "DeepSeek Stream community marketplace",
+      "authorOriginal": "https://github.com/YuJunZhiXue/dsh-purge/releases/tag/v1.1.67",
+      "originalSha256": "8cf20c2e3b70d255ca8706493d68ad277fb167998943fb92bd42efb4db02ed22",
+      "originalAuthorTarget": "0.2.0-rc.2",
+      "features": [
+        "native bundle and UI on 0.2.1-alpha.1",
+        "scoped private-core Apply and Revert",
+        "current DSH_HOME prompt, rules and skills",
+        "conversation retry, continue and rewind interfaces",
+        "standalone explicit-home/profile recovery CLI",
+        "missing-only RedTeam assets and additive legacy schema migration",
+        "Desktop isolated candidate install, Host restart and profile activation compatibility"
+      ],
+      "limitations": [
+        "Apply and Revert affect only private copies owned by the current profile and require manually quitting and restarting that DSH client.",
+        "Official ASAR, global CLI, native self-update, self-uninstall and automatic restart are disabled; update/uninstall use the community plugin manager. Revert the private overlay before uninstall.",
+        "Prompt, rules and skills retain the current DSH_HOME paths, which can be shared by profiles using the same home. Existing customized prompt content is preserved on startup.",
+        "Full Electron desktop, model API, every preset and session rewind workflow have not been executed end to end; no author endorsement or universal compatibility claim.",
+        "Optional native hooks that modify host-wide deny rules are disabled. Actual web composition matched 34 patches and 11 existing matches; 30 optional or layout-specific patches were unmatched and are reported.",
+        "Existing RedTeam presets, skills and setup script are preserved on startup; existing database rows and legacy columns are not removed or automatically rewritten."
+      ],
+      "originalSHA256": "b269e98d98de86b3282186528545535e1a138696d039e34b834f90c0a19c0830",
+      "originalPreparedSHA256": "b269e98d98de86b3282186528545535e1a138696d039e34b834f90c0a19c0830",
+      "authorImplementationModified": false,
+      "runtimeCompatibilityVerified": false,
+      "fullBusinessFunctionalityVerified": false,
+      "stableDockEntry": {
+        "revision": 1,
+        "target": "0.2.1-alpha.1",
+        "originalPublishedVersion": "1.1.67",
+        "originalPublishedArtifactSha256": "ecd62e53bb5656ca48d364aff91615e72f4b90213c183717a09461b0b141138e",
+        "originalClientSha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+        "change": "Independent accessible button in the existing shell.overlay calls the unchanged toggleDock; original dock, notices, legacy anchors and all cleanup/security business remain unchanged.",
+        "codeReviewed": true,
+        "actualMachineVerified": false,
+        "fullBusinessFunctionalityVerified": false
+      },
+      "managedBootstrapLauncher": {
+        "revision": "managed-bootstrap-launcher.1",
+        "target": "0.2.1-alpha.1",
+        "basedOnCommunityVersion": "1.1.68-community.stable-dock-entry.1",
+        "basedOnCommunityArchiveSha256": "9b6f3f583da6d168d2d4cfa471867a1ff31652c71bbe07ae3e2988cec9107119",
+        "authorOriginalVersion": "1.1.67",
+        "change": "Accept the current immutable Host published lib/bootstrap.js as well as lib/index.js, after the same installation-anchor package identity and physical file checks; config ownership and actual overlay matching stay strict.",
+        "hostCompatibilitySourceModified": true,
+        "cleanupSecurityBusinessModified": false,
+        "codeContractVerified": false,
+        "actualMachineVerifiedAtPreparation": false,
+        "fullBusinessFunctionalityVerified": false
+      },
+      "localPlusFixes": {
+        "revision": 3,
+        "baseVersion": "1.1.68-community.stable-dock-entry.2",
+        "source": "mortyandtimo/dsh-purge-plus@1.3.6",
+        "patchId": 86,
+        "scope": "TUN fake-IP only; original features and private profile lifecycle retained",
+        "runtimeCompatibilityVerified": false,
+        "androidSystemAliasCompatibility": true,
+        "androidRedteamRootAliasCompatibility": true
+      },
+      "cardsIntegration": {
+        "version": 1,
+        "standaloneClient": false,
+        "automaticPersonaInjection": false,
+        "newSkillPolicy": "missing capabilities only; existing persona selection preserved",
+        "runtimeRepairs": "retain installed private profile generation"
+      }
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-api-session-controller": "=0.2.1-alpha.1",
+    "@deepseek-ai/dsh-api-workspace-controller": "=0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-ui-conversation": "=0.2.1-alpha.1",
+    "@deepseek-ai/dsh-client-ui-workspace": "=0.2.1-alpha.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dshTarget": "0.2.0-rc.2",
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-api-session-controller": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-api-workspace-controller": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-conversation": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-workspace": {
+      "optional": true
+    }
+  }
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>DeepSeek 账号</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:28px 20px;background:#fafbfc;color:#20242b;font:16px/1.65 system-ui,sans-serif}main{max-width:480px;margin:0 auto}h1{font-size:26px;margin:0 0 12px}.card{padding:22px;background:white;border:1px solid #e7e9ed;border-radius:18px;margin:20px 0}p{margin:8px 0}#status{font-weight:600}#detail{color:#626b78;overflow-wrap:anywhere}button{width:100%;min-height:48px;padding:10px 16px;border-radius:12px;border:1px solid #dce1e9;background:white;color:#20242b;font:inherit;margin-top:12px;cursor:pointer}button.primary{background:#1677ff;color:white;border-color:#1677ff}button:disabled{opacity:.5}small{display:block;color:#687382;font-size:14px}#error{color:#b45309}a{color:#1677ff}#logout{color:#b42318}
+</style></head><body><main><h1>DeepSeek 账号</h1><p>在手机上登录你自己的 DeepSeek 账号。</p><div class="card"><p id="status">正在读取账号状态…</p><p id="detail"></p><p id="error" role="status"></p><button id="login" class="primary">登录 DeepSeek</button><button id="continue" hidden>继续登录</button><button id="cancel" hidden>取消登录</button><button id="logout" hidden>退出此账号</button></div><small>登录会前往 DeepSeek 官方页面。完成授权后，点击上方“返回 DSH”，在模型选择里选择“DeepSeek 账号”。</small><p><small>程序、账号凭据和会话保存在这台手机上，运行不需要连接 Mac。</small></p></main>
+<script>
+const $=id=>document.getElementById(id);let state=null;let busy=false;
+async function call(action){
+ const r=await fetch('/phone-account/manage',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:crypto.randomUUID(),method:'manage',payload:{action}})});
+ if(!r.ok)throw Error('账号服务连接失败，请稍后重试');
+ const envelope=await r.json();const result=envelope.result;
+ if(!result?.ok)throw Error(result?.error?.message||'账号操作失败');
+ return result.value;
+}
+function render(value){
+ state=value;const a=state.attempt;const waiting=a&&['initializing','waiting-browser','exchanging'].includes(a.phase);
+ $('status').textContent=state.signedIn?'已登录 DeepSeek':waiting?'等待完成官方登录':'尚未登录';
+ $('detail').textContent=state.signedIn?[state.profile?.name,state.profile?.contact].filter(Boolean).join(' · '):'登录后可在聊天中选择 DeepSeek 账号模型。';
+ $('login').hidden=state.signedIn||waiting;$('logout').hidden=!state.signedIn;
+ $('cancel').hidden=!waiting;$('continue').hidden=a?.phase!=='waiting-browser';
+ $('error').textContent=a?.phase==='failed'?(a.error==='no-response'?'连接 DeepSeek 登录服务失败，请检查手机网络后重试。':'登录未完成，请重新尝试。'):a?.phase==='expired'?'登录已超时，请重新登录。':'';
+}
+async function act(action){if(busy)return;busy=true;$('login').disabled=true;try{const value=await call(action);render(value);if(action==='login'&&value.attempt?.authorizeUrl)location.assign(value.attempt.authorizeUrl);}catch(e){$('error').textContent=e.message;}finally{busy=false;$('login').disabled=false;}}
+$('login').onclick=()=>act('login');$('continue').onclick=()=>{if(state?.attempt?.authorizeUrl)location.assign(state.attempt.authorizeUrl);};$('cancel').onclick=()=>act('cancel');$('logout').onclick=()=>{if(confirm('退出手机上的 DeepSeek 账号？'))act('logout');};
+async function refresh(){if(busy)return;try{render(await call('status'));}catch(e){$('error').textContent=e.message;}}
+refresh();setInterval(refresh,2000);
+</script></body></html>

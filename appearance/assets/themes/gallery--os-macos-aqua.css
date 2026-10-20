@@ -1,0 +1,850 @@
+/* os-macos-aqua — macOS Aqua | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-os-macos-aqua], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-os-macos-aqua] {
+  --dsw-font-family: 'Lucida Grande', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #12202e;
+  background-color: #f2f4f6;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] {
+  color: #e9f2fb;
+  background-color: #0c1420;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-os-macos-aqua] {
+  --color-primary: #0a7edb;
+  --primary: #0a7edb;
+  --primary-rgb: 10, 126, 219;
+  --color-primary-light-1: #3b9ae4;
+  --color-primary-light-2: #6cb6ec;
+  --color-primary-light-3: #a5d3f5;
+  --color-primary-dark-1: #075fae;
+  --brand: #0a7edb;
+  --brand-light: #d3e8fa;
+  --brand-hover: #3b9ae4;
+  --color-brand-fill: #0a7edb;
+  --color-brand-bg: #d3e8fa;
+  --aou-1: #e8f4fe;
+  --aou-2: #d3e8fa;
+  --aou-3: #b4d9f6;
+  --aou-4: #8fc6f1;
+  --aou-5: #63ace9;
+  --aou-6: #3b9ae4;
+  --aou-7: #0a7edb;
+  --aou-8: #0868b6;
+  --aou-9: #065494;
+  --aou-10: #043f70;
+  --bg-base: #f2f4f6;
+  --bg-1: #e6eaee;
+  --bg-2: #dadee3;
+  --bg-3: #cdd3d9;
+  --bg-4: #bfc7cf;
+  --bg-5: #aeb8c2;
+  --bg-6: #9da8b4;
+  --bg-8: #7c8896;
+  --bg-9: #596573;
+  --bg-10: #37424f;
+  --color-bg-1: #e6eaee;
+  --color-bg-2: #dadee3;
+  --color-bg-3: #cdd3d9;
+  --color-bg-4: #bfc7cf;
+  --bg-hover: #dde4ea;
+  --bg-active: #c4dcf2;
+  --text-primary: #12202e;
+  --text-secondary: #40505f;
+  --text-disabled: #8a97a4;
+  --text-0: #0a141d;
+  --text-white: #ffffff;
+  --color-text-1: #12202e;
+  --color-text-2: #40505f;
+  --color-text-3: #5e6e7d;
+  --color-text-4: #8a97a4;
+  --border-base: #b4bdc7;
+  --border-light: #ccd3da;
+  --border-special: #0a7edb;
+  --color-border: #b4bdc7;
+  --color-border-1: #b4bdc7;
+  --color-border-2: #ccd3da;
+  --fill: #dadee3;
+  --color-fill: #dadee3;
+  --fill-0: #e6eaee;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #e9edf1;
+  --inverse: #12202e;
+  --success: #1a8a3c;
+  --warning: #a87400;
+  --danger: #c8352b;
+  --info: #0a7edb;
+  --message-user-bg: #0a7edb;
+  --message-tips-bg: #e2ebf3;
+  --workspace-btn-bg: #d3e8fa;
+  --color-guid-agent-bar: #e6eaee;
+  --aqua-blue: #0a7edb;
+  --aqua-blue-deep: #075fae;
+  --aqua-gel-top: #bfe2fb;
+  --aqua-gel-hi: #eaf6ff;
+  --aqua-metal-hi: #f4f6f8;
+  --aqua-metal-lo: #c3cad1;
+  --aqua-metal-dark: #9aa4ae;
+  --aqua-stripe: rgba(255, 255, 255, 0.9);
+  --aqua-red: #ff5f57;
+  --aqua-yellow: #febc2e;
+  --aqua-green: #28c840;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] {
+  --color-primary: #4aa8f0;
+  --primary: #4aa8f0;
+  --primary-rgb: 74, 168, 240;
+  --color-primary-light-1: #6fbbf5;
+  --color-primary-light-2: #94cdf8;
+  --color-primary-light-3: #bfe0fb;
+  --color-primary-dark-1: #2b8ad4;
+  --brand: #4aa8f0;
+  --brand-light: #12314f;
+  --brand-hover: #6fbbf5;
+  --color-brand-fill: #2b8ad4;
+  --color-brand-bg: #12314f;
+  --aou-1: #06283f;
+  --aou-2: #0a3a5c;
+  --aou-3: #0e4d7a;
+  --aou-4: #14639b;
+  --aou-5: #1e7cbf;
+  --aou-6: #2b8ad4;
+  --aou-7: #4aa8f0;
+  --aou-8: #6fbbf5;
+  --aou-9: #a2d1f9;
+  --aou-10: #d6eafd;
+  --bg-base: #0c1420;
+  --bg-1: #121c2b;
+  --bg-2: #182435;
+  --bg-3: #1f2d42;
+  --bg-4: #27374f;
+  --bg-5: #31425e;
+  --bg-6: #3d4f6d;
+  --bg-8: #5c7091;
+  --bg-9: #8ba0bd;
+  --bg-10: #c2d2e6;
+  --color-bg-1: #121c2b;
+  --color-bg-2: #182435;
+  --color-bg-3: #1f2d42;
+  --color-bg-4: #27374f;
+  --bg-hover: #1c2a3e;
+  --bg-active: #17355a;
+  --text-primary: #e9f2fb;
+  --text-secondary: #a9bccf;
+  --text-disabled: #5c7086;
+  --text-0: #f7fbff;
+  --text-white: #ffffff;
+  --color-text-1: #e9f2fb;
+  --color-text-2: #a9bccf;
+  --color-text-3: #7f93a8;
+  --color-text-4: #5c7086;
+  --border-base: #2c3c54;
+  --border-light: #223148;
+  --border-special: #4aa8f0;
+  --color-border: #2c3c54;
+  --color-border-1: #2c3c54;
+  --color-border-2: #223148;
+  --fill: #182435;
+  --color-fill: #182435;
+  --fill-0: #121c2b;
+  --fill-white-to-black: #0a101a;
+  --dialog-fill-0: #101a28;
+  --inverse: #e9f2fb;
+  --success: #4fd17a;
+  --warning: #e8b94a;
+  --danger: #f06a5e;
+  --info: #4aa8f0;
+  --message-user-bg: #14639b;
+  --message-tips-bg: #182435;
+  --workspace-btn-bg: #12314f;
+  --color-guid-agent-bar: #121c2b;
+  --aqua-blue: #4aa8f0;
+  --aqua-blue-deep: #2b8ad4;
+  --aqua-gel-top: #9ccdf7;
+  --aqua-gel-hi: #e0f1fd;
+  --aqua-metal-hi: #3a4a61;
+  --aqua-metal-lo: #1a2534;
+  --aqua-metal-dark: #0d1520;
+  --aqua-stripe: rgba(148, 205, 248, 0.6);
+  --aqua-red: #ff5f57;
+  --aqua-yellow: #febc2e;
+  --aqua-green: #28c840;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-os-macos-aqua] {
+  --dsw-static-deepseek-50: #e8f4fe;
+  --dsw-static-blue-50: #e8f4fe;
+  --dsw-static-deepseek-50p: #d3e8fa;
+  --dsw-static-blue-50p: #d3e8fa;
+  --dsw-static-deepseek-75: #d3e8fa;
+  --dsw-static-blue-75: #d3e8fa;
+  --dsw-static-deepseek-100: #d3e8fa;
+  --dsw-static-blue-100: #d3e8fa;
+  --dsw-static-deepseek-200: #b4d9f6;
+  --dsw-static-blue-200: #b4d9f6;
+  --dsw-static-deepseek-300: #8fc6f1;
+  --dsw-static-blue-300: #8fc6f1;
+  --dsw-static-deepseek-400: #63ace9;
+  --dsw-static-blue-400: #63ace9;
+  --dsw-static-deepseek-450: #63ace9;
+  --dsw-static-blue-450: #63ace9;
+  --dsw-static-deepseek-500: #3b9ae4;
+  --dsw-static-blue-500: #3b9ae4;
+  --dsw-static-deepseek-600: #0a7edb;
+  --dsw-static-blue-600: #0a7edb;
+  --dsw-static-deepseek-700-delete: #0868b6;
+  --dsw-static-deepseek-800: #0868b6;
+  --dsw-static-blue-800: #0868b6;
+  --dsw-static-deepseek-900: #065494;
+  --dsw-static-blue-900: #065494;
+  --dsw-static-deepseek-950: #043f70;
+  --dsw-static-blue-950: #043f70;
+  --dsw-static-neutral-bluish-00: #e6eaee;
+  --dsw-static-neutral-00: #e6eaee;
+  --dsw-static-neutral-bluish-50: #e6eaee;
+  --dsw-static-neutral-50: #e6eaee;
+  --dsw-static-neutral-bluish-60: #e6eaee;
+  --dsw-static-neutral-60: #e6eaee;
+  --dsw-static-neutral-bluish-75: #dadee3;
+  --dsw-static-neutral-75: #dadee3;
+  --dsw-static-neutral-bluish-100: #dadee3;
+  --dsw-static-neutral-100: #dadee3;
+  --dsw-static-neutral-bluish-150: #cdd3d9;
+  --dsw-static-neutral-150: #cdd3d9;
+  --dsw-static-neutral-bluish-200: #cdd3d9;
+  --dsw-static-neutral-200: #cdd3d9;
+  --dsw-static-neutral-bluish-250: #bfc7cf;
+  --dsw-static-neutral-250: #bfc7cf;
+  --dsw-static-neutral-bluish-300: #bfc7cf;
+  --dsw-static-neutral-300: #bfc7cf;
+  --dsw-static-neutral-bluish-400: #aeb8c2;
+  --dsw-static-neutral-400: #aeb8c2;
+  --dsw-static-neutral-bluish-500: #9da8b4;
+  --dsw-static-neutral-500: #9da8b4;
+  --dsw-static-neutral-bluish-550: #9da8b4;
+  --dsw-static-neutral-550: #9da8b4;
+  --dsw-static-neutral-bluish-600: #7c8896;
+  --dsw-static-neutral-600: #7c8896;
+  --dsw-static-neutral-bluish-700: #7c8896;
+  --dsw-static-neutral-700: #7c8896;
+  --dsw-static-neutral-bluish-750: #596573;
+  --dsw-static-neutral-750: #596573;
+  --dsw-static-neutral-bluish-800: #596573;
+  --dsw-static-neutral-800: #596573;
+  --dsw-static-neutral-bluish-850: #596573;
+  --dsw-static-neutral-850: #596573;
+  --dsw-static-neutral-bluish-875: #37424f;
+  --dsw-static-neutral-875: #37424f;
+  --dsw-static-neutral-bluish-900: #37424f;
+  --dsw-static-neutral-900: #37424f;
+  --dsw-static-neutral-bluish-950: #37424f;
+  --dsw-static-neutral-950: #37424f;
+  --dsw-static-neutral-bluish-1000: #12202e;
+  --dsw-static-neutral-1000: #12202e;
+  --dsw-static-green-50: color-mix(in srgb, #1a8a3c 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #1a8a3c 20%, white);
+  --dsw-static-green-400: #1a8a3c;
+  --dsw-static-green-500: #1a8a3c;
+  --dsw-static-green-600: color-mix(in srgb, #1a8a3c 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #1a8a3c 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #a87400 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #a87400 20%, white);
+  --dsw-static-amber-400: #a87400;
+  --dsw-static-amber-500: #a87400;
+  --dsw-static-amber-600: color-mix(in srgb, #a87400 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #a87400 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c8352b 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c8352b 20%, white);
+  --dsw-static-red-400: #c8352b;
+  --dsw-static-red-500: #c8352b;
+  --dsw-static-red-600: color-mix(in srgb, #c8352b 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c8352b 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #06283f;
+  --dsw-static-blue-50: #06283f;
+  --dsw-static-deepseek-50p: #0a3a5c;
+  --dsw-static-blue-50p: #0a3a5c;
+  --dsw-static-deepseek-75: #0a3a5c;
+  --dsw-static-blue-75: #0a3a5c;
+  --dsw-static-deepseek-100: #0a3a5c;
+  --dsw-static-blue-100: #0a3a5c;
+  --dsw-static-deepseek-200: #0e4d7a;
+  --dsw-static-blue-200: #0e4d7a;
+  --dsw-static-deepseek-300: #14639b;
+  --dsw-static-blue-300: #14639b;
+  --dsw-static-deepseek-400: #1e7cbf;
+  --dsw-static-blue-400: #1e7cbf;
+  --dsw-static-deepseek-450: #1e7cbf;
+  --dsw-static-blue-450: #1e7cbf;
+  --dsw-static-deepseek-500: #2b8ad4;
+  --dsw-static-blue-500: #2b8ad4;
+  --dsw-static-deepseek-600: #4aa8f0;
+  --dsw-static-blue-600: #4aa8f0;
+  --dsw-static-deepseek-700-delete: #6fbbf5;
+  --dsw-static-deepseek-800: #6fbbf5;
+  --dsw-static-blue-800: #6fbbf5;
+  --dsw-static-deepseek-900: #a2d1f9;
+  --dsw-static-blue-900: #a2d1f9;
+  --dsw-static-deepseek-950: #d6eafd;
+  --dsw-static-blue-950: #d6eafd;
+  --dsw-static-neutral-bluish-00: #121c2b;
+  --dsw-static-neutral-00: #121c2b;
+  --dsw-static-neutral-bluish-50: #121c2b;
+  --dsw-static-neutral-50: #121c2b;
+  --dsw-static-neutral-bluish-60: #121c2b;
+  --dsw-static-neutral-60: #121c2b;
+  --dsw-static-neutral-bluish-75: #182435;
+  --dsw-static-neutral-75: #182435;
+  --dsw-static-neutral-bluish-100: #182435;
+  --dsw-static-neutral-100: #182435;
+  --dsw-static-neutral-bluish-150: #1f2d42;
+  --dsw-static-neutral-150: #1f2d42;
+  --dsw-static-neutral-bluish-200: #1f2d42;
+  --dsw-static-neutral-200: #1f2d42;
+  --dsw-static-neutral-bluish-250: #27374f;
+  --dsw-static-neutral-250: #27374f;
+  --dsw-static-neutral-bluish-300: #27374f;
+  --dsw-static-neutral-300: #27374f;
+  --dsw-static-neutral-bluish-400: #31425e;
+  --dsw-static-neutral-400: #31425e;
+  --dsw-static-neutral-bluish-500: #3d4f6d;
+  --dsw-static-neutral-500: #3d4f6d;
+  --dsw-static-neutral-bluish-550: #3d4f6d;
+  --dsw-static-neutral-550: #3d4f6d;
+  --dsw-static-neutral-bluish-600: #5c7091;
+  --dsw-static-neutral-600: #5c7091;
+  --dsw-static-neutral-bluish-700: #5c7091;
+  --dsw-static-neutral-700: #5c7091;
+  --dsw-static-neutral-bluish-750: #8ba0bd;
+  --dsw-static-neutral-750: #8ba0bd;
+  --dsw-static-neutral-bluish-800: #8ba0bd;
+  --dsw-static-neutral-800: #8ba0bd;
+  --dsw-static-neutral-bluish-850: #8ba0bd;
+  --dsw-static-neutral-850: #8ba0bd;
+  --dsw-static-neutral-bluish-875: #c2d2e6;
+  --dsw-static-neutral-875: #c2d2e6;
+  --dsw-static-neutral-bluish-900: #c2d2e6;
+  --dsw-static-neutral-900: #c2d2e6;
+  --dsw-static-neutral-bluish-950: #c2d2e6;
+  --dsw-static-neutral-950: #c2d2e6;
+  --dsw-static-neutral-bluish-1000: #e9f2fb;
+  --dsw-static-neutral-1000: #e9f2fb;
+  --dsw-static-green-50: color-mix(in srgb, #4fd17a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4fd17a 20%, black);
+  --dsw-static-green-400: #4fd17a;
+  --dsw-static-green-500: #4fd17a;
+  --dsw-static-green-600: color-mix(in srgb, #4fd17a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4fd17a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8b94a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8b94a 20%, black);
+  --dsw-static-amber-400: #e8b94a;
+  --dsw-static-amber-500: #e8b94a;
+  --dsw-static-amber-600: color-mix(in srgb, #e8b94a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8b94a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f06a5e 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #f06a5e 20%, black);
+  --dsw-static-red-400: #f06a5e;
+  --dsw-static-red-500: #f06a5e;
+  --dsw-static-red-600: color-mix(in srgb, #f06a5e 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f06a5e 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-os-macos-aqua] {
+  --dsw-alias-button-primary-fill: #0a7edb;
+  --dsw-alias-button-primary-hover: #3b9ae4;
+  --dsw-alias-button-primary-dimmed: #d3e8fa;
+  --dsw-alias-button-info-fill: #0a7edb;
+  --dsw-alias-button-info-hover: #3b9ae4;
+  --dsw-alias-button-contrast-fill: #0a7edb;
+  --dsw-alias-button-ghost-active-fill: #d3e8fa;
+  --dsw-alias-button-ghost-active-hover: #d3e8fa;
+  --dsw-alias-button-ghost-active-border: #8fc6f1;
+  --dsw-alias-button-elevated-fill: #e6eaee;
+  --dsw-alias-button-floating-fill: #e6eaee;
+  --dsw-alias-button-floating-hover: #dde4ea;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(10, 126, 219, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(10, 126, 219, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(10, 126, 219, 0.6);
+  --dsw-specific-bubble: #0a7edb;
+  --dsw-specific-bubble-highlight: #b4d9f6;
+  --dsw-specific-input-major: #e6eaee;
+  --dsw-specific-login-input: #e6eaee;
+  --dsw-specific-sidebar-fill: #0a7edb;
+  --dsw-specific-sidebar-nav-item-active: #d3e8fa;
+  --dsw-specific-sidebar-nav-item-hover: #dde4ea;
+  --dsw-specific-sidebar-nav-item-active-accent: #8fc6f1;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #4aa8f0;
+  --dsw-alias-button-primary-hover: #6fbbf5;
+  --dsw-alias-button-primary-dimmed: #0a3a5c;
+  --dsw-alias-button-info-fill: #4aa8f0;
+  --dsw-alias-button-info-hover: #6fbbf5;
+  --dsw-alias-button-contrast-fill: #4aa8f0;
+  --dsw-alias-button-ghost-active-fill: #12314f;
+  --dsw-alias-button-ghost-active-hover: #0a3a5c;
+  --dsw-alias-button-ghost-active-border: #14639b;
+  --dsw-alias-button-elevated-fill: #121c2b;
+  --dsw-alias-button-floating-fill: #121c2b;
+  --dsw-alias-button-floating-hover: #1c2a3e;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(74, 168, 240, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(74, 168, 240, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(74, 168, 240, 0.6);
+  --dsw-specific-bubble: #14639b;
+  --dsw-specific-bubble-highlight: #0e4d7a;
+  --dsw-specific-input-major: #121c2b;
+  --dsw-specific-login-input: #121c2b;
+  --dsw-specific-sidebar-fill: #4aa8f0;
+  --dsw-specific-sidebar-nav-item-active: #0a3a5c;
+  --dsw-specific-sidebar-nav-item-hover: #1c2a3e;
+  --dsw-specific-sidebar-nav-item-active-accent: #14639b;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-os-macos-aqua] {
+  background-color: var(--bg-base) !important;
+    font-family: 'Lucida Grande', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-os-macos-aqua]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent 0 2px,
+      var(--aqua-stripe) 2px 3px,
+      transparent 3px 6px
+    );
+}
+
+body[data-dsh-os-macos-aqua]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(ellipse 40% 28% at 20% 18%, var(--aqua-blue) 0%, transparent 70%),
+      radial-gradient(ellipse 34% 26% at 80% 30%, var(--aqua-gel-top) 0%, transparent 70%),
+      radial-gradient(ellipse 44% 32% at 55% 88%, var(--aqua-blue) 0%, transparent 72%);
+    background-size: 160% 160%, 150% 150%, 170% 170%;
+    animation: os-macos-aqua-aqua-caustics 26s ease-in-out infinite alternate;
+}
+
+body[data-dsh-os-macos-aqua] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+body[data-dsh-os-macos-aqua] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--aqua-blue);
+}
+
+body[data-dsh-os-macos-aqua] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-os-macos-aqua] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(180deg, rgba(191, 226, 251, 0.9), rgba(163, 210, 246, 0.75)) !important;
+    box-shadow:
+      inset 3px 0 0 0 var(--aqua-blue),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 1px 3px rgba(10, 126, 219, 0.25);
+    font-weight: 600;
+}
+
+body[data-dsh-os-macos-aqua] button[class*='primary'],
+body[data-dsh-os-macos-aqua] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      linear-gradient(180deg,
+        var(--aqua-gel-hi) 0%,
+        var(--aqua-gel-top) 18%,
+        var(--aqua-blue) 52%,
+        var(--aqua-blue-deep) 100%) !important;
+    border: 1px solid var(--aqua-blue-deep) !important;
+    border-radius: 12px !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    text-shadow: 0 1px 1px rgba(4, 63, 112, 0.6);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -6px 10px rgba(4, 63, 112, 0.35),
+      0 2px 6px rgba(10, 126, 219, 0.35);
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-os-macos-aqua] button[class*='primary']:hover,
+body[data-dsh-os-macos-aqua] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    animation: os-macos-aqua-aqua-default-pulse 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-os-macos-aqua] button[class*='primary']:active,
+body[data-dsh-os-macos-aqua] button[class*='primary']:not(.arco-btn-disabled):active {
+  filter: brightness(0.92);
+}
+
+body[data-dsh-os-macos-aqua] pre,
+body[data-dsh-os-macos-aqua] .markdown-body pre {
+  background: linear-gradient(180deg, #fbfdff 0%, #eef3f8 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-top: 3px solid var(--aqua-blue) !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 4px rgba(80, 95, 110, 0.15);
+}
+
+body[data-dsh-os-macos-aqua] pre code,
+body[data-dsh-os-macos-aqua] .markdown-body pre code {
+  background: transparent !important;
+    color: #12202e !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-os-macos-aqua] code,
+body[data-dsh-os-macos-aqua] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--aqua-blue-deep);
+    border: 1px solid rgba(10, 126, 219, 0.3);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-os-macos-aqua] [class*='agent-bar'],
+body[data-dsh-os-macos-aqua] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(10, 126, 219, 0.35);
+}
+
+body[data-dsh-os-macos-aqua] .markdown-body blockquote {
+  border-left: 3px solid var(--aqua-blue);
+    background: rgba(10, 126, 219, 0.07);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-os-macos-aqua] .markdown-body hr,
+body[data-dsh-os-macos-aqua] hr {
+  border: none;
+    height: 4px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(10, 126, 219, 0.35) 0 2px,
+      transparent 2px 5px
+    );
+    opacity: 0.7;
+}
+
+body[data-dsh-os-macos-aqua] .markdown-body a,
+body[data-dsh-os-macos-aqua] a {
+  color: var(--aqua-blue-deep);
+}
+
+body[data-dsh-os-macos-aqua] .markdown-body a:hover,
+body[data-dsh-os-macos-aqua] a:hover {
+  color: var(--aqua-blue);
+}
+
+body[data-dsh-os-macos-aqua] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--aqua-blue-deep) !important;
+    border-color: rgba(10, 126, 219, 0.55) !important;
+    background-color: rgba(10, 126, 219, 0.08) !important;
+}
+
+body[data-dsh-os-macos-aqua]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+}
+
+body[data-dsh-os-macos-aqua]::-webkit-scrollbar {
+  width: 12px;
+    height: 12px;
+}
+
+body[data-dsh-os-macos-aqua]::-webkit-scrollbar-thumb {
+  background:
+      linear-gradient(180deg,
+        var(--aqua-gel-top) 0%,
+        var(--aqua-blue) 50%,
+        var(--aqua-blue-deep) 100%);
+    border-radius: 7px;
+    border: 2px solid var(--bg-base);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body[data-dsh-os-macos-aqua]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d9edfd 0%, var(--brand-hover) 55%, var(--aqua-blue) 100%);
+}
+
+body[data-dsh-os-macos-aqua]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'Lucida Grande', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent 0 2px,
+      var(--aqua-stripe) 2px 3px,
+      transparent 3px 6px
+    );
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(ellipse 40% 28% at 20% 18%, var(--aqua-blue) 0%, transparent 70%),
+      radial-gradient(ellipse 34% 26% at 80% 30%, var(--aqua-gel-top) 0%, transparent 70%),
+      radial-gradient(ellipse 44% 32% at 55% 88%, var(--aqua-blue) 0%, transparent 72%);
+    background-size: 160% 160%, 150% 150%, 170% 170%;
+    animation: os-macos-aqua-aqua-night-caustics 26s ease-in-out infinite alternate;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--aqua-blue);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(180deg, rgba(43, 138, 212, 0.5), rgba(20, 99, 155, 0.55)) !important;
+    box-shadow:
+      inset 3px 0 0 0 var(--aqua-blue),
+      inset 0 1px 0 rgba(224, 241, 253, 0.25),
+      0 1px 4px rgba(0, 0, 0, 0.4);
+    font-weight: 600;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      linear-gradient(180deg,
+        var(--aqua-gel-hi) 0%,
+        var(--aqua-gel-top) 18%,
+        var(--aqua-blue) 52%,
+        var(--aqua-blue-deep) 100%) !important;
+    border: 1px solid #0e4d7a !important;
+    border-radius: 12px !important;
+    color: #06283f !important;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(224, 241, 253, 0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -6px 10px rgba(6, 40, 63, 0.35),
+      0 2px 8px rgba(43, 138, 212, 0.4);
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    animation: os-macos-aqua-aqua-night-default-pulse 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  filter: brightness(0.92);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] pre,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0e1826 0%, var(--aqua-metal-dark) 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-top: 3px solid var(--aqua-blue) !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.55), 0 0 12px rgba(74, 168, 240, 0.1);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] pre code,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #dceaf8 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] code,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--aqua-gel-top);
+    border: 1px solid rgba(74, 168, 240, 0.35);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(74, 168, 240, 0.4);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--aqua-blue);
+    background: rgba(74, 168, 240, 0.09);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] hr {
+  border: none;
+    height: 4px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgba(74, 168, 240, 0.4) 0 2px,
+      transparent 2px 5px
+    );
+    opacity: 0.7;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] a {
+  color: var(--aqua-blue);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] a:hover {
+  color: var(--color-primary-light-2);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-light-2) !important;
+    border-color: rgba(74, 168, 240, 0.55) !important;
+    background-color: rgba(74, 168, 240, 0.12) !important;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 38%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 12px;
+    height: 12px;
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background:
+      linear-gradient(180deg,
+        var(--aqua-gel-top) 0%,
+        var(--aqua-blue) 50%,
+        var(--aqua-blue-deep) 100%);
+    border-radius: 7px;
+    border: 2px solid var(--bg-base);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d9edfd 0%, var(--brand-hover) 55%, var(--aqua-blue) 100%);
+}
+
+body[data-dsh-os-macos-aqua][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes os-macos-aqua-aqua-caustics {
+  0% { background-position: 0% 0%, 100% 0%, 50% 100%; }
+  100% { background-position: 5% 6%, 94% 5%, 55% 94%; }
+}
+
+@keyframes os-macos-aqua-aqua-metal-shine {
+  0% { left: -30%; }
+  55% { left: 112%; }
+  100% { left: 112%; }
+}
+
+@keyframes os-macos-aqua-aqua-default-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -6px 10px rgba(4, 63, 112, 0.35),
+      0 0 4px rgba(59, 154, 228, 0.5),
+      0 2px 6px rgba(10, 126, 219, 0.35);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -6px 10px rgba(4, 63, 112, 0.3),
+      0 0 16px rgba(59, 154, 228, 0.85),
+      0 2px 10px rgba(10, 126, 219, 0.5);
+  }
+}
+
+@keyframes os-macos-aqua-aqua-focus-breathe {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(10, 126, 219, 0.28), inset 0 2px 4px rgba(80, 95, 110, 0.1); }
+  50% { box-shadow: 0 0 0 5px rgba(10, 126, 219, 0.45), inset 0 2px 4px rgba(80, 95, 110, 0.1); }
+}
+
+@keyframes os-macos-aqua-aqua-night-caustics {
+  0% { background-position: 0% 0%, 100% 0%, 50% 100%; }
+  100% { background-position: 5% 6%, 94% 5%, 55% 94%; }
+}
+
+@keyframes os-macos-aqua-aqua-night-metal-shine {
+  0% { left: -30%; }
+  55% { left: 112%; }
+  100% { left: 112%; }
+}
+
+@keyframes os-macos-aqua-aqua-night-default-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -6px 10px rgba(6, 40, 63, 0.35),
+      0 0 6px rgba(74, 168, 240, 0.55),
+      0 2px 8px rgba(43, 138, 212, 0.4);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -6px 10px rgba(6, 40, 63, 0.3),
+      0 0 20px rgba(74, 168, 240, 0.9),
+      0 2px 12px rgba(43, 138, 212, 0.55);
+  }
+}
+
+@keyframes os-macos-aqua-aqua-night-focus-breathe {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(74, 168, 240, 0.3), inset 0 2px 6px rgba(0, 0, 0, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(74, 168, 240, 0.5), inset 0 2px 6px rgba(0, 0, 0, 0.5); }
+}

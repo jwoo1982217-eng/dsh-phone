@@ -1,0 +1,801 @@
+/* festival-christmas — 圣诞节 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-festival-christmas], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-festival-christmas] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1c241e;
+  background-color: #f7faf7;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] {
+  color: #f0f4ee;
+  background-color: #0a100d;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-festival-christmas] {
+  --color-primary: #c2262f;
+  --primary: #c2262f;
+  --primary-rgb: 194, 38, 47;
+  --color-primary-light-1: #d45259;
+  --color-primary-light-2: #e2858a;
+  --color-primary-light-3: #f3bcc0;
+  --color-primary-dark-1: #8f1a22;
+  --brand: #c2262f;
+  --brand-light: #fbe3e4;
+  --brand-hover: #a81e26;
+  --color-brand-fill: #c2262f;
+  --color-brand-bg: #fbe3e4;
+  --aou-1: #fdecec;
+  --aou-2: #f9c4c2;
+  --aou-3: #f29590;
+  --aou-4: #ea6a64;
+  --aou-5: #d94a45;
+  --aou-6: #c2262f;
+  --aou-7: #a81e26;
+  --aou-8: #8f1a22;
+  --aou-9: #6e141b;
+  --aou-10: #471014;
+  --bg-base: #f7faf7;
+  --bg-1: #ffffff;
+  --bg-2: #f0f4f0;
+  --bg-3: #e7ede7;
+  --bg-4: #dde6dd;
+  --bg-5: #d0dcd0;
+  --bg-6: #c0cfc0;
+  --bg-8: #93a893;
+  --bg-9: #6e836e;
+  --bg-10: #45564a;
+  --color-bg-1: #ffffff;
+  --color-bg-2: #f0f4f0;
+  --color-bg-3: #e7ede7;
+  --color-bg-4: #dde6dd;
+  --bg-hover: #e9efe9;
+  --bg-active: #dfe8df;
+  --text-primary: #1c241e;
+  --text-secondary: #4d5c50;
+  --text-disabled: #9aa89c;
+  --text-0: #0e130f;
+  --text-white: #ffffff;
+  --color-text-1: #1c241e;
+  --color-text-2: #4d5c50;
+  --color-text-3: #768579;
+  --color-text-4: #9aa89c;
+  --border-base: #d5dfd5;
+  --border-light: #e3ebe3;
+  --border-special: #e0aeb1;
+  --color-border: #d5dfd5;
+  --color-border-1: #d5dfd5;
+  --color-border-2: #e3ebe3;
+  --fill: #f0f4f0;
+  --color-fill: #f0f4f0;
+  --fill-0: #ffffff;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #ffffff;
+  --inverse: #1c241e;
+  --success: #1f8a52;
+  --warning: #b8860b;
+  --danger: #c2262f;
+  --info: #2f6fb8;
+  --message-user-bg: #c2262f;
+  --message-tips-bg: #e8efe6;
+  --workspace-btn-bg: #fbe3e4;
+  --color-guid-agent-bar: #f2f6f1;
+  --xmas-red: #c2262f;
+  --xmas-green: #1f7a4d;
+  --xmas-gold: #b8860b;
+  --xmas-snow: #b9c9be;
+  --xmas-pine: #dde6dd;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-festival-christmas][data-ds-dark-theme] {
+  --color-primary: #e03e3e;
+  --primary: #e03e3e;
+  --primary-rgb: 224, 62, 62;
+  --color-primary-light-1: #ea6a64;
+  --color-primary-light-2: #f29590;
+  --color-primary-light-3: #f9c4c2;
+  --color-primary-dark-1: #a82328;
+  --brand: #e03e3e;
+  --brand-light: #33120f;
+  --brand-hover: #f05450;
+  --color-brand-fill: #e03e3e;
+  --color-brand-bg: #2b0e10;
+  --aou-1: #2b0e10;
+  --aou-2: #471418;
+  --aou-3: #661b21;
+  --aou-4: #8a232b;
+  --aou-5: #b32d33;
+  --aou-6: #e03e3e;
+  --aou-7: #ea6a64;
+  --aou-8: #f29590;
+  --aou-9: #f9c4c2;
+  --aou-10: #fdecec;
+  --bg-base: #0a100d;
+  --bg-1: #101914;
+  --bg-2: #16211b;
+  --bg-3: #1d2a23;
+  --bg-4: #25342c;
+  --bg-5: #2f4137;
+  --bg-6: #3c5044;
+  --bg-8: #587061;
+  --bg-9: #7e9484;
+  --bg-10: #b8c9bd;
+  --color-bg-1: #101914;
+  --color-bg-2: #16211b;
+  --color-bg-3: #1d2a23;
+  --color-bg-4: #25342c;
+  --bg-hover: #1a2620;
+  --bg-active: #223129;
+  --text-primary: #f0f4ee;
+  --text-secondary: #a8b5a9;
+  --text-disabled: #55645a;
+  --text-0: #f8fbf7;
+  --text-white: #ffffff;
+  --color-text-1: #f0f4ee;
+  --color-text-2: #a8b5a9;
+  --color-text-3: #7c8b7d;
+  --color-text-4: #55645a;
+  --border-base: #2b3a30;
+  --border-light: #202b24;
+  --border-special: #5a2a2e;
+  --color-border: #2b3a30;
+  --color-border-1: #2b3a30;
+  --color-border-2: #202b24;
+  --fill: #16211b;
+  --color-fill: #16211b;
+  --fill-0: #101914;
+  --fill-white-to-black: #0a100d;
+  --dialog-fill-0: #131d17;
+  --inverse: #f0f4ee;
+  --success: #3fb97a;
+  --warning: #e8b64c;
+  --danger: #e03e3e;
+  --info: #5a9bd6;
+  --message-user-bg: #8a232b;
+  --message-tips-bg: #1a2420;
+  --workspace-btn-bg: #2b0e10;
+  --color-guid-agent-bar: #121b15;
+  --xmas-red: #e03e3e;
+  --xmas-green: #2f9e6e;
+  --xmas-gold: #e8b64c;
+  --xmas-snow: #f2f7f4;
+  --xmas-pine: #1d2a23;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-festival-christmas] {
+  --dsw-static-deepseek-50: #fdecec;
+  --dsw-static-blue-50: #fdecec;
+  --dsw-static-deepseek-50p: #f9c4c2;
+  --dsw-static-blue-50p: #f9c4c2;
+  --dsw-static-deepseek-75: #f9c4c2;
+  --dsw-static-blue-75: #f9c4c2;
+  --dsw-static-deepseek-100: #f9c4c2;
+  --dsw-static-blue-100: #f9c4c2;
+  --dsw-static-deepseek-200: #f29590;
+  --dsw-static-blue-200: #f29590;
+  --dsw-static-deepseek-300: #ea6a64;
+  --dsw-static-blue-300: #ea6a64;
+  --dsw-static-deepseek-400: #d94a45;
+  --dsw-static-blue-400: #d94a45;
+  --dsw-static-deepseek-450: #d94a45;
+  --dsw-static-blue-450: #d94a45;
+  --dsw-static-deepseek-500: #c2262f;
+  --dsw-static-blue-500: #c2262f;
+  --dsw-static-deepseek-600: #a81e26;
+  --dsw-static-blue-600: #a81e26;
+  --dsw-static-deepseek-700-delete: #8f1a22;
+  --dsw-static-deepseek-800: #8f1a22;
+  --dsw-static-blue-800: #8f1a22;
+  --dsw-static-deepseek-900: #6e141b;
+  --dsw-static-blue-900: #6e141b;
+  --dsw-static-deepseek-950: #471014;
+  --dsw-static-blue-950: #471014;
+  --dsw-static-neutral-bluish-00: #ffffff;
+  --dsw-static-neutral-00: #ffffff;
+  --dsw-static-neutral-bluish-50: #ffffff;
+  --dsw-static-neutral-50: #ffffff;
+  --dsw-static-neutral-bluish-60: #ffffff;
+  --dsw-static-neutral-60: #ffffff;
+  --dsw-static-neutral-bluish-75: #f0f4f0;
+  --dsw-static-neutral-75: #f0f4f0;
+  --dsw-static-neutral-bluish-100: #f0f4f0;
+  --dsw-static-neutral-100: #f0f4f0;
+  --dsw-static-neutral-bluish-150: #e7ede7;
+  --dsw-static-neutral-150: #e7ede7;
+  --dsw-static-neutral-bluish-200: #e7ede7;
+  --dsw-static-neutral-200: #e7ede7;
+  --dsw-static-neutral-bluish-250: #dde6dd;
+  --dsw-static-neutral-250: #dde6dd;
+  --dsw-static-neutral-bluish-300: #dde6dd;
+  --dsw-static-neutral-300: #dde6dd;
+  --dsw-static-neutral-bluish-400: #d0dcd0;
+  --dsw-static-neutral-400: #d0dcd0;
+  --dsw-static-neutral-bluish-500: #c0cfc0;
+  --dsw-static-neutral-500: #c0cfc0;
+  --dsw-static-neutral-bluish-550: #c0cfc0;
+  --dsw-static-neutral-550: #c0cfc0;
+  --dsw-static-neutral-bluish-600: #93a893;
+  --dsw-static-neutral-600: #93a893;
+  --dsw-static-neutral-bluish-700: #93a893;
+  --dsw-static-neutral-700: #93a893;
+  --dsw-static-neutral-bluish-750: #6e836e;
+  --dsw-static-neutral-750: #6e836e;
+  --dsw-static-neutral-bluish-800: #6e836e;
+  --dsw-static-neutral-800: #6e836e;
+  --dsw-static-neutral-bluish-850: #6e836e;
+  --dsw-static-neutral-850: #6e836e;
+  --dsw-static-neutral-bluish-875: #45564a;
+  --dsw-static-neutral-875: #45564a;
+  --dsw-static-neutral-bluish-900: #45564a;
+  --dsw-static-neutral-900: #45564a;
+  --dsw-static-neutral-bluish-950: #45564a;
+  --dsw-static-neutral-950: #45564a;
+  --dsw-static-neutral-bluish-1000: #1c241e;
+  --dsw-static-neutral-1000: #1c241e;
+  --dsw-static-green-50: color-mix(in srgb, #1f8a52 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #1f8a52 20%, white);
+  --dsw-static-green-400: #1f8a52;
+  --dsw-static-green-500: #1f8a52;
+  --dsw-static-green-600: color-mix(in srgb, #1f8a52 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #1f8a52 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #b8860b 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #b8860b 20%, white);
+  --dsw-static-amber-400: #b8860b;
+  --dsw-static-amber-500: #b8860b;
+  --dsw-static-amber-600: color-mix(in srgb, #b8860b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #b8860b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c2262f 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c2262f 20%, white);
+  --dsw-static-red-400: #c2262f;
+  --dsw-static-red-500: #c2262f;
+  --dsw-static-red-600: color-mix(in srgb, #c2262f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c2262f 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-festival-christmas][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2b0e10;
+  --dsw-static-blue-50: #2b0e10;
+  --dsw-static-deepseek-50p: #471418;
+  --dsw-static-blue-50p: #471418;
+  --dsw-static-deepseek-75: #471418;
+  --dsw-static-blue-75: #471418;
+  --dsw-static-deepseek-100: #471418;
+  --dsw-static-blue-100: #471418;
+  --dsw-static-deepseek-200: #661b21;
+  --dsw-static-blue-200: #661b21;
+  --dsw-static-deepseek-300: #8a232b;
+  --dsw-static-blue-300: #8a232b;
+  --dsw-static-deepseek-400: #b32d33;
+  --dsw-static-blue-400: #b32d33;
+  --dsw-static-deepseek-450: #b32d33;
+  --dsw-static-blue-450: #b32d33;
+  --dsw-static-deepseek-500: #e03e3e;
+  --dsw-static-blue-500: #e03e3e;
+  --dsw-static-deepseek-600: #ea6a64;
+  --dsw-static-blue-600: #ea6a64;
+  --dsw-static-deepseek-700-delete: #f29590;
+  --dsw-static-deepseek-800: #f29590;
+  --dsw-static-blue-800: #f29590;
+  --dsw-static-deepseek-900: #f9c4c2;
+  --dsw-static-blue-900: #f9c4c2;
+  --dsw-static-deepseek-950: #fdecec;
+  --dsw-static-blue-950: #fdecec;
+  --dsw-static-neutral-bluish-00: #101914;
+  --dsw-static-neutral-00: #101914;
+  --dsw-static-neutral-bluish-50: #101914;
+  --dsw-static-neutral-50: #101914;
+  --dsw-static-neutral-bluish-60: #101914;
+  --dsw-static-neutral-60: #101914;
+  --dsw-static-neutral-bluish-75: #16211b;
+  --dsw-static-neutral-75: #16211b;
+  --dsw-static-neutral-bluish-100: #16211b;
+  --dsw-static-neutral-100: #16211b;
+  --dsw-static-neutral-bluish-150: #1d2a23;
+  --dsw-static-neutral-150: #1d2a23;
+  --dsw-static-neutral-bluish-200: #1d2a23;
+  --dsw-static-neutral-200: #1d2a23;
+  --dsw-static-neutral-bluish-250: #25342c;
+  --dsw-static-neutral-250: #25342c;
+  --dsw-static-neutral-bluish-300: #25342c;
+  --dsw-static-neutral-300: #25342c;
+  --dsw-static-neutral-bluish-400: #2f4137;
+  --dsw-static-neutral-400: #2f4137;
+  --dsw-static-neutral-bluish-500: #3c5044;
+  --dsw-static-neutral-500: #3c5044;
+  --dsw-static-neutral-bluish-550: #3c5044;
+  --dsw-static-neutral-550: #3c5044;
+  --dsw-static-neutral-bluish-600: #587061;
+  --dsw-static-neutral-600: #587061;
+  --dsw-static-neutral-bluish-700: #587061;
+  --dsw-static-neutral-700: #587061;
+  --dsw-static-neutral-bluish-750: #7e9484;
+  --dsw-static-neutral-750: #7e9484;
+  --dsw-static-neutral-bluish-800: #7e9484;
+  --dsw-static-neutral-800: #7e9484;
+  --dsw-static-neutral-bluish-850: #7e9484;
+  --dsw-static-neutral-850: #7e9484;
+  --dsw-static-neutral-bluish-875: #b8c9bd;
+  --dsw-static-neutral-875: #b8c9bd;
+  --dsw-static-neutral-bluish-900: #b8c9bd;
+  --dsw-static-neutral-900: #b8c9bd;
+  --dsw-static-neutral-bluish-950: #b8c9bd;
+  --dsw-static-neutral-950: #b8c9bd;
+  --dsw-static-neutral-bluish-1000: #f0f4ee;
+  --dsw-static-neutral-1000: #f0f4ee;
+  --dsw-static-green-50: color-mix(in srgb, #3fb97a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #3fb97a 20%, black);
+  --dsw-static-green-400: #3fb97a;
+  --dsw-static-green-500: #3fb97a;
+  --dsw-static-green-600: color-mix(in srgb, #3fb97a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3fb97a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8b64c 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8b64c 20%, black);
+  --dsw-static-amber-400: #e8b64c;
+  --dsw-static-amber-500: #e8b64c;
+  --dsw-static-amber-600: color-mix(in srgb, #e8b64c 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8b64c 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e03e3e 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e03e3e 20%, black);
+  --dsw-static-red-400: #e03e3e;
+  --dsw-static-red-500: #e03e3e;
+  --dsw-static-red-600: color-mix(in srgb, #e03e3e 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e03e3e 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-festival-christmas] {
+  --dsw-alias-button-primary-fill: #c2262f;
+  --dsw-alias-button-primary-hover: #a81e26;
+  --dsw-alias-button-primary-dimmed: #f9c4c2;
+  --dsw-alias-button-info-fill: #c2262f;
+  --dsw-alias-button-info-hover: #a81e26;
+  --dsw-alias-button-contrast-fill: #a81e26;
+  --dsw-alias-button-ghost-active-fill: #fbe3e4;
+  --dsw-alias-button-ghost-active-hover: #f9c4c2;
+  --dsw-alias-button-ghost-active-border: #ea6a64;
+  --dsw-alias-button-elevated-fill: #ffffff;
+  --dsw-alias-button-floating-fill: #ffffff;
+  --dsw-alias-button-floating-hover: #e9efe9;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(194, 38, 47, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(194, 38, 47, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(194, 38, 47, 0.6);
+  --dsw-specific-bubble: #c2262f;
+  --dsw-specific-bubble-highlight: #f29590;
+  --dsw-specific-input-major: #ffffff;
+  --dsw-specific-login-input: #ffffff;
+  --dsw-specific-sidebar-fill: #c2262f;
+  --dsw-specific-sidebar-nav-item-active: #f9c4c2;
+  --dsw-specific-sidebar-nav-item-hover: #e9efe9;
+  --dsw-specific-sidebar-nav-item-active-accent: #ea6a64;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-festival-christmas][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #e03e3e;
+  --dsw-alias-button-primary-hover: #f05450;
+  --dsw-alias-button-primary-dimmed: #471418;
+  --dsw-alias-button-info-fill: #e03e3e;
+  --dsw-alias-button-info-hover: #f05450;
+  --dsw-alias-button-contrast-fill: #ea6a64;
+  --dsw-alias-button-ghost-active-fill: #33120f;
+  --dsw-alias-button-ghost-active-hover: #471418;
+  --dsw-alias-button-ghost-active-border: #8a232b;
+  --dsw-alias-button-elevated-fill: #101914;
+  --dsw-alias-button-floating-fill: #101914;
+  --dsw-alias-button-floating-hover: #1a2620;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(224, 62, 62, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(224, 62, 62, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(224, 62, 62, 0.6);
+  --dsw-specific-bubble: #8a232b;
+  --dsw-specific-bubble-highlight: #661b21;
+  --dsw-specific-input-major: #101914;
+  --dsw-specific-login-input: #101914;
+  --dsw-specific-sidebar-fill: #e03e3e;
+  --dsw-specific-sidebar-nav-item-active: #471418;
+  --dsw-specific-sidebar-nav-item-hover: #1a2620;
+  --dsw-specific-sidebar-nav-item-active-accent: #8a232b;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-festival-christmas] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-christmas]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+    background-image:
+      radial-gradient(circle at 14% 22%, var(--xmas-snow) 0 1.8px, transparent 2.8px),
+      radial-gradient(circle at 62% 8%, var(--xmas-snow) 0 1.4px, transparent 2.4px),
+      radial-gradient(circle at 86% 46%, var(--xmas-green) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle at 34% 68%, var(--xmas-snow) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 50% 90%, var(--xmas-snow) 0 1.7px, transparent 2.7px),
+      radial-gradient(circle at 90% 82%, var(--xmas-gold) 0 1.3px, transparent 2.3px);
+    background-size: 520px 520px, 640px 640px, 460px 460px, 580px 580px, 500px 500px, 700px 700px;
+    animation: festival-christmas-xmas-snowfall 9s linear infinite;
+}
+
+body[data-dsh-festival-christmas]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image:
+      repeating-linear-gradient(58deg, var(--xmas-green) 0 1.5px, transparent 1.5px 16px),
+      repeating-linear-gradient(-58deg, var(--xmas-green) 0 1.5px, transparent 1.5px 16px);
+    background-size: 96px 96px, 96px 96px;
+    animation: festival-christmas-xmas-pine-sway 32s ease-in-out infinite alternate;
+}
+
+body[data-dsh-festival-christmas] [class*='sider'] [class*='session'],
+body[data-dsh-festival-christmas] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-festival-christmas] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(31, 122, 77, 0.1) !important;
+    box-shadow: inset 3px 0 0 0 var(--xmas-green);
+}
+
+body[data-dsh-festival-christmas] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-christmas] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(194, 38, 47, 0.14), rgba(194, 38, 47, 0.04) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--xmas-red);
+}
+
+body[data-dsh-festival-christmas] button[class*='primary'],
+body[data-dsh-festival-christmas] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      linear-gradient(90deg, transparent 42%, rgba(232, 182, 76, 0.85) 46% 54%, transparent 58%),
+      linear-gradient(135deg, #8f1a22 0%, var(--xmas-red) 55%, #d94a45 100%) !important;
+    border: 1px solid var(--xmas-gold) !important;
+    color: var(--text-white) !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(194, 38, 47, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(70, 8, 12, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-christmas] button[class*='primary']:hover,
+body[data-dsh-festival-christmas] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 16px rgba(194, 38, 47, 0.45), 0 0 14px rgba(184, 134, 11, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: festival-christmas-xmas-gift-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-christmas] pre,
+body[data-dsh-festival-christmas] .markdown-body pre {
+  background: linear-gradient(180deg, #14201a 0%, #0f1712 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 3px solid var(--xmas-red) !important;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(28, 36, 30, 0.12);
+}
+
+body[data-dsh-festival-christmas] pre code,
+body[data-dsh-festival-christmas] .markdown-body pre code {
+  background: transparent !important;
+    color: #d9e6dc !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-christmas] code,
+body[data-dsh-festival-christmas] .markdown-body code {
+  background: rgba(31, 122, 77, 0.1);
+    color: var(--xmas-red);
+    border: 1px solid rgba(31, 122, 77, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-festival-christmas]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-festival-christmas] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(28, 36, 30, 0.08), 0 0 0 1px rgba(31, 122, 77, 0.08);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-christmas] [class*='guidInputCard']:hover {
+  border-color: var(--xmas-green) !important;
+}
+
+body[data-dsh-festival-christmas] [class*='agent-bar'],
+body[data-dsh-festival-christmas] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(184, 134, 11, 0.4);
+}
+
+body[data-dsh-festival-christmas]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-christmas]::-webkit-scrollbar-thumb {
+  background: repeating-linear-gradient(45deg, var(--xmas-red) 0 6px, #ffffff 6px 12px);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-christmas]::-webkit-scrollbar-thumb:hover {
+  background: repeating-linear-gradient(45deg, #d94a45 0 6px, #f5e6e7 6px 12px);
+    box-shadow: 0 0 8px rgba(194, 38, 47, 0.4);
+}
+
+body[data-dsh-festival-christmas]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-festival-christmas] .markdown-body a,
+body[data-dsh-festival-christmas] a {
+  color: var(--xmas-red);
+}
+
+body[data-dsh-festival-christmas] .markdown-body a:hover,
+body[data-dsh-festival-christmas] a:hover {
+  color: #8f1a22;
+    text-shadow: 0 0 8px rgba(194, 38, 47, 0.25);
+}
+
+body[data-dsh-festival-christmas] .markdown-body blockquote {
+  border-left: 3px solid var(--xmas-green);
+    background: rgba(31, 122, 77, 0.08);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-christmas] .markdown-body hr,
+body[data-dsh-festival-christmas] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      radial-gradient(circle at 4px 4px, rgba(194, 38, 47, 0.55) 0 1.6px, transparent 2.6px),
+      linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.4), transparent);
+    background-size: 26px 8px, 100% 1px;
+    background-position: 0 0, 0 4px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.65;
+}
+
+body[data-dsh-festival-christmas] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--xmas-red) !important;
+    border-color: rgba(194, 38, 47, 0.5) !important;
+    background-color: rgba(194, 38, 47, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-festival-christmas][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 14% 22%, var(--xmas-snow) 0 1.6px, transparent 2.6px),
+      radial-gradient(circle at 62% 8%, var(--xmas-snow) 0 1.2px, transparent 2.2px),
+      radial-gradient(circle at 86% 46%, var(--xmas-snow) 0 2px, transparent 3.2px),
+      radial-gradient(circle at 34% 68%, var(--xmas-snow) 0 1.3px, transparent 2.3px),
+      radial-gradient(circle at 50% 90%, var(--xmas-snow) 0 1.5px, transparent 2.5px),
+      radial-gradient(circle at 90% 82%, var(--xmas-gold) 0 1.2px, transparent 2.2px);
+    background-size: 520px 520px, 640px 640px, 460px 460px, 580px 580px, 500px 500px, 700px 700px;
+    animation: festival-christmas-xmas-snowfall 9s linear infinite;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      repeating-linear-gradient(58deg, var(--xmas-green) 0 1.5px, transparent 1.5px 16px),
+      repeating-linear-gradient(-58deg, var(--xmas-green) 0 1.5px, transparent 1.5px 16px);
+    background-size: 96px 96px, 96px 96px;
+    animation: festival-christmas-xmas-pine-sway 32s ease-in-out infinite alternate;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(47, 158, 110, 0.16) !important;
+    box-shadow: inset 3px 0 0 0 var(--xmas-green);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(224, 62, 62, 0.3), rgba(224, 62, 62, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--xmas-red);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-festival-christmas][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      linear-gradient(90deg, transparent 42%, rgba(232, 182, 76, 0.85) 46% 54%, transparent 58%),
+      linear-gradient(135deg, #a82328 0%, var(--xmas-red) 55%, #f05450 100%) !important;
+    border: 1px solid var(--xmas-gold) !important;
+    color: var(--text-white) !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(224, 62, 62, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(90, 10, 16, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-festival-christmas][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(224, 62, 62, 0.55), 0 0 14px rgba(232, 182, 76, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: festival-christmas-xmas-gift-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] pre,
+body[data-dsh-festival-christmas][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0d1510 0%, #0a100d 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 3px solid var(--xmas-red) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(29, 42, 35, 0.5);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] pre code,
+body[data-dsh-festival-christmas][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d9e6dc !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] code,
+body[data-dsh-festival-christmas][data-ds-dark-theme] .markdown-body code {
+  background: rgba(47, 158, 110, 0.18);
+    color: var(--xmas-gold);
+    border: 1px solid rgba(47, 158, 110, 0.4);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(6, 10, 8, 0.55), 0 0 0 1px rgba(47, 158, 110, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--xmas-green) !important;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-festival-christmas][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(232, 182, 76, 0.4);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: repeating-linear-gradient(45deg, var(--xmas-red) 0 6px, var(--xmas-snow) 6px 12px);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: repeating-linear-gradient(45deg, #f05450 0 6px, #ffffff 6px 12px);
+    box-shadow: 0 0 8px rgba(224, 62, 62, 0.5);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-festival-christmas][data-ds-dark-theme] a {
+  color: #ea6a64;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-festival-christmas][data-ds-dark-theme] a:hover {
+  color: #f29590;
+    text-shadow: 0 0 8px rgba(224, 62, 62, 0.5);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--xmas-green);
+    background: rgba(47, 158, 110, 0.12);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-festival-christmas][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      radial-gradient(circle at 4px 4px, rgba(242, 247, 244, 0.85) 0 1.6px, transparent 2.6px),
+      linear-gradient(90deg, transparent, rgba(232, 182, 76, 0.4), transparent);
+    background-size: 26px 8px, 100% 1px;
+    background-position: 0 0, 0 4px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.65;
+}
+
+body[data-dsh-festival-christmas][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #f29590 !important;
+    border-color: rgba(224, 62, 62, 0.5) !important;
+    background-color: rgba(224, 62, 62, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes festival-christmas-xmas-snowfall {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 40px 520px, -30px 640px, 25px 460px, -35px 580px, 30px 500px, -20px 700px; }
+}
+
+@keyframes festival-christmas-xmas-pine-sway {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 24px 10px, -24px 6px; }
+}
+
+@keyframes festival-christmas-xmas-lights-twinkle {
+  0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 1px rgba(184, 134, 11, 0.35)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 4px rgba(184, 134, 11, 0.6)); }
+}
+
+@keyframes festival-christmas-xmas-gift-sheen {
+  0%, 100% { box-shadow: 0 3px 14px rgba(194, 38, 47, 0.4), 0 0 10px rgba(184, 134, 11, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28); }
+  50% { box-shadow: 0 3px 22px rgba(194, 38, 47, 0.55), 0 0 22px rgba(184, 134, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.34); }
+}
+
+@keyframes festival-christmas-xmas-tinsel-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+@keyframes festival-christmas-xmas-candy-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

@@ -1,0 +1,8 @@
+{
+  "format": "dsh-preset",
+  "version": 1,
+  "id": "ai-report-analyst",
+  "name": "AI 数据叙事分析师",
+  "description": "赋范官方 AI 报表工作流：1 套 Agent Preset 与 1 个 Skill。",
+  "sourceDshVersion": "0.1.0-rc.8"
+}

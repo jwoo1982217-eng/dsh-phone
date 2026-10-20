@@ -1,0 +1,777 @@
+/* mario-luigi — 超级马里奥 · 路易吉 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-mario-luigi], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-mario-luigi] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1e2b1c;
+  background-color: #f3f7f0;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] {
+  color: #edf4ee;
+  background-color: #0c120e;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-mario-luigi] {
+  --color-primary: #159a3c;
+  --primary: #159a3c;
+  --primary-rgb: 21, 154, 60;
+  --color-primary-light-1: #35b25a;
+  --color-primary-light-2: #6cca87;
+  --color-primary-light-3: #b3e3c1;
+  --color-primary-dark-1: #0f7a2e;
+  --brand: #159a3c;
+  --brand-light: #e4f5e9;
+  --brand-hover: #0f7a2e;
+  --color-brand-fill: #159a3c;
+  --color-brand-bg: #dcf2e3;
+  --aou-1: #e8f7ec;
+  --aou-2: #c9ecd3;
+  --aou-3: #a2dfb4;
+  --aou-4: #77cf92;
+  --aou-5: #47bd6f;
+  --aou-6: #159a3c;
+  --aou-7: #118331;
+  --aou-8: #0e6b29;
+  --aou-9: #0a5320;
+  --aou-10: #063b16;
+  --bg-base: #f3f7f0;
+  --bg-1: #ebf1e6;
+  --bg-2: #e2ead9;
+  --bg-3: #d7e1cb;
+  --bg-4: #c9d5ba;
+  --bg-5: #b8c6a7;
+  --bg-6: #a4b393;
+  --bg-8: #7f8d70;
+  --bg-9: #5b664f;
+  --bg-10: #38402f;
+  --color-bg-1: #ebf1e6;
+  --color-bg-2: #e2ead9;
+  --color-bg-3: #d7e1cb;
+  --color-bg-4: #c9d5ba;
+  --bg-hover: #dfe8d4;
+  --bg-active: #d2ddc3;
+  --text-primary: #1e2b1c;
+  --text-secondary: #4d5a48;
+  --text-disabled: #9aa893;
+  --text-0: #101a0e;
+  --text-white: #ffffff;
+  --color-text-1: #1e2b1c;
+  --color-text-2: #4d5a48;
+  --color-text-3: #76836d;
+  --color-text-4: #9aa893;
+  --border-base: #c2cfb4;
+  --border-light: #d4ddc7;
+  --border-special: #8fd0a4;
+  --color-border: #c2cfb4;
+  --color-border-1: #c2cfb4;
+  --color-border-2: #d4ddc7;
+  --fill: #e2ead9;
+  --color-fill: #e2ead9;
+  --fill-0: #ebf1e6;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fafdf8;
+  --inverse: #1e2b1c;
+  --success: #159a3c;
+  --warning: #d08a1d;
+  --danger: #d32f2f;
+  --info: #2656b8;
+  --message-user-bg: #0f7a2e;
+  --message-tips-bg: #e4ecfb;
+  --workspace-btn-bg: #dcf2e3;
+  --color-guid-agent-bar: #e9efe2;
+  --luigi-green: #159a3c;
+  --luigi-green-deep: #0f7a2e;
+  --luigi-overalls: #2656b8;
+  --luigi-overalls-hi: #4a78d6;
+  --luigi-gold: #f5b81c;
+  --luigi-ghost: #8ce8b8;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-mario-luigi][data-ds-dark-theme] {
+  --color-primary: #3fd664;
+  --primary: #3fd664;
+  --primary-rgb: 63, 214, 100;
+  --color-primary-light-1: #68e086;
+  --color-primary-light-2: #92eaab;
+  --color-primary-light-3: #bcf2cb;
+  --color-primary-dark-1: #1f8839;
+  --brand: #3fd664;
+  --brand-light: #12321b;
+  --brand-hover: #68e086;
+  --color-brand-fill: #3fd664;
+  --color-brand-bg: #0f2c17;
+  --aou-1: #0a2e14;
+  --aou-2: #104a1f;
+  --aou-3: #17682c;
+  --aou-4: #1f8839;
+  --aou-5: #2cae4e;
+  --aou-6: #3fd664;
+  --aou-7: #68e086;
+  --aou-8: #92eaab;
+  --aou-9: #bcf2cb;
+  --aou-10: #e2f9e8;
+  --bg-base: #0c120e;
+  --bg-1: #121a14;
+  --bg-2: #18221b;
+  --bg-3: #1f2c23;
+  --bg-4: #28392d;
+  --bg-5: #33483a;
+  --bg-6: #415a4a;
+  --bg-8: #5f7a68;
+  --bg-9: #88a190;
+  --bg-10: #bccabd;
+  --color-bg-1: #121a14;
+  --color-bg-2: #18221b;
+  --color-bg-3: #1f2c23;
+  --color-bg-4: #28392d;
+  --bg-hover: #1b271e;
+  --bg-active: #233326;
+  --text-primary: #edf4ee;
+  --text-secondary: #aab8ac;
+  --text-disabled: #57655a;
+  --text-0: #f7fbf8;
+  --text-white: #ffffff;
+  --color-text-1: #edf4ee;
+  --color-text-2: #aab8ac;
+  --color-text-3: #7f8d81;
+  --color-text-4: #57655a;
+  --border-base: #2c3b30;
+  --border-light: #222e25;
+  --border-special: #2f5c3a;
+  --color-border: #2c3b30;
+  --color-border-1: #2c3b30;
+  --color-border-2: #222e25;
+  --fill: #18221b;
+  --color-fill: #18221b;
+  --fill-0: #121a14;
+  --fill-white-to-black: #0c120e;
+  --dialog-fill-0: #141d16;
+  --inverse: #edf4ee;
+  --success: #3fd664;
+  --warning: #e8a33d;
+  --danger: #e04848;
+  --info: #5b8def;
+  --message-user-bg: #12512a;
+  --message-tips-bg: #16233c;
+  --workspace-btn-bg: #0f2c17;
+  --color-guid-agent-bar: #141f17;
+  --luigi-green: #3fd664;
+  --luigi-green-deep: #1f8839;
+  --luigi-overalls: #3d6ad6;
+  --luigi-overalls-hi: #5b8def;
+  --luigi-gold: #f5c93c;
+  --luigi-ghost: #7df0c0;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-mario-luigi] {
+  --dsw-static-deepseek-50: #e8f7ec;
+  --dsw-static-blue-50: #e8f7ec;
+  --dsw-static-deepseek-50p: #c9ecd3;
+  --dsw-static-blue-50p: #c9ecd3;
+  --dsw-static-deepseek-75: #c9ecd3;
+  --dsw-static-blue-75: #c9ecd3;
+  --dsw-static-deepseek-100: #c9ecd3;
+  --dsw-static-blue-100: #c9ecd3;
+  --dsw-static-deepseek-200: #a2dfb4;
+  --dsw-static-blue-200: #a2dfb4;
+  --dsw-static-deepseek-300: #77cf92;
+  --dsw-static-blue-300: #77cf92;
+  --dsw-static-deepseek-400: #47bd6f;
+  --dsw-static-blue-400: #47bd6f;
+  --dsw-static-deepseek-450: #47bd6f;
+  --dsw-static-blue-450: #47bd6f;
+  --dsw-static-deepseek-500: #159a3c;
+  --dsw-static-blue-500: #159a3c;
+  --dsw-static-deepseek-600: #118331;
+  --dsw-static-blue-600: #118331;
+  --dsw-static-deepseek-700-delete: #0e6b29;
+  --dsw-static-deepseek-800: #0e6b29;
+  --dsw-static-blue-800: #0e6b29;
+  --dsw-static-deepseek-900: #0a5320;
+  --dsw-static-blue-900: #0a5320;
+  --dsw-static-deepseek-950: #063b16;
+  --dsw-static-blue-950: #063b16;
+  --dsw-static-neutral-bluish-00: #ebf1e6;
+  --dsw-static-neutral-00: #ebf1e6;
+  --dsw-static-neutral-bluish-50: #ebf1e6;
+  --dsw-static-neutral-50: #ebf1e6;
+  --dsw-static-neutral-bluish-60: #ebf1e6;
+  --dsw-static-neutral-60: #ebf1e6;
+  --dsw-static-neutral-bluish-75: #e2ead9;
+  --dsw-static-neutral-75: #e2ead9;
+  --dsw-static-neutral-bluish-100: #e2ead9;
+  --dsw-static-neutral-100: #e2ead9;
+  --dsw-static-neutral-bluish-150: #d7e1cb;
+  --dsw-static-neutral-150: #d7e1cb;
+  --dsw-static-neutral-bluish-200: #d7e1cb;
+  --dsw-static-neutral-200: #d7e1cb;
+  --dsw-static-neutral-bluish-250: #c9d5ba;
+  --dsw-static-neutral-250: #c9d5ba;
+  --dsw-static-neutral-bluish-300: #c9d5ba;
+  --dsw-static-neutral-300: #c9d5ba;
+  --dsw-static-neutral-bluish-400: #b8c6a7;
+  --dsw-static-neutral-400: #b8c6a7;
+  --dsw-static-neutral-bluish-500: #a4b393;
+  --dsw-static-neutral-500: #a4b393;
+  --dsw-static-neutral-bluish-550: #a4b393;
+  --dsw-static-neutral-550: #a4b393;
+  --dsw-static-neutral-bluish-600: #7f8d70;
+  --dsw-static-neutral-600: #7f8d70;
+  --dsw-static-neutral-bluish-700: #7f8d70;
+  --dsw-static-neutral-700: #7f8d70;
+  --dsw-static-neutral-bluish-750: #5b664f;
+  --dsw-static-neutral-750: #5b664f;
+  --dsw-static-neutral-bluish-800: #5b664f;
+  --dsw-static-neutral-800: #5b664f;
+  --dsw-static-neutral-bluish-850: #5b664f;
+  --dsw-static-neutral-850: #5b664f;
+  --dsw-static-neutral-bluish-875: #38402f;
+  --dsw-static-neutral-875: #38402f;
+  --dsw-static-neutral-bluish-900: #38402f;
+  --dsw-static-neutral-900: #38402f;
+  --dsw-static-neutral-bluish-950: #38402f;
+  --dsw-static-neutral-950: #38402f;
+  --dsw-static-neutral-bluish-1000: #1e2b1c;
+  --dsw-static-neutral-1000: #1e2b1c;
+  --dsw-static-green-50: color-mix(in srgb, #159a3c 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #159a3c 20%, white);
+  --dsw-static-green-400: #159a3c;
+  --dsw-static-green-500: #159a3c;
+  --dsw-static-green-600: color-mix(in srgb, #159a3c 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #159a3c 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d32f2f 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d32f2f 20%, white);
+  --dsw-static-red-400: #d32f2f;
+  --dsw-static-red-500: #d32f2f;
+  --dsw-static-red-600: color-mix(in srgb, #d32f2f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d32f2f 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-mario-luigi][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #0a2e14;
+  --dsw-static-blue-50: #0a2e14;
+  --dsw-static-deepseek-50p: #104a1f;
+  --dsw-static-blue-50p: #104a1f;
+  --dsw-static-deepseek-75: #104a1f;
+  --dsw-static-blue-75: #104a1f;
+  --dsw-static-deepseek-100: #104a1f;
+  --dsw-static-blue-100: #104a1f;
+  --dsw-static-deepseek-200: #17682c;
+  --dsw-static-blue-200: #17682c;
+  --dsw-static-deepseek-300: #1f8839;
+  --dsw-static-blue-300: #1f8839;
+  --dsw-static-deepseek-400: #2cae4e;
+  --dsw-static-blue-400: #2cae4e;
+  --dsw-static-deepseek-450: #2cae4e;
+  --dsw-static-blue-450: #2cae4e;
+  --dsw-static-deepseek-500: #3fd664;
+  --dsw-static-blue-500: #3fd664;
+  --dsw-static-deepseek-600: #68e086;
+  --dsw-static-blue-600: #68e086;
+  --dsw-static-deepseek-700-delete: #92eaab;
+  --dsw-static-deepseek-800: #92eaab;
+  --dsw-static-blue-800: #92eaab;
+  --dsw-static-deepseek-900: #bcf2cb;
+  --dsw-static-blue-900: #bcf2cb;
+  --dsw-static-deepseek-950: #e2f9e8;
+  --dsw-static-blue-950: #e2f9e8;
+  --dsw-static-neutral-bluish-00: #121a14;
+  --dsw-static-neutral-00: #121a14;
+  --dsw-static-neutral-bluish-50: #121a14;
+  --dsw-static-neutral-50: #121a14;
+  --dsw-static-neutral-bluish-60: #121a14;
+  --dsw-static-neutral-60: #121a14;
+  --dsw-static-neutral-bluish-75: #18221b;
+  --dsw-static-neutral-75: #18221b;
+  --dsw-static-neutral-bluish-100: #18221b;
+  --dsw-static-neutral-100: #18221b;
+  --dsw-static-neutral-bluish-150: #1f2c23;
+  --dsw-static-neutral-150: #1f2c23;
+  --dsw-static-neutral-bluish-200: #1f2c23;
+  --dsw-static-neutral-200: #1f2c23;
+  --dsw-static-neutral-bluish-250: #28392d;
+  --dsw-static-neutral-250: #28392d;
+  --dsw-static-neutral-bluish-300: #28392d;
+  --dsw-static-neutral-300: #28392d;
+  --dsw-static-neutral-bluish-400: #33483a;
+  --dsw-static-neutral-400: #33483a;
+  --dsw-static-neutral-bluish-500: #415a4a;
+  --dsw-static-neutral-500: #415a4a;
+  --dsw-static-neutral-bluish-550: #415a4a;
+  --dsw-static-neutral-550: #415a4a;
+  --dsw-static-neutral-bluish-600: #5f7a68;
+  --dsw-static-neutral-600: #5f7a68;
+  --dsw-static-neutral-bluish-700: #5f7a68;
+  --dsw-static-neutral-700: #5f7a68;
+  --dsw-static-neutral-bluish-750: #88a190;
+  --dsw-static-neutral-750: #88a190;
+  --dsw-static-neutral-bluish-800: #88a190;
+  --dsw-static-neutral-800: #88a190;
+  --dsw-static-neutral-bluish-850: #88a190;
+  --dsw-static-neutral-850: #88a190;
+  --dsw-static-neutral-bluish-875: #bccabd;
+  --dsw-static-neutral-875: #bccabd;
+  --dsw-static-neutral-bluish-900: #bccabd;
+  --dsw-static-neutral-900: #bccabd;
+  --dsw-static-neutral-bluish-950: #bccabd;
+  --dsw-static-neutral-950: #bccabd;
+  --dsw-static-neutral-bluish-1000: #edf4ee;
+  --dsw-static-neutral-1000: #edf4ee;
+  --dsw-static-green-50: color-mix(in srgb, #3fd664 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #3fd664 20%, black);
+  --dsw-static-green-400: #3fd664;
+  --dsw-static-green-500: #3fd664;
+  --dsw-static-green-600: color-mix(in srgb, #3fd664 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3fd664 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8a33d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8a33d 20%, black);
+  --dsw-static-amber-400: #e8a33d;
+  --dsw-static-amber-500: #e8a33d;
+  --dsw-static-amber-600: color-mix(in srgb, #e8a33d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8a33d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e04848 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e04848 20%, black);
+  --dsw-static-red-400: #e04848;
+  --dsw-static-red-500: #e04848;
+  --dsw-static-red-600: color-mix(in srgb, #e04848 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e04848 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-mario-luigi] {
+  --dsw-alias-button-primary-fill: #159a3c;
+  --dsw-alias-button-primary-hover: #0f7a2e;
+  --dsw-alias-button-primary-dimmed: #c9ecd3;
+  --dsw-alias-button-info-fill: #159a3c;
+  --dsw-alias-button-info-hover: #0f7a2e;
+  --dsw-alias-button-contrast-fill: #118331;
+  --dsw-alias-button-ghost-active-fill: #e4f5e9;
+  --dsw-alias-button-ghost-active-hover: #c9ecd3;
+  --dsw-alias-button-ghost-active-border: #77cf92;
+  --dsw-alias-button-elevated-fill: #ebf1e6;
+  --dsw-alias-button-floating-fill: #ebf1e6;
+  --dsw-alias-button-floating-hover: #dfe8d4;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(21, 154, 60, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(21, 154, 60, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(21, 154, 60, 0.6);
+  --dsw-specific-bubble: #0f7a2e;
+  --dsw-specific-bubble-highlight: #a2dfb4;
+  --dsw-specific-input-major: #ebf1e6;
+  --dsw-specific-login-input: #ebf1e6;
+  --dsw-specific-sidebar-fill: #159a3c;
+  --dsw-specific-sidebar-nav-item-active: #c9ecd3;
+  --dsw-specific-sidebar-nav-item-hover: #dfe8d4;
+  --dsw-specific-sidebar-nav-item-active-accent: #77cf92;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-mario-luigi][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #3fd664;
+  --dsw-alias-button-primary-hover: #68e086;
+  --dsw-alias-button-primary-dimmed: #104a1f;
+  --dsw-alias-button-info-fill: #3fd664;
+  --dsw-alias-button-info-hover: #68e086;
+  --dsw-alias-button-contrast-fill: #68e086;
+  --dsw-alias-button-ghost-active-fill: #12321b;
+  --dsw-alias-button-ghost-active-hover: #104a1f;
+  --dsw-alias-button-ghost-active-border: #1f8839;
+  --dsw-alias-button-elevated-fill: #121a14;
+  --dsw-alias-button-floating-fill: #121a14;
+  --dsw-alias-button-floating-hover: #1b271e;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(63, 214, 100, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(63, 214, 100, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(63, 214, 100, 0.6);
+  --dsw-specific-bubble: #12512a;
+  --dsw-specific-bubble-highlight: #17682c;
+  --dsw-specific-input-major: #121a14;
+  --dsw-specific-login-input: #121a14;
+  --dsw-specific-sidebar-fill: #3fd664;
+  --dsw-specific-sidebar-nav-item-active: #104a1f;
+  --dsw-specific-sidebar-nav-item-hover: #1b271e;
+  --dsw-specific-sidebar-nav-item-active-accent: #1f8839;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-mario-luigi] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-luigi]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 14% 18%, rgba(21, 154, 60, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 80% 14%, rgba(245, 184, 28, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 52% 70%, rgba(38, 86, 184, 0.07) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 88%, rgba(21, 154, 60, 0.07) 0%, transparent 42%),
+      radial-gradient(ellipse at 8% 90%, rgba(140, 232, 184, 0.12) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.75;
+}
+
+body[data-dsh-mario-luigi]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 38%, rgba(21, 154, 60, 0.55) 0 8px, transparent 9px),
+      radial-gradient(ellipse 60% 45% at 50% 78%, rgba(21, 154, 60, 0.4) 0 5px, transparent 6px),
+      radial-gradient(circle at 50% 38%, rgba(38, 86, 184, 0.45) 0 8px, transparent 9px);
+    background-size: 64px 48px, 64px 48px, 64px 48px;
+    background-position: 0 0, 0 4px, 32px 24px;
+    opacity: 0.05;
+    animation: mario-luigi-luigi-boo-drift 24s linear infinite;
+}
+
+body[data-dsh-mario-luigi] [class*='sider'] [class*='session'],
+body[data-dsh-mario-luigi] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-luigi] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(21, 154, 60, 0.10);
+    box-shadow: inset 3px 0 0 0 rgba(21, 154, 60, 0.75);
+}
+
+body[data-dsh-mario-luigi] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-luigi] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(21, 154, 60, 0.20), rgba(21, 154, 60, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--luigi-green);
+}
+
+body[data-dsh-mario-luigi] button[class*='primary'],
+body[data-dsh-mario-luigi] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #0f7a2e 0%, #159a3c 55%, #35b25a 100%) !important;
+    border: 1px solid #a2dfb4 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(21, 154, 60, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(6, 59, 22, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-luigi] button[class*='primary']:hover,
+body[data-dsh-mario-luigi] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    box-shadow: 0 3px 14px rgba(21, 154, 60, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: mario-luigi-luigi-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-luigi] pre,
+body[data-dsh-mario-luigi] .markdown-body pre {
+  background: linear-gradient(180deg, #152418 0%, #101c12 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--luigi-overalls) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(21, 154, 60, 0.18);
+}
+
+body[data-dsh-mario-luigi] pre code,
+body[data-dsh-mario-luigi] .markdown-body pre code {
+  background: transparent !important;
+    color: #ddefe0 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-luigi] code,
+body[data-dsh-mario-luigi] .markdown-body code {
+  background: rgba(21, 154, 60, 0.12);
+    color: var(--luigi-green-deep);
+    border: 1px solid rgba(21, 154, 60, 0.32);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-luigi]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-mario-luigi] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(56, 64, 47, 0.08), 0 0 0 1px rgba(21, 154, 60, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-luigi] [class*='guidInputCard']:hover {
+  border-color: var(--luigi-green) !important;
+}
+
+body[data-dsh-mario-luigi] [class*='agent-bar'],
+body[data-dsh-mario-luigi] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(21, 154, 60, 0.35);
+}
+
+body[data-dsh-mario-luigi]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-luigi]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #35b25a, #0e6b29);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-mario-luigi]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #47bd6f, #0a5320);
+}
+
+body[data-dsh-mario-luigi]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-luigi] .markdown-body a,
+body[data-dsh-mario-luigi] a {
+  color: #2656b8;
+}
+
+body[data-dsh-mario-luigi] .markdown-body a:hover,
+body[data-dsh-mario-luigi] a:hover {
+  color: #4a78d6;
+}
+
+body[data-dsh-mario-luigi] .markdown-body blockquote {
+  border-left: 3px solid var(--luigi-green);
+    background: rgba(21, 154, 60, 0.08);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-luigi] .markdown-body hr,
+body[data-dsh-mario-luigi] hr {
+  border: none;
+    height: 10px;
+    background-image: radial-gradient(circle at 7px 5px, rgba(245, 184, 28, 0.7) 0 3px, transparent 4px);
+    background-size: 22px 10px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-mario-luigi] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--luigi-green-deep) !important;
+    border-color: rgba(21, 154, 60, 0.5) !important;
+    background-color: rgba(21, 154, 60, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-mario-luigi][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(125, 240, 192, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(91, 141, 239, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(63, 214, 100, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(31, 136, 57, 0.22) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(125, 240, 192, 0.08) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 38%, rgba(125, 240, 192, 0.5) 0 8px, transparent 9px),
+      radial-gradient(ellipse 60% 45% at 50% 78%, rgba(125, 240, 192, 0.38) 0 5px, transparent 6px),
+      radial-gradient(circle at 50% 38%, rgba(63, 214, 100, 0.45) 0 8px, transparent 9px);
+    background-size: 64px 48px, 64px 48px, 64px 48px;
+    background-position: 0 0, 0 4px, 32px 24px;
+    opacity: 0.07;
+    animation: mario-luigi-luigi-boo-drift 24s linear infinite;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(63, 214, 100, 0.10);
+    box-shadow: inset 3px 0 0 0 rgba(125, 240, 192, 0.6);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(63, 214, 100, 0.26), rgba(63, 214, 100, 0.07) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--luigi-green);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-mario-luigi][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #1f8839 0%, #2cae4e 55%, #3fd664 100%) !important;
+    border: 1px solid #68e086 !important;
+    color: #0c120e !important;
+    box-shadow: 0 2px 8px rgba(63, 214, 100, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 1px rgba(226, 249, 232, 0.4);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-mario-luigi][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(63, 214, 100, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: mario-luigi-luigi-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] pre,
+body[data-dsh-mario-luigi][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #101a12 0%, #0c150e 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--luigi-overalls) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(63, 214, 100, 0.12);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] pre code,
+body[data-dsh-mario-luigi][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d8ecdc !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] code,
+body[data-dsh-mario-luigi][data-ds-dark-theme] .markdown-body code {
+  background: rgba(63, 214, 100, 0.14);
+    color: #92eaab;
+    border: 1px solid rgba(63, 214, 100, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(5, 9, 6, 0.5), 0 0 0 1px rgba(63, 214, 100, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--luigi-green) !important;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-mario-luigi][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(63, 214, 100, 0.4);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3fd664, #17682c);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #68e086, #1f8839);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-mario-luigi][data-ds-dark-theme] a {
+  color: #5b8def;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-mario-luigi][data-ds-dark-theme] a:hover {
+  color: #8ab0f5;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--luigi-green);
+    background: rgba(63, 214, 100, 0.08);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-mario-luigi][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image: radial-gradient(circle at 7px 5px, rgba(245, 201, 60, 0.65) 0 3px, transparent 4px);
+    background-size: 22px 10px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-mario-luigi][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #92eaab !important;
+    border-color: rgba(63, 214, 100, 0.5) !important;
+    background-color: rgba(63, 214, 100, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes mario-luigi-luigi-boo-drift {
+  0% { background-position: 0 0, 0 4px, 32px 24px; }
+  100% { background-position: 64px 48px, 64px 52px, 96px 72px; }
+}
+
+@keyframes mario-luigi-luigi-cap-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(21, 154, 60, 0.14); }
+  50% { box-shadow: 0 2px 14px rgba(21, 154, 60, 0.32); }
+}
+
+@keyframes mario-luigi-luigi-jump {
+  0%, 100% { transform: translateY(0); }
+  12% { transform: translateY(-5px); }
+  24% { transform: translateY(0); }
+  30% { transform: translateY(-2px); }
+  36% { transform: translateY(0); }
+}
+
+@keyframes mario-luigi-luigi-btn-glow {
+  0%, 100% { box-shadow: 0 3px 12px rgba(21, 154, 60, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 20px rgba(21, 154, 60, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes mario-luigi-luigi-vacuum-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

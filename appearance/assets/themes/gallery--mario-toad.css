@@ -1,0 +1,767 @@
+/* mario-toad — 超级马里奥 · 奇诺比奥 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-mario-toad], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-mario-toad] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2a2419;
+  background-color: #faf6ef;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] {
+  color: #eef1f6;
+  background-color: #0c101c;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-mario-toad] {
+  --color-primary: #e52521;
+  --primary: #e52521;
+  --primary-rgb: 229, 37, 33;
+  --color-primary-light-1: #ed524e;
+  --color-primary-light-2: #f3817e;
+  --color-primary-light-3: #f9b4b2;
+  --color-primary-dark-1: #b31613;
+  --brand: #e52521;
+  --brand-light: #fdeceb;
+  --brand-hover: #c71b18;
+  --color-brand-fill: #e52521;
+  --color-brand-bg: #fbe4e3;
+  --aou-1: #fdeceb;
+  --aou-2: #facdcb;
+  --aou-3: #f5a29e;
+  --aou-4: #ef736e;
+  --aou-5: #ea4c47;
+  --aou-6: #e52521;
+  --aou-7: #c71b18;
+  --aou-8: #a01310;
+  --aou-9: #7a0d0b;
+  --aou-10: #560705;
+  --bg-base: #faf6ef;
+  --bg-1: #f3eee4;
+  --bg-2: #ebe5d8;
+  --bg-3: #e1dacb;
+  --bg-4: #d5cdbb;
+  --bg-5: #c5bca7;
+  --bg-6: #b1a78f;
+  --bg-8: #8e8570;
+  --bg-9: #696252;
+  --bg-10: #443f34;
+  --color-bg-1: #f3eee4;
+  --color-bg-2: #ebe5d8;
+  --color-bg-3: #e1dacb;
+  --color-bg-4: #d5cdbb;
+  --bg-hover: #eae4d5;
+  --bg-active: #dfd7c4;
+  --text-primary: #2a2419;
+  --text-secondary: #615949;
+  --text-disabled: #a89f8c;
+  --text-0: #171309;
+  --text-white: #ffffff;
+  --color-text-1: #2a2419;
+  --color-text-2: #615949;
+  --color-text-3: #877e6c;
+  --color-text-4: #a89f8c;
+  --border-base: #d6cdba;
+  --border-light: #e4ddcc;
+  --border-special: #efa7a4;
+  --color-border: #d6cdba;
+  --color-border-1: #d6cdba;
+  --color-border-2: #e4ddcc;
+  --fill: #ebe5d8;
+  --color-fill: #ebe5d8;
+  --fill-0: #f3eee4;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fdfaf5;
+  --inverse: #2a2419;
+  --success: #2f9e5f;
+  --warning: #d8911c;
+  --danger: #e52521;
+  --info: #1a6fc4;
+  --message-user-bg: #ffffff;
+  --message-tips-bg: #e9eef4;
+  --workspace-btn-bg: #fbe4e3;
+  --color-guid-agent-bar: #efe9dc;
+  --toad-red: #e52521;
+  --toad-red-soft: rgba(229, 37, 33, 0.28);
+  --toad-vest-blue: #1a6fc4;
+  --toad-vest-deep: #114e8f;
+  --toad-gold: #e8b83a;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-mario-toad][data-ds-dark-theme] {
+  --color-primary: #f2483f;
+  --primary: #f2483f;
+  --primary-rgb: 242, 72, 63;
+  --color-primary-light-1: #f57168;
+  --color-primary-light-2: #f89790;
+  --color-primary-light-3: #fbbcb8;
+  --color-primary-dark-1: #c2241c;
+  --brand: #f2483f;
+  --brand-light: #3c1613;
+  --brand-hover: #ff625a;
+  --color-brand-fill: #f2483f;
+  --color-brand-bg: #331311;
+  --aou-1: #2e0f0c;
+  --aou-2: #4d1712;
+  --aou-3: #701f18;
+  --aou-4: #96281f;
+  --aou-5: #c13027;
+  --aou-6: #f2483f;
+  --aou-7: #f57168;
+  --aou-8: #f89790;
+  --aou-9: #fbbcb8;
+  --aou-10: #fde8e7;
+  --bg-base: #0c101c;
+  --bg-1: #121826;
+  --bg-2: #182030;
+  --bg-3: #1f293c;
+  --bg-4: #283449;
+  --bg-5: #344157;
+  --bg-6: #43516a;
+  --bg-8: #64718a;
+  --bg-9: #8e99ae;
+  --bg-10: #c3c9d6;
+  --color-bg-1: #121826;
+  --color-bg-2: #182030;
+  --color-bg-3: #1f293c;
+  --color-bg-4: #283449;
+  --bg-hover: #1d2636;
+  --bg-active: #263043;
+  --text-primary: #eef1f6;
+  --text-secondary: #aab2c0;
+  --text-disabled: #57616f;
+  --text-0: #f8fafc;
+  --text-white: #ffffff;
+  --color-text-1: #eef1f6;
+  --color-text-2: #aab2c0;
+  --color-text-3: #7e8797;
+  --color-text-4: #57616f;
+  --border-base: #2c3647;
+  --border-light: #222b3a;
+  --border-special: #6b2b26;
+  --color-border: #2c3647;
+  --color-border-1: #2c3647;
+  --color-border-2: #222b3a;
+  --fill: #182030;
+  --color-fill: #182030;
+  --fill-0: #121826;
+  --fill-white-to-black: #0c101c;
+  --dialog-fill-0: #151c2b;
+  --inverse: #eef1f6;
+  --success: #4cb584;
+  --warning: #eab04a;
+  --danger: #f2483f;
+  --info: #5b93d8;
+  --message-user-bg: #f6f1e7;
+  --message-tips-bg: #1c2436;
+  --workspace-btn-bg: #331311;
+  --color-guid-agent-bar: #161d2c;
+  --toad-red: #f2483f;
+  --toad-red-soft: rgba(242, 72, 63, 0.35);
+  --toad-vest-blue: #5b93d8;
+  --toad-vest-deep: #2e5d94;
+  --toad-gold: #f0c24a;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-mario-toad] {
+  --dsw-static-deepseek-50: #fdeceb;
+  --dsw-static-blue-50: #fdeceb;
+  --dsw-static-deepseek-50p: #facdcb;
+  --dsw-static-blue-50p: #facdcb;
+  --dsw-static-deepseek-75: #facdcb;
+  --dsw-static-blue-75: #facdcb;
+  --dsw-static-deepseek-100: #facdcb;
+  --dsw-static-blue-100: #facdcb;
+  --dsw-static-deepseek-200: #f5a29e;
+  --dsw-static-blue-200: #f5a29e;
+  --dsw-static-deepseek-300: #ef736e;
+  --dsw-static-blue-300: #ef736e;
+  --dsw-static-deepseek-400: #ea4c47;
+  --dsw-static-blue-400: #ea4c47;
+  --dsw-static-deepseek-450: #ea4c47;
+  --dsw-static-blue-450: #ea4c47;
+  --dsw-static-deepseek-500: #e52521;
+  --dsw-static-blue-500: #e52521;
+  --dsw-static-deepseek-600: #c71b18;
+  --dsw-static-blue-600: #c71b18;
+  --dsw-static-deepseek-700-delete: #a01310;
+  --dsw-static-deepseek-800: #a01310;
+  --dsw-static-blue-800: #a01310;
+  --dsw-static-deepseek-900: #7a0d0b;
+  --dsw-static-blue-900: #7a0d0b;
+  --dsw-static-deepseek-950: #560705;
+  --dsw-static-blue-950: #560705;
+  --dsw-static-neutral-bluish-00: #f3eee4;
+  --dsw-static-neutral-00: #f3eee4;
+  --dsw-static-neutral-bluish-50: #f3eee4;
+  --dsw-static-neutral-50: #f3eee4;
+  --dsw-static-neutral-bluish-60: #f3eee4;
+  --dsw-static-neutral-60: #f3eee4;
+  --dsw-static-neutral-bluish-75: #ebe5d8;
+  --dsw-static-neutral-75: #ebe5d8;
+  --dsw-static-neutral-bluish-100: #ebe5d8;
+  --dsw-static-neutral-100: #ebe5d8;
+  --dsw-static-neutral-bluish-150: #e1dacb;
+  --dsw-static-neutral-150: #e1dacb;
+  --dsw-static-neutral-bluish-200: #e1dacb;
+  --dsw-static-neutral-200: #e1dacb;
+  --dsw-static-neutral-bluish-250: #d5cdbb;
+  --dsw-static-neutral-250: #d5cdbb;
+  --dsw-static-neutral-bluish-300: #d5cdbb;
+  --dsw-static-neutral-300: #d5cdbb;
+  --dsw-static-neutral-bluish-400: #c5bca7;
+  --dsw-static-neutral-400: #c5bca7;
+  --dsw-static-neutral-bluish-500: #b1a78f;
+  --dsw-static-neutral-500: #b1a78f;
+  --dsw-static-neutral-bluish-550: #b1a78f;
+  --dsw-static-neutral-550: #b1a78f;
+  --dsw-static-neutral-bluish-600: #8e8570;
+  --dsw-static-neutral-600: #8e8570;
+  --dsw-static-neutral-bluish-700: #8e8570;
+  --dsw-static-neutral-700: #8e8570;
+  --dsw-static-neutral-bluish-750: #696252;
+  --dsw-static-neutral-750: #696252;
+  --dsw-static-neutral-bluish-800: #696252;
+  --dsw-static-neutral-800: #696252;
+  --dsw-static-neutral-bluish-850: #696252;
+  --dsw-static-neutral-850: #696252;
+  --dsw-static-neutral-bluish-875: #443f34;
+  --dsw-static-neutral-875: #443f34;
+  --dsw-static-neutral-bluish-900: #443f34;
+  --dsw-static-neutral-900: #443f34;
+  --dsw-static-neutral-bluish-950: #443f34;
+  --dsw-static-neutral-950: #443f34;
+  --dsw-static-neutral-bluish-1000: #2a2419;
+  --dsw-static-neutral-1000: #2a2419;
+  --dsw-static-green-50: color-mix(in srgb, #2f9e5f 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2f9e5f 20%, white);
+  --dsw-static-green-400: #2f9e5f;
+  --dsw-static-green-500: #2f9e5f;
+  --dsw-static-green-600: color-mix(in srgb, #2f9e5f 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2f9e5f 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d8911c 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d8911c 20%, white);
+  --dsw-static-amber-400: #d8911c;
+  --dsw-static-amber-500: #d8911c;
+  --dsw-static-amber-600: color-mix(in srgb, #d8911c 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d8911c 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e52521 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e52521 20%, white);
+  --dsw-static-red-400: #e52521;
+  --dsw-static-red-500: #e52521;
+  --dsw-static-red-600: color-mix(in srgb, #e52521 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e52521 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-mario-toad][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2e0f0c;
+  --dsw-static-blue-50: #2e0f0c;
+  --dsw-static-deepseek-50p: #4d1712;
+  --dsw-static-blue-50p: #4d1712;
+  --dsw-static-deepseek-75: #4d1712;
+  --dsw-static-blue-75: #4d1712;
+  --dsw-static-deepseek-100: #4d1712;
+  --dsw-static-blue-100: #4d1712;
+  --dsw-static-deepseek-200: #701f18;
+  --dsw-static-blue-200: #701f18;
+  --dsw-static-deepseek-300: #96281f;
+  --dsw-static-blue-300: #96281f;
+  --dsw-static-deepseek-400: #c13027;
+  --dsw-static-blue-400: #c13027;
+  --dsw-static-deepseek-450: #c13027;
+  --dsw-static-blue-450: #c13027;
+  --dsw-static-deepseek-500: #f2483f;
+  --dsw-static-blue-500: #f2483f;
+  --dsw-static-deepseek-600: #f57168;
+  --dsw-static-blue-600: #f57168;
+  --dsw-static-deepseek-700-delete: #f89790;
+  --dsw-static-deepseek-800: #f89790;
+  --dsw-static-blue-800: #f89790;
+  --dsw-static-deepseek-900: #fbbcb8;
+  --dsw-static-blue-900: #fbbcb8;
+  --dsw-static-deepseek-950: #fde8e7;
+  --dsw-static-blue-950: #fde8e7;
+  --dsw-static-neutral-bluish-00: #121826;
+  --dsw-static-neutral-00: #121826;
+  --dsw-static-neutral-bluish-50: #121826;
+  --dsw-static-neutral-50: #121826;
+  --dsw-static-neutral-bluish-60: #121826;
+  --dsw-static-neutral-60: #121826;
+  --dsw-static-neutral-bluish-75: #182030;
+  --dsw-static-neutral-75: #182030;
+  --dsw-static-neutral-bluish-100: #182030;
+  --dsw-static-neutral-100: #182030;
+  --dsw-static-neutral-bluish-150: #1f293c;
+  --dsw-static-neutral-150: #1f293c;
+  --dsw-static-neutral-bluish-200: #1f293c;
+  --dsw-static-neutral-200: #1f293c;
+  --dsw-static-neutral-bluish-250: #283449;
+  --dsw-static-neutral-250: #283449;
+  --dsw-static-neutral-bluish-300: #283449;
+  --dsw-static-neutral-300: #283449;
+  --dsw-static-neutral-bluish-400: #344157;
+  --dsw-static-neutral-400: #344157;
+  --dsw-static-neutral-bluish-500: #43516a;
+  --dsw-static-neutral-500: #43516a;
+  --dsw-static-neutral-bluish-550: #43516a;
+  --dsw-static-neutral-550: #43516a;
+  --dsw-static-neutral-bluish-600: #64718a;
+  --dsw-static-neutral-600: #64718a;
+  --dsw-static-neutral-bluish-700: #64718a;
+  --dsw-static-neutral-700: #64718a;
+  --dsw-static-neutral-bluish-750: #8e99ae;
+  --dsw-static-neutral-750: #8e99ae;
+  --dsw-static-neutral-bluish-800: #8e99ae;
+  --dsw-static-neutral-800: #8e99ae;
+  --dsw-static-neutral-bluish-850: #8e99ae;
+  --dsw-static-neutral-850: #8e99ae;
+  --dsw-static-neutral-bluish-875: #c3c9d6;
+  --dsw-static-neutral-875: #c3c9d6;
+  --dsw-static-neutral-bluish-900: #c3c9d6;
+  --dsw-static-neutral-900: #c3c9d6;
+  --dsw-static-neutral-bluish-950: #c3c9d6;
+  --dsw-static-neutral-950: #c3c9d6;
+  --dsw-static-neutral-bluish-1000: #eef1f6;
+  --dsw-static-neutral-1000: #eef1f6;
+  --dsw-static-green-50: color-mix(in srgb, #4cb584 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4cb584 20%, black);
+  --dsw-static-green-400: #4cb584;
+  --dsw-static-green-500: #4cb584;
+  --dsw-static-green-600: color-mix(in srgb, #4cb584 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4cb584 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #eab04a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #eab04a 20%, black);
+  --dsw-static-amber-400: #eab04a;
+  --dsw-static-amber-500: #eab04a;
+  --dsw-static-amber-600: color-mix(in srgb, #eab04a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #eab04a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f2483f 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #f2483f 20%, black);
+  --dsw-static-red-400: #f2483f;
+  --dsw-static-red-500: #f2483f;
+  --dsw-static-red-600: color-mix(in srgb, #f2483f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f2483f 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-mario-toad] {
+  --dsw-alias-button-primary-fill: #e52521;
+  --dsw-alias-button-primary-hover: #c71b18;
+  --dsw-alias-button-primary-dimmed: #facdcb;
+  --dsw-alias-button-info-fill: #e52521;
+  --dsw-alias-button-info-hover: #c71b18;
+  --dsw-alias-button-contrast-fill: #c71b18;
+  --dsw-alias-button-ghost-active-fill: #fdeceb;
+  --dsw-alias-button-ghost-active-hover: #facdcb;
+  --dsw-alias-button-ghost-active-border: #ef736e;
+  --dsw-alias-button-elevated-fill: #f3eee4;
+  --dsw-alias-button-floating-fill: #f3eee4;
+  --dsw-alias-button-floating-hover: #eae4d5;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(229, 37, 33, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(229, 37, 33, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(229, 37, 33, 0.6);
+  --dsw-specific-bubble: #ffffff;
+  --dsw-specific-bubble-highlight: #f5a29e;
+  --dsw-specific-input-major: #f3eee4;
+  --dsw-specific-login-input: #f3eee4;
+  --dsw-specific-sidebar-fill: #e52521;
+  --dsw-specific-sidebar-nav-item-active: #facdcb;
+  --dsw-specific-sidebar-nav-item-hover: #eae4d5;
+  --dsw-specific-sidebar-nav-item-active-accent: #ef736e;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-mario-toad][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #f2483f;
+  --dsw-alias-button-primary-hover: #ff625a;
+  --dsw-alias-button-primary-dimmed: #4d1712;
+  --dsw-alias-button-info-fill: #f2483f;
+  --dsw-alias-button-info-hover: #ff625a;
+  --dsw-alias-button-contrast-fill: #f57168;
+  --dsw-alias-button-ghost-active-fill: #3c1613;
+  --dsw-alias-button-ghost-active-hover: #4d1712;
+  --dsw-alias-button-ghost-active-border: #96281f;
+  --dsw-alias-button-elevated-fill: #121826;
+  --dsw-alias-button-floating-fill: #121826;
+  --dsw-alias-button-floating-hover: #1d2636;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(242, 72, 63, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(242, 72, 63, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(242, 72, 63, 0.6);
+  --dsw-specific-bubble: #f6f1e7;
+  --dsw-specific-bubble-highlight: #701f18;
+  --dsw-specific-input-major: #121826;
+  --dsw-specific-login-input: #121826;
+  --dsw-specific-sidebar-fill: #f2483f;
+  --dsw-specific-sidebar-nav-item-active: #4d1712;
+  --dsw-specific-sidebar-nav-item-hover: #1d2636;
+  --dsw-specific-sidebar-nav-item-active-accent: #96281f;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-mario-toad] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-toad]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 22%, rgba(229, 37, 33, 0.12) 0 3px, transparent 4.5px),
+      radial-gradient(circle at 76% 14%, rgba(26, 111, 196, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 58% 70%, rgba(232, 184, 58, 0.14) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 88% 88%, rgba(26, 111, 196, 0.10) 0%, transparent 45%),
+      radial-gradient(ellipse at 6% 92%, rgba(232, 184, 58, 0.10) 0%, transparent 40%);
+    background-size: 520px 520px, 600px 600px, 460px 460px, 100% 100%, 100% 100%;
+    opacity: 0.8;
+}
+
+body[data-dsh-mario-toad]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(229, 37, 33, 0.85) 0 5px, transparent 6px),
+      radial-gradient(circle at 50% 50%, rgba(26, 111, 196, 0.7) 0 3px, transparent 4px);
+    background-size: 44px 44px, 44px 44px;
+    background-position: 0 0, 22px 22px;
+    opacity: 0.06;
+    animation: mario-toad-toad-spot-drift 30s linear infinite;
+}
+
+body[data-dsh-mario-toad] [class*='sider'] [class*='session'],
+body[data-dsh-mario-toad] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-toad] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(26, 111, 196, 0.12);
+    box-shadow: inset 3px 0 0 0 rgba(26, 111, 196, 0.85);
+}
+
+body[data-dsh-mario-toad] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-toad] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(229, 37, 33, 0.16), rgba(229, 37, 33, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #e52521;
+}
+
+body[data-dsh-mario-toad] button[class*='primary'],
+body[data-dsh-mario-toad] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #c71b18 0%, #e52521 55%, #ed524e 100%) !important;
+    border: 1px solid #e8b83a !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(229, 37, 33, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(100, 8, 6, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-toad] button[class*='primary']:hover,
+body[data-dsh-mario-toad] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    box-shadow: 0 3px 14px rgba(229, 37, 33, 0.45), 0 0 10px rgba(232, 184, 58, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: mario-toad-toad-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-toad] pre,
+body[data-dsh-mario-toad] .markdown-body pre {
+  background: linear-gradient(180deg, #123a63 0%, #0d2c4d 100%) !important;
+    border: 1px solid #0a2340;
+    border-left: 3px solid #e8b83a !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 22px rgba(232, 184, 58, 0.08);
+}
+
+body[data-dsh-mario-toad] pre code,
+body[data-dsh-mario-toad] .markdown-body pre code {
+  background: transparent !important;
+    color: #dcebf8 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-toad] code,
+body[data-dsh-mario-toad] .markdown-body code {
+  background: rgba(229, 37, 33, 0.1);
+    color: #b31613;
+    border: 1px solid rgba(229, 37, 33, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-toad]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-mario-toad] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(68, 63, 52, 0.08), 0 0 0 1px rgba(26, 111, 196, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-toad] [class*='guidInputCard']:hover {
+  border-color: var(--toad-vest-blue) !important;
+}
+
+body[data-dsh-mario-toad] [class*='agent-bar'],
+body[data-dsh-mario-toad] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(229, 37, 33, 0.35);
+}
+
+body[data-dsh-mario-toad]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-toad]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1a6fc4, #114e8f);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+    box-shadow: inset 0 0 0 1px rgba(232, 184, 58, 0.4);
+}
+
+body[data-dsh-mario-toad]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2c82d6, #1a6fc4);
+}
+
+body[data-dsh-mario-toad]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-toad] .markdown-body a,
+body[data-dsh-mario-toad] a {
+  color: #1a6fc4;
+}
+
+body[data-dsh-mario-toad] .markdown-body a:hover,
+body[data-dsh-mario-toad] a:hover {
+  color: #114e8f;
+}
+
+body[data-dsh-mario-toad] .markdown-body blockquote {
+  border-left: 3px solid #1a6fc4;
+    background: rgba(26, 111, 196, 0.08);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-toad] .markdown-body hr,
+body[data-dsh-mario-toad] hr {
+  border: none;
+    height: 8px;
+    background-image: radial-gradient(circle at 8px 4px, rgba(229, 37, 33, 0.55) 0 2.5px, transparent 3.5px);
+    background-size: 16px 8px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-mario-toad] .arco-btn:not(button[class*='primary']):hover {
+  color: #c71b18 !important;
+    border-color: rgba(229, 37, 33, 0.5) !important;
+    background-color: rgba(229, 37, 33, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-mario-toad][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 22%, rgba(242, 72, 63, 0.12) 0 3px, transparent 4.5px),
+      radial-gradient(circle at 76% 14%, rgba(91, 147, 216, 0.1) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 58% 70%, rgba(240, 194, 74, 0.13) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 88% 88%, rgba(46, 93, 148, 0.28) 0%, transparent 45%),
+      radial-gradient(ellipse at 6% 92%, rgba(240, 194, 74, 0.08) 0%, transparent 40%);
+    background-size: 520px 520px, 600px 600px, 460px 460px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(242, 72, 63, 0.85) 0 5px, transparent 6px),
+      radial-gradient(circle at 50% 50%, rgba(91, 147, 216, 0.7) 0 3px, transparent 4px);
+    background-size: 44px 44px, 44px 44px;
+    background-position: 0 0, 22px 22px;
+    opacity: 0.07;
+    animation: mario-toad-toad-spot-drift 30s linear infinite;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(46, 93, 148, 0.35);
+    box-shadow: inset 3px 0 0 0 rgba(91, 147, 216, 0.9);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(242, 72, 63, 0.28), rgba(242, 72, 63, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #f2483f;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-mario-toad][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #c13027 0%, #f2483f 55%, #ff625a 100%) !important;
+    border: 1px solid #f0c24a !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(242, 72, 63, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(90, 10, 8, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-mario-toad][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    box-shadow: 0 3px 16px rgba(242, 72, 63, 0.6), 0 0 12px rgba(240, 194, 74, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: mario-toad-toad-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] pre,
+body[data-dsh-mario-toad][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #101a2e 0%, #0c1526 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #f0c24a !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(46, 93, 148, 0.3);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] pre code,
+body[data-dsh-mario-toad][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d9e6f5 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] code,
+body[data-dsh-mario-toad][data-ds-dark-theme] .markdown-body code {
+  background: rgba(46, 93, 148, 0.35);
+    color: #f89790;
+    border: 1px solid rgba(242, 72, 63, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(6, 10, 18, 0.5), 0 0 0 1px rgba(91, 147, 216, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--toad-vest-blue) !important;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-mario-toad][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(242, 72, 63, 0.4);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #5b93d8, #2e5d94);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+    box-shadow: inset 0 0 0 1px rgba(240, 194, 74, 0.45);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #74a6e2, #5b93d8);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-mario-toad][data-ds-dark-theme] a {
+  color: #74a6e2;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-mario-toad][data-ds-dark-theme] a:hover {
+  color: #9ec1ec;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid #5b93d8;
+    background: rgba(46, 93, 148, 0.2);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-mario-toad][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image: radial-gradient(circle at 8px 4px, rgba(242, 72, 63, 0.6) 0 2.5px, transparent 3.5px);
+    background-size: 16px 8px;
+    background-repeat: repeat-x;
+    opacity: 0.65;
+}
+
+body[data-dsh-mario-toad][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #f89790 !important;
+    border-color: rgba(242, 72, 63, 0.5) !important;
+    background-color: rgba(242, 72, 63, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes mario-toad-toad-spot-drift {
+  0% { background-position: 0 0, 22px 22px; }
+  100% { background-position: 44px 44px, 66px 66px; }
+}
+
+@keyframes mario-toad-toad-lamp-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(229, 37, 33, 0.14), 0 1px 10px rgba(232, 184, 58, 0.12); }
+  50% { box-shadow: 0 2px 14px rgba(229, 37, 33, 0.3), 0 1px 18px rgba(232, 184, 58, 0.3); }
+}
+
+@keyframes mario-toad-toad-btn-sheen {
+  0%, 100% { box-shadow: 0 3px 12px rgba(229, 37, 33, 0.4), 0 0 8px rgba(232, 184, 58, 0.3); }
+  50% { box-shadow: 0 3px 18px rgba(229, 37, 33, 0.55), 0 0 16px rgba(232, 184, 58, 0.5); }
+}
+
+@keyframes mario-toad-toad-beam-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

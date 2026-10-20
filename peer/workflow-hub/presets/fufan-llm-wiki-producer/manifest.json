@@ -1,0 +1,8 @@
+{
+  "format": "dsh-preset",
+  "version": 1,
+  "id": "llm-wiki-fullstack",
+  "name": "LLM Wiki 全栈工程师",
+  "description": "赋范官方 LLM Wiki Producer：面向企业知识库项目的分阶段开发 Agent Preset。",
+  "sourceDshVersion": "0.1.0-rc.8"
+}

@@ -1,0 +1,6 @@
+- insert:
+    - id: phone-deepseek-account
+      name: dsh-phone-account
+
+- id: llm-deepseek-account
+  disabled: true

@@ -1,0 +1,813 @@
+/* style-memphis — 孟菲斯 Memphis | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-style-memphis], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-style-memphis] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1e1c2a;
+  background-color: #fdf8ee;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] {
+  color: #f2edfb;
+  background-color: #14101f;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-style-memphis] {
+  --color-primary: #e6007e;
+  --primary: #e6007e;
+  --primary-rgb: 230, 0, 126;
+  --color-primary-light-1: #f0339b;
+  --color-primary-light-2: #f66cb9;
+  --color-primary-light-3: #faa8d3;
+  --color-primary-dark-1: #b30062;
+  --brand: #e6007e;
+  --brand-light: #ffd6ee;
+  --brand-hover: #f0339b;
+  --color-brand-fill: #e6007e;
+  --color-brand-bg: #ffe4f4;
+  --aou-1: #fff0f9;
+  --aou-2: #ffd6ee;
+  --aou-3: #ffaddd;
+  --aou-4: #fb7ec4;
+  --aou-5: #f23ea6;
+  --aou-6: #e6007e;
+  --aou-7: #c00068;
+  --aou-8: #990053;
+  --aou-9: #73003e;
+  --aou-10: #4d0029;
+  --bg-base: #fdf8ee;
+  --bg-1: #f8f0de;
+  --bg-2: #f2e7cd;
+  --bg-3: #eadcba;
+  --bg-4: #e0cfa4;
+  --bg-5: #d4bf8c;
+  --bg-6: #c6ad74;
+  --bg-8: #a99054;
+  --bg-9: #8a743e;
+  --bg-10: #6d5a2e;
+  --color-bg-1: #f8f0de;
+  --color-bg-2: #f2e7cd;
+  --color-bg-3: #eadcba;
+  --color-bg-4: #e0cfa4;
+  --bg-hover: #f4ebd6;
+  --bg-active: #eee0c2;
+  --text-primary: #1e1c2a;
+  --text-secondary: #4c4862;
+  --text-disabled: #9b96ad;
+  --text-0: #0d0c16;
+  --text-white: #ffffff;
+  --color-text-1: #1e1c2a;
+  --color-text-2: #4c4862;
+  --color-text-3: #77718e;
+  --color-text-4: #9b96ad;
+  --border-base: #d9cbab;
+  --border-light: #e6dcc4;
+  --border-special: #1e1c2a;
+  --color-border: #d9cbab;
+  --color-border-1: #d9cbab;
+  --color-border-2: #e6dcc4;
+  --fill: #f2e7cd;
+  --color-fill: #f2e7cd;
+  --fill-0: #f8f0de;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fffdf7;
+  --inverse: #1e1c2a;
+  --success: #0f9d58;
+  --warning: #e6a700;
+  --danger: #d92323;
+  --info: #1b73d1;
+  --message-user-bg: #ffd23f;
+  --message-tips-bg: #f2e7cd;
+  --workspace-btn-bg: #ffe4f4;
+  --color-guid-agent-bar: #f8f0de;
+  --mem-pink: #e6007e;
+  --mem-teal: #00a8a8;
+  --mem-yellow: #ffd23f;
+  --mem-purple: #7048b6;
+  --mem-ink: #1e1c2a;
+  --mem-cream: #fdf8ee;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-style-memphis][data-ds-dark-theme] {
+  --color-primary: #ff4d9e;
+  --primary: #ff4d9e;
+  --primary-rgb: 255, 77, 158;
+  --color-primary-light-1: #ff77b3;
+  --color-primary-light-2: #ffa3cc;
+  --color-primary-light-3: #ffcce2;
+  --color-primary-dark-1: #d1267a;
+  --brand: #ff4d9e;
+  --brand-light: #4a1a36;
+  --brand-hover: #ff77b3;
+  --color-brand-fill: #ff4d9e;
+  --color-brand-bg: #3a122a;
+  --aou-1: #3a122a;
+  --aou-2: #571a40;
+  --aou-3: #772357;
+  --aou-4: #9c2d6f;
+  --aou-5: #c93a89;
+  --aou-6: #ff4d9e;
+  --aou-7: #ff77b3;
+  --aou-8: #ffa3cc;
+  --aou-9: #ffcce2;
+  --aou-10: #ffe9f4;
+  --bg-base: #14101f;
+  --bg-1: #1b1629;
+  --bg-2: #221c33;
+  --bg-3: #2a233e;
+  --bg-4: #342c4b;
+  --bg-5: #41375b;
+  --bg-6: #51456e;
+  --bg-8: #6f6092;
+  --bg-9: #9586b8;
+  --bg-10: #c3b8dc;
+  --color-bg-1: #1b1629;
+  --color-bg-2: #221c33;
+  --color-bg-3: #2a233e;
+  --color-bg-4: #342c4b;
+  --bg-hover: #28203c;
+  --bg-active: #332a4c;
+  --text-primary: #f2edfb;
+  --text-secondary: #b3a9cd;
+  --text-disabled: #6a6184;
+  --text-0: #ffffff;
+  --text-white: #ffffff;
+  --color-text-1: #f2edfb;
+  --color-text-2: #b3a9cd;
+  --color-text-3: #8a7fa6;
+  --color-text-4: #6a6184;
+  --border-base: #3d3457;
+  --border-light: #2c2544;
+  --border-special: #ff4d9e;
+  --color-border: #3d3457;
+  --color-border-1: #3d3457;
+  --color-border-2: #2c2544;
+  --fill: #221c33;
+  --color-fill: #221c33;
+  --fill-0: #1b1629;
+  --fill-white-to-black: #100c19;
+  --dialog-fill-0: #1f1930;
+  --inverse: #f2edfb;
+  --success: #4ade80;
+  --warning: #ffd23f;
+  --danger: #ff5a5a;
+  --info: #2ee6d6;
+  --message-user-bg: #5b2a86;
+  --message-tips-bg: #2a233e;
+  --workspace-btn-bg: #3a122a;
+  --color-guid-agent-bar: #1b1629;
+  --mem-pink: #ff4d9e;
+  --mem-teal: #2ee6d6;
+  --mem-yellow: #ffd23f;
+  --mem-purple: #9d7bea;
+  --mem-ink: #100c19;
+  --mem-paper: #221c33;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-style-memphis] {
+  --dsw-static-deepseek-50: #fff0f9;
+  --dsw-static-blue-50: #fff0f9;
+  --dsw-static-deepseek-50p: #ffd6ee;
+  --dsw-static-blue-50p: #ffd6ee;
+  --dsw-static-deepseek-75: #ffd6ee;
+  --dsw-static-blue-75: #ffd6ee;
+  --dsw-static-deepseek-100: #ffd6ee;
+  --dsw-static-blue-100: #ffd6ee;
+  --dsw-static-deepseek-200: #ffaddd;
+  --dsw-static-blue-200: #ffaddd;
+  --dsw-static-deepseek-300: #fb7ec4;
+  --dsw-static-blue-300: #fb7ec4;
+  --dsw-static-deepseek-400: #f23ea6;
+  --dsw-static-blue-400: #f23ea6;
+  --dsw-static-deepseek-450: #f23ea6;
+  --dsw-static-blue-450: #f23ea6;
+  --dsw-static-deepseek-500: #e6007e;
+  --dsw-static-blue-500: #e6007e;
+  --dsw-static-deepseek-600: #c00068;
+  --dsw-static-blue-600: #c00068;
+  --dsw-static-deepseek-700-delete: #990053;
+  --dsw-static-deepseek-800: #990053;
+  --dsw-static-blue-800: #990053;
+  --dsw-static-deepseek-900: #73003e;
+  --dsw-static-blue-900: #73003e;
+  --dsw-static-deepseek-950: #4d0029;
+  --dsw-static-blue-950: #4d0029;
+  --dsw-static-neutral-bluish-00: #f8f0de;
+  --dsw-static-neutral-00: #f8f0de;
+  --dsw-static-neutral-bluish-50: #f8f0de;
+  --dsw-static-neutral-50: #f8f0de;
+  --dsw-static-neutral-bluish-60: #f8f0de;
+  --dsw-static-neutral-60: #f8f0de;
+  --dsw-static-neutral-bluish-75: #f2e7cd;
+  --dsw-static-neutral-75: #f2e7cd;
+  --dsw-static-neutral-bluish-100: #f2e7cd;
+  --dsw-static-neutral-100: #f2e7cd;
+  --dsw-static-neutral-bluish-150: #eadcba;
+  --dsw-static-neutral-150: #eadcba;
+  --dsw-static-neutral-bluish-200: #eadcba;
+  --dsw-static-neutral-200: #eadcba;
+  --dsw-static-neutral-bluish-250: #e0cfa4;
+  --dsw-static-neutral-250: #e0cfa4;
+  --dsw-static-neutral-bluish-300: #e0cfa4;
+  --dsw-static-neutral-300: #e0cfa4;
+  --dsw-static-neutral-bluish-400: #d4bf8c;
+  --dsw-static-neutral-400: #d4bf8c;
+  --dsw-static-neutral-bluish-500: #c6ad74;
+  --dsw-static-neutral-500: #c6ad74;
+  --dsw-static-neutral-bluish-550: #c6ad74;
+  --dsw-static-neutral-550: #c6ad74;
+  --dsw-static-neutral-bluish-600: #a99054;
+  --dsw-static-neutral-600: #a99054;
+  --dsw-static-neutral-bluish-700: #a99054;
+  --dsw-static-neutral-700: #a99054;
+  --dsw-static-neutral-bluish-750: #8a743e;
+  --dsw-static-neutral-750: #8a743e;
+  --dsw-static-neutral-bluish-800: #8a743e;
+  --dsw-static-neutral-800: #8a743e;
+  --dsw-static-neutral-bluish-850: #8a743e;
+  --dsw-static-neutral-850: #8a743e;
+  --dsw-static-neutral-bluish-875: #6d5a2e;
+  --dsw-static-neutral-875: #6d5a2e;
+  --dsw-static-neutral-bluish-900: #6d5a2e;
+  --dsw-static-neutral-900: #6d5a2e;
+  --dsw-static-neutral-bluish-950: #6d5a2e;
+  --dsw-static-neutral-950: #6d5a2e;
+  --dsw-static-neutral-bluish-1000: #1e1c2a;
+  --dsw-static-neutral-1000: #1e1c2a;
+  --dsw-static-green-50: color-mix(in srgb, #0f9d58 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #0f9d58 20%, white);
+  --dsw-static-green-400: #0f9d58;
+  --dsw-static-green-500: #0f9d58;
+  --dsw-static-green-600: color-mix(in srgb, #0f9d58 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #0f9d58 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e6a700 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #e6a700 20%, white);
+  --dsw-static-amber-400: #e6a700;
+  --dsw-static-amber-500: #e6a700;
+  --dsw-static-amber-600: color-mix(in srgb, #e6a700 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e6a700 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d92323 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #d92323 20%, white);
+  --dsw-static-red-400: #d92323;
+  --dsw-static-red-500: #d92323;
+  --dsw-static-red-600: color-mix(in srgb, #d92323 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d92323 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-style-memphis][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #3a122a;
+  --dsw-static-blue-50: #3a122a;
+  --dsw-static-deepseek-50p: #571a40;
+  --dsw-static-blue-50p: #571a40;
+  --dsw-static-deepseek-75: #571a40;
+  --dsw-static-blue-75: #571a40;
+  --dsw-static-deepseek-100: #571a40;
+  --dsw-static-blue-100: #571a40;
+  --dsw-static-deepseek-200: #772357;
+  --dsw-static-blue-200: #772357;
+  --dsw-static-deepseek-300: #9c2d6f;
+  --dsw-static-blue-300: #9c2d6f;
+  --dsw-static-deepseek-400: #c93a89;
+  --dsw-static-blue-400: #c93a89;
+  --dsw-static-deepseek-450: #c93a89;
+  --dsw-static-blue-450: #c93a89;
+  --dsw-static-deepseek-500: #ff4d9e;
+  --dsw-static-blue-500: #ff4d9e;
+  --dsw-static-deepseek-600: #ff77b3;
+  --dsw-static-blue-600: #ff77b3;
+  --dsw-static-deepseek-700-delete: #ffa3cc;
+  --dsw-static-deepseek-800: #ffa3cc;
+  --dsw-static-blue-800: #ffa3cc;
+  --dsw-static-deepseek-900: #ffcce2;
+  --dsw-static-blue-900: #ffcce2;
+  --dsw-static-deepseek-950: #ffe9f4;
+  --dsw-static-blue-950: #ffe9f4;
+  --dsw-static-neutral-bluish-00: #1b1629;
+  --dsw-static-neutral-00: #1b1629;
+  --dsw-static-neutral-bluish-50: #1b1629;
+  --dsw-static-neutral-50: #1b1629;
+  --dsw-static-neutral-bluish-60: #1b1629;
+  --dsw-static-neutral-60: #1b1629;
+  --dsw-static-neutral-bluish-75: #221c33;
+  --dsw-static-neutral-75: #221c33;
+  --dsw-static-neutral-bluish-100: #221c33;
+  --dsw-static-neutral-100: #221c33;
+  --dsw-static-neutral-bluish-150: #2a233e;
+  --dsw-static-neutral-150: #2a233e;
+  --dsw-static-neutral-bluish-200: #2a233e;
+  --dsw-static-neutral-200: #2a233e;
+  --dsw-static-neutral-bluish-250: #342c4b;
+  --dsw-static-neutral-250: #342c4b;
+  --dsw-static-neutral-bluish-300: #342c4b;
+  --dsw-static-neutral-300: #342c4b;
+  --dsw-static-neutral-bluish-400: #41375b;
+  --dsw-static-neutral-400: #41375b;
+  --dsw-static-neutral-bluish-500: #51456e;
+  --dsw-static-neutral-500: #51456e;
+  --dsw-static-neutral-bluish-550: #51456e;
+  --dsw-static-neutral-550: #51456e;
+  --dsw-static-neutral-bluish-600: #6f6092;
+  --dsw-static-neutral-600: #6f6092;
+  --dsw-static-neutral-bluish-700: #6f6092;
+  --dsw-static-neutral-700: #6f6092;
+  --dsw-static-neutral-bluish-750: #9586b8;
+  --dsw-static-neutral-750: #9586b8;
+  --dsw-static-neutral-bluish-800: #9586b8;
+  --dsw-static-neutral-800: #9586b8;
+  --dsw-static-neutral-bluish-850: #9586b8;
+  --dsw-static-neutral-850: #9586b8;
+  --dsw-static-neutral-bluish-875: #c3b8dc;
+  --dsw-static-neutral-875: #c3b8dc;
+  --dsw-static-neutral-bluish-900: #c3b8dc;
+  --dsw-static-neutral-900: #c3b8dc;
+  --dsw-static-neutral-bluish-950: #c3b8dc;
+  --dsw-static-neutral-950: #c3b8dc;
+  --dsw-static-neutral-bluish-1000: #f2edfb;
+  --dsw-static-neutral-1000: #f2edfb;
+  --dsw-static-green-50: color-mix(in srgb, #4ade80 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4ade80 20%, black);
+  --dsw-static-green-400: #4ade80;
+  --dsw-static-green-500: #4ade80;
+  --dsw-static-green-600: color-mix(in srgb, #4ade80 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4ade80 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #ffd23f 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #ffd23f 20%, black);
+  --dsw-static-amber-400: #ffd23f;
+  --dsw-static-amber-500: #ffd23f;
+  --dsw-static-amber-600: color-mix(in srgb, #ffd23f 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #ffd23f 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #ff5a5a 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #ff5a5a 20%, black);
+  --dsw-static-red-400: #ff5a5a;
+  --dsw-static-red-500: #ff5a5a;
+  --dsw-static-red-600: color-mix(in srgb, #ff5a5a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #ff5a5a 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-style-memphis] {
+  --dsw-alias-button-primary-fill: #e6007e;
+  --dsw-alias-button-primary-hover: #f0339b;
+  --dsw-alias-button-primary-dimmed: #ffd6ee;
+  --dsw-alias-button-info-fill: #e6007e;
+  --dsw-alias-button-info-hover: #f0339b;
+  --dsw-alias-button-contrast-fill: #c00068;
+  --dsw-alias-button-ghost-active-fill: #ffd6ee;
+  --dsw-alias-button-ghost-active-hover: #ffd6ee;
+  --dsw-alias-button-ghost-active-border: #fb7ec4;
+  --dsw-alias-button-elevated-fill: #f8f0de;
+  --dsw-alias-button-floating-fill: #f8f0de;
+  --dsw-alias-button-floating-hover: #f4ebd6;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(230, 0, 126, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(230, 0, 126, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(230, 0, 126, 0.6);
+  --dsw-specific-bubble: #ffd23f;
+  --dsw-specific-bubble-highlight: #ffaddd;
+  --dsw-specific-input-major: #f8f0de;
+  --dsw-specific-login-input: #f8f0de;
+  --dsw-specific-sidebar-fill: #e6007e;
+  --dsw-specific-sidebar-nav-item-active: #ffd6ee;
+  --dsw-specific-sidebar-nav-item-hover: #f4ebd6;
+  --dsw-specific-sidebar-nav-item-active-accent: #fb7ec4;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-style-memphis][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #ff4d9e;
+  --dsw-alias-button-primary-hover: #ff77b3;
+  --dsw-alias-button-primary-dimmed: #571a40;
+  --dsw-alias-button-info-fill: #ff4d9e;
+  --dsw-alias-button-info-hover: #ff77b3;
+  --dsw-alias-button-contrast-fill: #ff77b3;
+  --dsw-alias-button-ghost-active-fill: #4a1a36;
+  --dsw-alias-button-ghost-active-hover: #571a40;
+  --dsw-alias-button-ghost-active-border: #9c2d6f;
+  --dsw-alias-button-elevated-fill: #1b1629;
+  --dsw-alias-button-floating-fill: #1b1629;
+  --dsw-alias-button-floating-hover: #28203c;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(255, 77, 158, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(255, 77, 158, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(255, 77, 158, 0.6);
+  --dsw-specific-bubble: #5b2a86;
+  --dsw-specific-bubble-highlight: #772357;
+  --dsw-specific-input-major: #1b1629;
+  --dsw-specific-login-input: #1b1629;
+  --dsw-specific-sidebar-fill: #ff4d9e;
+  --dsw-specific-sidebar-nav-item-active: #571a40;
+  --dsw-specific-sidebar-nav-item-hover: #28203c;
+  --dsw-specific-sidebar-nav-item-active-accent: #9c2d6f;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-style-memphis] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-memphis]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      radial-gradient(circle at 8px 8px, var(--mem-pink) 0 2.5px, transparent 3.5px),
+      radial-gradient(circle at 28px 28px, var(--mem-teal) 0 2px, transparent 3px),
+      repeating-linear-gradient(45deg, var(--mem-purple) 0 3px, transparent 3px 26px);
+    background-size: 40px 40px, 40px 40px, 220px 220px;
+    animation: style-memphis-memphis-dot-drift 26s linear infinite;
+}
+
+body[data-dsh-style-memphis]::after {
+  content: '';
+    position: fixed;
+    inset: -24px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(135deg, var(--mem-pink) 25%, transparent 25%),
+      linear-gradient(225deg, var(--mem-pink) 25%, transparent 25%),
+      linear-gradient(135deg, var(--mem-teal) 25%, transparent 25%),
+      linear-gradient(225deg, var(--mem-teal) 25%, transparent 25%);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 12px, 12px 0, 12px 12px;
+    animation: style-memphis-memphis-zig-slide 18s linear infinite;
+}
+
+body[data-dsh-style-memphis] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    border: 2px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-style-memphis] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(0, 168, 168, 0.12) !important;
+    border-color: var(--mem-ink);
+    box-shadow: 3px 3px 0 rgba(0, 168, 168, 0.45);
+}
+
+body[data-dsh-style-memphis] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-memphis] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--brand-light) !important;
+    border-color: var(--mem-ink) !important;
+    box-shadow: 3px 3px 0 var(--mem-yellow);
+    font-weight: 700;
+}
+
+body[data-dsh-style-memphis] button[class*='primary'],
+body[data-dsh-style-memphis] button[class*='primary']:not(.arco-btn-disabled) {
+  background: var(--mem-pink) !important;
+    border: 2.5px solid var(--mem-ink) !important;
+    border-radius: 12px !important;
+    color: var(--text-white) !important;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    box-shadow: 4px 4px 0 var(--mem-ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+}
+
+body[data-dsh-style-memphis] button[class*='primary']:hover,
+body[data-dsh-style-memphis] button[class*='primary']:not(.arco-btn-disabled):hover {
+  background: var(--mem-teal) !important;
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 var(--mem-ink);
+}
+
+body[data-dsh-style-memphis] button[class*='primary']:active,
+body[data-dsh-style-memphis] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 var(--mem-ink);
+}
+
+body[data-dsh-style-memphis] pre,
+body[data-dsh-style-memphis] .markdown-body pre {
+  background: var(--mem-ink) !important;
+    border: 2px solid var(--mem-ink) !important;
+    border-left: 6px solid var(--mem-yellow) !important;
+    border-radius: 10px !important;
+    box-shadow: 4px 4px 0 rgba(112, 72, 182, 0.55);
+}
+
+body[data-dsh-style-memphis] pre code,
+body[data-dsh-style-memphis] .markdown-body pre code {
+  background: transparent !important;
+    color: #fdf3e3 !important;
+    border: none;
+    padding: 0;
+}
+
+body[data-dsh-style-memphis] code,
+body[data-dsh-style-memphis] .markdown-body code {
+  background-color: var(--mem-yellow);
+    color: var(--mem-ink);
+    border: 1.5px solid var(--mem-ink);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+    font-weight: 600;
+}
+
+body[data-dsh-style-memphis] [class*='agent-bar'],
+body[data-dsh-style-memphis] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 2px solid var(--mem-ink);
+}
+
+body[data-dsh-style-memphis]::selection {
+  background: color-mix(in srgb, var(--brand) 85%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-style-memphis] .markdown-body a,
+body[data-dsh-style-memphis] a {
+  color: #007d7d;
+    font-weight: 600;
+    text-decoration: underline wavy var(--mem-pink);
+    text-underline-offset: 3px;
+}
+
+body[data-dsh-style-memphis] .markdown-body a:hover,
+body[data-dsh-style-memphis] a:hover {
+  color: var(--mem-pink);
+    text-decoration: underline wavy var(--mem-teal);
+}
+
+body[data-dsh-style-memphis] .markdown-body blockquote {
+  background:
+      repeating-linear-gradient(-45deg, rgba(30, 28, 42, 0.05) 0 4px, transparent 4px 14px),
+      rgba(255, 210, 63, 0.22);
+    border: 2px solid var(--mem-ink);
+    border-left: 6px solid var(--mem-ink);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-memphis] .markdown-body hr,
+body[data-dsh-style-memphis] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      linear-gradient(135deg, var(--mem-pink) 25%, transparent 25%),
+      linear-gradient(225deg, var(--mem-teal) 25%, transparent 25%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 0;
+    background-repeat: repeat-x;
+    opacity: 0.75;
+}
+
+body[data-dsh-style-memphis] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--mem-pink) !important;
+    border-color: var(--mem-ink) !important;
+    background-color: var(--brand-light) !important;
+    box-shadow: 2px 2px 0 var(--mem-yellow);
+}
+
+body[data-dsh-style-memphis]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-memphis]::-webkit-scrollbar-thumb {
+  background: var(--mem-pink);
+    border-radius: 6px;
+    border: 2px solid var(--mem-ink);
+}
+
+body[data-dsh-style-memphis]::-webkit-scrollbar-thumb:hover {
+  background: var(--mem-teal);
+}
+
+body[data-dsh-style-memphis]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-style-memphis][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image:
+      radial-gradient(circle at 8px 8px, var(--mem-pink) 0 2.5px, transparent 3.5px),
+      radial-gradient(circle at 28px 28px, var(--mem-teal) 0 2px, transparent 3px),
+      repeating-linear-gradient(45deg, var(--mem-purple) 0 3px, transparent 3px 26px);
+    background-size: 40px 40px, 40px 40px, 220px 220px;
+    animation: style-memphis-memphis-dark-dot-drift 26s linear infinite;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: -24px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background-image:
+      linear-gradient(135deg, var(--mem-pink) 25%, transparent 25%),
+      linear-gradient(225deg, var(--mem-pink) 25%, transparent 25%),
+      linear-gradient(135deg, var(--mem-teal) 25%, transparent 25%),
+      linear-gradient(225deg, var(--mem-teal) 25%, transparent 25%);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 12px, 12px 0, 12px 12px;
+    animation: style-memphis-memphis-dark-zig-slide 18s linear infinite;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    border: 2px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(46, 230, 214, 0.12) !important;
+    border-color: var(--mem-teal);
+    box-shadow: 3px 3px 0 rgba(46, 230, 214, 0.4);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-memphis][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--brand-light) !important;
+    border-color: var(--mem-pink) !important;
+    box-shadow: 3px 3px 0 var(--mem-yellow);
+    font-weight: 700;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-style-memphis][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: var(--mem-pink) !important;
+    border: 2.5px solid var(--mem-ink) !important;
+    border-radius: 12px !important;
+    color: var(--mem-ink) !important;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    box-shadow: 4px 4px 0 rgba(46, 230, 214, 0.75);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-style-memphis][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  background: var(--mem-yellow) !important;
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 rgba(255, 77, 158, 0.8);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-style-memphis][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 rgba(46, 230, 214, 0.75);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] pre,
+body[data-dsh-style-memphis][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #181226 0%, var(--mem-ink) 100%) !important;
+    border: 2px solid var(--border-base) !important;
+    border-left: 6px solid var(--mem-yellow) !important;
+    border-radius: 10px !important;
+    box-shadow: 4px 4px 0 rgba(255, 77, 158, 0.35);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] pre code,
+body[data-dsh-style-memphis][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #fdf3e3 !important;
+    border: none;
+    padding: 0;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] code,
+body[data-dsh-style-memphis][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--mem-yellow);
+    color: var(--mem-ink);
+    border: 1.5px solid rgba(255, 210, 63, 0.6);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+    font-weight: 700;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-style-memphis][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 2px solid var(--mem-pink);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-style-memphis][data-ds-dark-theme] a {
+  color: var(--mem-teal);
+    font-weight: 600;
+    text-decoration: underline wavy var(--mem-pink);
+    text-underline-offset: 3px;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-style-memphis][data-ds-dark-theme] a:hover {
+  color: var(--mem-pink);
+    text-decoration: underline wavy var(--mem-teal);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] .markdown-body blockquote {
+  background:
+      repeating-linear-gradient(-45deg, rgba(255, 210, 63, 0.05) 0 4px, transparent 4px 14px),
+      rgba(157, 123, 234, 0.1);
+    border: 2px solid var(--border-base);
+    border-left: 6px solid var(--mem-yellow);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-style-memphis][data-ds-dark-theme] hr {
+  border: none;
+    height: 10px;
+    background-image:
+      linear-gradient(135deg, var(--mem-pink) 25%, transparent 25%),
+      linear-gradient(225deg, var(--mem-teal) 25%, transparent 25%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 0;
+    background-repeat: repeat-x;
+    opacity: 0.75;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--mem-pink) !important;
+    border-color: var(--mem-pink) !important;
+    background-color: rgba(255, 77, 158, 0.12) !important;
+    box-shadow: 2px 2px 0 var(--mem-yellow);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--mem-pink), #772357);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--mem-teal), var(--mem-pink));
+}
+
+body[data-dsh-style-memphis][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes style-memphis-memphis-dot-drift {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 40px 40px, -40px 40px, 220px 0; }
+}
+
+@keyframes style-memphis-memphis-zig-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(24px); }
+}
+
+@keyframes style-memphis-memphis-band-slide {
+  0% { background-position: 0% 0; }
+  100% { background-position: 300% 0; }
+}
+
+@keyframes style-memphis-memphis-input-pop {
+  0%, 100% { box-shadow: 4px 4px 0 var(--mem-pink), 8px 8px 0 var(--mem-yellow); }
+  50% { box-shadow: 4px 4px 0 var(--mem-teal), 8px 8px 0 var(--mem-pink); }
+}
+
+@keyframes style-memphis-memphis-dark-dot-drift {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 40px 40px, -40px 40px, 220px 0; }
+}
+
+@keyframes style-memphis-memphis-dark-zig-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(24px); }
+}
+
+@keyframes style-memphis-memphis-dark-band-slide {
+  0% { background-position: 0% 0; }
+  100% { background-position: 300% 0; }
+}
+
+@keyframes style-memphis-memphis-dark-input-pop {
+  0%, 100% { box-shadow: 4px 4px 0 rgba(255, 77, 158, 0.7), 8px 8px 0 rgba(255, 210, 63, 0.55); }
+  50% { box-shadow: 4px 4px 0 rgba(46, 230, 214, 0.7), 8px 8px 0 rgba(255, 77, 158, 0.55); }
+}

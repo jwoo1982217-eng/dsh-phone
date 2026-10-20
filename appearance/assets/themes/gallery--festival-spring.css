@@ -1,0 +1,801 @@
+/* festival-spring — 春节 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-festival-spring], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-festival-spring] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #4a1712;
+  background-color: #fdf6ea;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] {
+  color: #f7ecdc;
+  background-color: #130708;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-festival-spring] {
+  --color-primary: #c81e10;
+  --primary: #c81e10;
+  --primary-rgb: 200, 30, 16;
+  --color-primary-light-1: #d94a3e;
+  --color-primary-light-2: #e2776c;
+  --color-primary-light-3: #eeaaa2;
+  --color-primary-dark-1: #93120a;
+  --brand: #c81e10;
+  --brand-light: #fbe3d4;
+  --brand-hover: #d94a3e;
+  --color-brand-fill: #c81e10;
+  --color-brand-bg: #f9dcc8;
+  --aou-1: #fdeee6;
+  --aou-2: #fadcc9;
+  --aou-3: #f4bfa8;
+  --aou-4: #ec9a7e;
+  --aou-5: #e2704f;
+  --aou-6: #c81e10;
+  --aou-7: #aa1f12;
+  --aou-8: #82170c;
+  --aou-9: #5c0f07;
+  --aou-10: #380701;
+  --bg-base: #fdf6ea;
+  --bg-1: #faf1de;
+  --bg-2: #f5e9d0;
+  --bg-3: #efe0c2;
+  --bg-4: #e8d5b2;
+  --bg-5: #dcc7a0;
+  --bg-6: #cdb488;
+  --bg-8: #a08a63;
+  --bg-9: #7d6a4a;
+  --bg-10: #54452e;
+  --color-bg-1: #faf1de;
+  --color-bg-2: #f5e9d0;
+  --color-bg-3: #efe0c2;
+  --color-bg-4: #e8d5b2;
+  --bg-hover: #f6ecd6;
+  --bg-active: #f0e2c2;
+  --text-primary: #4a1712;
+  --text-secondary: #7d5040;
+  --text-disabled: #b5987f;
+  --text-0: #2e0c07;
+  --text-white: #ffffff;
+  --color-text-1: #4a1712;
+  --color-text-2: #7d5040;
+  --color-text-3: #a07a63;
+  --color-text-4: #b5987f;
+  --border-base: #e3d2ae;
+  --border-light: #ecdfc0;
+  --border-special: #c9922e;
+  --color-border: #e3d2ae;
+  --color-border-1: #e3d2ae;
+  --color-border-2: #ecdfc0;
+  --fill: #f5e9d0;
+  --color-fill: #f5e9d0;
+  --fill-0: #faf1de;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fffaf0;
+  --inverse: #4a1712;
+  --success: #3d8a52;
+  --warning: #a87808;
+  --danger: #c81e10;
+  --info: #3a7ca5;
+  --message-user-bg: #c81e10;
+  --message-tips-bg: #f8eed7;
+  --workspace-btn-bg: #f9dcc8;
+  --color-guid-agent-bar: #faf1de;
+  --spring-red: #c81e10;
+  --spring-red-deep: #8f120a;
+  --spring-gold: #c9922e;
+  --spring-gold-bright: #e8b64a;
+  --spring-rice: #fffaf0;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-festival-spring][data-ds-dark-theme] {
+  --color-primary: #e03a2c;
+  --primary: #e03a2c;
+  --primary-rgb: 224, 58, 44;
+  --color-primary-light-1: #ec6a5c;
+  --color-primary-light-2: #f19488;
+  --color-primary-light-3: #f8beb8;
+  --color-primary-dark-1: #a81f14;
+  --brand: #e03a2c;
+  --brand-light: #3a0f0b;
+  --brand-hover: #f0523f;
+  --color-brand-fill: #e03a2c;
+  --color-brand-bg: #320d0a;
+  --aou-1: #2b0b08;
+  --aou-2: #42110c;
+  --aou-3: #5c1810;
+  --aou-4: #7a2015;
+  --aou-5: #9c2a1b;
+  --aou-6: #c03325;
+  --aou-7: #e03a2c;
+  --aou-8: #ec6a5c;
+  --aou-9: #f4a89c;
+  --aou-10: #fce4de;
+  --bg-base: #130708;
+  --bg-1: #1b0b0d;
+  --bg-2: #241012;
+  --bg-3: #2d1518;
+  --bg-4: #381b1f;
+  --bg-5: #45232a;
+  --bg-6: #552d35;
+  --bg-8: #7a4450;
+  --bg-9: #a06a74;
+  --bg-10: #cfa5aa;
+  --color-bg-1: #1b0b0d;
+  --color-bg-2: #241012;
+  --color-bg-3: #2d1518;
+  --color-bg-4: #381b1f;
+  --bg-hover: #2a1215;
+  --bg-active: #33181c;
+  --text-primary: #f7ecdc;
+  --text-secondary: #c9a89f;
+  --text-disabled: #6b4b48;
+  --text-0: #ffffff;
+  --text-white: #ffffff;
+  --color-text-1: #f7ecdc;
+  --color-text-2: #c9a89f;
+  --color-text-3: #9c7d76;
+  --color-text-4: #6b4b48;
+  --border-base: #3f2026;
+  --border-light: #2e171b;
+  --border-special: #8a5a1e;
+  --color-border: #3f2026;
+  --color-border-1: #3f2026;
+  --color-border-2: #2e171b;
+  --fill: #241012;
+  --color-fill: #241012;
+  --fill-0: #1b0b0d;
+  --fill-white-to-black: #130708;
+  --dialog-fill-0: #1e0d10;
+  --inverse: #f7ecdc;
+  --success: #57b57a;
+  --warning: #f2b84b;
+  --danger: #e03a2c;
+  --info: #d9a63f;
+  --message-user-bg: #b32a1e;
+  --message-tips-bg: #241012;
+  --workspace-btn-bg: #320d0a;
+  --color-guid-agent-bar: #1a0b0d;
+  --spring-red: #e03a2c;
+  --spring-red-deep: #8c1a10;
+  --spring-gold: #f2b84b;
+  --spring-gold-deep: #c9922e;
+  --spring-rice: #f7ecdc;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-festival-spring] {
+  --dsw-static-deepseek-50: #fdeee6;
+  --dsw-static-blue-50: #fdeee6;
+  --dsw-static-deepseek-50p: #fadcc9;
+  --dsw-static-blue-50p: #fadcc9;
+  --dsw-static-deepseek-75: #fadcc9;
+  --dsw-static-blue-75: #fadcc9;
+  --dsw-static-deepseek-100: #fadcc9;
+  --dsw-static-blue-100: #fadcc9;
+  --dsw-static-deepseek-200: #f4bfa8;
+  --dsw-static-blue-200: #f4bfa8;
+  --dsw-static-deepseek-300: #ec9a7e;
+  --dsw-static-blue-300: #ec9a7e;
+  --dsw-static-deepseek-400: #e2704f;
+  --dsw-static-blue-400: #e2704f;
+  --dsw-static-deepseek-450: #e2704f;
+  --dsw-static-blue-450: #e2704f;
+  --dsw-static-deepseek-500: #c81e10;
+  --dsw-static-blue-500: #c81e10;
+  --dsw-static-deepseek-600: #aa1f12;
+  --dsw-static-blue-600: #aa1f12;
+  --dsw-static-deepseek-700-delete: #82170c;
+  --dsw-static-deepseek-800: #82170c;
+  --dsw-static-blue-800: #82170c;
+  --dsw-static-deepseek-900: #5c0f07;
+  --dsw-static-blue-900: #5c0f07;
+  --dsw-static-deepseek-950: #380701;
+  --dsw-static-blue-950: #380701;
+  --dsw-static-neutral-bluish-00: #faf1de;
+  --dsw-static-neutral-00: #faf1de;
+  --dsw-static-neutral-bluish-50: #faf1de;
+  --dsw-static-neutral-50: #faf1de;
+  --dsw-static-neutral-bluish-60: #faf1de;
+  --dsw-static-neutral-60: #faf1de;
+  --dsw-static-neutral-bluish-75: #f5e9d0;
+  --dsw-static-neutral-75: #f5e9d0;
+  --dsw-static-neutral-bluish-100: #f5e9d0;
+  --dsw-static-neutral-100: #f5e9d0;
+  --dsw-static-neutral-bluish-150: #efe0c2;
+  --dsw-static-neutral-150: #efe0c2;
+  --dsw-static-neutral-bluish-200: #efe0c2;
+  --dsw-static-neutral-200: #efe0c2;
+  --dsw-static-neutral-bluish-250: #e8d5b2;
+  --dsw-static-neutral-250: #e8d5b2;
+  --dsw-static-neutral-bluish-300: #e8d5b2;
+  --dsw-static-neutral-300: #e8d5b2;
+  --dsw-static-neutral-bluish-400: #dcc7a0;
+  --dsw-static-neutral-400: #dcc7a0;
+  --dsw-static-neutral-bluish-500: #cdb488;
+  --dsw-static-neutral-500: #cdb488;
+  --dsw-static-neutral-bluish-550: #cdb488;
+  --dsw-static-neutral-550: #cdb488;
+  --dsw-static-neutral-bluish-600: #a08a63;
+  --dsw-static-neutral-600: #a08a63;
+  --dsw-static-neutral-bluish-700: #a08a63;
+  --dsw-static-neutral-700: #a08a63;
+  --dsw-static-neutral-bluish-750: #7d6a4a;
+  --dsw-static-neutral-750: #7d6a4a;
+  --dsw-static-neutral-bluish-800: #7d6a4a;
+  --dsw-static-neutral-800: #7d6a4a;
+  --dsw-static-neutral-bluish-850: #7d6a4a;
+  --dsw-static-neutral-850: #7d6a4a;
+  --dsw-static-neutral-bluish-875: #54452e;
+  --dsw-static-neutral-875: #54452e;
+  --dsw-static-neutral-bluish-900: #54452e;
+  --dsw-static-neutral-900: #54452e;
+  --dsw-static-neutral-bluish-950: #54452e;
+  --dsw-static-neutral-950: #54452e;
+  --dsw-static-neutral-bluish-1000: #4a1712;
+  --dsw-static-neutral-1000: #4a1712;
+  --dsw-static-green-50: color-mix(in srgb, #3d8a52 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #3d8a52 20%, white);
+  --dsw-static-green-400: #3d8a52;
+  --dsw-static-green-500: #3d8a52;
+  --dsw-static-green-600: color-mix(in srgb, #3d8a52 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3d8a52 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #a87808 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #a87808 20%, white);
+  --dsw-static-amber-400: #a87808;
+  --dsw-static-amber-500: #a87808;
+  --dsw-static-amber-600: color-mix(in srgb, #a87808 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #a87808 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c81e10 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c81e10 20%, white);
+  --dsw-static-red-400: #c81e10;
+  --dsw-static-red-500: #c81e10;
+  --dsw-static-red-600: color-mix(in srgb, #c81e10 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c81e10 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-festival-spring][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2b0b08;
+  --dsw-static-blue-50: #2b0b08;
+  --dsw-static-deepseek-50p: #42110c;
+  --dsw-static-blue-50p: #42110c;
+  --dsw-static-deepseek-75: #42110c;
+  --dsw-static-blue-75: #42110c;
+  --dsw-static-deepseek-100: #42110c;
+  --dsw-static-blue-100: #42110c;
+  --dsw-static-deepseek-200: #5c1810;
+  --dsw-static-blue-200: #5c1810;
+  --dsw-static-deepseek-300: #7a2015;
+  --dsw-static-blue-300: #7a2015;
+  --dsw-static-deepseek-400: #9c2a1b;
+  --dsw-static-blue-400: #9c2a1b;
+  --dsw-static-deepseek-450: #9c2a1b;
+  --dsw-static-blue-450: #9c2a1b;
+  --dsw-static-deepseek-500: #c03325;
+  --dsw-static-blue-500: #c03325;
+  --dsw-static-deepseek-600: #e03a2c;
+  --dsw-static-blue-600: #e03a2c;
+  --dsw-static-deepseek-700-delete: #ec6a5c;
+  --dsw-static-deepseek-800: #ec6a5c;
+  --dsw-static-blue-800: #ec6a5c;
+  --dsw-static-deepseek-900: #f4a89c;
+  --dsw-static-blue-900: #f4a89c;
+  --dsw-static-deepseek-950: #fce4de;
+  --dsw-static-blue-950: #fce4de;
+  --dsw-static-neutral-bluish-00: #1b0b0d;
+  --dsw-static-neutral-00: #1b0b0d;
+  --dsw-static-neutral-bluish-50: #1b0b0d;
+  --dsw-static-neutral-50: #1b0b0d;
+  --dsw-static-neutral-bluish-60: #1b0b0d;
+  --dsw-static-neutral-60: #1b0b0d;
+  --dsw-static-neutral-bluish-75: #241012;
+  --dsw-static-neutral-75: #241012;
+  --dsw-static-neutral-bluish-100: #241012;
+  --dsw-static-neutral-100: #241012;
+  --dsw-static-neutral-bluish-150: #2d1518;
+  --dsw-static-neutral-150: #2d1518;
+  --dsw-static-neutral-bluish-200: #2d1518;
+  --dsw-static-neutral-200: #2d1518;
+  --dsw-static-neutral-bluish-250: #381b1f;
+  --dsw-static-neutral-250: #381b1f;
+  --dsw-static-neutral-bluish-300: #381b1f;
+  --dsw-static-neutral-300: #381b1f;
+  --dsw-static-neutral-bluish-400: #45232a;
+  --dsw-static-neutral-400: #45232a;
+  --dsw-static-neutral-bluish-500: #552d35;
+  --dsw-static-neutral-500: #552d35;
+  --dsw-static-neutral-bluish-550: #552d35;
+  --dsw-static-neutral-550: #552d35;
+  --dsw-static-neutral-bluish-600: #7a4450;
+  --dsw-static-neutral-600: #7a4450;
+  --dsw-static-neutral-bluish-700: #7a4450;
+  --dsw-static-neutral-700: #7a4450;
+  --dsw-static-neutral-bluish-750: #a06a74;
+  --dsw-static-neutral-750: #a06a74;
+  --dsw-static-neutral-bluish-800: #a06a74;
+  --dsw-static-neutral-800: #a06a74;
+  --dsw-static-neutral-bluish-850: #a06a74;
+  --dsw-static-neutral-850: #a06a74;
+  --dsw-static-neutral-bluish-875: #cfa5aa;
+  --dsw-static-neutral-875: #cfa5aa;
+  --dsw-static-neutral-bluish-900: #cfa5aa;
+  --dsw-static-neutral-900: #cfa5aa;
+  --dsw-static-neutral-bluish-950: #cfa5aa;
+  --dsw-static-neutral-950: #cfa5aa;
+  --dsw-static-neutral-bluish-1000: #f7ecdc;
+  --dsw-static-neutral-1000: #f7ecdc;
+  --dsw-static-green-50: color-mix(in srgb, #57b57a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #57b57a 20%, black);
+  --dsw-static-green-400: #57b57a;
+  --dsw-static-green-500: #57b57a;
+  --dsw-static-green-600: color-mix(in srgb, #57b57a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #57b57a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f2b84b 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #f2b84b 20%, black);
+  --dsw-static-amber-400: #f2b84b;
+  --dsw-static-amber-500: #f2b84b;
+  --dsw-static-amber-600: color-mix(in srgb, #f2b84b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f2b84b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e03a2c 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e03a2c 20%, black);
+  --dsw-static-red-400: #e03a2c;
+  --dsw-static-red-500: #e03a2c;
+  --dsw-static-red-600: color-mix(in srgb, #e03a2c 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e03a2c 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-festival-spring] {
+  --dsw-alias-button-primary-fill: #c81e10;
+  --dsw-alias-button-primary-hover: #d94a3e;
+  --dsw-alias-button-primary-dimmed: #fadcc9;
+  --dsw-alias-button-info-fill: #c81e10;
+  --dsw-alias-button-info-hover: #d94a3e;
+  --dsw-alias-button-contrast-fill: #aa1f12;
+  --dsw-alias-button-ghost-active-fill: #fbe3d4;
+  --dsw-alias-button-ghost-active-hover: #fadcc9;
+  --dsw-alias-button-ghost-active-border: #ec9a7e;
+  --dsw-alias-button-elevated-fill: #faf1de;
+  --dsw-alias-button-floating-fill: #faf1de;
+  --dsw-alias-button-floating-hover: #f6ecd6;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(200, 30, 16, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(200, 30, 16, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(200, 30, 16, 0.6);
+  --dsw-specific-bubble: #c81e10;
+  --dsw-specific-bubble-highlight: #f4bfa8;
+  --dsw-specific-input-major: #faf1de;
+  --dsw-specific-login-input: #faf1de;
+  --dsw-specific-sidebar-fill: #c81e10;
+  --dsw-specific-sidebar-nav-item-active: #fadcc9;
+  --dsw-specific-sidebar-nav-item-hover: #f6ecd6;
+  --dsw-specific-sidebar-nav-item-active-accent: #ec9a7e;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-festival-spring][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #e03a2c;
+  --dsw-alias-button-primary-hover: #f0523f;
+  --dsw-alias-button-primary-dimmed: #42110c;
+  --dsw-alias-button-info-fill: #e03a2c;
+  --dsw-alias-button-info-hover: #f0523f;
+  --dsw-alias-button-contrast-fill: #e03a2c;
+  --dsw-alias-button-ghost-active-fill: #3a0f0b;
+  --dsw-alias-button-ghost-active-hover: #42110c;
+  --dsw-alias-button-ghost-active-border: #7a2015;
+  --dsw-alias-button-elevated-fill: #1b0b0d;
+  --dsw-alias-button-floating-fill: #1b0b0d;
+  --dsw-alias-button-floating-hover: #2a1215;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(224, 58, 44, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(224, 58, 44, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(224, 58, 44, 0.6);
+  --dsw-specific-bubble: #b32a1e;
+  --dsw-specific-bubble-highlight: #5c1810;
+  --dsw-specific-input-major: #1b0b0d;
+  --dsw-specific-login-input: #1b0b0d;
+  --dsw-specific-sidebar-fill: #e03a2c;
+  --dsw-specific-sidebar-nav-item-active: #42110c;
+  --dsw-specific-sidebar-nav-item-hover: #2a1215;
+  --dsw-specific-sidebar-nav-item-active-accent: #7a2015;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-festival-spring] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-spring]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 14% 16%, var(--spring-gold) 0 1.8px, transparent 3px),
+      radial-gradient(circle at 66% 10%, var(--spring-red) 0 1.4px, transparent 2.6px),
+      radial-gradient(circle at 86% 46%, var(--spring-gold) 0 1.8px, transparent 3px),
+      radial-gradient(circle at 34% 60%, var(--spring-red) 0 1.4px, transparent 2.6px),
+      radial-gradient(circle at 56% 86%, var(--spring-gold) 0 1.6px, transparent 2.8px),
+      radial-gradient(ellipse 44% 32% at 80% 84%, rgba(200, 30, 16, 0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 10% 88%, rgba(201, 146, 46, 0.3) 0%, transparent 70%);
+    background-size: 520px 520px, 640px 640px, 480px 480px, 580px 580px, 500px 500px, 100% 100%, 100% 100%;
+    animation: festival-spring-spring-ember-glow 4.6s ease-in-out infinite;
+}
+
+body[data-dsh-festival-spring]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      linear-gradient(45deg, rgba(200, 30, 16, 0.5) 1px, transparent 1px),
+      linear-gradient(-45deg, rgba(200, 30, 16, 0.5) 1px, transparent 1px);
+    background-size: 44px 44px;
+    animation: festival-spring-spring-lattice-drift 40s linear infinite;
+}
+
+body[data-dsh-festival-spring] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-spring] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--spring-red), 3px 0 10px rgba(200, 30, 16, 0.12);
+}
+
+body[data-dsh-festival-spring] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-spring] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(200, 30, 16, 0.16), rgba(200, 30, 16, 0.05) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--spring-gold), 3px 0 12px rgba(201, 146, 46, 0.25);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-spring] button[class*='primary'],
+body[data-dsh-festival-spring] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 82% 16%, rgba(255, 233, 184, 0.6) 0 2px, transparent 3.5px),
+      linear-gradient(135deg, var(--spring-red-deep) 0%, var(--spring-red) 55%, #e8553f 100%) !important;
+    border: 1px solid var(--spring-gold) !important;
+    border-radius: 10px !important;
+    color: var(--text-white) !important;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(200, 30, 16, 0.35), inset 0 1px 0 rgba(232, 182, 74, 0.5);
+    text-shadow: 0 1px 2px rgba(90, 10, 6, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-spring] button[class*='primary']:hover,
+body[data-dsh-festival-spring] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    animation: festival-spring-spring-btn-spark 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-spring] pre,
+body[data-dsh-festival-spring] .markdown-body pre {
+  background: linear-gradient(180deg, #fff8ea 0%, #faf0da 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--spring-gold) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 8px rgba(201, 146, 46, 0.1), 0 0 12px rgba(200, 30, 16, 0.06);
+}
+
+body[data-dsh-festival-spring] pre code,
+body[data-dsh-festival-spring] .markdown-body pre code {
+  background: transparent !important;
+    color: #3d1410 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-spring] code,
+body[data-dsh-festival-spring] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--spring-red-deep);
+    border: 1px solid rgba(201, 146, 46, 0.5);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-spring]::selection {
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+    color: var(--text-primary);
+}
+
+body[data-dsh-festival-spring] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(160, 120, 60, 0.1), 0 0 0 1px rgba(201, 146, 46, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-spring] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-festival-spring] [class*='agent-bar'],
+body[data-dsh-festival-spring] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(201, 146, 46, 0.45);
+}
+
+body[data-dsh-festival-spring] .markdown-body blockquote {
+  border-left: 3px solid var(--spring-gold);
+    background: rgba(200, 30, 16, 0.05);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-spring] .markdown-body hr,
+body[data-dsh-festival-spring] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(90deg, var(--spring-red) 0 6px, transparent 6px 12px),
+      linear-gradient(90deg, transparent, rgba(201, 146, 46, 0.55), transparent);
+    background-size: 12px 6px, 100% 1px;
+    background-position: 0 1px, 0 4px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.75;
+}
+
+body[data-dsh-festival-spring] .markdown-body a,
+body[data-dsh-festival-spring] a {
+  color: var(--spring-red);
+}
+
+body[data-dsh-festival-spring] .markdown-body a:hover,
+body[data-dsh-festival-spring] a:hover {
+  color: var(--spring-red-deep);
+    text-shadow: 0 0 6px rgba(200, 30, 16, 0.25);
+}
+
+body[data-dsh-festival-spring] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--spring-red-deep) !important;
+    border-color: rgba(200, 30, 16, 0.45) !important;
+    background-color: rgba(200, 30, 16, 0.07) !important;
+}
+
+body[data-dsh-festival-spring]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-spring]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--spring-red), var(--spring-red-deep));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-spring]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--spring-gold-bright), var(--spring-red));
+    box-shadow: 0 0 8px rgba(200, 30, 16, 0.35);
+}
+
+body[data-dsh-festival-spring]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-festival-spring][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 14% 16%, var(--spring-gold) 0 1.8px, transparent 3px),
+      radial-gradient(circle at 66% 10%, var(--spring-gold) 0 1.4px, transparent 2.6px),
+      radial-gradient(circle at 86% 46%, var(--spring-red) 0 1.8px, transparent 3px),
+      radial-gradient(circle at 34% 60%, var(--spring-gold) 0 1.4px, transparent 2.6px),
+      radial-gradient(circle at 56% 86%, var(--spring-red) 0 1.6px, transparent 2.8px),
+      radial-gradient(ellipse 44% 32% at 80% 84%, rgba(224, 58, 44, 0.5) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 10% 88%, rgba(242, 184, 75, 0.4) 0%, transparent 70%);
+    background-size: 520px 520px, 640px 640px, 480px 480px, 580px 580px, 500px 500px, 100% 100%, 100% 100%;
+    animation: festival-spring-spring-ember-glow 4.6s ease-in-out infinite;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background-image:
+      linear-gradient(45deg, rgba(242, 184, 75, 0.55) 1px, transparent 1px),
+      linear-gradient(-45deg, rgba(242, 184, 75, 0.55) 1px, transparent 1px);
+    background-size: 44px 44px;
+    animation: festival-spring-spring-lattice-drift 40s linear infinite;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--spring-red), 3px 0 10px rgba(224, 58, 44, 0.18);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(224, 58, 44, 0.3), rgba(224, 58, 44, 0.08) 62%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--spring-gold), 3px 0 12px rgba(242, 184, 75, 0.28);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-festival-spring][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background:
+      radial-gradient(circle at 82% 16%, rgba(247, 236, 220, 0.5) 0 2px, transparent 3.5px),
+      linear-gradient(135deg, var(--spring-red-deep) 0%, var(--spring-red) 55%, #f0603f 100%) !important;
+    border: 1px solid var(--spring-gold) !important;
+    border-radius: 10px !important;
+    color: var(--text-white) !important;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(224, 58, 44, 0.4), inset 0 1px 0 rgba(242, 184, 75, 0.4);
+    text-shadow: 0 1px 2px rgba(90, 10, 8, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-festival-spring][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    animation: festival-spring-spring-btn-spark 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] pre,
+body[data-dsh-festival-spring][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #180a0b 0%, #120607 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 4px solid var(--spring-gold) !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 14px rgba(242, 184, 75, 0.08);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] pre code,
+body[data-dsh-festival-spring][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #f2e6d2 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] code,
+body[data-dsh-festival-spring][data-ds-dark-theme] .markdown-body code {
+  background-color: var(--brand-light);
+    color: var(--spring-gold);
+    border: 1px solid var(--border-special);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(8, 3, 4, 0.55), 0 0 0 1px rgba(242, 184, 75, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-festival-spring][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(242, 184, 75, 0.4);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--spring-gold);
+    background: rgba(224, 58, 44, 0.1);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-festival-spring][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(90deg, var(--spring-red) 0 6px, transparent 6px 12px),
+      linear-gradient(90deg, transparent, rgba(242, 184, 75, 0.5), transparent);
+    background-size: 12px 6px, 100% 1px;
+    background-position: 0 1px, 0 4px;
+    background-repeat: repeat-x, no-repeat;
+    opacity: 0.7;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-festival-spring][data-ds-dark-theme] a {
+  color: var(--spring-gold);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-festival-spring][data-ds-dark-theme] a:hover {
+  color: #ffd98a;
+    text-shadow: 0 0 8px rgba(242, 184, 75, 0.5);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--color-primary-light-2) !important;
+    border-color: rgba(242, 184, 75, 0.5) !important;
+    background-color: rgba(224, 58, 44, 0.12) !important;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--spring-red), var(--spring-red-deep));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--spring-gold), var(--spring-red));
+    box-shadow: 0 0 8px rgba(242, 184, 75, 0.5);
+}
+
+body[data-dsh-festival-spring][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes festival-spring-spring-ember-glow {
+  0%, 100% { opacity: 0.05; }
+  50% { opacity: 0.11; }
+}
+
+@keyframes festival-spring-spring-lattice-drift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 44px 44px, -44px 44px; }
+}
+
+@keyframes festival-spring-spring-lantern-sway {
+  0%, 100% { background-position: 0 0, 0 0, 0 11px; }
+  50% { background-position: 4px 0, 4px 0, 5px 11px; }
+}
+
+@keyframes festival-spring-spring-btn-spark {
+  0%, 100% { box-shadow: 0 2px 14px rgba(200, 30, 16, 0.45), 0 0 26px rgba(232, 182, 74, 0.2), inset 0 1px 0 rgba(232, 182, 74, 0.5); }
+  50% { box-shadow: 0 2px 20px rgba(200, 30, 16, 0.65), 0 0 40px rgba(232, 182, 74, 0.4), inset 0 1px 0 rgba(232, 182, 74, 0.6); }
+}
+
+@keyframes festival-spring-spring-gold-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+@keyframes festival-spring-spring-border-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

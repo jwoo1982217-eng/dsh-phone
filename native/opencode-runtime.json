@@ -1,0 +1,56 @@
+{
+  "version": "1.19.2",
+  "targets": {
+    "darwin-arm64": [
+      {
+        "package": "opencode-darwin-arm64",
+        "version": "1.19.2",
+        "url": "https://registry.npmjs.org/opencode-darwin-arm64/-/opencode-darwin-arm64-1.19.2.tgz",
+        "sha256": "e8ea40e8ab4c0803cc80a03d120e2668940c2520d10cc3c9ec58d69287d0e1d0",
+        "registryIntegrity": "sha512-S7eQqKxR+Sd9lJd/tPyb8ensMgF0E1ag75qj1t+6Xz7pTwwI4S7zpGA9gBk4c/NIebCvaxmPO3LBvgASmzuNxg==",
+        "member": "package/bin/opencode",
+        "destination": "native/opencode/darwin-arm64/opencode",
+        "binarySha256": "fc1516a13870aeb3e27fb1cd7ddb42c22b64ad3f525649e438214fcff295c426"
+      }
+    ],
+    "android-arm64": [
+      {
+        "package": "opencode-linux-arm64-musl",
+        "version": "1.19.2",
+        "url": "https://registry.npmjs.org/opencode-linux-arm64-musl/-/opencode-linux-arm64-musl-1.19.2.tgz",
+        "sha256": "398b67a4ef963f20ce431e7064241805789add2be6b7f47df6d5afcaf4ef6b7a",
+        "registryIntegrity": "sha512-p4rtpUR/UlZEpVqeIo6et2VoSWfXQ//hgPoVW4pJClm3sH08WqUJ0KsyEEKYBXzveZvTxIYnUFlg6OTkaUtPMA==",
+        "member": "package/bin/opencode",
+        "destination": "app/src/main/jniLibs/arm64-v8a/libdshopencode.so",
+        "binarySha256": "479b7133f04c55d2aabe088040da63d5e6422ba68106c5716e08f23cc5536bfd"
+      },
+      {
+        "package": "libgcc",
+        "version": "15.2.0-r2",
+        "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libgcc-15.2.0-r2.apk",
+        "sha256": "eaaafda78fde1c904e1741680ddea91649f051e29a343152c8a4327605704b0f",
+        "member": "usr/lib/libgcc_s.so.1",
+        "destination": "app/src/main/jniLibs/arm64-v8a/libdshopencodegcc.so",
+        "binarySha256": "fd240181fecbb70409aa70ccb76671a96ac22be540e6398fe66d6800a16b2b18"
+      },
+      {
+        "package": "libstdc++",
+        "version": "15.2.0-r2",
+        "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/libstdc++-15.2.0-r2.apk",
+        "sha256": "10d72e25f6fcc0f3d9fdd801c9bdaed81d6e836aa2b65b63f25d2d97f860a7d1",
+        "member": "usr/lib/libstdc++.so.6.0.34",
+        "destination": "app/src/main/jniLibs/arm64-v8a/libdshopencodestdcpp.so",
+        "binarySha256": "bafcd4d332533ba4b30d09e8e59fd305818abb633742f68151a1efcdc24be213"
+      },
+      {
+        "package": "musl",
+        "version": "1.2.5-r23",
+        "url": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main/aarch64/musl-1.2.5-r23.apk",
+        "sha256": "6a3edd924ead1fad88a69e28c5775809af3026b322f58428001cd02fedc5299e",
+        "member": "lib/ld-musl-aarch64.so.1",
+        "destination": "app/src/main/jniLibs/arm64-v8a/libdshopencodemusl.so",
+        "binarySha256": "fc61b6e11fd8c6bfee3235865249cd78eea34aa36d88277e6008038031160993"
+      }
+    ]
+  }
+}

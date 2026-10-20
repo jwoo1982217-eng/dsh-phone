@@ -1,0 +1,786 @@
+/* game-stardew — 星露谷物语 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-game-stardew], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-game-stardew] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2e2a1f;
+  background-color: #f7f3e8;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] {
+  color: #ecf2f9;
+  background-color: #0e1622;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-game-stardew] {
+  --color-primary: #2d7dbd;
+  --primary: #2d7dbd;
+  --primary-rgb: 45, 125, 189;
+  --color-primary-light-1: #5c9fd1;
+  --color-primary-light-2: #8abbe0;
+  --color-primary-light-3: #bcd8ee;
+  --color-primary-dark-1: #1f5f95;
+  --brand: #2d7dbd;
+  --brand-light: #e4f0f9;
+  --brand-hover: #1f5f95;
+  --color-brand-fill: #2d7dbd;
+  --color-brand-bg: #dcebf6;
+  --aou-1: #e4f0f9;
+  --aou-2: #c8e1f3;
+  --aou-3: #a2ccea;
+  --aou-4: #7cb4df;
+  --aou-5: #5598d2;
+  --aou-6: #2d7dbd;
+  --aou-7: #25689e;
+  --aou-8: #1d527e;
+  --aou-9: #153c5d;
+  --aou-10: #0d263c;
+  --bg-base: #f7f3e8;
+  --bg-1: #efe9da;
+  --bg-2: #e7dfcc;
+  --bg-3: #ddd3bb;
+  --bg-4: #d0c4a6;
+  --bg-5: #c0b28e;
+  --bg-6: #ab9c75;
+  --bg-8: #877a58;
+  --bg-9: #615740;
+  --bg-10: #3c3527;
+  --color-bg-1: #efe9da;
+  --color-bg-2: #e7dfcc;
+  --color-bg-3: #ddd3bb;
+  --color-bg-4: #d0c4a6;
+  --bg-hover: #e9e2d0;
+  --bg-active: #ded4bd;
+  --text-primary: #2e2a1f;
+  --text-secondary: #6b6247;
+  --text-disabled: #b0a88d;
+  --text-0: #1a1710;
+  --text-white: #ffffff;
+  --color-text-1: #2e2a1f;
+  --color-text-2: #6b6247;
+  --color-text-3: #877d60;
+  --color-text-4: #b0a88d;
+  --border-base: #cfc5a9;
+  --border-light: #e0d8c2;
+  --border-special: #d9a13b;
+  --color-border: #cfc5a9;
+  --color-border-1: #cfc5a9;
+  --color-border-2: #e0d8c2;
+  --fill: #e7dfcc;
+  --color-fill: #e7dfcc;
+  --fill-0: #efe9da;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fbf8ef;
+  --inverse: #2e2a1f;
+  --success: #4f9243;
+  --warning: #d9a13b;
+  --danger: #c04a3a;
+  --info: #2d7dbd;
+  --message-user-bg: #e2af52;
+  --message-tips-bg: #e8ecd8;
+  --workspace-btn-bg: #dcebf6;
+  --color-guid-agent-bar: #ede7d6;
+  --stardew-blue: #2d7dbd;
+  --stardew-wheat: #d9a13b;
+  --stardew-crop: #5d9e4f;
+  --stardew-wood: #8a5a33;
+  --stardew-night: #1d2b45;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-game-stardew][data-ds-dark-theme] {
+  --color-primary: #5ea9e4;
+  --primary: #5ea9e4;
+  --primary-rgb: 94, 169, 228;
+  --color-primary-light-1: #80bde9;
+  --color-primary-light-2: #aad2f1;
+  --color-primary-light-3: #cfe6f8;
+  --color-primary-dark-1: #3d86bd;
+  --brand: #5ea9e4;
+  --brand-light: #16283c;
+  --brand-hover: #79bceb;
+  --color-brand-fill: #5ea9e4;
+  --color-brand-bg: #122234;
+  --aou-1: #0d1c2c;
+  --aou-2: #132a40;
+  --aou-3: #1a3a57;
+  --aou-4: #22496e;
+  --aou-5: #2c5f8c;
+  --aou-6: #3d86bd;
+  --aou-7: #5ea9e4;
+  --aou-8: #8cc3ec;
+  --aou-9: #badcf5;
+  --aou-10: #e6f2fb;
+  --bg-base: #0e1622;
+  --bg-1: #141e2e;
+  --bg-2: #1a2638;
+  --bg-3: #213045;
+  --bg-4: #293b53;
+  --bg-5: #344a66;
+  --bg-6: #41597a;
+  --bg-8: #5d7795;
+  --bg-9: #85a0bc;
+  --bg-10: #b8cade;
+  --color-bg-1: #141e2e;
+  --color-bg-2: #1a2638;
+  --color-bg-3: #213045;
+  --color-bg-4: #293b53;
+  --bg-hover: #1e2a3d;
+  --bg-active: #26374e;
+  --text-primary: #ecf2f9;
+  --text-secondary: #a9b7c7;
+  --text-disabled: #54637a;
+  --text-0: #f6f9fc;
+  --text-white: #ffffff;
+  --color-text-1: #ecf2f9;
+  --color-text-2: #a9b7c7;
+  --color-text-3: #7d8ea1;
+  --color-text-4: #54637a;
+  --border-base: #2b3a52;
+  --border-light: #213044;
+  --border-special: #a8842f;
+  --color-border: #2b3a52;
+  --color-border-1: #2b3a52;
+  --color-border-2: #213044;
+  --fill: #1a2638;
+  --color-fill: #1a2638;
+  --fill-0: #141e2e;
+  --fill-white-to-black: #0e1622;
+  --dialog-fill-0: #16202f;
+  --inverse: #ecf2f9;
+  --success: #6dbb63;
+  --warning: #e8b24a;
+  --danger: #e06a5a;
+  --info: #5ea9e4;
+  --message-user-bg: #1e3a5c;
+  --message-tips-bg: #182538;
+  --workspace-btn-bg: #122234;
+  --color-guid-agent-bar: #131c2a;
+  --stardew-blue: #5ea9e4;
+  --stardew-wheat: #e8b24a;
+  --stardew-crop: #6dbb63;
+  --stardew-wood: #a5713f;
+  --stardew-night: #0e1622;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-game-stardew] {
+  --dsw-static-deepseek-50: #e4f0f9;
+  --dsw-static-blue-50: #e4f0f9;
+  --dsw-static-deepseek-50p: #c8e1f3;
+  --dsw-static-blue-50p: #c8e1f3;
+  --dsw-static-deepseek-75: #c8e1f3;
+  --dsw-static-blue-75: #c8e1f3;
+  --dsw-static-deepseek-100: #c8e1f3;
+  --dsw-static-blue-100: #c8e1f3;
+  --dsw-static-deepseek-200: #a2ccea;
+  --dsw-static-blue-200: #a2ccea;
+  --dsw-static-deepseek-300: #7cb4df;
+  --dsw-static-blue-300: #7cb4df;
+  --dsw-static-deepseek-400: #5598d2;
+  --dsw-static-blue-400: #5598d2;
+  --dsw-static-deepseek-450: #5598d2;
+  --dsw-static-blue-450: #5598d2;
+  --dsw-static-deepseek-500: #2d7dbd;
+  --dsw-static-blue-500: #2d7dbd;
+  --dsw-static-deepseek-600: #25689e;
+  --dsw-static-blue-600: #25689e;
+  --dsw-static-deepseek-700-delete: #1d527e;
+  --dsw-static-deepseek-800: #1d527e;
+  --dsw-static-blue-800: #1d527e;
+  --dsw-static-deepseek-900: #153c5d;
+  --dsw-static-blue-900: #153c5d;
+  --dsw-static-deepseek-950: #0d263c;
+  --dsw-static-blue-950: #0d263c;
+  --dsw-static-neutral-bluish-00: #efe9da;
+  --dsw-static-neutral-00: #efe9da;
+  --dsw-static-neutral-bluish-50: #efe9da;
+  --dsw-static-neutral-50: #efe9da;
+  --dsw-static-neutral-bluish-60: #efe9da;
+  --dsw-static-neutral-60: #efe9da;
+  --dsw-static-neutral-bluish-75: #e7dfcc;
+  --dsw-static-neutral-75: #e7dfcc;
+  --dsw-static-neutral-bluish-100: #e7dfcc;
+  --dsw-static-neutral-100: #e7dfcc;
+  --dsw-static-neutral-bluish-150: #ddd3bb;
+  --dsw-static-neutral-150: #ddd3bb;
+  --dsw-static-neutral-bluish-200: #ddd3bb;
+  --dsw-static-neutral-200: #ddd3bb;
+  --dsw-static-neutral-bluish-250: #d0c4a6;
+  --dsw-static-neutral-250: #d0c4a6;
+  --dsw-static-neutral-bluish-300: #d0c4a6;
+  --dsw-static-neutral-300: #d0c4a6;
+  --dsw-static-neutral-bluish-400: #c0b28e;
+  --dsw-static-neutral-400: #c0b28e;
+  --dsw-static-neutral-bluish-500: #ab9c75;
+  --dsw-static-neutral-500: #ab9c75;
+  --dsw-static-neutral-bluish-550: #ab9c75;
+  --dsw-static-neutral-550: #ab9c75;
+  --dsw-static-neutral-bluish-600: #877a58;
+  --dsw-static-neutral-600: #877a58;
+  --dsw-static-neutral-bluish-700: #877a58;
+  --dsw-static-neutral-700: #877a58;
+  --dsw-static-neutral-bluish-750: #615740;
+  --dsw-static-neutral-750: #615740;
+  --dsw-static-neutral-bluish-800: #615740;
+  --dsw-static-neutral-800: #615740;
+  --dsw-static-neutral-bluish-850: #615740;
+  --dsw-static-neutral-850: #615740;
+  --dsw-static-neutral-bluish-875: #3c3527;
+  --dsw-static-neutral-875: #3c3527;
+  --dsw-static-neutral-bluish-900: #3c3527;
+  --dsw-static-neutral-900: #3c3527;
+  --dsw-static-neutral-bluish-950: #3c3527;
+  --dsw-static-neutral-950: #3c3527;
+  --dsw-static-neutral-bluish-1000: #2e2a1f;
+  --dsw-static-neutral-1000: #2e2a1f;
+  --dsw-static-green-50: color-mix(in srgb, #4f9243 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #4f9243 20%, white);
+  --dsw-static-green-400: #4f9243;
+  --dsw-static-green-500: #4f9243;
+  --dsw-static-green-600: color-mix(in srgb, #4f9243 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4f9243 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d9a13b 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d9a13b 20%, white);
+  --dsw-static-amber-400: #d9a13b;
+  --dsw-static-amber-500: #d9a13b;
+  --dsw-static-amber-600: color-mix(in srgb, #d9a13b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d9a13b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c04a3a 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c04a3a 20%, white);
+  --dsw-static-red-400: #c04a3a;
+  --dsw-static-red-500: #c04a3a;
+  --dsw-static-red-600: color-mix(in srgb, #c04a3a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c04a3a 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-game-stardew][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #0d1c2c;
+  --dsw-static-blue-50: #0d1c2c;
+  --dsw-static-deepseek-50p: #132a40;
+  --dsw-static-blue-50p: #132a40;
+  --dsw-static-deepseek-75: #132a40;
+  --dsw-static-blue-75: #132a40;
+  --dsw-static-deepseek-100: #132a40;
+  --dsw-static-blue-100: #132a40;
+  --dsw-static-deepseek-200: #1a3a57;
+  --dsw-static-blue-200: #1a3a57;
+  --dsw-static-deepseek-300: #22496e;
+  --dsw-static-blue-300: #22496e;
+  --dsw-static-deepseek-400: #2c5f8c;
+  --dsw-static-blue-400: #2c5f8c;
+  --dsw-static-deepseek-450: #2c5f8c;
+  --dsw-static-blue-450: #2c5f8c;
+  --dsw-static-deepseek-500: #3d86bd;
+  --dsw-static-blue-500: #3d86bd;
+  --dsw-static-deepseek-600: #5ea9e4;
+  --dsw-static-blue-600: #5ea9e4;
+  --dsw-static-deepseek-700-delete: #8cc3ec;
+  --dsw-static-deepseek-800: #8cc3ec;
+  --dsw-static-blue-800: #8cc3ec;
+  --dsw-static-deepseek-900: #badcf5;
+  --dsw-static-blue-900: #badcf5;
+  --dsw-static-deepseek-950: #e6f2fb;
+  --dsw-static-blue-950: #e6f2fb;
+  --dsw-static-neutral-bluish-00: #141e2e;
+  --dsw-static-neutral-00: #141e2e;
+  --dsw-static-neutral-bluish-50: #141e2e;
+  --dsw-static-neutral-50: #141e2e;
+  --dsw-static-neutral-bluish-60: #141e2e;
+  --dsw-static-neutral-60: #141e2e;
+  --dsw-static-neutral-bluish-75: #1a2638;
+  --dsw-static-neutral-75: #1a2638;
+  --dsw-static-neutral-bluish-100: #1a2638;
+  --dsw-static-neutral-100: #1a2638;
+  --dsw-static-neutral-bluish-150: #213045;
+  --dsw-static-neutral-150: #213045;
+  --dsw-static-neutral-bluish-200: #213045;
+  --dsw-static-neutral-200: #213045;
+  --dsw-static-neutral-bluish-250: #293b53;
+  --dsw-static-neutral-250: #293b53;
+  --dsw-static-neutral-bluish-300: #293b53;
+  --dsw-static-neutral-300: #293b53;
+  --dsw-static-neutral-bluish-400: #344a66;
+  --dsw-static-neutral-400: #344a66;
+  --dsw-static-neutral-bluish-500: #41597a;
+  --dsw-static-neutral-500: #41597a;
+  --dsw-static-neutral-bluish-550: #41597a;
+  --dsw-static-neutral-550: #41597a;
+  --dsw-static-neutral-bluish-600: #5d7795;
+  --dsw-static-neutral-600: #5d7795;
+  --dsw-static-neutral-bluish-700: #5d7795;
+  --dsw-static-neutral-700: #5d7795;
+  --dsw-static-neutral-bluish-750: #85a0bc;
+  --dsw-static-neutral-750: #85a0bc;
+  --dsw-static-neutral-bluish-800: #85a0bc;
+  --dsw-static-neutral-800: #85a0bc;
+  --dsw-static-neutral-bluish-850: #85a0bc;
+  --dsw-static-neutral-850: #85a0bc;
+  --dsw-static-neutral-bluish-875: #b8cade;
+  --dsw-static-neutral-875: #b8cade;
+  --dsw-static-neutral-bluish-900: #b8cade;
+  --dsw-static-neutral-900: #b8cade;
+  --dsw-static-neutral-bluish-950: #b8cade;
+  --dsw-static-neutral-950: #b8cade;
+  --dsw-static-neutral-bluish-1000: #ecf2f9;
+  --dsw-static-neutral-1000: #ecf2f9;
+  --dsw-static-green-50: color-mix(in srgb, #6dbb63 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #6dbb63 20%, black);
+  --dsw-static-green-400: #6dbb63;
+  --dsw-static-green-500: #6dbb63;
+  --dsw-static-green-600: color-mix(in srgb, #6dbb63 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #6dbb63 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8b24a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8b24a 20%, black);
+  --dsw-static-amber-400: #e8b24a;
+  --dsw-static-amber-500: #e8b24a;
+  --dsw-static-amber-600: color-mix(in srgb, #e8b24a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8b24a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e06a5a 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e06a5a 20%, black);
+  --dsw-static-red-400: #e06a5a;
+  --dsw-static-red-500: #e06a5a;
+  --dsw-static-red-600: color-mix(in srgb, #e06a5a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e06a5a 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-game-stardew] {
+  --dsw-alias-button-primary-fill: #2d7dbd;
+  --dsw-alias-button-primary-hover: #1f5f95;
+  --dsw-alias-button-primary-dimmed: #c8e1f3;
+  --dsw-alias-button-info-fill: #2d7dbd;
+  --dsw-alias-button-info-hover: #1f5f95;
+  --dsw-alias-button-contrast-fill: #25689e;
+  --dsw-alias-button-ghost-active-fill: #e4f0f9;
+  --dsw-alias-button-ghost-active-hover: #c8e1f3;
+  --dsw-alias-button-ghost-active-border: #7cb4df;
+  --dsw-alias-button-elevated-fill: #efe9da;
+  --dsw-alias-button-floating-fill: #efe9da;
+  --dsw-alias-button-floating-hover: #e9e2d0;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(45, 125, 189, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(45, 125, 189, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(45, 125, 189, 0.6);
+  --dsw-specific-bubble: #e2af52;
+  --dsw-specific-bubble-highlight: #a2ccea;
+  --dsw-specific-input-major: #efe9da;
+  --dsw-specific-login-input: #efe9da;
+  --dsw-specific-sidebar-fill: #2d7dbd;
+  --dsw-specific-sidebar-nav-item-active: #c8e1f3;
+  --dsw-specific-sidebar-nav-item-hover: #e9e2d0;
+  --dsw-specific-sidebar-nav-item-active-accent: #7cb4df;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-game-stardew][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #5ea9e4;
+  --dsw-alias-button-primary-hover: #79bceb;
+  --dsw-alias-button-primary-dimmed: #132a40;
+  --dsw-alias-button-info-fill: #5ea9e4;
+  --dsw-alias-button-info-hover: #79bceb;
+  --dsw-alias-button-contrast-fill: #5ea9e4;
+  --dsw-alias-button-ghost-active-fill: #16283c;
+  --dsw-alias-button-ghost-active-hover: #132a40;
+  --dsw-alias-button-ghost-active-border: #22496e;
+  --dsw-alias-button-elevated-fill: #141e2e;
+  --dsw-alias-button-floating-fill: #141e2e;
+  --dsw-alias-button-floating-hover: #1e2a3d;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(94, 169, 228, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(94, 169, 228, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(94, 169, 228, 0.6);
+  --dsw-specific-bubble: #1e3a5c;
+  --dsw-specific-bubble-highlight: #1a3a57;
+  --dsw-specific-input-major: #141e2e;
+  --dsw-specific-login-input: #141e2e;
+  --dsw-specific-sidebar-fill: #5ea9e4;
+  --dsw-specific-sidebar-nav-item-active: #132a40;
+  --dsw-specific-sidebar-nav-item-hover: #1e2a3d;
+  --dsw-specific-sidebar-nav-item-active-accent: #22496e;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-game-stardew] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-stardew]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(217, 161, 59, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(93, 158, 79, 0.09) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(45, 125, 189, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(217, 161, 59, 0.18) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(93, 158, 79, 0.10) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.7;
+}
+
+body[data-dsh-game-stardew]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(45deg, rgba(138, 90, 51, 0.55) 25%, transparent 25%, transparent 75%, rgba(138, 90, 51, 0.55) 75%),
+      linear-gradient(45deg, rgba(93, 158, 79, 0.5) 25%, transparent 25%, transparent 75%, rgba(93, 158, 79, 0.5) 75%);
+    background-size: 24px 24px, 24px 24px;
+    background-position: 0 0, 12px 12px;
+    opacity: 0.05;
+    animation: game-stardew-stardew-furrow-drift 32s linear infinite;
+}
+
+body[data-dsh-game-stardew] [class*='sider'] [class*='session'],
+body[data-dsh-game-stardew] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-stardew] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(93, 158, 79, 0.18);
+    box-shadow: inset 3px 0 0 0 rgba(93, 158, 79, 0.85);
+}
+
+body[data-dsh-game-stardew] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-stardew] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(45, 125, 189, 0.2), rgba(45, 125, 189, 0.06) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #2d7dbd;
+}
+
+body[data-dsh-game-stardew] button[class*='primary'],
+body[data-dsh-game-stardew] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #1f5f95 0%, #2d7dbd 55%, #5598d2 100%) !important;
+    border: 1px solid #d9a13b !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(45, 125, 189, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(13, 38, 60, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-stardew] button[class*='primary']:hover,
+body[data-dsh-game-stardew] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 14px rgba(45, 125, 189, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: game-stardew-stardew-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-stardew] pre,
+body[data-dsh-game-stardew] .markdown-body pre {
+  background:
+      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.5) 0 1px, transparent 2px),
+      radial-gradient(circle at 70% 15%, rgba(255, 255, 255, 0.4) 0 1px, transparent 2px),
+      radial-gradient(circle at 45% 70%, rgba(255, 255, 255, 0.35) 0 1px, transparent 2px),
+      linear-gradient(180deg, #22345a 0%, #1d2b45 100%) !important;
+    background-size: 90px 90px, 130px 130px, 110px 110px, 100% 100% !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #d9a13b !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(29, 43, 69, 0.4);
+}
+
+body[data-dsh-game-stardew] pre code,
+body[data-dsh-game-stardew] .markdown-body pre code {
+  background: transparent !important;
+    color: #e6edf5 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-stardew] code,
+body[data-dsh-game-stardew] .markdown-body code {
+  background: rgba(93, 158, 79, 0.16);
+    color: #25689e;
+    border: 1px solid rgba(45, 125, 189, 0.35);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-stardew]::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-game-stardew] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(60, 53, 39, 0.08), 0 0 0 1px rgba(93, 158, 79, 0.18);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-stardew] [class*='guidInputCard']:hover {
+  border-color: var(--stardew-crop) !important;
+}
+
+body[data-dsh-game-stardew] [class*='agent-bar'],
+body[data-dsh-game-stardew] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(217, 161, 59, 0.45);
+}
+
+body[data-dsh-game-stardew]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-stardew]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #e2af52, #a67c2e);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-stardew]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #eabd6b, #8a6524);
+}
+
+body[data-dsh-game-stardew]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-stardew] .markdown-body a,
+body[data-dsh-game-stardew] a {
+  color: #25689e;
+}
+
+body[data-dsh-game-stardew] .markdown-body a:hover,
+body[data-dsh-game-stardew] a:hover {
+  color: #2d7dbd;
+}
+
+body[data-dsh-game-stardew] .markdown-body blockquote {
+  border-left: 4px solid #8a5a33;
+    background: rgba(217, 161, 59, 0.12);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-stardew] .markdown-body hr,
+body[data-dsh-game-stardew] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(90deg, rgba(93, 158, 79, 0.7) 0 3px, transparent 3px 10px),
+      linear-gradient(90deg, rgba(138, 90, 51, 0.65) 0 8px, transparent 8px 10px);
+    background-size: 10px 3px, 10px 5px;
+    background-repeat: repeat-x;
+    background-position: 2px 0, 0 3px;
+    opacity: 0.6;
+}
+
+body[data-dsh-game-stardew] .arco-btn:not(button[class*='primary']):hover {
+  color: #1f5f95 !important;
+    border-color: rgba(45, 125, 189, 0.5) !important;
+    background-color: rgba(45, 125, 189, 0.1) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-game-stardew][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(232, 178, 74, 0.12) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 78% 12%, rgba(94, 169, 228, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 68%, rgba(109, 187, 99, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(45, 95, 140, 0.3) 0%, transparent 45%),
+      radial-gradient(ellipse at 8% 90%, rgba(232, 178, 74, 0.07) 0%, transparent 40%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(45deg, rgba(165, 113, 63, 0.55) 25%, transparent 25%, transparent 75%, rgba(165, 113, 63, 0.55) 75%),
+      linear-gradient(45deg, rgba(109, 187, 99, 0.5) 25%, transparent 25%, transparent 75%, rgba(109, 187, 99, 0.5) 75%);
+    background-size: 24px 24px, 24px 24px;
+    background-position: 0 0, 12px 12px;
+    opacity: 0.06;
+    animation: game-stardew-stardew-furrow-drift 32s linear infinite;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(109, 187, 99, 0.2);
+    box-shadow: inset 3px 0 0 0 rgba(109, 187, 99, 0.9);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(94, 169, 228, 0.28), rgba(94, 169, 228, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 #5ea9e4;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-game-stardew][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #2c5f8c 0%, #3d86bd 55%, #5ea9e4 100%) !important;
+    border: 1px solid #e8b24a !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(94, 169, 228, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(13, 28, 44, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-game-stardew][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    box-shadow: 0 3px 16px rgba(94, 169, 228, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: game-stardew-stardew-btn-sheen 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] pre,
+body[data-dsh-game-stardew][data-ds-dark-theme] .markdown-body pre {
+  background:
+      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.55) 0 1px, transparent 2px),
+      radial-gradient(circle at 70% 15%, rgba(255, 255, 255, 0.45) 0 1px, transparent 2px),
+      radial-gradient(circle at 45% 70%, rgba(255, 255, 255, 0.4) 0 1px, transparent 2px),
+      linear-gradient(180deg, #101a2c 0%, #0c1420 100%) !important;
+    background-size: 90px 90px, 130px 130px, 110px 110px, 100% 100% !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #e8b24a !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(10, 16, 26, 0.5);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] pre code,
+body[data-dsh-game-stardew][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d8e6f2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] code,
+body[data-dsh-game-stardew][data-ds-dark-theme] .markdown-body code {
+  background: rgba(109, 187, 99, 0.22);
+    color: #aad2f1;
+    border: 1px solid rgba(94, 169, 228, 0.32);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(5, 9, 15, 0.5), 0 0 0 1px rgba(109, 187, 99, 0.16);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: #3f6b45 !important;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-game-stardew][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(232, 178, 74, 0.4);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #e8b24a, #8a6524);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f0c36e, #a67c2e);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-game-stardew][data-ds-dark-theme] a {
+  color: #8cc3ec;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-game-stardew][data-ds-dark-theme] a:hover {
+  color: #aad2f1;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 4px solid #a5713f;
+    background: rgba(232, 178, 74, 0.1);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-game-stardew][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(90deg, rgba(109, 187, 99, 0.7) 0 3px, transparent 3px 10px),
+      linear-gradient(90deg, rgba(165, 113, 63, 0.65) 0 8px, transparent 8px 10px);
+    background-size: 10px 3px, 10px 5px;
+    background-repeat: repeat-x;
+    background-position: 2px 0, 0 3px;
+    opacity: 0.6;
+}
+
+body[data-dsh-game-stardew][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #aad2f1 !important;
+    border-color: rgba(94, 169, 228, 0.5) !important;
+    background-color: rgba(94, 169, 228, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes game-stardew-stardew-furrow-drift {
+  0% { background-position: 0 0, 12px 12px; }
+  100% { background-position: 24px 24px, 36px 36px; }
+}
+
+@keyframes game-stardew-stardew-sun-breathe {
+  0%, 100% { box-shadow: 0 2px 10px rgba(217, 161, 59, 0.2); }
+  50% { box-shadow: 0 2px 16px rgba(217, 161, 59, 0.42); }
+}
+
+@keyframes game-stardew-stardew-btn-sheen {
+  0%, 100% { box-shadow: 0 3px 12px rgba(45, 125, 189, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 18px rgba(45, 125, 189, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes game-stardew-stardew-season-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}
+
+@keyframes game-stardew-stardew-starlight-breathe {
+  0%, 100% { box-shadow: 0 2px 10px rgba(232, 178, 74, 0.2); }
+  50% { box-shadow: 0 2px 16px rgba(232, 178, 74, 0.45); }
+}

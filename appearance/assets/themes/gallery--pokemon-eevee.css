@@ -1,0 +1,796 @@
+/* pokemon-eevee — 宝可梦 · 伊布 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-pokemon-eevee], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-pokemon-eevee] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2e2416;
+  background-color: #faf4e7;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] {
+  color: #f4ecdc;
+  background-color: #14100a;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-pokemon-eevee] {
+  --color-primary: #9a6230;
+  --primary: #9a6230;
+  --primary-rgb: 154, 98, 48;
+  --color-primary-light-1: #b57c46;
+  --color-primary-light-2: #d09c66;
+  --color-primary-light-3: #e8c298;
+  --color-primary-dark-1: #6f421d;
+  --brand: #9a6230;
+  --brand-light: #f8ecd7;
+  --brand-hover: #7d4d24;
+  --color-brand-fill: #9a6230;
+  --color-brand-bg: #f5e3c8;
+  --aou-1: #fdf3e3;
+  --aou-2: #f7e2c2;
+  --aou-3: #edc896;
+  --aou-4: #e0aa68;
+  --aou-5: #c98a44;
+  --aou-6: #9a6230;
+  --aou-7: #7d4d24;
+  --aou-8: #633b1b;
+  --aou-9: #4a2c13;
+  --aou-10: #311d0b;
+  --bg-base: #faf4e7;
+  --bg-1: #f4eddd;
+  --bg-2: #ece3cf;
+  --bg-3: #e2d6bd;
+  --bg-4: #d5c6a7;
+  --bg-5: #c5b38e;
+  --bg-6: #b09d75;
+  --bg-8: #8b7a55;
+  --bg-9: #61543a;
+  --bg-10: #372f1f;
+  --color-bg-1: #f4eddd;
+  --color-bg-2: #ece3cf;
+  --color-bg-3: #e2d6bd;
+  --color-bg-4: #d5c6a7;
+  --bg-hover: #eadfc8;
+  --bg-active: #dfd1b4;
+  --text-primary: #2e2416;
+  --text-secondary: #6b5c44;
+  --text-disabled: #a99a80;
+  --text-0: #171208;
+  --text-white: #ffffff;
+  --color-text-1: #2e2416;
+  --color-text-2: #6b5c44;
+  --color-text-3: #8a7a5f;
+  --color-text-4: #a99a80;
+  --border-base: #d3c5a5;
+  --border-light: #e0d5bd;
+  --border-special: #cfa56f;
+  --color-border: #d3c5a5;
+  --color-border-1: #d3c5a5;
+  --color-border-2: #e0d5bd;
+  --fill: #ece3cf;
+  --color-fill: #ece3cf;
+  --fill-0: #f4eddd;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fdf9f0;
+  --inverse: #2e2416;
+  --success: #4e9e52;
+  --warning: #d08a1d;
+  --danger: #c9402e;
+  --info: #4a78c4;
+  --message-user-bg: #7d4d24;
+  --message-tips-bg: #efe6d2;
+  --workspace-btn-bg: #f5e3c8;
+  --color-guid-agent-bar: #efe6d1;
+  --eevee-brown: #9a6230;
+  --eevee-brown-deep: #4a2c13;
+  --eevee-cream: #f3e4c0;
+  --eevee-cream-hi: #e8d3a6;
+  --evo-fire: #f08030;
+  --evo-thunder: #f8d030;
+  --evo-leaf: #78c850;
+  --evo-ice: #98d8d8;
+  --evo-water: #6890f0;
+  --evo-psy: #a86fd0;
+  --evo-fairy: #ee99ac;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] {
+  --color-primary: #d29a5e;
+  --primary: #d29a5e;
+  --primary-rgb: 210, 154, 94;
+  --color-primary-light-1: #dcb183;
+  --color-primary-light-2: #e8c8a6;
+  --color-primary-light-3: #f4e0ca;
+  --color-primary-dark-1: #a06f3c;
+  --brand: #d29a5e;
+  --brand-light: #3a2a18;
+  --brand-hover: #e0ac72;
+  --color-brand-fill: #d29a5e;
+  --color-brand-bg: #2e2113;
+  --aou-1: #311d0b;
+  --aou-2: #4a2c13;
+  --aou-3: #633b1b;
+  --aou-4: #7d4d24;
+  --aou-5: #9a6230;
+  --aou-6: #d29a5e;
+  --aou-7: #dcb183;
+  --aou-8: #e8c8a6;
+  --aou-9: #f4e0ca;
+  --aou-10: #fdf3e3;
+  --bg-base: #14100a;
+  --bg-1: #1c1610;
+  --bg-2: #241c14;
+  --bg-3: #2d2319;
+  --bg-4: #382c1f;
+  --bg-5: #453727;
+  --bg-6: #554431;
+  --bg-8: #6f5b42;
+  --bg-9: #93805f;
+  --bg-10: #beac8d;
+  --color-bg-1: #1c1610;
+  --color-bg-2: #241c14;
+  --color-bg-3: #2d2319;
+  --color-bg-4: #382c1f;
+  --bg-hover: #2a2117;
+  --bg-active: #33291c;
+  --text-primary: #f4ecdc;
+  --text-secondary: #c8b796;
+  --text-disabled: #6e5f47;
+  --text-0: #fdf8ee;
+  --text-white: #ffffff;
+  --color-text-1: #f4ecdc;
+  --color-text-2: #c8b796;
+  --color-text-3: #9c8b6c;
+  --color-text-4: #6e5f47;
+  --border-base: #3c2f20;
+  --border-light: #2c2318;
+  --border-special: #6b4f2c;
+  --color-border: #3c2f20;
+  --color-border-1: #3c2f20;
+  --color-border-2: #2c2318;
+  --fill: #241c14;
+  --color-fill: #241c14;
+  --fill-0: #1c1610;
+  --fill-white-to-black: #14100a;
+  --dialog-fill-0: #1e1811;
+  --inverse: #f4ecdc;
+  --success: #5cb86a;
+  --warning: #e0a845;
+  --danger: #e0604d;
+  --info: #6d9be0;
+  --message-user-bg: #f3e4c0;
+  --message-tips-bg: #261d12;
+  --workspace-btn-bg: #2e2113;
+  --color-guid-agent-bar: #1a140d;
+  --eevee-brown: #d29a5e;
+  --eevee-brown-deep: #a06f3c;
+  --eevee-cream: #f3e4c0;
+  --eevee-cream-hi: #e0c795;
+  --evo-fire: #f08030;
+  --evo-thunder: #f8d030;
+  --evo-leaf: #78c850;
+  --evo-ice: #98d8d8;
+  --evo-water: #6890f0;
+  --evo-psy: #a86fd0;
+  --evo-fairy: #ee99ac;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-pokemon-eevee] {
+  --dsw-static-deepseek-50: #fdf3e3;
+  --dsw-static-blue-50: #fdf3e3;
+  --dsw-static-deepseek-50p: #f7e2c2;
+  --dsw-static-blue-50p: #f7e2c2;
+  --dsw-static-deepseek-75: #f7e2c2;
+  --dsw-static-blue-75: #f7e2c2;
+  --dsw-static-deepseek-100: #f7e2c2;
+  --dsw-static-blue-100: #f7e2c2;
+  --dsw-static-deepseek-200: #edc896;
+  --dsw-static-blue-200: #edc896;
+  --dsw-static-deepseek-300: #e0aa68;
+  --dsw-static-blue-300: #e0aa68;
+  --dsw-static-deepseek-400: #c98a44;
+  --dsw-static-blue-400: #c98a44;
+  --dsw-static-deepseek-450: #c98a44;
+  --dsw-static-blue-450: #c98a44;
+  --dsw-static-deepseek-500: #9a6230;
+  --dsw-static-blue-500: #9a6230;
+  --dsw-static-deepseek-600: #7d4d24;
+  --dsw-static-blue-600: #7d4d24;
+  --dsw-static-deepseek-700-delete: #633b1b;
+  --dsw-static-deepseek-800: #633b1b;
+  --dsw-static-blue-800: #633b1b;
+  --dsw-static-deepseek-900: #4a2c13;
+  --dsw-static-blue-900: #4a2c13;
+  --dsw-static-deepseek-950: #311d0b;
+  --dsw-static-blue-950: #311d0b;
+  --dsw-static-neutral-bluish-00: #f4eddd;
+  --dsw-static-neutral-00: #f4eddd;
+  --dsw-static-neutral-bluish-50: #f4eddd;
+  --dsw-static-neutral-50: #f4eddd;
+  --dsw-static-neutral-bluish-60: #f4eddd;
+  --dsw-static-neutral-60: #f4eddd;
+  --dsw-static-neutral-bluish-75: #ece3cf;
+  --dsw-static-neutral-75: #ece3cf;
+  --dsw-static-neutral-bluish-100: #ece3cf;
+  --dsw-static-neutral-100: #ece3cf;
+  --dsw-static-neutral-bluish-150: #e2d6bd;
+  --dsw-static-neutral-150: #e2d6bd;
+  --dsw-static-neutral-bluish-200: #e2d6bd;
+  --dsw-static-neutral-200: #e2d6bd;
+  --dsw-static-neutral-bluish-250: #d5c6a7;
+  --dsw-static-neutral-250: #d5c6a7;
+  --dsw-static-neutral-bluish-300: #d5c6a7;
+  --dsw-static-neutral-300: #d5c6a7;
+  --dsw-static-neutral-bluish-400: #c5b38e;
+  --dsw-static-neutral-400: #c5b38e;
+  --dsw-static-neutral-bluish-500: #b09d75;
+  --dsw-static-neutral-500: #b09d75;
+  --dsw-static-neutral-bluish-550: #b09d75;
+  --dsw-static-neutral-550: #b09d75;
+  --dsw-static-neutral-bluish-600: #8b7a55;
+  --dsw-static-neutral-600: #8b7a55;
+  --dsw-static-neutral-bluish-700: #8b7a55;
+  --dsw-static-neutral-700: #8b7a55;
+  --dsw-static-neutral-bluish-750: #61543a;
+  --dsw-static-neutral-750: #61543a;
+  --dsw-static-neutral-bluish-800: #61543a;
+  --dsw-static-neutral-800: #61543a;
+  --dsw-static-neutral-bluish-850: #61543a;
+  --dsw-static-neutral-850: #61543a;
+  --dsw-static-neutral-bluish-875: #372f1f;
+  --dsw-static-neutral-875: #372f1f;
+  --dsw-static-neutral-bluish-900: #372f1f;
+  --dsw-static-neutral-900: #372f1f;
+  --dsw-static-neutral-bluish-950: #372f1f;
+  --dsw-static-neutral-950: #372f1f;
+  --dsw-static-neutral-bluish-1000: #2e2416;
+  --dsw-static-neutral-1000: #2e2416;
+  --dsw-static-green-50: color-mix(in srgb, #4e9e52 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #4e9e52 20%, white);
+  --dsw-static-green-400: #4e9e52;
+  --dsw-static-green-500: #4e9e52;
+  --dsw-static-green-600: color-mix(in srgb, #4e9e52 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4e9e52 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c9402e 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c9402e 20%, white);
+  --dsw-static-red-400: #c9402e;
+  --dsw-static-red-500: #c9402e;
+  --dsw-static-red-600: color-mix(in srgb, #c9402e 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c9402e 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #311d0b;
+  --dsw-static-blue-50: #311d0b;
+  --dsw-static-deepseek-50p: #4a2c13;
+  --dsw-static-blue-50p: #4a2c13;
+  --dsw-static-deepseek-75: #4a2c13;
+  --dsw-static-blue-75: #4a2c13;
+  --dsw-static-deepseek-100: #4a2c13;
+  --dsw-static-blue-100: #4a2c13;
+  --dsw-static-deepseek-200: #633b1b;
+  --dsw-static-blue-200: #633b1b;
+  --dsw-static-deepseek-300: #7d4d24;
+  --dsw-static-blue-300: #7d4d24;
+  --dsw-static-deepseek-400: #9a6230;
+  --dsw-static-blue-400: #9a6230;
+  --dsw-static-deepseek-450: #9a6230;
+  --dsw-static-blue-450: #9a6230;
+  --dsw-static-deepseek-500: #d29a5e;
+  --dsw-static-blue-500: #d29a5e;
+  --dsw-static-deepseek-600: #dcb183;
+  --dsw-static-blue-600: #dcb183;
+  --dsw-static-deepseek-700-delete: #e8c8a6;
+  --dsw-static-deepseek-800: #e8c8a6;
+  --dsw-static-blue-800: #e8c8a6;
+  --dsw-static-deepseek-900: #f4e0ca;
+  --dsw-static-blue-900: #f4e0ca;
+  --dsw-static-deepseek-950: #fdf3e3;
+  --dsw-static-blue-950: #fdf3e3;
+  --dsw-static-neutral-bluish-00: #1c1610;
+  --dsw-static-neutral-00: #1c1610;
+  --dsw-static-neutral-bluish-50: #1c1610;
+  --dsw-static-neutral-50: #1c1610;
+  --dsw-static-neutral-bluish-60: #1c1610;
+  --dsw-static-neutral-60: #1c1610;
+  --dsw-static-neutral-bluish-75: #241c14;
+  --dsw-static-neutral-75: #241c14;
+  --dsw-static-neutral-bluish-100: #241c14;
+  --dsw-static-neutral-100: #241c14;
+  --dsw-static-neutral-bluish-150: #2d2319;
+  --dsw-static-neutral-150: #2d2319;
+  --dsw-static-neutral-bluish-200: #2d2319;
+  --dsw-static-neutral-200: #2d2319;
+  --dsw-static-neutral-bluish-250: #382c1f;
+  --dsw-static-neutral-250: #382c1f;
+  --dsw-static-neutral-bluish-300: #382c1f;
+  --dsw-static-neutral-300: #382c1f;
+  --dsw-static-neutral-bluish-400: #453727;
+  --dsw-static-neutral-400: #453727;
+  --dsw-static-neutral-bluish-500: #554431;
+  --dsw-static-neutral-500: #554431;
+  --dsw-static-neutral-bluish-550: #554431;
+  --dsw-static-neutral-550: #554431;
+  --dsw-static-neutral-bluish-600: #6f5b42;
+  --dsw-static-neutral-600: #6f5b42;
+  --dsw-static-neutral-bluish-700: #6f5b42;
+  --dsw-static-neutral-700: #6f5b42;
+  --dsw-static-neutral-bluish-750: #93805f;
+  --dsw-static-neutral-750: #93805f;
+  --dsw-static-neutral-bluish-800: #93805f;
+  --dsw-static-neutral-800: #93805f;
+  --dsw-static-neutral-bluish-850: #93805f;
+  --dsw-static-neutral-850: #93805f;
+  --dsw-static-neutral-bluish-875: #beac8d;
+  --dsw-static-neutral-875: #beac8d;
+  --dsw-static-neutral-bluish-900: #beac8d;
+  --dsw-static-neutral-900: #beac8d;
+  --dsw-static-neutral-bluish-950: #beac8d;
+  --dsw-static-neutral-950: #beac8d;
+  --dsw-static-neutral-bluish-1000: #f4ecdc;
+  --dsw-static-neutral-1000: #f4ecdc;
+  --dsw-static-green-50: color-mix(in srgb, #5cb86a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #5cb86a 20%, black);
+  --dsw-static-green-400: #5cb86a;
+  --dsw-static-green-500: #5cb86a;
+  --dsw-static-green-600: color-mix(in srgb, #5cb86a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #5cb86a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e0a845 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e0a845 20%, black);
+  --dsw-static-amber-400: #e0a845;
+  --dsw-static-amber-500: #e0a845;
+  --dsw-static-amber-600: color-mix(in srgb, #e0a845 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e0a845 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e0604d 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e0604d 20%, black);
+  --dsw-static-red-400: #e0604d;
+  --dsw-static-red-500: #e0604d;
+  --dsw-static-red-600: color-mix(in srgb, #e0604d 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e0604d 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-pokemon-eevee] {
+  --dsw-alias-button-primary-fill: #9a6230;
+  --dsw-alias-button-primary-hover: #7d4d24;
+  --dsw-alias-button-primary-dimmed: #f7e2c2;
+  --dsw-alias-button-info-fill: #9a6230;
+  --dsw-alias-button-info-hover: #7d4d24;
+  --dsw-alias-button-contrast-fill: #7d4d24;
+  --dsw-alias-button-ghost-active-fill: #f8ecd7;
+  --dsw-alias-button-ghost-active-hover: #f7e2c2;
+  --dsw-alias-button-ghost-active-border: #e0aa68;
+  --dsw-alias-button-elevated-fill: #f4eddd;
+  --dsw-alias-button-floating-fill: #f4eddd;
+  --dsw-alias-button-floating-hover: #eadfc8;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(154, 98, 48, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(154, 98, 48, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(154, 98, 48, 0.6);
+  --dsw-specific-bubble: #7d4d24;
+  --dsw-specific-bubble-highlight: #edc896;
+  --dsw-specific-input-major: #f4eddd;
+  --dsw-specific-login-input: #f4eddd;
+  --dsw-specific-sidebar-fill: #9a6230;
+  --dsw-specific-sidebar-nav-item-active: #f7e2c2;
+  --dsw-specific-sidebar-nav-item-hover: #eadfc8;
+  --dsw-specific-sidebar-nav-item-active-accent: #e0aa68;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #d29a5e;
+  --dsw-alias-button-primary-hover: #e0ac72;
+  --dsw-alias-button-primary-dimmed: #4a2c13;
+  --dsw-alias-button-info-fill: #d29a5e;
+  --dsw-alias-button-info-hover: #e0ac72;
+  --dsw-alias-button-contrast-fill: #dcb183;
+  --dsw-alias-button-ghost-active-fill: #3a2a18;
+  --dsw-alias-button-ghost-active-hover: #4a2c13;
+  --dsw-alias-button-ghost-active-border: #7d4d24;
+  --dsw-alias-button-elevated-fill: #1c1610;
+  --dsw-alias-button-floating-fill: #1c1610;
+  --dsw-alias-button-floating-hover: #2a2117;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(210, 154, 94, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(210, 154, 94, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(210, 154, 94, 0.6);
+  --dsw-specific-bubble: #f3e4c0;
+  --dsw-specific-bubble-highlight: #633b1b;
+  --dsw-specific-input-major: #1c1610;
+  --dsw-specific-login-input: #1c1610;
+  --dsw-specific-sidebar-fill: #d29a5e;
+  --dsw-specific-sidebar-nav-item-active: #4a2c13;
+  --dsw-specific-sidebar-nav-item-hover: #2a2117;
+  --dsw-specific-sidebar-nav-item-active-accent: #7d4d24;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-pokemon-eevee] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pokemon-eevee]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(240, 128, 48, 0.35) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 80% 14%, rgba(104, 144, 240, 0.35) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 70%, rgba(120, 200, 80, 0.3) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 28% 82%, rgba(238, 153, 172, 0.32) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 90% 60%, rgba(168, 111, 208, 0.3) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(232, 211, 166, 0.4) 0%, transparent 45%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 480px 480px, 600px 600px, 100% 100%;
+    opacity: 0.35;
+    animation: pokemon-eevee-eevee-sparkle-float 32s linear infinite;
+}
+
+body[data-dsh-pokemon-eevee]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(135deg, rgba(154, 98, 48, 0.5) 25%, transparent 25%),
+      linear-gradient(-135deg, rgba(154, 98, 48, 0.5) 25%, transparent 25%),
+      linear-gradient(45deg, rgba(232, 211, 166, 0.6) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(232, 211, 166, 0.6) 25%, transparent 25%);
+    background-size: 28px 28px;
+    background-position: 0 0, 14px 0, 14px 14px, 0 14px;
+    opacity: 0.05;
+    animation: pokemon-eevee-eevee-fur-drift 40s linear infinite;
+}
+
+body[data-dsh-pokemon-eevee] [class*='sider'] [class*='session'],
+body[data-dsh-pokemon-eevee] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-pokemon-eevee] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(232, 211, 166, 0.4);
+    box-shadow: inset 3px 0 0 0 rgba(201, 138, 68, 0.85);
+}
+
+body[data-dsh-pokemon-eevee] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-pokemon-eevee] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(154, 98, 48, 0.22), rgba(154, 98, 48, 0.06) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--eevee-brown);
+}
+
+body[data-dsh-pokemon-eevee] button[class*='primary'],
+body[data-dsh-pokemon-eevee] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #7d4d24 0%, #9a6230 55%, #b57c46 100%) !important;
+    border: 1px solid #edc896 !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(154, 98, 48, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(49, 29, 11, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-pokemon-eevee] button[class*='primary']:hover,
+body[data-dsh-pokemon-eevee] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    box-shadow: 0 3px 14px rgba(154, 98, 48, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: pokemon-eevee-eevee-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-eevee] pre,
+body[data-dsh-pokemon-eevee] .markdown-body pre {
+  background: linear-gradient(180deg, #33261a 0%, #2a1f14 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--eevee-cream-hi) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(154, 98, 48, 0.25);
+}
+
+body[data-dsh-pokemon-eevee] pre code,
+body[data-dsh-pokemon-eevee] .markdown-body pre code {
+  background: transparent !important;
+    color: #f0e6d2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-pokemon-eevee] code,
+body[data-dsh-pokemon-eevee] .markdown-body code {
+  background: rgba(232, 211, 166, 0.45);
+    color: #7d4d24;
+    border: 1px solid rgba(154, 98, 48, 0.32);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pokemon-eevee]::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-pokemon-eevee] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(55, 47, 31, 0.08), 0 0 0 1px rgba(232, 211, 166, 0.35);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-pokemon-eevee] [class*='guidInputCard']:hover {
+  border-color: #c98a44 !important;
+}
+
+body[data-dsh-pokemon-eevee] [class*='agent-bar'],
+body[data-dsh-pokemon-eevee] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(154, 98, 48, 0.4);
+}
+
+body[data-dsh-pokemon-eevee]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pokemon-eevee]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c98a44, #633b1b);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pokemon-eevee]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #e0aa68, #4a2c13);
+}
+
+body[data-dsh-pokemon-eevee]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pokemon-eevee] .markdown-body a,
+body[data-dsh-pokemon-eevee] a {
+  color: #7d4d24;
+}
+
+body[data-dsh-pokemon-eevee] .markdown-body a:hover,
+body[data-dsh-pokemon-eevee] a:hover {
+  color: #b57c46;
+}
+
+body[data-dsh-pokemon-eevee] .markdown-body blockquote {
+  border-left: 3px solid var(--eevee-brown);
+    background: rgba(232, 211, 166, 0.3);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-pokemon-eevee] .markdown-body hr,
+body[data-dsh-pokemon-eevee] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(154, 98, 48, 0.55) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(154, 98, 48, 0.55) 50%, transparent 50%);
+    background-size: 12px 6px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 6px 1px;
+    opacity: 0.6;
+}
+
+body[data-dsh-pokemon-eevee] .arco-btn:not(button[class*='primary']):hover {
+  color: #7d4d24 !important;
+    border-color: rgba(154, 98, 48, 0.5) !important;
+    background-color: rgba(154, 98, 48, 0.1) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(240, 128, 48, 0.4) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 80% 14%, rgba(104, 144, 240, 0.4) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 55% 70%, rgba(120, 200, 80, 0.35) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 28% 82%, rgba(238, 153, 172, 0.35) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 90% 60%, rgba(168, 111, 208, 0.35) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 85% 85%, rgba(210, 154, 94, 0.14) 0%, transparent 45%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 480px 480px, 600px 600px, 100% 100%;
+    opacity: 0.3;
+    animation: pokemon-eevee-eevee-sparkle-float 32s linear infinite;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(135deg, rgba(210, 154, 94, 0.55) 25%, transparent 25%),
+      linear-gradient(-135deg, rgba(210, 154, 94, 0.55) 25%, transparent 25%),
+      linear-gradient(45deg, rgba(243, 228, 192, 0.5) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(243, 228, 192, 0.5) 25%, transparent 25%);
+    background-size: 28px 28px;
+    background-position: 0 0, 14px 0, 14px 14px, 0 14px;
+    opacity: 0.05;
+    animation: pokemon-eevee-eevee-fur-drift 40s linear infinite;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(210, 154, 94, 0.16);
+    box-shadow: inset 3px 0 0 0 rgba(210, 154, 94, 0.8);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(243, 228, 192, 0.2), rgba(243, 228, 192, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--eevee-cream-hi);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #a06f3c 0%, #d29a5e 55%, #e0ac72 100%) !important;
+    border: 1px solid #e8c8a6 !important;
+    color: #311d0b !important;
+    box-shadow: 0 2px 8px rgba(210, 154, 94, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: none;
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(210, 154, 94, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: pokemon-eevee-eevee-btn-glow 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] pre,
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #191309 0%, #120d06 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--eevee-cream-hi) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(210, 154, 94, 0.12);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] pre code,
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #ede2c8 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] code,
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .markdown-body code {
+  background: rgba(210, 154, 94, 0.22);
+    color: #e8c8a6;
+    border: 1px solid rgba(210, 154, 94, 0.35);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(8, 5, 2, 0.5), 0 0 0 1px rgba(210, 154, 94, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--eevee-brown-deep) !important;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(224, 199, 149, 0.4);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d29a5e, #633b1b);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #e0ac72, #7d4d24);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] a {
+  color: #e0ac72;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] a:hover {
+  color: #f4e0ca;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--eevee-cream-hi);
+    background: rgba(210, 154, 94, 0.14);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(135deg, rgba(224, 199, 149, 0.5) 50%, transparent 50%),
+      linear-gradient(-135deg, rgba(224, 199, 149, 0.5) 50%, transparent 50%);
+    background-size: 12px 6px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 6px 1px;
+    opacity: 0.55;
+}
+
+body[data-dsh-pokemon-eevee][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #f4e0ca !important;
+    border-color: rgba(210, 154, 94, 0.5) !important;
+    background-color: rgba(210, 154, 94, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes pokemon-eevee-eevee-sparkle-float {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 40px -120px, -60px -100px, 50px -140px, -40px -110px, 60px -130px, 0 0; }
+}
+
+@keyframes pokemon-eevee-eevee-fur-drift {
+  0% { background-position: 0 0, 14px 0, 14px 14px, 0 14px; }
+  100% { background-position: 28px 0, 42px 0, 42px 14px, 28px 14px; }
+}
+
+@keyframes pokemon-eevee-eevee-collar-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(154, 98, 48, 0.15); }
+  50% { box-shadow: 0 2px 14px rgba(154, 98, 48, 0.32); }
+}
+
+@keyframes pokemon-eevee-eevee-btn-glow {
+  0%, 100% { box-shadow: 0 3px 12px rgba(154, 98, 48, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 20px rgba(240, 128, 48, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes pokemon-eevee-eevee-evo-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

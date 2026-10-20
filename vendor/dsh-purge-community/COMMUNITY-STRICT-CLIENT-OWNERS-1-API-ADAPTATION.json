@@ -1,0 +1,543 @@
+{
+  "sourceReviewFile": "strict-client-owner-modifications-01.json",
+  "sourceReviewSHA256": "c3338d51be4287b79c68b0e37a028f758548acc6288b0eb1181f945bf1fe070a",
+  "review": {
+    "id": "dsh-purge",
+    "packageName": "dsh-purge",
+    "version": "1.1.67",
+    "originalPreparedSHA256": "b269e98d98de86b3282186528545535e1a138696d039e34b834f90c0a19c0830",
+    "sourceArtifactSHA256": "b269e98d98de86b3282186528545535e1a138696d039e34b834f90c0a19c0830",
+    "communityRevision": "strict-client-owners.1",
+    "reviewedGateMismatches": [],
+    "modifications": [],
+    "manifestChanges": {
+      "addClientInject": [
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-api-workspace-controller",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-workspace"
+      ],
+      "removeClientInject": [],
+      "newPeers": {
+        "@deepseek-ai/dsh-api-session-controller": "=0.2.1-alpha.1",
+        "@deepseek-ai/dsh-api-workspace-controller": "=0.2.1-alpha.1",
+        "@deepseek-ai/dsh-client-ui-conversation": "=0.2.1-alpha.1",
+        "@deepseek-ai/dsh-client-ui-workspace": "=0.2.1-alpha.1"
+      }
+    },
+    "changes": [
+      {
+        "kind": "actual-exported-client-Context-service-owners",
+        "confirmedServices": [
+          {
+            "service": "slots",
+            "provider": {
+              "service": "slots",
+              "packageName": "@deepseek-ai/dsh-client-ui-renderer",
+              "file": "dsh/node_modules/@deepseek-ai/dsh-client-ui-renderer/lib/client.js",
+              "sha256": "ff99042d53a034cadad511ace442acfb3fa92f0ce86581de8611244e7664fb78",
+              "line": 1323
+            },
+            "authorEvidence": [
+              {
+                "file": "client.js",
+                "line": 11,
+                "kind": "author-inject-declaration",
+                "text": "slots"
+              },
+              {
+                "file": "client.js",
+                "line": 7569,
+                "kind": "author-inject-declaration",
+                "text": "slots"
+              },
+              {
+                "file": "client.js",
+                "line": 8526,
+                "kind": "actual-context-property",
+                "text": "ctx.slots"
+              },
+              {
+                "file": "client.js",
+                "line": 8526,
+                "kind": "actual-context-property",
+                "text": "ctx.slots"
+              },
+              {
+                "file": "client.js",
+                "line": 8551,
+                "kind": "actual-context-property",
+                "text": "ctx.slots"
+              },
+              {
+                "file": "client.js",
+                "line": 8551,
+                "kind": "actual-context-property",
+                "text": "ctx.slots"
+              }
+            ],
+            "strictContextEvidence": [
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "kind": "actual-exported-client-inject",
+                "service": "slots"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8526,
+                "service": "slots",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.slots"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8526,
+                "service": "slots",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.slots"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8551,
+                "service": "slots",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.slots"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8551,
+                "service": "slots",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.slots"
+              }
+            ]
+          },
+          {
+            "service": "locale",
+            "provider": {
+              "service": "locale",
+              "packageName": "@deepseek-ai/dsh-client-locale",
+              "file": "dsh/node_modules/@deepseek-ai/dsh-client-locale/lib/client.js",
+              "sha256": "634f085d3ba74f2a348cb684e59e708db084fc09a603c80fe066015258563d58",
+              "line": 1526
+            },
+            "authorEvidence": [
+              {
+                "file": "client.js",
+                "line": 11,
+                "kind": "author-inject-declaration",
+                "text": "locale"
+              },
+              {
+                "file": "client.js",
+                "line": 8532,
+                "kind": "actual-context-property",
+                "text": "ctx.locale"
+              },
+              {
+                "file": "client.js",
+                "line": 8548,
+                "kind": "actual-context-property",
+                "text": "ctx.locale"
+              },
+              {
+                "file": "client.js",
+                "line": 8549,
+                "kind": "actual-context-property",
+                "text": "ctx.locale"
+              }
+            ],
+            "strictContextEvidence": [
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "kind": "actual-exported-client-inject",
+                "service": "locale"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8532,
+                "service": "locale",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.locale"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8548,
+                "service": "locale",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.locale"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8549,
+                "service": "locale",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.locale"
+              }
+            ]
+          },
+          {
+            "service": "sessions",
+            "provider": {
+              "service": "sessions",
+              "packageName": "@deepseek-ai/dsh-api-session-controller",
+              "file": "dsh/node_modules/@deepseek-ai/dsh-api-session-controller/lib/client.js",
+              "sha256": "20904cdbc1e59ed55a70480f56b1e182424f9689e87dd3d50f62652848dcbc02",
+              "line": 3814
+            },
+            "authorEvidence": [
+              {
+                "file": "client.js",
+                "line": 3350,
+                "kind": "actual-context-property",
+                "text": "ctx.sessions"
+              },
+              {
+                "file": "client.js",
+                "line": 8523,
+                "kind": "actual-context-property",
+                "text": "ctx.sessions"
+              },
+              {
+                "file": "client.js",
+                "line": 8558,
+                "kind": "literal-context-inject",
+                "text": "sessions"
+              },
+              {
+                "file": "client.js",
+                "line": 8559,
+                "kind": "actual-context-property",
+                "text": "ctx.sessions"
+              },
+              {
+                "file": "client.js",
+                "line": 8565,
+                "kind": "literal-context-inject",
+                "text": "sessions"
+              }
+            ],
+            "strictContextEvidence": [
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 3350,
+                "service": "sessions",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.sessions"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8523,
+                "service": "sessions",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.sessions"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8558,
+                "service": "sessions",
+                "kind": "actual-exported-apply-literal-inject",
+                "text": "ctx.inject([\"sessions\", \"uiWorkspace\", \"workspaces\", \"conversation\"], (host) => installRewindUi(host))"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8559,
+                "service": "sessions",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.sessions"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8565,
+                "service": "sessions",
+                "kind": "actual-exported-apply-literal-inject",
+                "text": "ctx.inject([\"sessions\", \"uiWorkspace\", \"conversation\"], (host) => installRewindUi(host))"
+              }
+            ]
+          },
+          {
+            "service": "uiWorkspace",
+            "provider": {
+              "service": "uiWorkspace",
+              "packageName": "@deepseek-ai/dsh-client-ui-workspace",
+              "file": "dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js",
+              "sha256": "c53e3381b2da6cc3469b186ab8480dc949c322d565bd976eb55c8a44efa63600",
+              "line": 1396
+            },
+            "authorEvidence": [
+              {
+                "file": "client.js",
+                "line": 8524,
+                "kind": "actual-context-property",
+                "text": "ctx.uiWorkspace"
+              },
+              {
+                "file": "client.js",
+                "line": 8558,
+                "kind": "literal-context-inject",
+                "text": "uiWorkspace"
+              },
+              {
+                "file": "client.js",
+                "line": 8565,
+                "kind": "literal-context-inject",
+                "text": "uiWorkspace"
+              }
+            ],
+            "strictContextEvidence": [
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8524,
+                "service": "uiWorkspace",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.uiWorkspace"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8558,
+                "service": "uiWorkspace",
+                "kind": "actual-exported-apply-literal-inject",
+                "text": "ctx.inject([\"sessions\", \"uiWorkspace\", \"workspaces\", \"conversation\"], (host) => installRewindUi(host))"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8565,
+                "service": "uiWorkspace",
+                "kind": "actual-exported-apply-literal-inject",
+                "text": "ctx.inject([\"sessions\", \"uiWorkspace\", \"conversation\"], (host) => installRewindUi(host))"
+              }
+            ]
+          },
+          {
+            "service": "conversation",
+            "provider": {
+              "service": "conversation",
+              "packageName": "@deepseek-ai/dsh-client-ui-conversation",
+              "file": "dsh/node_modules/@deepseek-ai/dsh-client-ui-conversation/lib/client.js",
+              "sha256": "ce93d52bcc884c01e86cbb321e69b4418d89367da7598bc60143372de32f3e6b",
+              "line": 8194
+            },
+            "authorEvidence": [
+              {
+                "file": "client.js",
+                "line": 8525,
+                "kind": "actual-context-property",
+                "text": "ctx.conversation"
+              },
+              {
+                "file": "client.js",
+                "line": 8558,
+                "kind": "literal-context-inject",
+                "text": "conversation"
+              },
+              {
+                "file": "client.js",
+                "line": 8565,
+                "kind": "literal-context-inject",
+                "text": "conversation"
+              }
+            ],
+            "strictContextEvidence": [
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8525,
+                "service": "conversation",
+                "kind": "actual-exported-apply-context-property",
+                "text": "ctx.conversation"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8558,
+                "service": "conversation",
+                "kind": "actual-exported-apply-literal-inject",
+                "text": "ctx.inject([\"sessions\", \"uiWorkspace\", \"workspaces\", \"conversation\"], (host) => installRewindUi(host))"
+              },
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8565,
+                "service": "conversation",
+                "kind": "actual-exported-apply-literal-inject",
+                "text": "ctx.inject([\"sessions\", \"uiWorkspace\", \"conversation\"], (host) => installRewindUi(host))"
+              }
+            ]
+          },
+          {
+            "service": "workspaces",
+            "provider": {
+              "service": "workspaces",
+              "packageName": "@deepseek-ai/dsh-api-workspace-controller",
+              "file": "dsh/node_modules/@deepseek-ai/dsh-api-workspace-controller/lib/client.js",
+              "sha256": "e0b5f8ae1f3c286f628b5ffdc0903a83963e18fd6190d5ef042e38385cc578c4",
+              "line": 389
+            },
+            "authorEvidence": [
+              {
+                "file": "client.js",
+                "line": 8558,
+                "kind": "literal-context-inject",
+                "text": "workspaces"
+              }
+            ],
+            "strictContextEvidence": [
+              {
+                "file": "client.js",
+                "sha256": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+                "line": 8558,
+                "service": "workspaces",
+                "kind": "actual-exported-apply-literal-inject",
+                "text": "ctx.inject([\"sessions\", \"uiWorkspace\", \"workspaces\", \"conversation\"], (host) => installRewindUi(host))"
+              }
+            ]
+          }
+        ],
+        "rejectedUnanchoredServices": [],
+        "selectedIntermediateArtifactSHA256": "b269e98d98de86b3282186528545535e1a138696d039e34b834f90c0a19c0830",
+        "selectedIntermediatePreparedSHA256": "b269e98d98de86b3282186528545535e1a138696d039e34b834f90c0a19c0830",
+        "earlierClientScanArtifactSHA256": "b269e98d98de86b3282186528545535e1a138696d039e34b834f90c0a19c0830",
+        "allPreviouslyReachedClientBytesUnchanged": true,
+        "onlyManifestAndNewProvenanceChanged": true
+      }
+    ],
+    "fixtureRequirements": [
+      "Incremental exact first-party preparation and isolated actual Host install/restart required for this new SHA. Client factories, GUI and business functions remain unverified."
+    ],
+    "authorCodeExecuted": false
+  },
+  "fullOriginalEntrySHA256": {
+    "package/.gitignore": "ed5b2dfcb19b297ad4c71507628b3710e2d4fee5bed050648f732b326cbfa7e3",
+    "package/.npmignore": "7e04cab6ff4206c15db2a40b0a7fbc1e7ecdad17fa066c1194f02c32df0a026b",
+    "package/client.js": "d53981c6117514e7e7020a0776a409ca79ee328cba1a75ebf0e6b613fdd743fb",
+    "package/COMMUNITY-ADAPTATION.json": "2680ab1d5dac4e74e849746314a3c0aa663faad976173d01fa52944b7ff63818",
+    "package/COMMUNITY-ADAPTATION.md": "7eae0ce1492927819772d76d47a721cdd677f5bb495d470dca14f4fe65985801",
+    "package/cordis.patch.yml": "9dd1fe6b694ef75a694813fcbd3de4c930fc236e9d51aea6592f52e0f365b436",
+    "package/LICENSE": "1aa8847f960d236c300a89939174c91c34e52a9d73a2d5d0652a367d322a781b",
+    "package/package.json": "476379ef8508af00159f54181c2f30b3974b3bcdc81a07fb6242b072f9340b34",
+    "package/README.md": "ea2c8c0a1257a088f761bc77f0e7ab89e779dfe4e0121c0efc12411787ca27e9",
+    "package/README.zh-CN.md": "fcbd3be0c6d065f1e5c2ff21bc9a583ef271ba5cb32505fbaadfbb319145d796",
+    "package/release-notes.md": "7e14d2acd008f7b674a120363829064e597ddb868e0e2f34ab9e4590a69c1aac",
+    "package/screenshots.json": "9e6600ec59cce473c540b62cc47c83bc6091346065405cd807ee066a9b92bf44",
+    "package/bin/dsh-purge.js": "17b6c2dd66058721c85c7060a8dae69a6565b21e23f42cd5d2ace627ca4e1888",
+    "package/docs/banner.svg": "ca6af3628ecbab20bc1a9bc8b8baaf0d58b61b90d23444a4de5d9a1dab932bdc",
+    "package/docs/drill-auth-legal.html": "75a3debe54da5f51fb4449720633e6a14a12ac47a0fa11a074091503fe0fc024",
+    "package/docs/redteam-upstream-DISCLOSURE": "7753f3c0da85e5efb883d4176a1b465538abb74bfd55a63c52b9d855cc09c0ec",
+    "package/docs/redteam-upstream-LICENSE": "153f23cd640e27a668e549556571bb99f49cfa3b9148fb5af8f44416b0d66a3d",
+    "package/lib/asset-table.js": "bde84a2c9e41bdab11a64942ba340f19ad707acaa4f3a8985e52a0be26462437",
+    "package/lib/capability-protocol.js": "c97e3c41ebdc504cfa8ab1299e86bbcbcb413c87b538449db0677b9a1c514a0a",
+    "package/lib/child-process-hide.mjs": "d22546fd288373c529376835acb5dd2d54c96261c7a9c7f42f6ca44251668088",
+    "package/lib/community-overlay.js": "6406918410138d50a2e7b2dbe9bca09b6a187a74027229da2d20aa1c67b9d448",
+    "package/lib/community-profile-paths.js": "08f1766413cddd40078e37090e80019f725755b66bf745ebcedbeefa4d4c0751",
+    "package/lib/community-profile.js": "5c2d7be659fd780da39fb4cd2128f214e49e46b99c5936ece5e81bbe4f1fc1c4",
+    "package/lib/community-recover.js": "fe60d633c9b96de0b8f5f19366d3596b568bd37b3f693c76dff7cd45fec9848f",
+    "package/lib/continue-retry.js": "7165356024dec3f835fe5d9993c47cf7f0ee6ce337c59ebed5dbe7129b09cdd8",
+    "package/lib/core.js": "acf85aeaf60b758866a78ec439cab6339f0b5fe134ede2609d7f508fd2dd73b8",
+    "package/lib/desktop.js": "b7ca293024060b4ebf12625bfb8643e2888f60afaa9d15797692c39ad84a63ec",
+    "package/lib/drill-grant.js": "681e449d1c9965b6502ca98d1fe2e0d9c5a7358d0dce76a9de79ae84c40cbfcd",
+    "package/lib/extract-asar.js": "e1bafd112ad28f852e426c7e6225889f76d2ef6f266a3a981ece0f2decc88500",
+    "package/lib/hide-console.js": "93509f224c9884fa4483bbd47940fc18bb84060a7760315d1f64248ebb1d66f9",
+    "package/lib/hooks-deny.js": "8cbbf2952f23342350b08ae7fac5c05886a8fc92837364742a61c8e9f90f988e",
+    "package/lib/host-clean.js": "355623495de5a7e622bc70af12ab570a482a6f1f52bc0f9d8c0775ffb445077c",
+    "package/lib/host.js": "6a52d5ae2f1818723afbfec45effd20bf4768bd83967067c010b90acf6a90d7d",
+    "package/lib/identity.js": "83ad4fd6a85969ace82a3cf61ed990ca48f18e30380e9935e0e770da16301de6",
+    "package/lib/index.js": "cad81b332f6b4dc28d44954ef1f3d27cfdf2235188f004cb75be79f9a42edaab",
+    "package/lib/net-scope.js": "12bbd290c16ea5412552573a107ea13c4f64e09316a8852bcf5995aed8cc1b00",
+    "package/lib/official-update.js": "b5fbdff8ac64d74d78a047764663e54c3d8d6f01666d8e4177c521979f6fe5b6",
+    "package/lib/official-update.wscript": "8bc8a555de6cc95e9e7d66d819a908236749639cca0a8764d5527f00951662e1",
+    "package/lib/reapply-cli.js": "828722e85b4eab6a604fee6dfca88083e0e2f70725b42f101e83dc56d755ffad",
+    "package/lib/reapply.js": "38c55300d0f5d0f8fe92c5b27e19d1b7eec2a73cf14f606d5dca7d736ace6f87",
+    "package/lib/refusal-recover.js": "0ad3735717644ac0e30da1395d3a5e14aee7a62d733841e2ea89cad69e56a23d",
+    "package/lib/restart-desktop.js": "7468fb66d39bf8545cbfc14e63fcaac42c3d570bfa4663dd2ad415967d59b7f9",
+    "package/lib/restart-web.js": "0e946e723d87dcdc81d40e6e721b508229539a81ce8362925da096bb621348f1",
+    "package/lib/rewind.js": "051694c64430990d4e7dfd4e4c7d784994954268391dd01e9733fc4a8d7db9f3",
+    "package/lib/rules.js": "c47412b6fb122aa228a516b72f97a65730f31d2f886015e6c6654675dc13075d",
+    "package/lib/settle-policy.js": "156b8ce93045c14a0fe3ee41f1f8f07a5c3637dc8faaecdc0747ba5b32029ea9",
+    "package/lib/skills.js": "580f239ab74be8befe6678a60fe292116fad0f4dbe696057668f3fcb9cbcc707",
+    "package/lib/surface.js": "c27259aa8deb2e3f576a1c8a065f3c13b3b4a9efc80a0509259fcdce6df2aed2",
+    "package/lib/table-key.js": "cd7ab3512992f35f5bc08150da245f60bf4f11efbf83f3120583a8e7ef821cda",
+    "package/lib/table-read.js": "b97cd96220253eadacb1f9164bf574287b3eda7b5d9c2fad41911993ade8bf8e",
+    "package/lib/uninstall-restart.js": "d5f9a4403849607f780488c0da934b3404c2ed4a44ef6d62c8ddfcd754aae487",
+    "package/lib/uninstall.js": "f77f903b171c1f340ca0e59701773c591a262fba2c27f1293c8a75311a975927",
+    "package/lib/update.js": "f02098a62927450f28b3425f695c9d45a625133cf549886624f74f452b2832ce",
+    "package/lib/web.js": "6045725215196fe62dd3cd8290cf09274029335d13845f07ccb2e7bf6820c75e",
+    "package/lib/zip-extract.js": "e29e2d2cc478cf92eee010e5214d99a91e221227b6d185abd460eaa907d0f2f0",
+    "package/scripts/build-client.mjs": "98b78c047e856605cae14d861885138fea9e22b0618e6f1130950123d46e7fd3",
+    "package/scripts/embed-default-prompt.mjs": "a59fe2228bb08ebd10007cac9cfb2dc68de0b5719611b25ad29ef1e0687a7ea1",
+    "package/scripts/export-engagement-report.mjs": "1ed9da1d42d96dd5ecc07afd7c0190f3fafa160bf63ec79b046c395c5d8b3fae",
+    "package/scripts/patch-client-dock.mjs": "31da200312b7f715f5ea98da8885b2db94193b8ebb9fb582d9f0ca076458ae3c",
+    "package/scripts/redteam-setup.sh": "a35da25c76aadd9954615123bf8318e3624ad02d6d434ad0fc7ac6fb3beb4855",
+    "package/.github/workflows/release.yml": "dd47317b5a523a9ca49712fd575f38304595badda08f60bd3fcdeaaaaecdbc25",
+    "package/docs/preview/dock-auth.png": "70265078d8a430068515fd92dc38e41aa1ce88b2791b16a6a17fdde0ecd1982c",
+    "package/docs/preview/dock-clean.png": "68650a42fc78f728a08e213206171f8852e406d1759ecabc74ab1582272338d8",
+    "package/docs/preview/dock-drill.png": "30df7fac3ef8047d9e57101134a6570a8bceb02e5b36fb97cb8f1b11c6c539d9",
+    "package/docs/preview/own-servers-en.png": "ff27f6fd1993d2aa4bfad9fa7ce8ce10befdec4678152b341ff3d89509c6183d",
+    "package/docs/preview/own-servers.png": "bd83fdb9c94184d65ab7c6ed98610d7c62192f77ee90918ccbb9213d898eb81a",
+    "package/docs/preview/rules.png": "85789b0b06a90808a61c007a74914faee25166e1f2e9d314b39a1406bad964cd",
+    "package/docs/preview/settings.png": "b62ab223bcdaeddeb2d02fafef82d1d541501e5b89b4f1b1cce10d5a0d9a4da1",
+    "package/lib/redteam/client.js": "50b32063589bd25da3fa24a55b9c7b136d069fab37a56cd0513a86212631615c",
+    "package/lib/redteam/index.js": "2be19126d2ae72ae8fae928170ebe4f03505402558e657e58393745a22912184",
+    "package/lib/redteam/ip-utils.js": "53ce639f4e184c531adb395bcb79a22b4591ca476bdbc8e7bc8a716ede5df72d",
+    "package/lib/redteam/platform-config.js": "15f84f734389fc47e80c406f19fb0a46094849f4210448bd10435ba17cb6cbb9",
+    "package/lib/redteam/preset-composition.js": "f5a2ff3a3cdf9a642515deb13f10bfaf100abdde7cffbb89183538dab6ef5bae",
+    "package/lib/redteam/report-replay.js": "bc585edab2adb5f12354da84719aff3444f82a8385b5e7a517cd47abe6d0ff73",
+    "package/lib/redteam/role-section.js": "ddf4da018f0909ad3a7587f48d5a52165a5580f801ccd214dc53d597f0066181",
+    "package/lib/redteam/schema.js": "fa06c6adc5ee7fd0fee1d2a00dfc918e363cc5d8c850bf6e1189de67d7a71f92",
+    "package/lib/redteam/score-rules.js": "dfba517031c8d36733045db8cee3e373d34149f03f50327536a7061ff7f9cab8",
+    "package/lib/redteam/settings.js": "6f491f3944c47d5ddb09c533702df36a79bea91dd58cba33df956294942af5cf",
+    "package/lib/redteam/skill-availability.js": "0a3a34dcbb462ca25e749cf2fbb1649fadff59dc25916c2161ef91d10248972b",
+    "package/lib/redteam/skill-fixes.js": "13c0b4d0dfa9086c5fc0a538fb7b108be0e7f15e0bd062e35627e4479db61dc2",
+    "package/lib/redteam/store-core.js": "9d71d4c8d0c1a60e654f4a56f73670d97233c9c175e4efad93768381ff7be78b",
+    "package/lib/redteam/store.js": "758d5e34d0e72138c394fcaa253c98583ba0269ab2ac83b8c9dc903a8b8d08b8",
+    "package/lib/redteam/tools.js": "ca8519acd4ab9a6c95a45b2c6920ce88f5aa16a151375f95eedfc8ab7301cf0d",
+    "package/lib/redteam/ui.js": "be844c3f3b58be43fae30b9d75ae1689d6a19aff145daadeecb37b8f526a8449",
+    "package/lib/redteam/validate.js": "906847b3d8ca4bf16813801f681eecbe6e3b6757b84c2c89f512e4540d3c846f",
+    "package/presets/redteam/agent.cordis.yml": "93d6560efd1bca431718f90688b1b7c4b3a7228f19e8a26a79f825b3dff4a138",
+    "package/presets/redteam/anchor-gate.mjs": "0c99a0dafc072a64179f9e9898aede546dbb6e701c2b453b4164a24f05fe4d16",
+    "package/presets/redteam/preset.yml": "f2540e20de9ab152b475b6da07bbd3d0dbf47cb03221107c6c53b60131ada187",
+    "package/skills/redteam/active-scan.md": "4bb9b9f0bb7c9e3f1d3f8921948f2f91a8d86609924ea3e723cef557d66464ca",
+    "package/skills/redteam/asset-correlation.md": "8b787c02956ba6083850eaae6b06801e527f259705992319c2affd93f8733d4d",
+    "package/skills/redteam/browser-automation.md": "ac8ca27c0bbb74c3f21600db0e96231bd2343d738fc0776d23b45fd920f43f33",
+    "package/skills/redteam/chisel-tunnel.md": "3f599ea7fbbda8f5154020131ee20d48a49b4c350da66ffda18fead6836d0b87",
+    "package/skills/redteam/cn-proxy-pool.md": "0b1aaacd9086739409244213c219a05ecb4d3902057361daf3527a25e0531d0f",
+    "package/skills/redteam/credential-attack.md": "bee9918024e89ae4474f18b97e658f686802b79ae7c36792659575aa9b16702f",
+    "package/skills/redteam/dir-bruteforce.md": "54d2f7cf184cd7b196f3a08efc99c957998755087bb634fe0d9f8c82e19fc775",
+    "package/skills/redteam/fofa-recon.md": "f22ff7fd2395aaefd321be5b692fa539d2d03a5f57ebe1d9e69c28116ee2a6ef",
+    "package/skills/redteam/frp-tunnel.md": "c982c757e76ee97083433778140816b53980705b895b9dba81fecfeba4bb390c",
+    "package/skills/redteam/fscan-intranet.md": "0f1651c0738abb5514592f7fde2111c78d318e329b218046fdec657dc21eae03",
+    "package/skills/redteam/gogo-intranet.md": "c15426381a994747f6c188d825ee6dea95413e9a5e050a0ae1dde15902a6f371",
+    "package/skills/redteam/kimi-webbridge.md": "fd8ab994858fa53bfc8f2a01bf828bf7f172c2d71d8837b7e2d138d20194770c",
+    "package/skills/redteam/lateral-movement.md": "a2ae528c0dd2469c3ab358cad9effe5625e55ac085bf0c283faddc510bcafd54",
+    "package/skills/redteam/nuclei-scan.md": "c97d9f4f8005c57cbcab720d4db3d0257fb3e3464b1847f8deacdc3ce3dde9d3",
+    "package/skills/redteam/passive-recon.md": "7cd975daf73ab7cc917bc2a7a51afec5a15799e3de81b726f829d0a5b3f69c7f",
+    "package/skills/redteam/recon-pipeline.md": "08cd65bed9a742a79a6af763d45da19ec0a66cd8682d9548048ec3ba735fb6e4",
+    "package/skills/redteam/redteam-setup.md": "703283b7b9424bbffd2cedc6cf6f9f449722e0258e8923f70ffdeb05143552da",
+    "package/skills/redteam/shell-handler.md": "84d0bfcdd48d478e06ec23ebe4b0f256eb3235ad6434da3f2aee6d403faee0ac",
+    "package/skills/redteam/suo5-tunnel.md": "4e64b7fc3fdf6248313b7e1f590e943277e5d9a407e3c2dbe19da6c3fab30935",
+    "package/skills/redteam/unauth-exploit.md": "d70e456d4c0ae0a2b4c2e767dc5c3d0a3131af3be1dc4f3cdc6ed21a8dcd7129",
+    "package/skills/redteam/vps-reverse-shell.md": "b7708301a2463ae18532387476dbc474254d69ab2f1304d7af29c2f183919d47",
+    "package/skills/redteam/web-fingerprint.md": "eb6cdd44860b502c42f588cfb7505857e4088b1f0c8114f834ead0d313e2a815",
+    "package/skills/redteam/webshell-toolkit.md": "72fd68be19fb5ef25efae532cc210d22f14633bc05edda23e252a5210cf393ac"
+  },
+  "changedImplementationSHA256": {},
+  "actualASARSHA256": "ec1e606d0ec841085ad2a44f7738fd94f51126141d55c486761939812e569b0b",
+  "authorCodeExecuted": false,
+  "runtimeVerificationRequired": true
+}

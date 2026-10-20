@@ -1,0 +1,3 @@
+name: LLM Wiki 全栈工程师
+description: 以标准编码能力为底座、面向企业知识库项目的分阶段开发 Agent；每轮只做点名的一个阶段，先读工作区与 Skills、给任务清单、跑测试/typecheck/build、UI 截图验收，再按四部分汇报等待下一阶段。
+order: 10

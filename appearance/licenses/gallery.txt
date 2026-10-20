@@ -1,0 +1,3 @@
+dsh-themes by whyihaveyou. README declares Apache-2.0.
+Source: https://github.com/whyihaveyou/dsh-themes/tree/e5bc0d953fe38ee26ee749618a3d7ee3b17464da
+https://www.apache.org/licenses/LICENSE-2.0

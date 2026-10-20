@@ -1,0 +1,107 @@
+docs/superpowers
+# 流程进度 ledger（subagent-driven-development 的断点恢复记录），同属过程产物不入库
+.superpowers/
+node_modules/
+lib/
+*.tsbuildinfo
+
+# e2e 运行产物与临时脚本
+.e2e-logs/
+.e2e-run*.cjs
+.e2e-run*.mjs
+.tmp-*.mjs
+.atomcode/
+.deveco/
+-1
+stderr.log']
+commit-msg.tmp
+
+# 本地临时工作区（协议取证脚本 / 探针 / 发现记录）。
+#
+# ⚠️ 与 `scripts` 行同理：这些是**只读排查与研究工具**，仅本地保留。
+# `scripts` 那行只匹配文件与目录名 `scripts`，**不覆盖**这个目录，
+# 故必须单独列出（否则 `.tmp-zcode/` 会被 `git add .` 一起提交）。
+.tmp-zcode/
+.tmp-*/
+
+# 其它任务的本地取证目录（非本插件运行时依赖）。
+.minimax-forensics/
+.research/
+
+ide-models.json
+scripts
+.minimax-forensics/
+
+# Qoder 私有签名体系的复现脚本（研究工具，仅本地保留）
+#
+# 它含 Qoder 内嵌 WASM（`qoder_auth_wasm`）的 wasm-bindgen glue 与
+# 私有签名接口的调用代码（`generate_runtime_auth_fields` /
+# `qodercontext_prepareRequest` / `model_cache_decrypt`），用于从本机
+# Qoder 安装提取并在线拉取真实模型列表。
+#
+# ⚠️ **不是运行时依赖**：`src/` 不 import 它，`lib/` 不含任何 WASM。
+# 登录 / 续期 / 推理 / 积分余额都只需 Bearer，与它无关；
+# 它唯一的作用是「模型表过时时重新采集数据」。故刻意不入库。
+docs/qoder-wasm-signing-bridge.mjs
+
+# Qoder 加密推理的逆向分析（内部文档，仅本地保留）
+#
+# 含 WASM glue 约定、请求体字段结构、COSY 签名载荷、目录缓存解密、
+# 端点清单，以及 `qfmodel` 路由排查的完整记录。
+#
+# ⚠️ 这是**知识库**而非运行时依赖：`src/` 不引用它。
+# README / AGENTS.md 只保留行为契约与运维指针，不含逆向细节；
+# 需要这些细节时读本文件（Qoder 升级后重新采集尤其需要它）。
+docs/qoder-encryption-notes.md
+
+# Loomy 协议逆向与加密细节（内部文档，仅本地保留）
+#
+# 含：从客户端 .env.prod 解密得到的讯飞账号 AccessKey（凭据本体）、
+# .env.prod 的 AES-256-GCM 解密算法与内嵌口令、app.asar 提取方式、
+# 排查脚本清单、微信长轮询状态机的官方 JS 原文与 errcode 语义对照表。
+#
+# ⚠️ 这是**知识库**而非运行时依赖：`src/` 不引用它。
+# README / AGENTS.md 只保留行为契约（协议差异、坑点、能力矩阵），
+# 凭据值、解密口令、脚本清单一律放本文件。
+docs/loomy-protocol-notes.md
+
+# MiniMax Code 协议逆向与取证细节（内部文档，仅本地保留）
+#
+# 含：OAuth 设备码 + PKCE 的端点与常量、模型目录 / 签到 / 积分端点的实测记录、
+# `timezone_id` 必须走 query 的四种组合对照、asar 源码证据编号，以及
+# **未验证项清单**（端到端推理因账号余额不足未能实测）。
+#
+# ⚠️ 这是**知识库**而非运行时依赖：`src/` 不引用它。
+# README / AGENTS.md 只保留行为契约（协议差异、坑点、能力矩阵），
+# 重新采集数据的方法与证据细节一律放本文件。
+docs/minimax-protocol-notes.md
+
+# 本地 npm/pnpm 配置：不入库（issue !IKIRUB）
+#
+# 根目录那份 `.npmrc` 从首次提交起就带着一条 `script-shell=C:\Windows\System32\cmd.exe`
+# —— 那是**只在 Windows 上存在的路径**，却会随包分发到所有平台。
+# 从 git 安装本插件时（DSH 就是这么装的），pnpm 在**生命周期脚本**
+# （依赖的 `postinstall`、git 包的 `prepare`）里用它作 spawn shell，
+# 在 Android / Linux / macOS 上路径不存在 → 直接 `exit code -2` /
+# `ERR_PNPM_PREPARE_PACKAGE`（Exit status 254），插件装不上。
+#
+# ⚠️ 为什么删掉它对 Windows 无损：win32 下 pnpm 本来就用 `%ComSpec%`
+# （即同一个 `cmd.exe`）作默认值，这条配置纯属冗余。
+# ⚠️ 确实要指定 shell 时写到**用户级** `~/.npmrc`（不进仓库、不随包分发）。
+.npmrc
+
+# 图片压力探针的测试素材：**不入库**（issue !IKITT9 的 e2e 用）。
+#
+# 理由不是体积（2.87 MiB 也确实会让仓库永久膨胀），而是**它是真人桌面截图**：
+# 含浏览器标签页用户名、搜索框检索词、整屏热搜。本仓库公开，一旦 commit
+# 就永久留在 git 历史里 —— 事后删文件、改写历史都清不干净，fork 副本收不回。
+#
+# 探针在缺该文件时整体跳过（见 tests/e2e/image-probe-shared.ts 的 hasFixture），
+# 要跑图片压力探测请自备一张 ≥2000×1200 且不含个人信息的截图放到这个路径。
+tests/fixtures/test.png
+
+# 打包产物：npm/pnpm pack 生成的 tarball 不入库（2026-10-01）
+*.tgz
+
+# 账号池备份（dsh-codearts-auth 导出的加密备份件）：凭据备份一律不入库（含加密码，2026-10-05 核查实锤 51 账号 blob）
+_过程归档/

@@ -1,0 +1,4 @@
+interface:
+  display_name: "让 Agent 找插件"
+  short_description: "根据使用场景搜索并推荐公开的 DeepSeek Harness 插件"
+  default_prompt: "使用 $find-plugins 根据我的需求推荐合适的 DeepSeek Harness 插件。"

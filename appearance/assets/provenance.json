@@ -1,0 +1,30 @@
+{
+  "sources": [
+    {
+      "provider": "dream",
+      "repo": "RevolutionLA/dsh-dream-skin",
+      "commit": "8fd400696ed542217490a9aa5f4d74fd574ff1de"
+    },
+    {
+      "provider": "beizi",
+      "repo": "BeiZi6/dsh-theme-plugin",
+      "commit": "b3e7e143532c4b6df71da753d2336bb018949d2a"
+    },
+    {
+      "provider": "oil",
+      "repo": "oil-oil/dsh-theme",
+      "commit": "38c3cf09f1ece363283d29224c61ac369b0ffabc"
+    },
+    {
+      "provider": "gallery",
+      "repo": "whyihaveyou/dsh-themes",
+      "commit": "e5bc0d953fe38ee26ee749618a3d7ee3b17464da"
+    },
+    {
+      "provider": "tweaks",
+      "repo": "wlj521/dsh-ui-tweaks",
+      "commit": "e0186824ff1f45ee62c9d3ab37ad5ef06264e1e2"
+    }
+  ],
+  "scope": "Appearance presets, CSS and typography only; functional/account/session plugins are not replaced."
+}

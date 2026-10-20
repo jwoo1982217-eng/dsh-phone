@@ -1,0 +1,769 @@
+/* genshin-ganyu — 原神 · 甘雨 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-genshin-ganyu], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-genshin-ganyu] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #22303c;
+  background-color: #f4f8fb;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] {
+  color: #eaf2f9;
+  background-color: #0b111c;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-genshin-ganyu] {
+  --color-primary: #3e7cb0;
+  --primary: #3e7cb0;
+  --primary-rgb: 62, 124, 176;
+  --color-primary-light-1: #6a9cc4;
+  --color-primary-light-2: #93b9d6;
+  --color-primary-light-3: #bcd4e6;
+  --color-primary-dark-1: #2c5c86;
+  --brand: #3e7cb0;
+  --brand-light: #e8f1f8;
+  --brand-hover: #31648f;
+  --color-brand-fill: #3e7cb0;
+  --color-brand-bg: #dcebf5;
+  --aou-1: #eaf3f9;
+  --aou-2: #d3e6f2;
+  --aou-3: #b5d4e9;
+  --aou-4: #92bfdd;
+  --aou-5: #6ba6cc;
+  --aou-6: #3e7cb0;
+  --aou-7: #31648f;
+  --aou-8: #264e70;
+  --aou-9: #1c3a54;
+  --aou-10: #132838;
+  --bg-base: #f4f8fb;
+  --bg-1: #edf2f7;
+  --bg-2: #e5ecf2;
+  --bg-3: #dbe4ec;
+  --bg-4: #ced9e3;
+  --bg-5: #bccad7;
+  --bg-6: #a6b8c8;
+  --bg-8: #7f93a6;
+  --bg-9: #5a6c7d;
+  --bg-10: #36434f;
+  --color-bg-1: #edf2f7;
+  --color-bg-2: #e5ecf2;
+  --color-bg-3: #dbe4ec;
+  --color-bg-4: #ced9e3;
+  --bg-hover: #e2eaf1;
+  --bg-active: #d6e0ea;
+  --text-primary: #22303c;
+  --text-secondary: #54646f;
+  --text-disabled: #9fadba;
+  --text-0: #101a22;
+  --text-white: #ffffff;
+  --color-text-1: #22303c;
+  --color-text-2: #54646f;
+  --color-text-3: #7e8f9b;
+  --color-text-4: #9fadba;
+  --border-base: #c3d2de;
+  --border-light: #d5e0e9;
+  --border-special: #d9b95c;
+  --color-border: #c3d2de;
+  --color-border-1: #c3d2de;
+  --color-border-2: #d5e0e9;
+  --fill: #e5ecf2;
+  --color-fill: #e5ecf2;
+  --fill-0: #edf2f7;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fafcfe;
+  --inverse: #22303c;
+  --success: #2e9e6e;
+  --warning: #c9a227;
+  --danger: #c94f4f;
+  --info: #3e7cb0;
+  --message-user-bg: #4478a8;
+  --message-tips-bg: #e8eef4;
+  --workspace-btn-bg: #dcebf5;
+  --color-guid-agent-bar: #e9f0f6;
+  --ganyu-ice: #7fb2d9;
+  --ganyu-ice-soft: rgba(62, 124, 176, 0.28);
+  --ganyu-gold: #c9a227;
+  --ganyu-gold-hi: #e3c46b;
+  --ganyu-navy: #22303c;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] {
+  --color-primary: #8fc3e8;
+  --primary: #8fc3e8;
+  --primary-rgb: 143, 195, 232;
+  --color-primary-light-1: #a9d2ee;
+  --color-primary-light-2: #c3e0f4;
+  --color-primary-light-3: #dceefb;
+  --color-primary-dark-1: #6aa6d0;
+  --brand: #8fc3e8;
+  --brand-light: #16283a;
+  --brand-hover: #a5d0ef;
+  --color-brand-fill: #8fc3e8;
+  --color-brand-bg: #122334;
+  --aou-1: #0e1c2a;
+  --aou-2: #163050;
+  --aou-3: #1f4670;
+  --aou-4: #2a5c8e;
+  --aou-5: #3a76ac;
+  --aou-6: #5a93c4;
+  --aou-7: #8fc3e8;
+  --aou-8: #a9d2ee;
+  --aou-9: #c3e0f4;
+  --aou-10: #e2f0fa;
+  --bg-base: #0b111c;
+  --bg-1: #101826;
+  --bg-2: #151f30;
+  --bg-3: #1b2739;
+  --bg-4: #233246;
+  --bg-5: #2d3f55;
+  --bg-6: #3a4f68;
+  --bg-8: #55708a;
+  --bg-9: #7e95ac;
+  --bg-10: #b7c6d6;
+  --color-bg-1: #101826;
+  --color-bg-2: #151f30;
+  --color-bg-3: #1b2739;
+  --color-bg-4: #233246;
+  --bg-hover: #1a2534;
+  --bg-active: #223046;
+  --text-primary: #eaf2f9;
+  --text-secondary: #a9bacb;
+  --text-disabled: #586778;
+  --text-0: #f5f9fd;
+  --text-white: #ffffff;
+  --color-text-1: #eaf2f9;
+  --color-text-2: #a9bacb;
+  --color-text-3: #7d8fa1;
+  --color-text-4: #586778;
+  --border-base: #2b3a4e;
+  --border-light: #212d3e;
+  --border-special: #b39240;
+  --color-border: #2b3a4e;
+  --color-border-1: #2b3a4e;
+  --color-border-2: #212d3e;
+  --fill: #151f30;
+  --color-fill: #151f30;
+  --fill-0: #101826;
+  --fill-white-to-black: #0b111c;
+  --dialog-fill-0: #131c2a;
+  --inverse: #eaf2f9;
+  --success: #4caf7d;
+  --warning: #e3c46b;
+  --danger: #d96a6a;
+  --info: #8fc3e8;
+  --message-user-bg: #1c3a54;
+  --message-tips-bg: #16202e;
+  --workspace-btn-bg: #122334;
+  --color-guid-agent-bar: #111a28;
+  --ganyu-ice: #8fc3e8;
+  --ganyu-ice-soft: rgba(143, 195, 232, 0.32);
+  --ganyu-gold: #e3c46b;
+  --ganyu-gold-hi: #f0d894;
+  --ganyu-navy: #0b111c;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-genshin-ganyu] {
+  --dsw-static-deepseek-50: #eaf3f9;
+  --dsw-static-blue-50: #eaf3f9;
+  --dsw-static-deepseek-50p: #d3e6f2;
+  --dsw-static-blue-50p: #d3e6f2;
+  --dsw-static-deepseek-75: #d3e6f2;
+  --dsw-static-blue-75: #d3e6f2;
+  --dsw-static-deepseek-100: #d3e6f2;
+  --dsw-static-blue-100: #d3e6f2;
+  --dsw-static-deepseek-200: #b5d4e9;
+  --dsw-static-blue-200: #b5d4e9;
+  --dsw-static-deepseek-300: #92bfdd;
+  --dsw-static-blue-300: #92bfdd;
+  --dsw-static-deepseek-400: #6ba6cc;
+  --dsw-static-blue-400: #6ba6cc;
+  --dsw-static-deepseek-450: #6ba6cc;
+  --dsw-static-blue-450: #6ba6cc;
+  --dsw-static-deepseek-500: #3e7cb0;
+  --dsw-static-blue-500: #3e7cb0;
+  --dsw-static-deepseek-600: #31648f;
+  --dsw-static-blue-600: #31648f;
+  --dsw-static-deepseek-700-delete: #264e70;
+  --dsw-static-deepseek-800: #264e70;
+  --dsw-static-blue-800: #264e70;
+  --dsw-static-deepseek-900: #1c3a54;
+  --dsw-static-blue-900: #1c3a54;
+  --dsw-static-deepseek-950: #132838;
+  --dsw-static-blue-950: #132838;
+  --dsw-static-neutral-bluish-00: #edf2f7;
+  --dsw-static-neutral-00: #edf2f7;
+  --dsw-static-neutral-bluish-50: #edf2f7;
+  --dsw-static-neutral-50: #edf2f7;
+  --dsw-static-neutral-bluish-60: #edf2f7;
+  --dsw-static-neutral-60: #edf2f7;
+  --dsw-static-neutral-bluish-75: #e5ecf2;
+  --dsw-static-neutral-75: #e5ecf2;
+  --dsw-static-neutral-bluish-100: #e5ecf2;
+  --dsw-static-neutral-100: #e5ecf2;
+  --dsw-static-neutral-bluish-150: #dbe4ec;
+  --dsw-static-neutral-150: #dbe4ec;
+  --dsw-static-neutral-bluish-200: #dbe4ec;
+  --dsw-static-neutral-200: #dbe4ec;
+  --dsw-static-neutral-bluish-250: #ced9e3;
+  --dsw-static-neutral-250: #ced9e3;
+  --dsw-static-neutral-bluish-300: #ced9e3;
+  --dsw-static-neutral-300: #ced9e3;
+  --dsw-static-neutral-bluish-400: #bccad7;
+  --dsw-static-neutral-400: #bccad7;
+  --dsw-static-neutral-bluish-500: #a6b8c8;
+  --dsw-static-neutral-500: #a6b8c8;
+  --dsw-static-neutral-bluish-550: #a6b8c8;
+  --dsw-static-neutral-550: #a6b8c8;
+  --dsw-static-neutral-bluish-600: #7f93a6;
+  --dsw-static-neutral-600: #7f93a6;
+  --dsw-static-neutral-bluish-700: #7f93a6;
+  --dsw-static-neutral-700: #7f93a6;
+  --dsw-static-neutral-bluish-750: #5a6c7d;
+  --dsw-static-neutral-750: #5a6c7d;
+  --dsw-static-neutral-bluish-800: #5a6c7d;
+  --dsw-static-neutral-800: #5a6c7d;
+  --dsw-static-neutral-bluish-850: #5a6c7d;
+  --dsw-static-neutral-850: #5a6c7d;
+  --dsw-static-neutral-bluish-875: #36434f;
+  --dsw-static-neutral-875: #36434f;
+  --dsw-static-neutral-bluish-900: #36434f;
+  --dsw-static-neutral-900: #36434f;
+  --dsw-static-neutral-bluish-950: #36434f;
+  --dsw-static-neutral-950: #36434f;
+  --dsw-static-neutral-bluish-1000: #22303c;
+  --dsw-static-neutral-1000: #22303c;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e6e 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e6e 20%, white);
+  --dsw-static-green-400: #2e9e6e;
+  --dsw-static-green-500: #2e9e6e;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e6e 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e6e 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #c9a227 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #c9a227 20%, white);
+  --dsw-static-amber-400: #c9a227;
+  --dsw-static-amber-500: #c9a227;
+  --dsw-static-amber-600: color-mix(in srgb, #c9a227 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #c9a227 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c94f4f 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #c94f4f 20%, white);
+  --dsw-static-red-400: #c94f4f;
+  --dsw-static-red-500: #c94f4f;
+  --dsw-static-red-600: color-mix(in srgb, #c94f4f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c94f4f 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #0e1c2a;
+  --dsw-static-blue-50: #0e1c2a;
+  --dsw-static-deepseek-50p: #163050;
+  --dsw-static-blue-50p: #163050;
+  --dsw-static-deepseek-75: #163050;
+  --dsw-static-blue-75: #163050;
+  --dsw-static-deepseek-100: #163050;
+  --dsw-static-blue-100: #163050;
+  --dsw-static-deepseek-200: #1f4670;
+  --dsw-static-blue-200: #1f4670;
+  --dsw-static-deepseek-300: #2a5c8e;
+  --dsw-static-blue-300: #2a5c8e;
+  --dsw-static-deepseek-400: #3a76ac;
+  --dsw-static-blue-400: #3a76ac;
+  --dsw-static-deepseek-450: #3a76ac;
+  --dsw-static-blue-450: #3a76ac;
+  --dsw-static-deepseek-500: #5a93c4;
+  --dsw-static-blue-500: #5a93c4;
+  --dsw-static-deepseek-600: #8fc3e8;
+  --dsw-static-blue-600: #8fc3e8;
+  --dsw-static-deepseek-700-delete: #a9d2ee;
+  --dsw-static-deepseek-800: #a9d2ee;
+  --dsw-static-blue-800: #a9d2ee;
+  --dsw-static-deepseek-900: #c3e0f4;
+  --dsw-static-blue-900: #c3e0f4;
+  --dsw-static-deepseek-950: #e2f0fa;
+  --dsw-static-blue-950: #e2f0fa;
+  --dsw-static-neutral-bluish-00: #101826;
+  --dsw-static-neutral-00: #101826;
+  --dsw-static-neutral-bluish-50: #101826;
+  --dsw-static-neutral-50: #101826;
+  --dsw-static-neutral-bluish-60: #101826;
+  --dsw-static-neutral-60: #101826;
+  --dsw-static-neutral-bluish-75: #151f30;
+  --dsw-static-neutral-75: #151f30;
+  --dsw-static-neutral-bluish-100: #151f30;
+  --dsw-static-neutral-100: #151f30;
+  --dsw-static-neutral-bluish-150: #1b2739;
+  --dsw-static-neutral-150: #1b2739;
+  --dsw-static-neutral-bluish-200: #1b2739;
+  --dsw-static-neutral-200: #1b2739;
+  --dsw-static-neutral-bluish-250: #233246;
+  --dsw-static-neutral-250: #233246;
+  --dsw-static-neutral-bluish-300: #233246;
+  --dsw-static-neutral-300: #233246;
+  --dsw-static-neutral-bluish-400: #2d3f55;
+  --dsw-static-neutral-400: #2d3f55;
+  --dsw-static-neutral-bluish-500: #3a4f68;
+  --dsw-static-neutral-500: #3a4f68;
+  --dsw-static-neutral-bluish-550: #3a4f68;
+  --dsw-static-neutral-550: #3a4f68;
+  --dsw-static-neutral-bluish-600: #55708a;
+  --dsw-static-neutral-600: #55708a;
+  --dsw-static-neutral-bluish-700: #55708a;
+  --dsw-static-neutral-700: #55708a;
+  --dsw-static-neutral-bluish-750: #7e95ac;
+  --dsw-static-neutral-750: #7e95ac;
+  --dsw-static-neutral-bluish-800: #7e95ac;
+  --dsw-static-neutral-800: #7e95ac;
+  --dsw-static-neutral-bluish-850: #7e95ac;
+  --dsw-static-neutral-850: #7e95ac;
+  --dsw-static-neutral-bluish-875: #b7c6d6;
+  --dsw-static-neutral-875: #b7c6d6;
+  --dsw-static-neutral-bluish-900: #b7c6d6;
+  --dsw-static-neutral-900: #b7c6d6;
+  --dsw-static-neutral-bluish-950: #b7c6d6;
+  --dsw-static-neutral-950: #b7c6d6;
+  --dsw-static-neutral-bluish-1000: #eaf2f9;
+  --dsw-static-neutral-1000: #eaf2f9;
+  --dsw-static-green-50: color-mix(in srgb, #4caf7d 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4caf7d 20%, black);
+  --dsw-static-green-400: #4caf7d;
+  --dsw-static-green-500: #4caf7d;
+  --dsw-static-green-600: color-mix(in srgb, #4caf7d 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf7d 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e3c46b 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e3c46b 20%, black);
+  --dsw-static-amber-400: #e3c46b;
+  --dsw-static-amber-500: #e3c46b;
+  --dsw-static-amber-600: color-mix(in srgb, #e3c46b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e3c46b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #d96a6a 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #d96a6a 20%, black);
+  --dsw-static-red-400: #d96a6a;
+  --dsw-static-red-500: #d96a6a;
+  --dsw-static-red-600: color-mix(in srgb, #d96a6a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #d96a6a 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-genshin-ganyu] {
+  --dsw-alias-button-primary-fill: #3e7cb0;
+  --dsw-alias-button-primary-hover: #31648f;
+  --dsw-alias-button-primary-dimmed: #d3e6f2;
+  --dsw-alias-button-info-fill: #3e7cb0;
+  --dsw-alias-button-info-hover: #31648f;
+  --dsw-alias-button-contrast-fill: #31648f;
+  --dsw-alias-button-ghost-active-fill: #e8f1f8;
+  --dsw-alias-button-ghost-active-hover: #d3e6f2;
+  --dsw-alias-button-ghost-active-border: #92bfdd;
+  --dsw-alias-button-elevated-fill: #edf2f7;
+  --dsw-alias-button-floating-fill: #edf2f7;
+  --dsw-alias-button-floating-hover: #e2eaf1;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(62, 124, 176, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(62, 124, 176, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(62, 124, 176, 0.6);
+  --dsw-specific-bubble: #4478a8;
+  --dsw-specific-bubble-highlight: #b5d4e9;
+  --dsw-specific-input-major: #edf2f7;
+  --dsw-specific-login-input: #edf2f7;
+  --dsw-specific-sidebar-fill: #3e7cb0;
+  --dsw-specific-sidebar-nav-item-active: #d3e6f2;
+  --dsw-specific-sidebar-nav-item-hover: #e2eaf1;
+  --dsw-specific-sidebar-nav-item-active-accent: #92bfdd;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #8fc3e8;
+  --dsw-alias-button-primary-hover: #a5d0ef;
+  --dsw-alias-button-primary-dimmed: #163050;
+  --dsw-alias-button-info-fill: #8fc3e8;
+  --dsw-alias-button-info-hover: #a5d0ef;
+  --dsw-alias-button-contrast-fill: #8fc3e8;
+  --dsw-alias-button-ghost-active-fill: #16283a;
+  --dsw-alias-button-ghost-active-hover: #163050;
+  --dsw-alias-button-ghost-active-border: #2a5c8e;
+  --dsw-alias-button-elevated-fill: #101826;
+  --dsw-alias-button-floating-fill: #101826;
+  --dsw-alias-button-floating-hover: #1a2534;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(143, 195, 232, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(143, 195, 232, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(143, 195, 232, 0.6);
+  --dsw-specific-bubble: #1c3a54;
+  --dsw-specific-bubble-highlight: #1f4670;
+  --dsw-specific-input-major: #101826;
+  --dsw-specific-login-input: #101826;
+  --dsw-specific-sidebar-fill: #8fc3e8;
+  --dsw-specific-sidebar-nav-item-active: #163050;
+  --dsw-specific-sidebar-nav-item-hover: #1a2534;
+  --dsw-specific-sidebar-nav-item-active-accent: #2a5c8e;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-genshin-ganyu] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-genshin-ganyu]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(62, 124, 176, 0.10) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 74% 22%, rgba(201, 162, 39, 0.10) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 52% 70%, rgba(127, 178, 217, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 88% 88%, rgba(211, 230, 242, 0.5) 0%, transparent 48%),
+      radial-gradient(ellipse at 6% 92%, rgba(227, 196, 107, 0.10) 0%, transparent 42%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.75;
+}
+
+body[data-dsh-genshin-ganyu]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(ellipse 22px 9px at 50% 100%, rgba(127, 178, 217, 0.55) 0 8px, transparent 9px),
+      radial-gradient(circle at 50% 40%, rgba(201, 162, 39, 0.4) 0 1.8px, transparent 3px),
+      radial-gradient(ellipse 5px 8px at 50% 50%, rgba(255, 255, 255, 0.9) 0 3px, rgba(127, 178, 217, 0.45) 4px, transparent 5px);
+    background-size: 72px 26px, 90px 90px, 110px 130px;
+    background-position: 0 0, 20px 10px, 40px 0;
+    opacity: 0.07;
+    animation: genshin-ganyu-ganyu-petal-drift 28s linear infinite;
+}
+
+body[data-dsh-genshin-ganyu] [class*='sider'] [class*='session'],
+body[data-dsh-genshin-ganyu] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-genshin-ganyu] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(127, 178, 217, 0.22);
+    box-shadow: inset 3px 0 0 0 rgba(62, 124, 176, 0.8);
+}
+
+body[data-dsh-genshin-ganyu] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-genshin-ganyu] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(201, 162, 39, 0.2), rgba(62, 124, 176, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--ganyu-gold);
+}
+
+body[data-dsh-genshin-ganyu] button[class*='primary'],
+body[data-dsh-genshin-ganyu] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #31648f 0%, #3e7cb0 55%, #5a93c4 100%) !important;
+    border: 1px solid var(--ganyu-gold-hi) !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(62, 124, 176, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(19, 40, 56, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-genshin-ganyu] button[class*='primary']:hover,
+body[data-dsh-genshin-ganyu] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    box-shadow: 0 3px 14px rgba(62, 124, 176, 0.45), 0 0 8px rgba(201, 162, 39, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: genshin-ganyu-ganyu-btn-gleam 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-genshin-ganyu] pre,
+body[data-dsh-genshin-ganyu] .markdown-body pre {
+  background: linear-gradient(180deg, #26313d 0%, #1c252f 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--ganyu-ice) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 22px rgba(62, 124, 176, 0.18);
+}
+
+body[data-dsh-genshin-ganyu] pre code,
+body[data-dsh-genshin-ganyu] .markdown-body pre code {
+  background: transparent !important;
+    color: #dce9f2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-genshin-ganyu] code,
+body[data-dsh-genshin-ganyu] .markdown-body code {
+  background: rgba(127, 178, 217, 0.2);
+    color: #2c5c86;
+    border: 1px solid rgba(62, 124, 176, 0.32);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-genshin-ganyu]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-genshin-ganyu] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(54, 67, 79, 0.06), 0 0 0 1px rgba(127, 178, 217, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-genshin-ganyu] [class*='guidInputCard']:hover {
+  border-color: var(--ganyu-ice) !important;
+}
+
+body[data-dsh-genshin-ganyu] [class*='agent-bar'],
+body[data-dsh-genshin-ganyu] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(201, 162, 39, 0.4);
+}
+
+body[data-dsh-genshin-ganyu]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-genshin-ganyu]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6ba6cc, #31648f);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-genshin-ganyu]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #92bfdd, #c9a227);
+}
+
+body[data-dsh-genshin-ganyu]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-genshin-ganyu] .markdown-body a,
+body[data-dsh-genshin-ganyu] a {
+  color: #31648f;
+}
+
+body[data-dsh-genshin-ganyu] .markdown-body a:hover,
+body[data-dsh-genshin-ganyu] a:hover {
+  color: #3e7cb0;
+}
+
+body[data-dsh-genshin-ganyu] .markdown-body blockquote {
+  border-left: 3px solid var(--ganyu-gold);
+    background: rgba(127, 178, 217, 0.14);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-genshin-ganyu] .markdown-body hr,
+body[data-dsh-genshin-ganyu] hr {
+  border: none;
+    height: 9px;
+    background-image:
+      radial-gradient(ellipse 9px 5px at 50% 100%, rgba(62, 124, 176, 0.5) 0 4px, transparent 5px);
+    background-size: 18px 9px;
+    background-repeat: repeat-x;
+    opacity: 0.6;
+}
+
+body[data-dsh-genshin-ganyu] .arco-btn:not(button[class*='primary']):hover {
+  color: #2c5c86 !important;
+    border-color: rgba(62, 124, 176, 0.5) !important;
+    background-color: rgba(62, 124, 176, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(143, 195, 232, 0.12) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 74% 22%, rgba(227, 196, 107, 0.1) 0 1.8px, transparent 3px),
+      radial-gradient(circle at 52% 70%, rgba(143, 195, 232, 0.08) 0 1.8px, transparent 3px),
+      radial-gradient(ellipse at 88% 88%, rgba(31, 70, 112, 0.4) 0%, transparent 48%),
+      radial-gradient(ellipse at 6% 92%, rgba(227, 196, 107, 0.07) 0%, transparent 42%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.85;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(ellipse 22px 9px at 50% 100%, rgba(58, 118, 172, 0.55) 0 8px, transparent 9px),
+      radial-gradient(circle at 50% 40%, rgba(227, 196, 107, 0.45) 0 1.8px, transparent 3px),
+      radial-gradient(ellipse 5px 8px at 50% 50%, rgba(226, 240, 250, 0.85) 0 3px, rgba(143, 195, 232, 0.4) 4px, transparent 5px);
+    background-size: 72px 26px, 90px 90px, 110px 130px;
+    background-position: 0 0, 20px 10px, 40px 0;
+    opacity: 0.09;
+    animation: genshin-ganyu-ganyu-petal-drift 28s linear infinite;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(58, 118, 172, 0.3);
+    box-shadow: inset 3px 0 0 0 rgba(143, 195, 232, 0.85);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(227, 196, 107, 0.24), rgba(143, 195, 232, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--ganyu-gold);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #3a76ac 0%, #5a93c4 55%, #8fc3e8 100%) !important;
+    border: 1px solid var(--ganyu-gold-hi) !important;
+    color: #0b111c !important;
+    box-shadow: 0 2px 8px rgba(143, 195, 232, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    text-shadow: 0 1px 1px rgba(226, 240, 250, 0.4);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 16px rgba(143, 195, 232, 0.5), 0 0 10px rgba(227, 196, 107, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    animation: genshin-ganyu-ganyu-btn-gleam 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] pre,
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #0f1a26 0%, #0c141e 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--ganyu-ice) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(31, 70, 112, 0.4);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] pre code,
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d6e6f2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] code,
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .markdown-body code {
+  background: rgba(58, 118, 172, 0.32);
+    color: #c3e0f4;
+    border: 1px solid rgba(143, 195, 232, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(4, 8, 14, 0.5), 0 0 0 1px rgba(58, 118, 172, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--ganyu-ice) !important;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(227, 196, 107, 0.45);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #5a93c4, #1f4670);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8fc3e8, #b39240);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] a {
+  color: #a9d2ee;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] a:hover {
+  color: #c3e0f4;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--ganyu-gold);
+    background: rgba(58, 118, 172, 0.18);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] hr {
+  border: none;
+    height: 9px;
+    background-image:
+      radial-gradient(ellipse 9px 5px at 50% 100%, rgba(143, 195, 232, 0.55) 0 4px, transparent 5px);
+    background-size: 18px 9px;
+    background-repeat: repeat-x;
+    opacity: 0.55;
+}
+
+body[data-dsh-genshin-ganyu][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #c3e0f4 !important;
+    border-color: rgba(143, 195, 232, 0.5) !important;
+    background-color: rgba(143, 195, 232, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes genshin-ganyu-ganyu-petal-drift {
+  0% { background-position: 0 0, 20px 10px, 40px 0; }
+  100% { background-position: 72px 26px, 20px 100px, 40px 130px; }
+}
+
+@keyframes genshin-ganyu-ganyu-frost-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(62, 124, 176, 0.14); }
+  50% { box-shadow: 0 2px 16px rgba(62, 124, 176, 0.34); }
+}
+
+@keyframes genshin-ganyu-ganyu-btn-gleam {
+  0%, 100% { box-shadow: 0 3px 12px rgba(62, 124, 176, 0.4), 0 0 6px rgba(201, 162, 39, 0.25); }
+  50% { box-shadow: 0 3px 18px rgba(62, 124, 176, 0.55), 0 0 14px rgba(201, 162, 39, 0.45); }
+}
+
+@keyframes genshin-ganyu-ganyu-aurora-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

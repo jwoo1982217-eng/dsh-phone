@@ -1,0 +1,805 @@
+/* style-art-deco — Art Deco 装饰艺术 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-style-art-deco], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-style-art-deco] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1d1a12;
+  background-color: #f7f2e6;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] {
+  color: #f2ead6;
+  background-color: #0c0b09;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-style-art-deco] {
+  --color-primary: #8f6f1d;
+  --primary: #8f6f1d;
+  --primary-rgb: 143, 111, 29;
+  --color-primary-light-1: #a8892a;
+  --color-primary-light-2: #c2a13b;
+  --color-primary-light-3: #d7bb58;
+  --color-primary-dark-1: #5c4316;
+  --brand: #8f6f1d;
+  --brand-light: #f0e6c4;
+  --brand-hover: #77591a;
+  --color-brand-fill: #8f6f1d;
+  --color-brand-bg: #f5edd4;
+  --aou-1: #f9f1d6;
+  --aou-2: #f0e2b0;
+  --aou-3: #e5d086;
+  --aou-4: #d7bb58;
+  --aou-5: #c2a13b;
+  --aou-6: #a8892a;
+  --aou-7: #8f6f1d;
+  --aou-8: #77591a;
+  --aou-9: #5c4316;
+  --aou-10: #41300f;
+  --bg-base: #f7f2e6;
+  --bg-1: #efe8d6;
+  --bg-2: #e7ddc6;
+  --bg-3: #ddd1b4;
+  --bg-4: #d2c49f;
+  --bg-5: #c3b389;
+  --bg-6: #b09f74;
+  --bg-8: #8a7a56;
+  --bg-9: #665a3e;
+  --bg-10: #3f3826;
+  --color-bg-1: #efe8d6;
+  --color-bg-2: #e7ddc6;
+  --color-bg-3: #ddd1b4;
+  --color-bg-4: #d2c49f;
+  --bg-hover: #e9e0c9;
+  --bg-active: #e0d4b4;
+  --text-primary: #1d1a12;
+  --text-secondary: #5c5340;
+  --text-disabled: #a2987f;
+  --text-0: #12100a;
+  --text-white: #ffffff;
+  --color-text-1: #1d1a12;
+  --color-text-2: #5c5340;
+  --color-text-3: #837a62;
+  --color-text-4: #a2987f;
+  --border-base: #d0c4a2;
+  --border-light: #ded4ba;
+  --border-special: #a8892a;
+  --color-border: #d0c4a2;
+  --color-border-1: #d0c4a2;
+  --color-border-2: #ded4ba;
+  --fill: #e7ddc6;
+  --color-fill: #e7ddc6;
+  --fill-0: #efe8d6;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fbf7ec;
+  --inverse: #1d1a12;
+  --success: #3d7a4a;
+  --warning: #b07a1e;
+  --danger: #b0402a;
+  --info: #33607f;
+  --message-user-bg: #d7bb58;
+  --message-tips-bg: #ece3cc;
+  --workspace-btn-bg: #f0e6c4;
+  --color-guid-agent-bar: #efe7d2;
+  --deco-gold: #b08d2a;
+  --deco-gold-hi: #d4af37;
+  --deco-gold-deep: #77591a;
+  --deco-ink: #1d1a12;
+  --deco-emerald: #2a5c44;
+  --deco-lacquer: #96382a;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-style-art-deco][data-ds-dark-theme] {
+  --color-primary: #d4af37;
+  --primary: #d4af37;
+  --primary-rgb: 212, 175, 55;
+  --color-primary-light-1: #e0c468;
+  --color-primary-light-2: #edda9b;
+  --color-primary-light-3: #f8efd0;
+  --color-primary-dark-1: #a8892a;
+  --brand: #d4af37;
+  --brand-light: #2c2412;
+  --brand-hover: #e6c861;
+  --color-brand-fill: #d4af37;
+  --color-brand-bg: #241e0f;
+  --aou-1: #241d0e;
+  --aou-2: #3a2f16;
+  --aou-3: #54431d;
+  --aou-4: #6f5924;
+  --aou-5: #8f722c;
+  --aou-6: #b18d33;
+  --aou-7: #d4af37;
+  --aou-8: #e0c468;
+  --aou-9: #edda9b;
+  --aou-10: #f8efd0;
+  --bg-base: #0c0b09;
+  --bg-1: #14120d;
+  --bg-2: #1b1811;
+  --bg-3: #242017;
+  --bg-4: #2d281c;
+  --bg-5: #3a3322;
+  --bg-6: #4a412c;
+  --bg-8: #6e6142;
+  --bg-9: #978a6c;
+  --bg-10: #c8bb97;
+  --color-bg-1: #14120d;
+  --color-bg-2: #1b1811;
+  --color-bg-3: #242017;
+  --color-bg-4: #2d281c;
+  --bg-hover: #211d14;
+  --bg-active: #2b2519;
+  --text-primary: #f2ead6;
+  --text-secondary: #b9ae93;
+  --text-disabled: #5f5847;
+  --text-0: #faf5e8;
+  --text-white: #ffffff;
+  --color-text-1: #f2ead6;
+  --color-text-2: #b9ae93;
+  --color-text-3: #837a62;
+  --color-text-4: #5f5847;
+  --border-base: #332e1e;
+  --border-light: #262217;
+  --border-special: #6b5926;
+  --color-border: #332e1e;
+  --color-border-1: #332e1e;
+  --color-border-2: #262217;
+  --fill: #1b1811;
+  --color-fill: #1b1811;
+  --fill-0: #14120d;
+  --fill-white-to-black: #0c0b09;
+  --dialog-fill-0: #181510;
+  --inverse: #f2ead6;
+  --success: #6da36f;
+  --warning: #d19a3a;
+  --danger: #c0492f;
+  --info: #4f7d9e;
+  --message-user-bg: #b18d33;
+  --message-tips-bg: #1e1a12;
+  --workspace-btn-bg: #26200f;
+  --color-guid-agent-bar: #171410;
+  --deco-gold: #d4af37;
+  --deco-gold-hi: #f0d878;
+  --deco-gold-deep: #8f722c;
+  --deco-ink: #0c0b09;
+  --deco-emerald: #1f4d3a;
+  --deco-lacquer: #8e2f22;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-style-art-deco] {
+  --dsw-static-deepseek-50: #f9f1d6;
+  --dsw-static-blue-50: #f9f1d6;
+  --dsw-static-deepseek-50p: #f0e2b0;
+  --dsw-static-blue-50p: #f0e2b0;
+  --dsw-static-deepseek-75: #f0e2b0;
+  --dsw-static-blue-75: #f0e2b0;
+  --dsw-static-deepseek-100: #f0e2b0;
+  --dsw-static-blue-100: #f0e2b0;
+  --dsw-static-deepseek-200: #e5d086;
+  --dsw-static-blue-200: #e5d086;
+  --dsw-static-deepseek-300: #d7bb58;
+  --dsw-static-blue-300: #d7bb58;
+  --dsw-static-deepseek-400: #c2a13b;
+  --dsw-static-blue-400: #c2a13b;
+  --dsw-static-deepseek-450: #c2a13b;
+  --dsw-static-blue-450: #c2a13b;
+  --dsw-static-deepseek-500: #a8892a;
+  --dsw-static-blue-500: #a8892a;
+  --dsw-static-deepseek-600: #8f6f1d;
+  --dsw-static-blue-600: #8f6f1d;
+  --dsw-static-deepseek-700-delete: #77591a;
+  --dsw-static-deepseek-800: #77591a;
+  --dsw-static-blue-800: #77591a;
+  --dsw-static-deepseek-900: #5c4316;
+  --dsw-static-blue-900: #5c4316;
+  --dsw-static-deepseek-950: #41300f;
+  --dsw-static-blue-950: #41300f;
+  --dsw-static-neutral-bluish-00: #efe8d6;
+  --dsw-static-neutral-00: #efe8d6;
+  --dsw-static-neutral-bluish-50: #efe8d6;
+  --dsw-static-neutral-50: #efe8d6;
+  --dsw-static-neutral-bluish-60: #efe8d6;
+  --dsw-static-neutral-60: #efe8d6;
+  --dsw-static-neutral-bluish-75: #e7ddc6;
+  --dsw-static-neutral-75: #e7ddc6;
+  --dsw-static-neutral-bluish-100: #e7ddc6;
+  --dsw-static-neutral-100: #e7ddc6;
+  --dsw-static-neutral-bluish-150: #ddd1b4;
+  --dsw-static-neutral-150: #ddd1b4;
+  --dsw-static-neutral-bluish-200: #ddd1b4;
+  --dsw-static-neutral-200: #ddd1b4;
+  --dsw-static-neutral-bluish-250: #d2c49f;
+  --dsw-static-neutral-250: #d2c49f;
+  --dsw-static-neutral-bluish-300: #d2c49f;
+  --dsw-static-neutral-300: #d2c49f;
+  --dsw-static-neutral-bluish-400: #c3b389;
+  --dsw-static-neutral-400: #c3b389;
+  --dsw-static-neutral-bluish-500: #b09f74;
+  --dsw-static-neutral-500: #b09f74;
+  --dsw-static-neutral-bluish-550: #b09f74;
+  --dsw-static-neutral-550: #b09f74;
+  --dsw-static-neutral-bluish-600: #8a7a56;
+  --dsw-static-neutral-600: #8a7a56;
+  --dsw-static-neutral-bluish-700: #8a7a56;
+  --dsw-static-neutral-700: #8a7a56;
+  --dsw-static-neutral-bluish-750: #665a3e;
+  --dsw-static-neutral-750: #665a3e;
+  --dsw-static-neutral-bluish-800: #665a3e;
+  --dsw-static-neutral-800: #665a3e;
+  --dsw-static-neutral-bluish-850: #665a3e;
+  --dsw-static-neutral-850: #665a3e;
+  --dsw-static-neutral-bluish-875: #3f3826;
+  --dsw-static-neutral-875: #3f3826;
+  --dsw-static-neutral-bluish-900: #3f3826;
+  --dsw-static-neutral-900: #3f3826;
+  --dsw-static-neutral-bluish-950: #3f3826;
+  --dsw-static-neutral-950: #3f3826;
+  --dsw-static-neutral-bluish-1000: #1d1a12;
+  --dsw-static-neutral-1000: #1d1a12;
+  --dsw-static-green-50: color-mix(in srgb, #3d7a4a 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #3d7a4a 20%, white);
+  --dsw-static-green-400: #3d7a4a;
+  --dsw-static-green-500: #3d7a4a;
+  --dsw-static-green-600: color-mix(in srgb, #3d7a4a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #3d7a4a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #b07a1e 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #b07a1e 20%, white);
+  --dsw-static-amber-400: #b07a1e;
+  --dsw-static-amber-500: #b07a1e;
+  --dsw-static-amber-600: color-mix(in srgb, #b07a1e 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #b07a1e 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #b0402a 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #b0402a 20%, white);
+  --dsw-static-red-400: #b0402a;
+  --dsw-static-red-500: #b0402a;
+  --dsw-static-red-600: color-mix(in srgb, #b0402a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #b0402a 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-style-art-deco][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #241d0e;
+  --dsw-static-blue-50: #241d0e;
+  --dsw-static-deepseek-50p: #3a2f16;
+  --dsw-static-blue-50p: #3a2f16;
+  --dsw-static-deepseek-75: #3a2f16;
+  --dsw-static-blue-75: #3a2f16;
+  --dsw-static-deepseek-100: #3a2f16;
+  --dsw-static-blue-100: #3a2f16;
+  --dsw-static-deepseek-200: #54431d;
+  --dsw-static-blue-200: #54431d;
+  --dsw-static-deepseek-300: #6f5924;
+  --dsw-static-blue-300: #6f5924;
+  --dsw-static-deepseek-400: #8f722c;
+  --dsw-static-blue-400: #8f722c;
+  --dsw-static-deepseek-450: #8f722c;
+  --dsw-static-blue-450: #8f722c;
+  --dsw-static-deepseek-500: #b18d33;
+  --dsw-static-blue-500: #b18d33;
+  --dsw-static-deepseek-600: #d4af37;
+  --dsw-static-blue-600: #d4af37;
+  --dsw-static-deepseek-700-delete: #e0c468;
+  --dsw-static-deepseek-800: #e0c468;
+  --dsw-static-blue-800: #e0c468;
+  --dsw-static-deepseek-900: #edda9b;
+  --dsw-static-blue-900: #edda9b;
+  --dsw-static-deepseek-950: #f8efd0;
+  --dsw-static-blue-950: #f8efd0;
+  --dsw-static-neutral-bluish-00: #14120d;
+  --dsw-static-neutral-00: #14120d;
+  --dsw-static-neutral-bluish-50: #14120d;
+  --dsw-static-neutral-50: #14120d;
+  --dsw-static-neutral-bluish-60: #14120d;
+  --dsw-static-neutral-60: #14120d;
+  --dsw-static-neutral-bluish-75: #1b1811;
+  --dsw-static-neutral-75: #1b1811;
+  --dsw-static-neutral-bluish-100: #1b1811;
+  --dsw-static-neutral-100: #1b1811;
+  --dsw-static-neutral-bluish-150: #242017;
+  --dsw-static-neutral-150: #242017;
+  --dsw-static-neutral-bluish-200: #242017;
+  --dsw-static-neutral-200: #242017;
+  --dsw-static-neutral-bluish-250: #2d281c;
+  --dsw-static-neutral-250: #2d281c;
+  --dsw-static-neutral-bluish-300: #2d281c;
+  --dsw-static-neutral-300: #2d281c;
+  --dsw-static-neutral-bluish-400: #3a3322;
+  --dsw-static-neutral-400: #3a3322;
+  --dsw-static-neutral-bluish-500: #4a412c;
+  --dsw-static-neutral-500: #4a412c;
+  --dsw-static-neutral-bluish-550: #4a412c;
+  --dsw-static-neutral-550: #4a412c;
+  --dsw-static-neutral-bluish-600: #6e6142;
+  --dsw-static-neutral-600: #6e6142;
+  --dsw-static-neutral-bluish-700: #6e6142;
+  --dsw-static-neutral-700: #6e6142;
+  --dsw-static-neutral-bluish-750: #978a6c;
+  --dsw-static-neutral-750: #978a6c;
+  --dsw-static-neutral-bluish-800: #978a6c;
+  --dsw-static-neutral-800: #978a6c;
+  --dsw-static-neutral-bluish-850: #978a6c;
+  --dsw-static-neutral-850: #978a6c;
+  --dsw-static-neutral-bluish-875: #c8bb97;
+  --dsw-static-neutral-875: #c8bb97;
+  --dsw-static-neutral-bluish-900: #c8bb97;
+  --dsw-static-neutral-900: #c8bb97;
+  --dsw-static-neutral-bluish-950: #c8bb97;
+  --dsw-static-neutral-950: #c8bb97;
+  --dsw-static-neutral-bluish-1000: #f2ead6;
+  --dsw-static-neutral-1000: #f2ead6;
+  --dsw-static-green-50: color-mix(in srgb, #6da36f 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #6da36f 20%, black);
+  --dsw-static-green-400: #6da36f;
+  --dsw-static-green-500: #6da36f;
+  --dsw-static-green-600: color-mix(in srgb, #6da36f 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #6da36f 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d19a3a 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #d19a3a 20%, black);
+  --dsw-static-amber-400: #d19a3a;
+  --dsw-static-amber-500: #d19a3a;
+  --dsw-static-amber-600: color-mix(in srgb, #d19a3a 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d19a3a 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #c0492f 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #c0492f 20%, black);
+  --dsw-static-red-400: #c0492f;
+  --dsw-static-red-500: #c0492f;
+  --dsw-static-red-600: color-mix(in srgb, #c0492f 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #c0492f 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-style-art-deco] {
+  --dsw-alias-button-primary-fill: #8f6f1d;
+  --dsw-alias-button-primary-hover: #77591a;
+  --dsw-alias-button-primary-dimmed: #f0e2b0;
+  --dsw-alias-button-info-fill: #8f6f1d;
+  --dsw-alias-button-info-hover: #77591a;
+  --dsw-alias-button-contrast-fill: #8f6f1d;
+  --dsw-alias-button-ghost-active-fill: #f0e6c4;
+  --dsw-alias-button-ghost-active-hover: #f0e2b0;
+  --dsw-alias-button-ghost-active-border: #d7bb58;
+  --dsw-alias-button-elevated-fill: #efe8d6;
+  --dsw-alias-button-floating-fill: #efe8d6;
+  --dsw-alias-button-floating-hover: #e9e0c9;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(143, 111, 29, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(143, 111, 29, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(143, 111, 29, 0.6);
+  --dsw-specific-bubble: #d7bb58;
+  --dsw-specific-bubble-highlight: #e5d086;
+  --dsw-specific-input-major: #efe8d6;
+  --dsw-specific-login-input: #efe8d6;
+  --dsw-specific-sidebar-fill: #8f6f1d;
+  --dsw-specific-sidebar-nav-item-active: #f0e2b0;
+  --dsw-specific-sidebar-nav-item-hover: #e9e0c9;
+  --dsw-specific-sidebar-nav-item-active-accent: #d7bb58;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-style-art-deco][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #d4af37;
+  --dsw-alias-button-primary-hover: #e6c861;
+  --dsw-alias-button-primary-dimmed: #3a2f16;
+  --dsw-alias-button-info-fill: #d4af37;
+  --dsw-alias-button-info-hover: #e6c861;
+  --dsw-alias-button-contrast-fill: #d4af37;
+  --dsw-alias-button-ghost-active-fill: #2c2412;
+  --dsw-alias-button-ghost-active-hover: #3a2f16;
+  --dsw-alias-button-ghost-active-border: #6f5924;
+  --dsw-alias-button-elevated-fill: #14120d;
+  --dsw-alias-button-floating-fill: #14120d;
+  --dsw-alias-button-floating-hover: #211d14;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(212, 175, 55, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(212, 175, 55, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(212, 175, 55, 0.6);
+  --dsw-specific-bubble: #b18d33;
+  --dsw-specific-bubble-highlight: #54431d;
+  --dsw-specific-input-major: #14120d;
+  --dsw-specific-login-input: #14120d;
+  --dsw-specific-sidebar-fill: #d4af37;
+  --dsw-specific-sidebar-nav-item-active: #3a2f16;
+  --dsw-specific-sidebar-nav-item-hover: #211d14;
+  --dsw-specific-sidebar-nav-item-active-accent: #6f5924;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-style-art-deco] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-art-deco]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+    background-image:
+      radial-gradient(circle at 50% 100%, transparent 7px, var(--deco-gold) 7px 8.5px, transparent 8.5px 15px, var(--deco-gold) 15px 16.5px, transparent 16.5px),
+      radial-gradient(circle at 50% 100%, transparent 7px, var(--deco-gold) 7px 8.5px, transparent 8.5px 15px, var(--deco-gold) 15px 16.5px, transparent 16.5px);
+    background-size: 34px 17px, 34px 17px;
+    background-position: 0 0, 17px 8.5px;
+}
+
+body[data-dsh-style-art-deco]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      conic-gradient(from -90deg at 50% -8%,
+        var(--deco-gold) 0deg 1.6deg, transparent 1.6deg 11deg);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    animation: style-art-deco-deco-sun-breathe 7s ease-in-out infinite;
+}
+
+body[data-dsh-style-art-deco] [class*='sider'] [class*='session'],
+body[data-dsh-style-art-deco] [class*='sider'] [class*='item'] {
+  border-radius: 6px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-art-deco] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(176, 141, 42, 0.12);
+    box-shadow: inset 3px 0 0 0 rgba(176, 141, 42, 0.6);
+}
+
+body[data-dsh-style-art-deco] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-art-deco] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(176, 141, 42, 0.2), rgba(176, 141, 42, 0.05) 65%, transparent) !important;
+    box-shadow:
+      inset 3px 0 0 0 var(--deco-gold-deep),
+      inset 6px 0 0 -3px var(--deco-gold);
+    font-weight: 600;
+}
+
+body[data-dsh-style-art-deco] button[class*='primary'],
+body[data-dsh-style-art-deco] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(160deg, #d7bb58 0%, #b08d2a 55%, #8f6f1d 100%) !important;
+    border: 1px solid var(--deco-gold-hi) !important;
+    border-radius: 3px !important;
+    color: #1c1608 !important;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    box-shadow:
+      0 0 0 3px var(--bg-base),
+      0 0 0 4px rgba(143, 111, 29, 0.6),
+      0 3px 10px rgba(143, 111, 29, 0.3);
+    text-shadow: 0 1px 0 rgba(255, 244, 200, 0.5);
+    transition: filter 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-art-deco] button[class*='primary']:hover,
+body[data-dsh-style-art-deco] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    box-shadow:
+      0 0 0 3px var(--bg-base),
+      0 0 0 4px rgba(176, 141, 42, 0.85),
+      0 4px 18px rgba(143, 111, 29, 0.45);
+    animation: style-art-deco-deco-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-style-art-deco] pre,
+body[data-dsh-style-art-deco] .markdown-body pre {
+  background: linear-gradient(180deg, #1b1811 0%, #12100b 100%) !important;
+    border: 1px solid var(--border-special);
+    border-left: 3px solid var(--deco-gold-hi) !important;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(212, 175, 55, 0.4), 0 2px 8px rgba(90, 75, 40, 0.25);
+}
+
+body[data-dsh-style-art-deco] pre code,
+body[data-dsh-style-art-deco] .markdown-body pre code {
+  background: transparent !important;
+    color: #ece3c8 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-style-art-deco] code,
+body[data-dsh-style-art-deco] .markdown-body code {
+  background: rgba(176, 141, 42, 0.14);
+    color: var(--deco-gold-deep);
+    border: 1px solid rgba(176, 141, 42, 0.45);
+    border-radius: 3px;
+    padding: 1px 6px;
+    letter-spacing: 0.03em;
+}
+
+body[data-dsh-style-art-deco]::selection {
+  background: color-mix(in srgb, var(--deco-gold-hi) 45%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-style-art-deco] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 6px;
+    box-shadow: inset 0 1px 4px rgba(90, 75, 40, 0.12), 0 0 0 1px rgba(176, 141, 42, 0.16);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-art-deco] [class*='guidInputCard']:hover {
+  border-color: var(--deco-gold) !important;
+}
+
+body[data-dsh-style-art-deco] [class*='agent-bar'],
+body[data-dsh-style-art-deco] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(176, 141, 42, 0.45);
+}
+
+body[data-dsh-style-art-deco]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-art-deco]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--deco-gold), var(--deco-gold-deep));
+    border-radius: 4px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-art-deco]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--deco-gold-hi), var(--deco-gold));
+    box-shadow: 0 0 6px rgba(176, 141, 42, 0.5);
+}
+
+body[data-dsh-style-art-deco]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-art-deco] .markdown-body a,
+body[data-dsh-style-art-deco] a {
+  color: var(--deco-gold-deep);
+}
+
+body[data-dsh-style-art-deco] .markdown-body a:hover,
+body[data-dsh-style-art-deco] a:hover {
+  color: #41300f;
+}
+
+body[data-dsh-style-art-deco] .markdown-body blockquote {
+  border-left: 3px solid var(--deco-emerald);
+    background: rgba(42, 92, 68, 0.1);
+    color: var(--text-secondary);
+    border-radius: 0 4px 4px 0;
+}
+
+body[data-dsh-style-art-deco] .markdown-body hr,
+body[data-dsh-style-art-deco] hr {
+  border: none;
+    height: 14px;
+    background-image:
+      conic-gradient(from -90deg at 50% 100%,
+        rgba(143, 111, 29, 0.8) 0deg 2.5deg, transparent 2.5deg 15deg);
+    background-size: 30px 14px;
+    background-repeat: repeat-x;
+    background-position: center bottom;
+    opacity: 0.7;
+}
+
+body[data-dsh-style-art-deco] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--deco-gold-deep) !important;
+    border-color: rgba(143, 111, 29, 0.6) !important;
+    background-color: rgba(176, 141, 42, 0.12) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-style-art-deco][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+    background-image:
+      radial-gradient(circle at 50% 100%, transparent 7px, var(--deco-gold) 7px 8.5px, transparent 8.5px 15px, var(--deco-gold) 15px 16.5px, transparent 16.5px),
+      radial-gradient(circle at 50% 100%, transparent 7px, var(--deco-gold) 7px 8.5px, transparent 8.5px 15px, var(--deco-gold) 15px 16.5px, transparent 16.5px);
+    background-size: 34px 17px, 34px 17px;
+    background-position: 0 0, 17px 8.5px;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image:
+      conic-gradient(from -90deg at 50% -8%,
+        var(--deco-gold) 0deg 1.6deg, transparent 1.6deg 11deg);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    animation: style-art-deco-deco-sun-breathe 7s ease-in-out infinite;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 6px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(212, 175, 55, 0.10);
+    box-shadow: inset 3px 0 0 0 rgba(212, 175, 55, 0.55);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(212, 175, 55, 0.22), rgba(212, 175, 55, 0.06) 65%, transparent) !important;
+    
+    box-shadow:
+      inset 3px 0 0 0 var(--deco-gold),
+      inset 6px 0 0 -3px var(--deco-gold-hi);
+    font-weight: 600;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-style-art-deco][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(160deg, #e0c468 0%, var(--deco-gold) 55%, #a8892a 100%) !important;
+    border: 1px solid var(--deco-gold-hi) !important;
+    border-radius: 3px !important;
+    color: #1c1608 !important;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    box-shadow:
+      0 0 0 3px var(--deco-ink),
+      0 0 0 4px rgba(212, 175, 55, 0.65),
+      0 3px 10px rgba(212, 175, 55, 0.28);
+    text-shadow: 0 1px 0 rgba(255, 244, 200, 0.4);
+    transition: filter 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-style-art-deco][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow:
+      0 0 0 3px var(--deco-ink),
+      0 0 0 4px rgba(240, 216, 120, 0.9),
+      0 4px 18px rgba(212, 175, 55, 0.5);
+    animation: style-art-deco-deco-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] pre,
+body[data-dsh-style-art-deco][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #12100b 0%, #0d0c08 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--deco-gold) !important;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(212, 175, 55, 0.35), inset 0 0 24px rgba(0, 0, 0, 0.5);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] pre code,
+body[data-dsh-style-art-deco][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #e8dfc6 !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] code,
+body[data-dsh-style-art-deco][data-ds-dark-theme] .markdown-body code {
+  background: rgba(212, 175, 55, 0.12);
+    color: var(--deco-gold-hi);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 3px;
+    padding: 1px 6px;
+    letter-spacing: 0.03em;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 6px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 175, 55, 0.14);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--deco-gold-deep) !important;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-style-art-deco][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--deco-gold), #6f5924);
+    border-radius: 4px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--deco-gold-hi), #8f722c);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-style-art-deco][data-ds-dark-theme] a {
+  color: var(--deco-gold-hi);
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-style-art-deco][data-ds-dark-theme] a:hover {
+  color: #f8efd0;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--deco-emerald);
+    background: rgba(31, 77, 58, 0.22);
+    color: var(--text-secondary);
+    border-radius: 0 4px 4px 0;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-style-art-deco][data-ds-dark-theme] hr {
+  border: none;
+    height: 14px;
+    background-image:
+      conic-gradient(from -90deg at 50% 100%,
+        rgba(212, 175, 55, 0.75) 0deg 2.5deg, transparent 2.5deg 15deg);
+    background-size: 30px 14px;
+    background-repeat: repeat-x;
+    background-position: center bottom;
+    opacity: 0.65;
+}
+
+body[data-dsh-style-art-deco][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--deco-gold-hi) !important;
+    border-color: rgba(212, 175, 55, 0.55) !important;
+    background-color: rgba(212, 175, 55, 0.1) !important;
+}
+
+/* --- keyframes --- */
+@keyframes style-art-deco-deco-sun-breathe {
+  0%, 100% { opacity: 0.045; }
+  50% { opacity: 0.1; }
+}
+
+@keyframes style-art-deco-deco-gild-sweep {
+  0% { left: -30%; }
+  55% { left: 112%; }
+  100% { left: 112%; }
+}
+
+@keyframes style-art-deco-deco-btn-glow {
+  0%, 100% { box-shadow: 0 0 0 3px var(--bg-base), 0 0 0 4px rgba(176, 141, 42, 0.85), 0 4px 16px rgba(143, 111, 29, 0.4); }
+  50% { box-shadow: 0 0 0 3px var(--bg-base), 0 0 0 4px rgba(212, 175, 55, 1), 0 4px 24px rgba(143, 111, 29, 0.6); }
+}
+
+@keyframes style-art-deco-deco-border-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

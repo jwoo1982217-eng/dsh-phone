@@ -1,0 +1,32 @@
+[
+  {
+    "name": "OpenCode-MIT.txt",
+    "url": "https://raw.githubusercontent.com/anomalyco/opencode/v1.19.2/LICENSE",
+    "sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+    "bytes": 1065
+  },
+  {
+    "name": "Bun-LICENSE.md",
+    "url": "https://raw.githubusercontent.com/oven-sh/bun/bun-v1.3.14/LICENSE.md",
+    "sha256": "2c6160ec8fb853f7e8f97d9b249e756c9b0ac44860a68b6bf4f1b0bcbc5c3741",
+    "bytes": 5376
+  },
+  {
+    "name": "musl-COPYRIGHT.txt",
+    "url": "https://git.musl-libc.org/cgit/musl/plain/COPYRIGHT?h=v1.2.5",
+    "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
+    "bytes": 6204
+  },
+  {
+    "name": "GCC-COPYING3.txt",
+    "url": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-15.2.0/COPYING3",
+    "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+    "bytes": 35147
+  },
+  {
+    "name": "GCC-RUNTIME-EXCEPTION.txt",
+    "url": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-15.2.0/COPYING.RUNTIME",
+    "sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74",
+    "bytes": 3324
+  }
+]

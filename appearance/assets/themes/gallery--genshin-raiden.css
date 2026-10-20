@@ -1,0 +1,775 @@
+/* genshin-raiden — 原神 · 雷电将军 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-genshin-raiden], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-genshin-raiden] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #2a2138;
+  background-color: #f6f4fb;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] {
+  color: #f0ecf9;
+  background-color: #100d18;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-genshin-raiden] {
+  --color-primary: #7a4fc4;
+  --primary: #7a4fc4;
+  --primary-rgb: 122, 79, 196;
+  --color-primary-light-1: #9571d4;
+  --color-primary-light-2: #b298e2;
+  --color-primary-light-3: #d3c4f0;
+  --color-primary-dark-1: #5d37a0;
+  --brand: #7a4fc4;
+  --brand-light: #efe8fa;
+  --brand-hover: #653bb0;
+  --color-brand-fill: #7a4fc4;
+  --color-brand-bg: #e8def7;
+  --aou-1: #f1ebfa;
+  --aou-2: #e2d5f5;
+  --aou-3: #cdb8ee;
+  --aou-4: #b296e4;
+  --aou-5: #9571d4;
+  --aou-6: #7a4fc4;
+  --aou-7: #653bb0;
+  --aou-8: #502e90;
+  --aou-9: #3c2270;
+  --aou-10: #281650;
+  --bg-base: #f6f4fb;
+  --bg-1: #efecf7;
+  --bg-2: #e7e2f1;
+  --bg-3: #ddd6ea;
+  --bg-4: #d0c7e0;
+  --bg-5: #bfb4d4;
+  --bg-6: #a99bc2;
+  --bg-8: #8775a4;
+  --bg-9: #635380;
+  --bg-10: #3d3352;
+  --color-bg-1: #efecf7;
+  --color-bg-2: #e7e2f1;
+  --color-bg-3: #ddd6ea;
+  --color-bg-4: #d0c7e0;
+  --bg-hover: #e9e3f3;
+  --bg-active: #ded5ee;
+  --text-primary: #2a2138;
+  --text-secondary: #5c5170;
+  --text-disabled: #a298b4;
+  --text-0: #171021;
+  --text-white: #ffffff;
+  --color-text-1: #2a2138;
+  --color-text-2: #5c5170;
+  --color-text-3: #847696;
+  --color-text-4: #a298b4;
+  --border-base: #cfc5de;
+  --border-light: #ded7ea;
+  --border-special: #c9ae72;
+  --color-border: #cfc5de;
+  --color-border-1: #cfc5de;
+  --color-border-2: #ded7ea;
+  --fill: #e7e2f1;
+  --color-fill: #e7e2f1;
+  --fill-0: #efecf7;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #fbf9fd;
+  --inverse: #2a2138;
+  --success: #2e9e66;
+  --warning: #d08a1d;
+  --danger: #cf2f47;
+  --info: #3a6ec9;
+  --message-user-bg: #3a2a5e;
+  --message-tips-bg: #ece6f4;
+  --workspace-btn-bg: #e8def7;
+  --color-guid-agent-bar: #ece7f4;
+  --raiden-violet: #7a4fc4;
+  --raiden-violet-soft: rgba(122, 79, 196, 0.28);
+  --raiden-deep: #3a2a5e;
+  --raiden-gold: #a9853d;
+  --raiden-gold-soft: rgba(169, 133, 61, 0.35);
+  --raiden-kimono: #2e2148;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-genshin-raiden][data-ds-dark-theme] {
+  --color-primary: #9a6fe0;
+  --primary: #9a6fe0;
+  --primary-rgb: 154, 111, 224;
+  --color-primary-light-1: #b08ce9;
+  --color-primary-light-2: #c6abf2;
+  --color-primary-light-3: #ddcdf9;
+  --color-primary-dark-1: #6f45b8;
+  --brand: #9a6fe0;
+  --brand-light: #2a1e44;
+  --brand-hover: #ab80e8;
+  --color-brand-fill: #9a6fe0;
+  --color-brand-bg: #241936;
+  --aou-1: #1a1226;
+  --aou-2: #2a1c40;
+  --aou-3: #3d2860;
+  --aou-4: #553682;
+  --aou-5: #7450ae;
+  --aou-6: #9a6fe0;
+  --aou-7: #b08ce9;
+  --aou-8: #c6abf2;
+  --aou-9: #ddcdf9;
+  --aou-10: #f2ecfc;
+  --bg-base: #100d18;
+  --bg-1: #17131f;
+  --bg-2: #1e1a2b;
+  --bg-3: #262138;
+  --bg-4: #2f2946;
+  --bg-5: #3c3457;
+  --bg-6: #4b4268;
+  --bg-8: #6b6088;
+  --bg-9: #9188ad;
+  --bg-10: #c3bcd6;
+  --color-bg-1: #17131f;
+  --color-bg-2: #1e1a2b;
+  --color-bg-3: #262138;
+  --color-bg-4: #2f2946;
+  --bg-hover: #221c33;
+  --bg-active: #2b2442;
+  --text-primary: #f0ecf9;
+  --text-secondary: #b3aac8;
+  --text-disabled: #5d5471;
+  --text-0: #faf8ff;
+  --text-white: #ffffff;
+  --color-text-1: #f0ecf9;
+  --color-text-2: #b3aac8;
+  --color-text-3: #867c9e;
+  --color-text-4: #5d5471;
+  --border-base: #322a49;
+  --border-light: #272135;
+  --border-special: #5a4426;
+  --color-border: #322a49;
+  --color-border-1: #322a49;
+  --color-border-2: #272135;
+  --fill: #1e1a2b;
+  --color-fill: #1e1a2b;
+  --fill-0: #17131f;
+  --fill-white-to-black: #100d18;
+  --dialog-fill-0: #1a1626;
+  --inverse: #f0ecf9;
+  --success: #4caf7d;
+  --warning: #e8a33d;
+  --danger: #e0455a;
+  --info: #5a86e0;
+  --message-user-bg: #2c2145;
+  --message-tips-bg: #1e1a30;
+  --workspace-btn-bg: #241936;
+  --color-guid-agent-bar: #181423;
+  --raiden-violet: #9a6fe0;
+  --raiden-violet-soft: rgba(154, 111, 224, 0.35);
+  --raiden-deep: #241a3e;
+  --raiden-gold: #d8b264;
+  --raiden-gold-soft: rgba(216, 178, 100, 0.4);
+  --raiden-kimono: #f2eef8;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-genshin-raiden] {
+  --dsw-static-deepseek-50: #f1ebfa;
+  --dsw-static-blue-50: #f1ebfa;
+  --dsw-static-deepseek-50p: #e2d5f5;
+  --dsw-static-blue-50p: #e2d5f5;
+  --dsw-static-deepseek-75: #e2d5f5;
+  --dsw-static-blue-75: #e2d5f5;
+  --dsw-static-deepseek-100: #e2d5f5;
+  --dsw-static-blue-100: #e2d5f5;
+  --dsw-static-deepseek-200: #cdb8ee;
+  --dsw-static-blue-200: #cdb8ee;
+  --dsw-static-deepseek-300: #b296e4;
+  --dsw-static-blue-300: #b296e4;
+  --dsw-static-deepseek-400: #9571d4;
+  --dsw-static-blue-400: #9571d4;
+  --dsw-static-deepseek-450: #9571d4;
+  --dsw-static-blue-450: #9571d4;
+  --dsw-static-deepseek-500: #7a4fc4;
+  --dsw-static-blue-500: #7a4fc4;
+  --dsw-static-deepseek-600: #653bb0;
+  --dsw-static-blue-600: #653bb0;
+  --dsw-static-deepseek-700-delete: #502e90;
+  --dsw-static-deepseek-800: #502e90;
+  --dsw-static-blue-800: #502e90;
+  --dsw-static-deepseek-900: #3c2270;
+  --dsw-static-blue-900: #3c2270;
+  --dsw-static-deepseek-950: #281650;
+  --dsw-static-blue-950: #281650;
+  --dsw-static-neutral-bluish-00: #efecf7;
+  --dsw-static-neutral-00: #efecf7;
+  --dsw-static-neutral-bluish-50: #efecf7;
+  --dsw-static-neutral-50: #efecf7;
+  --dsw-static-neutral-bluish-60: #efecf7;
+  --dsw-static-neutral-60: #efecf7;
+  --dsw-static-neutral-bluish-75: #e7e2f1;
+  --dsw-static-neutral-75: #e7e2f1;
+  --dsw-static-neutral-bluish-100: #e7e2f1;
+  --dsw-static-neutral-100: #e7e2f1;
+  --dsw-static-neutral-bluish-150: #ddd6ea;
+  --dsw-static-neutral-150: #ddd6ea;
+  --dsw-static-neutral-bluish-200: #ddd6ea;
+  --dsw-static-neutral-200: #ddd6ea;
+  --dsw-static-neutral-bluish-250: #d0c7e0;
+  --dsw-static-neutral-250: #d0c7e0;
+  --dsw-static-neutral-bluish-300: #d0c7e0;
+  --dsw-static-neutral-300: #d0c7e0;
+  --dsw-static-neutral-bluish-400: #bfb4d4;
+  --dsw-static-neutral-400: #bfb4d4;
+  --dsw-static-neutral-bluish-500: #a99bc2;
+  --dsw-static-neutral-500: #a99bc2;
+  --dsw-static-neutral-bluish-550: #a99bc2;
+  --dsw-static-neutral-550: #a99bc2;
+  --dsw-static-neutral-bluish-600: #8775a4;
+  --dsw-static-neutral-600: #8775a4;
+  --dsw-static-neutral-bluish-700: #8775a4;
+  --dsw-static-neutral-700: #8775a4;
+  --dsw-static-neutral-bluish-750: #635380;
+  --dsw-static-neutral-750: #635380;
+  --dsw-static-neutral-bluish-800: #635380;
+  --dsw-static-neutral-800: #635380;
+  --dsw-static-neutral-bluish-850: #635380;
+  --dsw-static-neutral-850: #635380;
+  --dsw-static-neutral-bluish-875: #3d3352;
+  --dsw-static-neutral-875: #3d3352;
+  --dsw-static-neutral-bluish-900: #3d3352;
+  --dsw-static-neutral-900: #3d3352;
+  --dsw-static-neutral-bluish-950: #3d3352;
+  --dsw-static-neutral-950: #3d3352;
+  --dsw-static-neutral-bluish-1000: #2a2138;
+  --dsw-static-neutral-1000: #2a2138;
+  --dsw-static-green-50: color-mix(in srgb, #2e9e66 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2e9e66 20%, white);
+  --dsw-static-green-400: #2e9e66;
+  --dsw-static-green-500: #2e9e66;
+  --dsw-static-green-600: color-mix(in srgb, #2e9e66 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2e9e66 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #d08a1d 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #d08a1d 20%, white);
+  --dsw-static-amber-400: #d08a1d;
+  --dsw-static-amber-500: #d08a1d;
+  --dsw-static-amber-600: color-mix(in srgb, #d08a1d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #d08a1d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #cf2f47 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #cf2f47 20%, white);
+  --dsw-static-red-400: #cf2f47;
+  --dsw-static-red-500: #cf2f47;
+  --dsw-static-red-600: color-mix(in srgb, #cf2f47 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #cf2f47 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-genshin-raiden][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #1a1226;
+  --dsw-static-blue-50: #1a1226;
+  --dsw-static-deepseek-50p: #2a1c40;
+  --dsw-static-blue-50p: #2a1c40;
+  --dsw-static-deepseek-75: #2a1c40;
+  --dsw-static-blue-75: #2a1c40;
+  --dsw-static-deepseek-100: #2a1c40;
+  --dsw-static-blue-100: #2a1c40;
+  --dsw-static-deepseek-200: #3d2860;
+  --dsw-static-blue-200: #3d2860;
+  --dsw-static-deepseek-300: #553682;
+  --dsw-static-blue-300: #553682;
+  --dsw-static-deepseek-400: #7450ae;
+  --dsw-static-blue-400: #7450ae;
+  --dsw-static-deepseek-450: #7450ae;
+  --dsw-static-blue-450: #7450ae;
+  --dsw-static-deepseek-500: #9a6fe0;
+  --dsw-static-blue-500: #9a6fe0;
+  --dsw-static-deepseek-600: #b08ce9;
+  --dsw-static-blue-600: #b08ce9;
+  --dsw-static-deepseek-700-delete: #c6abf2;
+  --dsw-static-deepseek-800: #c6abf2;
+  --dsw-static-blue-800: #c6abf2;
+  --dsw-static-deepseek-900: #ddcdf9;
+  --dsw-static-blue-900: #ddcdf9;
+  --dsw-static-deepseek-950: #f2ecfc;
+  --dsw-static-blue-950: #f2ecfc;
+  --dsw-static-neutral-bluish-00: #17131f;
+  --dsw-static-neutral-00: #17131f;
+  --dsw-static-neutral-bluish-50: #17131f;
+  --dsw-static-neutral-50: #17131f;
+  --dsw-static-neutral-bluish-60: #17131f;
+  --dsw-static-neutral-60: #17131f;
+  --dsw-static-neutral-bluish-75: #1e1a2b;
+  --dsw-static-neutral-75: #1e1a2b;
+  --dsw-static-neutral-bluish-100: #1e1a2b;
+  --dsw-static-neutral-100: #1e1a2b;
+  --dsw-static-neutral-bluish-150: #262138;
+  --dsw-static-neutral-150: #262138;
+  --dsw-static-neutral-bluish-200: #262138;
+  --dsw-static-neutral-200: #262138;
+  --dsw-static-neutral-bluish-250: #2f2946;
+  --dsw-static-neutral-250: #2f2946;
+  --dsw-static-neutral-bluish-300: #2f2946;
+  --dsw-static-neutral-300: #2f2946;
+  --dsw-static-neutral-bluish-400: #3c3457;
+  --dsw-static-neutral-400: #3c3457;
+  --dsw-static-neutral-bluish-500: #4b4268;
+  --dsw-static-neutral-500: #4b4268;
+  --dsw-static-neutral-bluish-550: #4b4268;
+  --dsw-static-neutral-550: #4b4268;
+  --dsw-static-neutral-bluish-600: #6b6088;
+  --dsw-static-neutral-600: #6b6088;
+  --dsw-static-neutral-bluish-700: #6b6088;
+  --dsw-static-neutral-700: #6b6088;
+  --dsw-static-neutral-bluish-750: #9188ad;
+  --dsw-static-neutral-750: #9188ad;
+  --dsw-static-neutral-bluish-800: #9188ad;
+  --dsw-static-neutral-800: #9188ad;
+  --dsw-static-neutral-bluish-850: #9188ad;
+  --dsw-static-neutral-850: #9188ad;
+  --dsw-static-neutral-bluish-875: #c3bcd6;
+  --dsw-static-neutral-875: #c3bcd6;
+  --dsw-static-neutral-bluish-900: #c3bcd6;
+  --dsw-static-neutral-900: #c3bcd6;
+  --dsw-static-neutral-bluish-950: #c3bcd6;
+  --dsw-static-neutral-950: #c3bcd6;
+  --dsw-static-neutral-bluish-1000: #f0ecf9;
+  --dsw-static-neutral-1000: #f0ecf9;
+  --dsw-static-green-50: color-mix(in srgb, #4caf7d 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #4caf7d 20%, black);
+  --dsw-static-green-400: #4caf7d;
+  --dsw-static-green-500: #4caf7d;
+  --dsw-static-green-600: color-mix(in srgb, #4caf7d 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf7d 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8a33d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #e8a33d 20%, black);
+  --dsw-static-amber-400: #e8a33d;
+  --dsw-static-amber-500: #e8a33d;
+  --dsw-static-amber-600: color-mix(in srgb, #e8a33d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8a33d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e0455a 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #e0455a 20%, black);
+  --dsw-static-red-400: #e0455a;
+  --dsw-static-red-500: #e0455a;
+  --dsw-static-red-600: color-mix(in srgb, #e0455a 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e0455a 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-genshin-raiden] {
+  --dsw-alias-button-primary-fill: #7a4fc4;
+  --dsw-alias-button-primary-hover: #653bb0;
+  --dsw-alias-button-primary-dimmed: #e2d5f5;
+  --dsw-alias-button-info-fill: #7a4fc4;
+  --dsw-alias-button-info-hover: #653bb0;
+  --dsw-alias-button-contrast-fill: #653bb0;
+  --dsw-alias-button-ghost-active-fill: #efe8fa;
+  --dsw-alias-button-ghost-active-hover: #e2d5f5;
+  --dsw-alias-button-ghost-active-border: #b296e4;
+  --dsw-alias-button-elevated-fill: #efecf7;
+  --dsw-alias-button-floating-fill: #efecf7;
+  --dsw-alias-button-floating-hover: #e9e3f3;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(122, 79, 196, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(122, 79, 196, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(122, 79, 196, 0.6);
+  --dsw-specific-bubble: #3a2a5e;
+  --dsw-specific-bubble-highlight: #cdb8ee;
+  --dsw-specific-input-major: #efecf7;
+  --dsw-specific-login-input: #efecf7;
+  --dsw-specific-sidebar-fill: #7a4fc4;
+  --dsw-specific-sidebar-nav-item-active: #e2d5f5;
+  --dsw-specific-sidebar-nav-item-hover: #e9e3f3;
+  --dsw-specific-sidebar-nav-item-active-accent: #b296e4;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-genshin-raiden][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #9a6fe0;
+  --dsw-alias-button-primary-hover: #ab80e8;
+  --dsw-alias-button-primary-dimmed: #2a1c40;
+  --dsw-alias-button-info-fill: #9a6fe0;
+  --dsw-alias-button-info-hover: #ab80e8;
+  --dsw-alias-button-contrast-fill: #b08ce9;
+  --dsw-alias-button-ghost-active-fill: #2a1e44;
+  --dsw-alias-button-ghost-active-hover: #2a1c40;
+  --dsw-alias-button-ghost-active-border: #553682;
+  --dsw-alias-button-elevated-fill: #17131f;
+  --dsw-alias-button-floating-fill: #17131f;
+  --dsw-alias-button-floating-hover: #221c33;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(154, 111, 224, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(154, 111, 224, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(154, 111, 224, 0.6);
+  --dsw-specific-bubble: #2c2145;
+  --dsw-specific-bubble-highlight: #3d2860;
+  --dsw-specific-input-major: #17131f;
+  --dsw-specific-login-input: #17131f;
+  --dsw-specific-sidebar-fill: #9a6fe0;
+  --dsw-specific-sidebar-nav-item-active: #2a1c40;
+  --dsw-specific-sidebar-nav-item-hover: #221c33;
+  --dsw-specific-sidebar-nav-item-active-accent: #553682;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-genshin-raiden] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-genshin-raiden]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(122, 79, 196, 0.12) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 76% 14%, rgba(169, 133, 61, 0.11) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 58% 70%, rgba(122, 79, 196, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 86% 84%, rgba(178, 150, 228, 0.35) 0%, transparent 46%),
+      radial-gradient(ellipse at 8% 90%, rgba(169, 133, 61, 0.06) 0%, transparent 42%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.7;
+}
+
+body[data-dsh-genshin-raiden]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(122, 79, 196, 0.7) 0 5px, transparent 6.5px),
+      radial-gradient(circle at 70% 70%, rgba(122, 79, 196, 0.5) 0 4px, transparent 5.5px),
+      radial-gradient(circle at 50% 50%, rgba(169, 133, 61, 0.75) 0 1.6px, transparent 2.6px);
+    background-size: 52px 52px, 52px 52px, 26px 26px;
+    background-position: 0 0, 26px 26px, 13px 13px;
+    opacity: 0.05;
+    animation: genshin-raiden-raiden-tomoe-drift 30s linear infinite;
+}
+
+body[data-dsh-genshin-raiden] [class*='sider'] [class*='session'],
+body[data-dsh-genshin-raiden] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-genshin-raiden] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(149, 113, 212, 0.2);
+    box-shadow: inset 3px 0 0 0 rgba(122, 79, 196, 0.85);
+}
+
+body[data-dsh-genshin-raiden] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-genshin-raiden] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(122, 79, 196, 0.2), rgba(122, 79, 196, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--raiden-gold);
+}
+
+body[data-dsh-genshin-raiden] button[class*='primary'],
+body[data-dsh-genshin-raiden] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #653bb0 0%, #7a4fc4 55%, #9571d4 100%) !important;
+    border: 1px solid #cdb8ee !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(122, 79, 196, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    text-shadow: 0 1px 2px rgba(40, 20, 70, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-genshin-raiden] button[class*='primary']:hover,
+body[data-dsh-genshin-raiden] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 14px rgba(122, 79, 196, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    animation: genshin-raiden-raiden-btn-thunder 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-genshin-raiden] pre,
+body[data-dsh-genshin-raiden] .markdown-body pre {
+  background: linear-gradient(180deg, #2e2347 0%, #261c3c 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid #d8b264 !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(122, 79, 196, 0.2);
+}
+
+body[data-dsh-genshin-raiden] pre code,
+body[data-dsh-genshin-raiden] .markdown-body pre code {
+  background: transparent !important;
+    color: #ece5f6 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-genshin-raiden] code,
+body[data-dsh-genshin-raiden] .markdown-body code {
+  background: rgba(122, 79, 196, 0.12);
+    color: #5d37a0;
+    border: 1px solid rgba(122, 79, 196, 0.32);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-genshin-raiden]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-genshin-raiden] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 6px rgba(61, 51, 82, 0.08), 0 0 0 1px rgba(122, 79, 196, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-genshin-raiden] [class*='guidInputCard']:hover {
+  border-color: #b9a8d4 !important;
+}
+
+body[data-dsh-genshin-raiden] [class*='agent-bar'],
+body[data-dsh-genshin-raiden] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(169, 133, 61, 0.4);
+}
+
+body[data-dsh-genshin-raiden]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-genshin-raiden]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9571d4, #502e90);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-genshin-raiden]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #b296e4, #3c2270);
+}
+
+body[data-dsh-genshin-raiden]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-genshin-raiden] .markdown-body a,
+body[data-dsh-genshin-raiden] a {
+  color: #653bb0;
+}
+
+body[data-dsh-genshin-raiden] .markdown-body a:hover,
+body[data-dsh-genshin-raiden] a:hover {
+  color: #7a4fc4;
+}
+
+body[data-dsh-genshin-raiden] .markdown-body blockquote {
+  border-left: 3px solid var(--raiden-gold);
+    background: rgba(122, 79, 196, 0.08);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-genshin-raiden] .markdown-body hr,
+body[data-dsh-genshin-raiden] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(120deg, rgba(122, 79, 196, 0.55) 50%, transparent 50%),
+      linear-gradient(-60deg, rgba(169, 133, 61, 0.5) 50%, transparent 50%);
+    background-size: 16px 7px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 8px 1px;
+    opacity: 0.6;
+}
+
+body[data-dsh-genshin-raiden] .arco-btn:not(button[class*='primary']):hover {
+  color: #653bb0 !important;
+    border-color: rgba(122, 79, 196, 0.5) !important;
+    background-color: rgba(122, 79, 196, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-genshin-raiden][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 18% 16%, rgba(154, 111, 224, 0.12) 0 2.5px, transparent 4px),
+      radial-gradient(circle at 76% 14%, rgba(216, 178, 100, 0.1) 0 2px, transparent 3.5px),
+      radial-gradient(circle at 58% 70%, rgba(154, 111, 224, 0.08) 0 2px, transparent 3.5px),
+      radial-gradient(ellipse at 86% 84%, rgba(85, 54, 130, 0.3) 0%, transparent 46%),
+      radial-gradient(ellipse at 8% 90%, rgba(216, 178, 100, 0.06) 0%, transparent 42%);
+    background-size: 560px 560px, 620px 620px, 500px 500px, 100% 100%, 100% 100%;
+    opacity: 0.9;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 30% 30%, rgba(154, 111, 224, 0.75) 0 5px, transparent 6.5px),
+      radial-gradient(circle at 70% 70%, rgba(154, 111, 224, 0.55) 0 4px, transparent 5.5px),
+      radial-gradient(circle at 50% 50%, rgba(216, 178, 100, 0.8) 0 1.6px, transparent 2.6px);
+    background-size: 52px 52px, 52px 52px, 26px 26px;
+    background-position: 0 0, 26px 26px, 13px 13px;
+    opacity: 0.07;
+    animation: genshin-raiden-raiden-tomoe-drift 30s linear infinite;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: rgba(85, 54, 130, 0.32);
+    box-shadow: inset 3px 0 0 0 rgba(154, 111, 224, 0.9);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(154, 111, 224, 0.3), rgba(154, 111, 224, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--raiden-gold);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-genshin-raiden][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #6f45b8 0%, #9a6fe0 55%, #b08ce9 100%) !important;
+    border: 1px solid var(--raiden-gold) !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(154, 111, 224, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    text-shadow: 0 1px 2px rgba(40, 20, 70, 0.6);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-genshin-raiden][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    box-shadow: 0 3px 16px rgba(154, 111, 224, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: genshin-raiden-raiden-btn-thunder 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] pre,
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #161226 0%, #121020 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--raiden-gold) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 24px rgba(85, 54, 130, 0.35);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] pre code,
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #e2d9f2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] code,
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .markdown-body code {
+  background: rgba(85, 54, 130, 0.4);
+    color: #ddcdf9;
+    border: 1px solid rgba(154, 111, 224, 0.35);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(8, 6, 16, 0.5), 0 0 0 1px rgba(154, 111, 224, 0.15);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: #4a3a6e !important;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-genshin-raiden][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(216, 178, 100, 0.4);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9a6fe0, #3d2860);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #b08ce9, #553682);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-genshin-raiden][data-ds-dark-theme] a {
+  color: #c6abf2;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-genshin-raiden][data-ds-dark-theme] a:hover {
+  color: #ddcdf9;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--raiden-gold);
+    background: rgba(85, 54, 130, 0.22);
+    color: var(--text-secondary);
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-genshin-raiden][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(120deg, rgba(154, 111, 224, 0.6) 50%, transparent 50%),
+      linear-gradient(-60deg, rgba(216, 178, 100, 0.55) 50%, transparent 50%);
+    background-size: 16px 7px;
+    background-repeat: repeat-x;
+    background-position: 0 1px, 8px 1px;
+    opacity: 0.65;
+}
+
+body[data-dsh-genshin-raiden][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #ddcdf9 !important;
+    border-color: rgba(154, 111, 224, 0.55) !important;
+    background-color: rgba(154, 111, 224, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes genshin-raiden-raiden-tomoe-drift {
+  0% { background-position: 0 0, 26px 26px, 13px 13px; }
+  100% { background-position: 52px 52px, 78px 78px, 39px 39px; }
+}
+
+@keyframes genshin-raiden-raiden-electro-breathe {
+  0%, 100% { box-shadow: 0 2px 8px rgba(122, 79, 196, 0.15); }
+  50% { box-shadow: 0 2px 15px rgba(122, 79, 196, 0.32); }
+}
+
+@keyframes genshin-raiden-raiden-btn-thunder {
+  0%, 100% { box-shadow: 0 3px 12px rgba(122, 79, 196, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 3px 20px rgba(122, 79, 196, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.36); }
+}
+
+@keyframes genshin-raiden-raiden-slash-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

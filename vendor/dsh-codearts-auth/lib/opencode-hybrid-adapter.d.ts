@@ -1,0 +1,57 @@
+/**
+ * OpenCode 混合适配器：同一个 provider 下并列两条通道路由。
+ *
+ * ## 为什么需要它
+ *
+ * JetHub 的 `opencode` 槽位当前接的是**本机 OpenCode serve**（`OpencodeLocalAdapter`）：
+ * 请求交给本地 CLI 服务，模型目录也来自它。该通道在免费档上要过本地 CLI、
+ * 会话握手与工具回传，体感慢；而上游 2026-10-17 开放的
+ * `https://opencode.ai/inference` 直连入口（见 `opencode-inference.ts`）实测
+ * 单轮响应明显更快，且同样免 key。
+ *
+ * 用户要的是「在 OpenCode 这个选项里」用到快通道，而不是多一个供应商，
+ * 故这里做**按模型 id 分流**的包装：
+ *
+ * - `OPENCODE_INFERENCE_MODELS` 里的模型（deepseek-v4.1-flash-free 等）→ 直连 /inference；
+ * - 其余模型 → 原有本地服务通道，行为不变。
+ *
+ * 目录取两边并集；本地服务没起来时，快通道模型仍可见可用。
+ */
+import { LlmAdapter } from '@deepseek-ai/dsh-llm';
+import type { GenerateOptions, LlmModelInfo, LlmProviderInfo, LlmResolvedModelInfo, StreamChunk } from '@deepseek-ai/dsh-llm';
+import type { IdentitySlot } from './opencode-auth.js';
+import type { OpencodeAdapter, OpencodeAdapterOptions } from './opencode-adapter.js';
+import type { OpencodeLocalAdapter } from './opencode-local-adapter.js';
+/** 快通道的匿名槽（`Bearer public`，直连出口 IP 记账）。 */
+export declare function opencodeInferenceSlot(): IdentitySlot;
+/** 构造一个只走匿名快通道的 Zen 适配器实例。 */
+export declare function createOpencodeInferenceAdapter(options?: Pick<OpencodeAdapterOptions, 'readImage' | 'warn'>): OpencodeAdapter;
+export interface OpencodeHybridOptions {
+    disabledModels?: () => ReadonlySet<string>;
+}
+/**
+ * 混合适配器：快通道优先按模型分流，其余委托本地服务。
+ *
+ * ⚠️ `listAllModels()` 必须**同步**（Jet Hub 的 `ModelCatalogSource` 契约），
+ * 因此这里只读两个适配器的同步快照，不触发任何网络/进程操作。
+ */
+export declare class OpencodeHybridAdapter extends LlmAdapter {
+    private readonly local;
+    private readonly fast;
+    private readonly options;
+    constructor(local: OpencodeLocalAdapter, fast: OpencodeAdapter, options?: OpencodeHybridOptions);
+    /** 已有视觉型号整体保留原生通道；不能用 /zen 的视觉声明冒充快通道已验证。 */
+    private useFast;
+    providerInfo(provider: string): LlmProviderInfo;
+    listAllModels(): readonly {
+        id: string;
+        name: string;
+        isFree?: boolean;
+    }[];
+    listModels(provider: string): Promise<readonly LlmModelInfo[]>;
+    resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
+    prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<import("@deepseek-ai/dsh-llm").PreparedAdapterCall>;
+    handleRpc(method: string, payload: unknown): Promise<unknown | undefined>;
+    stream(options: GenerateOptions): AsyncIterable<StreamChunk>;
+}
+//# sourceMappingURL=opencode-hybrid-adapter.d.ts.map

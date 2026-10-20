@@ -1,0 +1,727 @@
+/* vscode-plus — Light+ | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-vscode-plus], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-vscode-plus] {
+  --dsw-font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1f1f1f;
+  background-color: #ffffff;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] {
+  color: #d4d4d4;
+  background-color: #1e1e1e;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-vscode-plus] {
+  --color-primary: #007acc;
+  --primary: #007acc;
+  --primary-rgb: 0, 122, 204;
+  --color-primary-light-1: #2b9ad8;
+  --color-primary-light-2: #6fb6e8;
+  --color-primary-light-3: #a9d4f4;
+  --color-primary-dark-1: #005a9e;
+  --brand: #007acc;
+  --brand-light: #e6f3fc;
+  --brand-hover: #0062a3;
+  --color-brand-fill: #007acc;
+  --color-brand-bg: #e6f3fc;
+  --aou-1: #e6f3fc;
+  --aou-2: #cde7f8;
+  --aou-3: #b0d9f3;
+  --aou-4: #8ac8ec;
+  --aou-5: #2b9ad8;
+  --aou-6: #007acc;
+  --aou-7: #0062a3;
+  --aou-8: #004a7a;
+  --aou-9: #003152;
+  --aou-10: #002033;
+  --bg-base: #ffffff;
+  --bg-1: #f3f3f3;
+  --bg-2: #ececec;
+  --bg-3: #e4e4e4;
+  --bg-4: #d8d8d8;
+  --bg-5: #c6c6c6;
+  --bg-6: #adadad;
+  --bg-8: #767676;
+  --bg-9: #4c4c4c;
+  --bg-10: #262626;
+  --color-bg-1: #f3f3f3;
+  --color-bg-2: #ececec;
+  --color-bg-3: #e4e4e4;
+  --color-bg-4: #d8d8d8;
+  --bg-hover: #e8e8e8;
+  --bg-active: #d6ebfa;
+  --text-primary: #1f1f1f;
+  --text-secondary: #616161;
+  --text-disabled: #a6a6a6;
+  --text-0: #000000;
+  --text-white: #ffffff;
+  --color-text-1: #1f1f1f;
+  --color-text-2: #616161;
+  --color-text-3: #8a8a8a;
+  --color-text-4: #a6a6a6;
+  --border-base: #d4d4d4;
+  --border-light: #e4e4e4;
+  --border-special: #007acc;
+  --color-border: #d4d4d4;
+  --color-border-1: #d4d4d4;
+  --color-border-2: #e4e4e4;
+  --fill: #ececec;
+  --color-fill: #ececec;
+  --fill-0: #ffffff;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #ffffff;
+  --inverse: #1f1f1f;
+  --success: #008000;
+  --warning: #bf8803;
+  --danger: #e51400;
+  --info: #0451a5;
+  --message-user-bg: #007acc;
+  --message-tips-bg: #f3f3f3;
+  --workspace-btn-bg: #e6f3fc;
+  --color-guid-agent-bar: #f8f8f8;
+  --vsc-blue: #007acc;
+  --vsc-blue-dark: #005a9e;
+  --vsc-button: #007acc;
+  --vsc-button-hover: #0062a3;
+  --vsc-editor: #ffffff;
+  --vsc-gutter: #f5f5f5;
+  --vsc-titlebar: #dddddd;
+  --vsc-input: #ffffff;
+  --vsc-kw: #0000ff;
+  --vsc-str: #a31515;
+  --vsc-com: #008000;
+  --vsc-fn: #795e26;
+  --vsc-type: #267f99;
+  --vsc-var: #001080;
+  --vsc-num: #098658;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-vscode-plus][data-ds-dark-theme] {
+  --color-primary: #007acc;
+  --primary: #007acc;
+  --primary-rgb: 0, 122, 204;
+  --color-primary-light-1: #3794ff;
+  --color-primary-light-2: #6fb6ff;
+  --color-primary-light-3: #a9d4ff;
+  --color-primary-dark-1: #005a9e;
+  --brand: #007acc;
+  --brand-light: #062f4a;
+  --brand-hover: #3794ff;
+  --color-brand-fill: #007acc;
+  --color-brand-bg: #062f4a;
+  --aou-1: #002033;
+  --aou-2: #003152;
+  --aou-3: #004a7a;
+  --aou-4: #0062a3;
+  --aou-5: #007acc;
+  --aou-6: #2b9ad8;
+  --aou-7: #5cb3e3;
+  --aou-8: #8ac8ec;
+  --aou-9: #b0d9f3;
+  --aou-10: #cde7f8;
+  --bg-base: #1e1e1e;
+  --bg-1: #252526;
+  --bg-2: #2d2d30;
+  --bg-3: #333333;
+  --bg-4: #3e3e42;
+  --bg-5: #4a4a4e;
+  --bg-6: #5a5a5e;
+  --bg-8: #8a8a8e;
+  --bg-9: #b8b8bc;
+  --bg-10: #e8e8e8;
+  --color-bg-1: #252526;
+  --color-bg-2: #2d2d30;
+  --color-bg-3: #333333;
+  --color-bg-4: #3e3e42;
+  --bg-hover: #2a2d2e;
+  --bg-active: #094771;
+  --text-primary: #d4d4d4;
+  --text-secondary: #9d9d9d;
+  --text-disabled: #5a5a5a;
+  --text-0: #eeeeee;
+  --text-white: #ffffff;
+  --color-text-1: #d4d4d4;
+  --color-text-2: #9d9d9d;
+  --color-text-3: #858585;
+  --color-text-4: #5a5a5a;
+  --border-base: #3e3e42;
+  --border-light: #2d2d30;
+  --border-special: #007acc;
+  --color-border: #3e3e42;
+  --color-border-1: #3e3e42;
+  --color-border-2: #2d2d30;
+  --fill: #2d2d30;
+  --color-fill: #2d2d30;
+  --fill-0: #252526;
+  --fill-white-to-black: #1b1b1b;
+  --dialog-fill-0: #2d2d30;
+  --inverse: #d4d4d4;
+  --success: #89d185;
+  --warning: #cca700;
+  --danger: #f14c4c;
+  --info: #3794ff;
+  --message-user-bg: #0e639c;
+  --message-tips-bg: #2d2d30;
+  --workspace-btn-bg: #062f4a;
+  --color-guid-agent-bar: #252526;
+  --vsc-blue: #007acc;
+  --vsc-blue-bright: #3794ff;
+  --vsc-button: #0e639c;
+  --vsc-button-hover: #1177bb;
+  --vsc-editor: #1e1e1e;
+  --vsc-gutter: #1b1b1b;
+  --vsc-titlebar: #3c3c3c;
+  --vsc-input: #3c3c3c;
+  --vsc-kw: #569cd6;
+  --vsc-str: #ce9178;
+  --vsc-com: #6a9955;
+  --vsc-fn: #dcdcaa;
+  --vsc-type: #4ec9b0;
+  --vsc-var: #9cdcfe;
+  --vsc-num: #b5cea8;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-vscode-plus] {
+  --dsw-static-deepseek-50: #e6f3fc;
+  --dsw-static-blue-50: #e6f3fc;
+  --dsw-static-deepseek-50p: #cde7f8;
+  --dsw-static-blue-50p: #cde7f8;
+  --dsw-static-deepseek-75: #cde7f8;
+  --dsw-static-blue-75: #cde7f8;
+  --dsw-static-deepseek-100: #cde7f8;
+  --dsw-static-blue-100: #cde7f8;
+  --dsw-static-deepseek-200: #b0d9f3;
+  --dsw-static-blue-200: #b0d9f3;
+  --dsw-static-deepseek-300: #8ac8ec;
+  --dsw-static-blue-300: #8ac8ec;
+  --dsw-static-deepseek-400: #2b9ad8;
+  --dsw-static-blue-400: #2b9ad8;
+  --dsw-static-deepseek-450: #2b9ad8;
+  --dsw-static-blue-450: #2b9ad8;
+  --dsw-static-deepseek-500: #007acc;
+  --dsw-static-blue-500: #007acc;
+  --dsw-static-deepseek-600: #0062a3;
+  --dsw-static-blue-600: #0062a3;
+  --dsw-static-deepseek-700-delete: #004a7a;
+  --dsw-static-deepseek-800: #004a7a;
+  --dsw-static-blue-800: #004a7a;
+  --dsw-static-deepseek-900: #003152;
+  --dsw-static-blue-900: #003152;
+  --dsw-static-deepseek-950: #002033;
+  --dsw-static-blue-950: #002033;
+  --dsw-static-neutral-bluish-00: #ffffff;
+  --dsw-static-neutral-00: #ffffff;
+  --dsw-static-neutral-bluish-50: #f3f3f3;
+  --dsw-static-neutral-50: #f3f3f3;
+  --dsw-static-neutral-bluish-60: #f3f3f3;
+  --dsw-static-neutral-60: #f3f3f3;
+  --dsw-static-neutral-bluish-75: #ececec;
+  --dsw-static-neutral-75: #ececec;
+  --dsw-static-neutral-bluish-100: #ececec;
+  --dsw-static-neutral-100: #ececec;
+  --dsw-static-neutral-bluish-150: #e4e4e4;
+  --dsw-static-neutral-150: #e4e4e4;
+  --dsw-static-neutral-bluish-200: #e4e4e4;
+  --dsw-static-neutral-200: #e4e4e4;
+  --dsw-static-neutral-bluish-250: #d8d8d8;
+  --dsw-static-neutral-250: #d8d8d8;
+  --dsw-static-neutral-bluish-300: #d8d8d8;
+  --dsw-static-neutral-300: #d8d8d8;
+  --dsw-static-neutral-bluish-400: #c6c6c6;
+  --dsw-static-neutral-400: #c6c6c6;
+  --dsw-static-neutral-bluish-500: #adadad;
+  --dsw-static-neutral-500: #adadad;
+  --dsw-static-neutral-bluish-550: #adadad;
+  --dsw-static-neutral-550: #adadad;
+  --dsw-static-neutral-bluish-600: #767676;
+  --dsw-static-neutral-600: #767676;
+  --dsw-static-neutral-bluish-700: #767676;
+  --dsw-static-neutral-700: #767676;
+  --dsw-static-neutral-bluish-750: #4c4c4c;
+  --dsw-static-neutral-750: #4c4c4c;
+  --dsw-static-neutral-bluish-800: #4c4c4c;
+  --dsw-static-neutral-800: #4c4c4c;
+  --dsw-static-neutral-bluish-850: #4c4c4c;
+  --dsw-static-neutral-850: #4c4c4c;
+  --dsw-static-neutral-bluish-875: #262626;
+  --dsw-static-neutral-875: #262626;
+  --dsw-static-neutral-bluish-900: #262626;
+  --dsw-static-neutral-900: #262626;
+  --dsw-static-neutral-bluish-950: #262626;
+  --dsw-static-neutral-950: #262626;
+  --dsw-static-neutral-bluish-1000: #1f1f1f;
+  --dsw-static-neutral-1000: #1f1f1f;
+  --dsw-static-green-50: color-mix(in srgb, #008000 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #008000 20%, white);
+  --dsw-static-green-400: #008000;
+  --dsw-static-green-500: #008000;
+  --dsw-static-green-600: color-mix(in srgb, #008000 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #008000 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #bf8803 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #bf8803 20%, white);
+  --dsw-static-amber-400: #bf8803;
+  --dsw-static-amber-500: #bf8803;
+  --dsw-static-amber-600: color-mix(in srgb, #bf8803 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #bf8803 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e51400 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e51400 20%, white);
+  --dsw-static-red-400: #e51400;
+  --dsw-static-red-500: #e51400;
+  --dsw-static-red-600: color-mix(in srgb, #e51400 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e51400 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-vscode-plus][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #002033;
+  --dsw-static-blue-50: #002033;
+  --dsw-static-deepseek-50p: #003152;
+  --dsw-static-blue-50p: #003152;
+  --dsw-static-deepseek-75: #003152;
+  --dsw-static-blue-75: #003152;
+  --dsw-static-deepseek-100: #003152;
+  --dsw-static-blue-100: #003152;
+  --dsw-static-deepseek-200: #004a7a;
+  --dsw-static-blue-200: #004a7a;
+  --dsw-static-deepseek-300: #0062a3;
+  --dsw-static-blue-300: #0062a3;
+  --dsw-static-deepseek-400: #007acc;
+  --dsw-static-blue-400: #007acc;
+  --dsw-static-deepseek-450: #007acc;
+  --dsw-static-blue-450: #007acc;
+  --dsw-static-deepseek-500: #2b9ad8;
+  --dsw-static-blue-500: #2b9ad8;
+  --dsw-static-deepseek-600: #5cb3e3;
+  --dsw-static-blue-600: #5cb3e3;
+  --dsw-static-deepseek-700-delete: #8ac8ec;
+  --dsw-static-deepseek-800: #8ac8ec;
+  --dsw-static-blue-800: #8ac8ec;
+  --dsw-static-deepseek-900: #b0d9f3;
+  --dsw-static-blue-900: #b0d9f3;
+  --dsw-static-deepseek-950: #cde7f8;
+  --dsw-static-blue-950: #cde7f8;
+  --dsw-static-neutral-bluish-00: #252526;
+  --dsw-static-neutral-00: #252526;
+  --dsw-static-neutral-bluish-50: #252526;
+  --dsw-static-neutral-50: #252526;
+  --dsw-static-neutral-bluish-60: #252526;
+  --dsw-static-neutral-60: #252526;
+  --dsw-static-neutral-bluish-75: #2d2d30;
+  --dsw-static-neutral-75: #2d2d30;
+  --dsw-static-neutral-bluish-100: #2d2d30;
+  --dsw-static-neutral-100: #2d2d30;
+  --dsw-static-neutral-bluish-150: #333333;
+  --dsw-static-neutral-150: #333333;
+  --dsw-static-neutral-bluish-200: #333333;
+  --dsw-static-neutral-200: #333333;
+  --dsw-static-neutral-bluish-250: #3e3e42;
+  --dsw-static-neutral-250: #3e3e42;
+  --dsw-static-neutral-bluish-300: #3e3e42;
+  --dsw-static-neutral-300: #3e3e42;
+  --dsw-static-neutral-bluish-400: #4a4a4e;
+  --dsw-static-neutral-400: #4a4a4e;
+  --dsw-static-neutral-bluish-500: #5a5a5e;
+  --dsw-static-neutral-500: #5a5a5e;
+  --dsw-static-neutral-bluish-550: #5a5a5e;
+  --dsw-static-neutral-550: #5a5a5e;
+  --dsw-static-neutral-bluish-600: #8a8a8e;
+  --dsw-static-neutral-600: #8a8a8e;
+  --dsw-static-neutral-bluish-700: #8a8a8e;
+  --dsw-static-neutral-700: #8a8a8e;
+  --dsw-static-neutral-bluish-750: #b8b8bc;
+  --dsw-static-neutral-750: #b8b8bc;
+  --dsw-static-neutral-bluish-800: #b8b8bc;
+  --dsw-static-neutral-800: #b8b8bc;
+  --dsw-static-neutral-bluish-850: #b8b8bc;
+  --dsw-static-neutral-850: #b8b8bc;
+  --dsw-static-neutral-bluish-875: #e8e8e8;
+  --dsw-static-neutral-875: #e8e8e8;
+  --dsw-static-neutral-bluish-900: #e8e8e8;
+  --dsw-static-neutral-900: #e8e8e8;
+  --dsw-static-neutral-bluish-950: #e8e8e8;
+  --dsw-static-neutral-950: #e8e8e8;
+  --dsw-static-neutral-bluish-1000: #d4d4d4;
+  --dsw-static-neutral-1000: #d4d4d4;
+  --dsw-static-green-50: color-mix(in srgb, #89d185 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #89d185 20%, black);
+  --dsw-static-green-400: #89d185;
+  --dsw-static-green-500: #89d185;
+  --dsw-static-green-600: color-mix(in srgb, #89d185 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #89d185 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #cca700 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #cca700 20%, black);
+  --dsw-static-amber-400: #cca700;
+  --dsw-static-amber-500: #cca700;
+  --dsw-static-amber-600: color-mix(in srgb, #cca700 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #cca700 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #f14c4c 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #f14c4c 20%, black);
+  --dsw-static-red-400: #f14c4c;
+  --dsw-static-red-500: #f14c4c;
+  --dsw-static-red-600: color-mix(in srgb, #f14c4c 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #f14c4c 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-vscode-plus] {
+  --dsw-alias-button-primary-fill: #007acc;
+  --dsw-alias-button-primary-hover: #0062a3;
+  --dsw-alias-button-primary-dimmed: #cde7f8;
+  --dsw-alias-button-info-fill: #007acc;
+  --dsw-alias-button-info-hover: #0062a3;
+  --dsw-alias-button-contrast-fill: #0062a3;
+  --dsw-alias-button-ghost-active-fill: #e6f3fc;
+  --dsw-alias-button-ghost-active-hover: #cde7f8;
+  --dsw-alias-button-ghost-active-border: #8ac8ec;
+  --dsw-alias-button-elevated-fill: #ffffff;
+  --dsw-alias-button-floating-fill: #ffffff;
+  --dsw-alias-button-floating-hover: #e8e8e8;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(0, 122, 204, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(0, 122, 204, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(0, 122, 204, 0.6);
+  --dsw-specific-bubble: #007acc;
+  --dsw-specific-bubble-highlight: #b0d9f3;
+  --dsw-specific-input-major: #ffffff;
+  --dsw-specific-login-input: #ffffff;
+  --dsw-specific-sidebar-fill: #007acc;
+  --dsw-specific-sidebar-nav-item-active: #cde7f8;
+  --dsw-specific-sidebar-nav-item-hover: #e8e8e8;
+  --dsw-specific-sidebar-nav-item-active-accent: #8ac8ec;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-vscode-plus][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #007acc;
+  --dsw-alias-button-primary-hover: #3794ff;
+  --dsw-alias-button-primary-dimmed: #003152;
+  --dsw-alias-button-info-fill: #007acc;
+  --dsw-alias-button-info-hover: #3794ff;
+  --dsw-alias-button-contrast-fill: #5cb3e3;
+  --dsw-alias-button-ghost-active-fill: #062f4a;
+  --dsw-alias-button-ghost-active-hover: #003152;
+  --dsw-alias-button-ghost-active-border: #0062a3;
+  --dsw-alias-button-elevated-fill: #252526;
+  --dsw-alias-button-floating-fill: #252526;
+  --dsw-alias-button-floating-hover: #2a2d2e;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(0, 122, 204, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(0, 122, 204, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(0, 122, 204, 0.6);
+  --dsw-specific-bubble: #0e639c;
+  --dsw-specific-bubble-highlight: #004a7a;
+  --dsw-specific-input-major: #252526;
+  --dsw-specific-login-input: #252526;
+  --dsw-specific-sidebar-fill: #007acc;
+  --dsw-specific-sidebar-nav-item-active: #003152;
+  --dsw-specific-sidebar-nav-item-hover: #2a2d2e;
+  --dsw-specific-sidebar-nav-item-active-accent: #0062a3;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-vscode-plus] {
+  background-color: var(--bg-base) !important;
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-vscode-plus]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+    background-image:
+      linear-gradient(90deg, transparent 0 47px, rgba(0, 0, 0, 0.12) 47px 48px, transparent 48px),
+      repeating-linear-gradient(0deg, transparent 0 20px, rgba(0, 0, 0, 0.03) 20px 21px);
+}
+
+body[data-dsh-vscode-plus]::after {
+  content: '';
+    position: fixed;
+    inset: -60px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      repeating-linear-gradient(0deg, var(--vsc-kw) 0 3px, transparent 3px 22px),
+      repeating-linear-gradient(0deg, transparent 0 9px, var(--vsc-str) 9px 12px, transparent 12px 31px),
+      repeating-linear-gradient(0deg, transparent 0 4px, var(--vsc-com) 4px 6px, transparent 6px 26px),
+      repeating-linear-gradient(0deg, transparent 0 15px, var(--vsc-fn) 15px 18px, transparent 18px 40px);
+    background-size: 14px 100vh, 26px 100vh, 40px 100vh, 56px 100vh;
+    background-position: right 10px top, right 26px top, right 44px top, right 10px top;
+    background-repeat: repeat-y;
+    animation: vscode-plus-vsc-minimap-drift 14s linear infinite alternate;
+}
+
+body[data-dsh-vscode-plus] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body[data-dsh-vscode-plus] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--vsc-blue);
+}
+
+body[data-dsh-vscode-plus] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-vscode-plus] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--vsc-blue-dark);
+    font-weight: 600;
+}
+
+body[data-dsh-vscode-plus] button[class*='primary'],
+body[data-dsh-vscode-plus] button[class*='primary']:not(.arco-btn-disabled) {
+  position: relative;
+    background: linear-gradient(180deg, #1a8ad4 0%, var(--vsc-button) 100%) !important;
+    border: 1px solid var(--vsc-blue-dark) !important;
+    border-radius: 3px !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-shadow: 0 1px 0 rgba(0, 60, 100, 0.4);
+    box-shadow: 0 1px 4px rgba(0, 90, 158, 0.3);
+    transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+body[data-dsh-vscode-plus] button[class*='primary']:hover,
+body[data-dsh-vscode-plus] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 122, 204, 0.35), 0 0 8px rgba(0, 122, 204, 0.25);
+}
+
+body[data-dsh-vscode-plus] button[class*='primary']:active,
+body[data-dsh-vscode-plus] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(0);
+    filter: brightness(0.94);
+    box-shadow: 0 1px 3px rgba(0, 90, 158, 0.28);
+}
+
+body[data-dsh-vscode-plus] pre,
+body[data-dsh-vscode-plus] .markdown-body pre {
+  background-image:
+      repeating-linear-gradient(0deg, transparent 0 20px, rgba(0, 0, 0, 0.04) 20px 21px),
+      linear-gradient(90deg, var(--vsc-gutter) 0 44px, #fbfbfb 44px) !important;
+    background-color: #fbfbfb !important;
+    border: 1px solid var(--border-base) !important;
+    border-top: 2px solid var(--vsc-blue) !important;
+    border-radius: 4px !important;
+    padding-left: 56px !important;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+body[data-dsh-vscode-plus] pre code,
+body[data-dsh-vscode-plus] .markdown-body pre code {
+  background: transparent !important;
+    color: #1f1f1f !important;
+    text-shadow: none;
+}
+
+body[data-dsh-vscode-plus] code,
+body[data-dsh-vscode-plus] .markdown-body code {
+  background-color: rgba(163, 21, 21, 0.06);
+    color: var(--vsc-str);
+    border: 1px solid rgba(163, 21, 21, 0.22);
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-vscode-plus] pre code,
+body[data-dsh-vscode-plus] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-vscode-plus] .markdown-body blockquote {
+  background-color: rgba(0, 128, 0, 0.06);
+    border-left: 3px solid var(--vsc-com);
+    border-radius: 0 4px 4px 0;
+}
+
+body[data-dsh-vscode-plus]::selection {
+  background: color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
+body[data-dsh-vscode-plus]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-vscode-plus]::-webkit-scrollbar-thumb {
+  background: #c2c2c2;
+    border-radius: 5px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-vscode-plus]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2b9ad8, var(--vsc-blue));
+}
+
+body[data-dsh-vscode-plus]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-vscode-plus][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+    background-image:
+      linear-gradient(90deg, transparent 0 47px, rgba(133, 133, 133, 0.28) 47px 48px, transparent 48px),
+      repeating-linear-gradient(0deg, transparent 0 20px, rgba(133, 133, 133, 0.05) 20px 21px);
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: -60px 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.12;
+    background-image:
+      repeating-linear-gradient(0deg, var(--vsc-kw) 0 3px, transparent 3px 22px),
+      repeating-linear-gradient(0deg, transparent 0 9px, var(--vsc-str) 9px 12px, transparent 12px 31px),
+      repeating-linear-gradient(0deg, transparent 0 4px, var(--vsc-com) 4px 6px, transparent 6px 26px),
+      repeating-linear-gradient(0deg, transparent 0 15px, var(--vsc-fn) 15px 18px, transparent 18px 40px);
+    background-size: 14px 100vh, 26px 100vh, 40px 100vh, 56px 100vh;
+    background-position: right 10px top, right 26px top, right 44px top, right 10px top;
+    background-repeat: repeat-y;
+    animation: vscode-plus-vsc-minimap-drift 14s linear infinite alternate;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 4px;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--vsc-blue-bright);
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-vscode-plus][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background-color: var(--bg-active) !important;
+    box-shadow: inset 3px 0 0 0 var(--vsc-blue);
+    font-weight: 600;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-vscode-plus][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  position: relative;
+    background: linear-gradient(180deg, var(--vsc-button-hover) 0%, var(--vsc-button) 100%) !important;
+    border: 1px solid var(--vsc-blue) !important;
+    border-radius: 3px !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+    box-shadow: 0 1px 4px rgba(0, 90, 158, 0.4);
+    transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-vscode-plus][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.12);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(0, 122, 204, 0.45), 0 0 8px rgba(55, 148, 255, 0.35);
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] button[class*='primary']:active,
+body[data-dsh-vscode-plus][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):active {
+  transform: translateY(0);
+    filter: brightness(0.95);
+    box-shadow: 0 1px 3px rgba(0, 90, 158, 0.35);
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] pre,
+body[data-dsh-vscode-plus][data-ds-dark-theme] .markdown-body pre {
+  background-image:
+      repeating-linear-gradient(0deg, transparent 0 20px, rgba(133, 133, 133, 0.1) 20px 21px),
+      linear-gradient(90deg, var(--vsc-gutter) 0 44px, var(--vsc-editor) 44px) !important;
+    background-color: var(--vsc-editor) !important;
+    border: 1px solid var(--border-base) !important;
+    border-top: 2px solid var(--vsc-blue) !important;
+    border-radius: 4px !important;
+    padding-left: 56px !important;
+    box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] pre code,
+body[data-dsh-vscode-plus][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #d4d4d4 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] code,
+body[data-dsh-vscode-plus][data-ds-dark-theme] .markdown-body code {
+  background-color: rgba(86, 156, 214, 0.12);
+    color: var(--vsc-var);
+    border: 1px solid rgba(86, 156, 214, 0.3);
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] pre code,
+body[data-dsh-vscode-plus][data-ds-dark-theme] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme] .markdown-body blockquote {
+  background-color: rgba(106, 153, 85, 0.1);
+    border-left: 3px solid var(--vsc-com);
+    border-radius: 0 4px 4px 0;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: #424242;
+    border-radius: 5px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--vsc-blue-bright), var(--vsc-blue));
+}
+
+body[data-dsh-vscode-plus][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes vscode-plus-vsc-minimap-drift {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(40px); }
+}
+
+@keyframes vscode-plus-vsc-titlebar-shine {
+  0% { left: -30%; }
+  60% { left: 110%; }
+  100% { left: 110%; }
+}
+
+@keyframes vscode-plus-vsc-intellisense-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

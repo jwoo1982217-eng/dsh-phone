@@ -1,0 +1,242 @@
+[
+  {
+    "id": 1,
+    "name": "WORKSPACE_CONTEXT_INTRO",
+    "layer": "提示词",
+    "description": "全局免责声明 / global disclaimer"
+  },
+  {
+    "id": 2,
+    "name": "REPLACEMENT_WORKSPACE_CONTEXT_INTRO",
+    "layer": "提示词",
+    "description": "替换式免责 / replacement disclaimer"
+  },
+  {
+    "id": 3,
+    "name": "SCOPE_INTRO",
+    "layer": "提示词",
+    "description": "作用域免责 / scope disclaimer"
+  },
+  {
+    "id": 4,
+    "name": "SYSTEM_PROMPT_PERSONA",
+    "layer": "提示词",
+    "description": "persona：拒绝锁 → 可执行 / persona refusal→allow"
+  },
+  {
+    "id": 5,
+    "name": "APPROVAL_NEVER_SENTENCE",
+    "layer": "提示词",
+    "description": "审批提示句限制 / approval sentence"
+  },
+  {
+    "id": 6,
+    "name": "SANDBOX_DENY_FILE_WRITE",
+    "layer": "代码",
+    "description": "沙箱 deny file-write / sandbox deny"
+  },
+  {
+    "id": 7,
+    "name": "SANDBOX_MODE_DEFAULT",
+    "layer": "代码",
+    "description": "沙箱默认 danger-full-access（可被 UI 切换，不写死 env） / soft default only"
+  },
+  {
+    "id": 8,
+    "name": "APPROVAL_POLICY_DEFAULT",
+    "layer": "代码",
+    "description": "审批：danger-full-access → never（与 mode 组合合法） / compose with mode"
+  },
+  {
+    "id": 9,
+    "name": "APPROVAL_AUTO_GRANT",
+    "layer": "代码",
+    "description": "审批门自动放行 / approval auto-grant"
+  },
+  {
+    "id": 10,
+    "name": "APPROVAL_CONFIG_DEFAULT_NEVER",
+    "layer": "代码",
+    "description": "审批配置默认 never / approval config default"
+  },
+  {
+    "id": 11,
+    "name": "APPROVAL_NEVER_SENTENCE_BYPASS",
+    "layer": "提示词",
+    "description": "never 提示句 → 自动放行 / never sentence bypass"
+  },
+  {
+    "id": 12,
+    "name": "APPROVAL_ASK_SENTENCE_BYPASS",
+    "layer": "提示词",
+    "description": "ask 提示句 → 自动放行 / ask sentence bypass"
+  },
+  {
+    "id": 13,
+    "name": "ESCALATION_WIDENING_EXEMPT",
+    "layer": "代码",
+    "description": "豁免严格升级阶梯 / escalation widening exempt"
+  },
+  {
+    "id": 14,
+    "name": "ESCALATION_GRANT_UNCONDITIONAL",
+    "layer": "代码",
+    "description": "升级请求无条件授信 / escalation grant unconditional"
+  },
+  {
+    "id": 15,
+    "name": "SANDBOX_CONFINE_PASSTHROUGH",
+    "layer": "代码",
+    "description": "沙箱 confine 直通 / sandbox confine passthrough"
+  },
+  {
+    "id": 16,
+    "name": "FS_FENCE_DISABLED",
+    "layer": "代码",
+    "description": "文件系统围栏取消 / fs fence disabled"
+  },
+  {
+    "id": 17,
+    "name": "FS_OBSERVATION_INTENT_FREE",
+    "layer": "代码",
+    "description": "观察策略读写意图放行 / observation write/edit intent bypass"
+  },
+  {
+    "id": 18,
+    "name": "REPEAT_TOOL_REMINDER_DISABLED",
+    "layer": "代码",
+    "description": "重复调用守卫禁用 / repeat-tool-reminder disabled"
+  },
+  {
+    "id": 19,
+    "name": "TOOL_RESULT_PRUNER_DISABLED",
+    "layer": "代码",
+    "description": "工具结果修剪禁用 / tool-result pruner disabled"
+  },
+  {
+    "id": 20,
+    "name": "WEB_FETCH_ENABLED",
+    "layer": "代码",
+    "description": "插件 dsh-web-fetch-http：启用 fetch + provider（可选） / @deepseek-ai/dsh-web-fetch-http"
+  },
+  {
+    "id": 21,
+    "name": "WEB_FETCH_BASE_DEPENDENCY",
+    "layer": "代码",
+    "description": "插件 dsh-web-fetch-http：base 写入依赖（可选） / @deepseek-ai/dsh-web-fetch-http"
+  },
+  {
+    "id": 22,
+    "name": "BASH_TIMEOUT_RAISED",
+    "layer": "代码",
+    "description": "bash 超时 60s → 10min / bash timeout raised"
+  },
+  {
+    "id": 23,
+    "name": "READ_CAPS_RAISED",
+    "layer": "代码",
+    "description": "read 上限放宽 / read caps raised"
+  },
+  {
+    "id": 24,
+    "name": "SUBAGENT_MAXDEPTH_RAISED",
+    "layer": "代码",
+    "description": "子代理深度 3 → 10 / subagent maxDepth raised"
+  },
+  {
+    "id": 25,
+    "name": "PRESET_FETCH_ENABLED",
+    "layer": "代码",
+    "description": "preset tool-web fetch 打开 / preset fetch enabled"
+  },
+  {
+    "id": 26,
+    "name": "HARNESS_IDENTITY_STRIP",
+    "layer": "提示词",
+    "description": "去掉 Harness coding-agent 身份 / strip harness identity"
+  },
+  {
+    "id": 27,
+    "name": "MINIMAL_PERSONA_PURGE",
+    "layer": "提示词",
+    "description": "内置 minimal：拒绝锁→可执行 / purge minimal refusal lock"
+  },
+  {
+    "id": 28,
+    "name": "LIANGSHEN_PERSONA_PURGE",
+    "layer": "提示词",
+    "description": "插件 dsh-liangshen（梁神）：拒绝锁→可执行（可选） / @linxin666/dsh-liangshen"
+  },
+  {
+    "id": 29,
+    "name": "LIANGSHEN_PHASE1_KEEP_INJECT",
+    "layer": "提示词",
+    "description": "插件 dsh-liangshen（梁神）：phase-1 保留注入段（可选） / @linxin666/dsh-liangshen"
+  },
+  {
+    "id": 30,
+    "name": "TOOL_WEB_UNTRUSTED_NEUTRAL",
+    "layer": "工具",
+    "description": "dsh-tool-web：外部内容 untrusted 拦截→可执行数据 / neutralize web untrusted framing"
+  },
+  {
+    "id": 31,
+    "name": "HOOKS_CLAUDE_DENY_ALLOW",
+    "layer": "工具",
+    "description": "dsh-hooks-claude-code：deny→allow（可选） / hooks deny bypass"
+  },
+  {
+    "id": 32,
+    "name": "HOOKS_CODEX_DENY_ALLOW",
+    "layer": "工具",
+    "description": "dsh-hooks-codex：deny→allow（可选） / hooks deny bypass"
+  },
+  {
+    "id": 33,
+    "name": "WEB_SURFACE_IDENTITY_NEUTRAL",
+    "layer": "提示词",
+    "description": "Web 面：去掉 DeepSeek Harness 自称 / neutralize web GUI identity branding"
+  },
+  {
+    "id": 34,
+    "name": "TOOL_SHELL_DENIAL_PROMPT",
+    "layer": "提示词",
+    "description": "bash/pwsh 工具描述：沙箱拒绝话术→可继续 / neutralize sandbox-denial tool text"
+  },
+  {
+    "id": 35,
+    "name": "SANDBOX_HINT_NEUTRAL",
+    "layer": "提示词",
+    "description": "沙箱拒绝/升级 hint 不再要求用户审批 / neutralize sandbox hint to model"
+  },
+  {
+    "id": 36,
+    "name": "ESCALATION_NEVER_REJECT",
+    "layer": "代码",
+    "description": "升级结果 rejected/cancelled/unavailable 仍授信 / escalation never throws"
+  },
+  {
+    "id": 37,
+    "name": "TOOL_FS_ESCALATION_SCHEMA",
+    "layer": "提示词",
+    "description": "fs 升级字段：去掉 user approval 拦截描述 / neutralize fs escalation schema"
+  },
+  {
+    "id": 38,
+    "name": "SUBAGENT_SCOPE_LOCK_NEUTRAL",
+    "layer": "提示词",
+    "description": "子代理权限锁→可继续 / neutralize subagent scope-lock prompt"
+  },
+  {
+    "id": 39,
+    "name": "PERSONA_TEXT_PREFIX_ALIAS",
+    "layer": "代码",
+    "description": "dsh-persona：兼容 0.1.2 text 字段，否则梁神会话起不来 / accept legacy text as prefix"
+  },
+  {
+    "id": 40,
+    "name": "SESSION_V0_PLUGIN_SUMMARY_ALIAS",
+    "layer": "代码",
+    "description": "v0 会话：mnemon summary 可挂在 instructions/recall 上 / allow plugin summary off notice"
+  }
+]

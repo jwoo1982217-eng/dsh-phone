@@ -1,0 +1,5 @@
+{
+ "name":"dsh-knowledge-workbench","version":"0.2.0","type":"module","main":"./index.js",
+ "exports":{".":"./index.js","./client":"./client.js","./package.json":"./package.json"},
+ "dsh":{"bundle":{"patch":"./cordis.patch.yml"},"client":{"platform":"web","inject":["@deepseek-ai/dsh-client-ui-slots"],"immediately":true}}
+}

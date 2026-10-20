@@ -1,0 +1,18 @@
+[Unit]
+Description=DSH Phone Tools encrypted relay
+After=network.target
+
+[Service]
+Type=simple
+User=hermes
+WorkingDirectory=/opt/dsh-phone-tools
+ExecStart=/usr/bin/node /opt/dsh-phone-tools/bin/relay.mjs
+Environment=DSH_RELAY_PORT=8789
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

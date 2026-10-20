@@ -1,0 +1,802 @@
+/* style-morandi — 莫兰迪 Morandi | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-style-morandi], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-style-morandi] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #3A352F;
+  background-color: #EFEBE3;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] {
+  color: #EDE6DB;
+  background-color: #232019;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-style-morandi] {
+  --color-primary: #9C7A72;
+  --primary: #9C7A72;
+  --primary-rgb: 156, 122, 114;
+  --color-primary-light-1: #B08D84;
+  --color-primary-light-2: #C7A49C;
+  --color-primary-light-3: #DCBCB4;
+  --color-primary-dark-1: #7D615A;
+  --brand: #9C7A72;
+  --brand-light: #EDE0DB;
+  --brand-hover: #8A6A62;
+  --color-brand-fill: #9C7A72;
+  --color-brand-bg: #EDE0DB;
+  --aou-1: #F0E6E1;
+  --aou-2: #E6D6D0;
+  --aou-3: #DBC3BC;
+  --aou-4: #CDACA3;
+  --aou-5: #BF988E;
+  --aou-6: #B08D84;
+  --aou-7: #9C7A72;
+  --aou-8: #8A6A62;
+  --aou-9: #7D615A;
+  --aou-10: #5F4A44;
+  --bg-base: #EFEBE3;
+  --bg-1: #E7E1D6;
+  --bg-2: #DED7CA;
+  --bg-3: #D4CCBE;
+  --bg-4: #C9C0B1;
+  --bg-5: #B4AA9B;
+  --bg-6: #9C927F;
+  --bg-8: #6E665A;
+  --bg-9: #4A443B;
+  --bg-10: #2B2721;
+  --color-bg-1: #E7E1D6;
+  --color-bg-2: #DED7CA;
+  --color-bg-3: #D4CCBE;
+  --color-bg-4: #C9C0B1;
+  --bg-hover: #E0D9CC;
+  --bg-active: #D4CCBE;
+  --text-primary: #3A352F;
+  --text-secondary: #6E665A;
+  --text-disabled: #ABA192;
+  --text-0: #2B2721;
+  --text-white: #FBF8F2;
+  --color-text-1: #3A352F;
+  --color-text-2: #6E665A;
+  --color-text-3: #8B8272;
+  --color-text-4: #ABA192;
+  --border-base: #D4CCBE;
+  --border-light: #E0D9CC;
+  --border-special: #C7A49C;
+  --color-border: #D4CCBE;
+  --color-border-1: #D4CCBE;
+  --color-border-2: #E0D9CC;
+  --fill: #E3DCD0;
+  --color-fill: #E3DCD0;
+  --fill-0: #E9E3D8;
+  --fill-white-to-black: #FBF8F2;
+  --dialog-fill-0: #F5F1E9;
+  --inverse: #2B2721;
+  --success: #7A8B6F;
+  --warning: #A98A4E;
+  --danger: #A96A5E;
+  --info: #7C8A96;
+  --message-user-bg: #EDE0DB;
+  --message-tips-bg: #E7E1D6;
+  --workspace-btn-bg: #EDE0DB;
+  --color-guid-agent-bar: #E7E1D6;
+  --morandi-pink: #C7A49C;
+  --morandi-pink-deep: #9C7A72;
+  --morandi-oat: #E3DACB;
+  --morandi-sage: #A3AD97;
+  --morandi-grey: #8B8680;
+  --morandi-ink: #3A352F;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-style-morandi][data-ds-dark-theme] {
+  --color-primary: #C7A49C;
+  --primary: #C7A49C;
+  --primary-rgb: 199, 164, 156;
+  --color-primary-light-1: #D4B5AD;
+  --color-primary-light-2: #E2C7BF;
+  --color-primary-light-3: #EFDAD4;
+  --color-primary-dark-1: #A9837A;
+  --brand: #C7A49C;
+  --brand-light: #453632;
+  --brand-hover: #D4B5AD;
+  --color-brand-fill: #C7A49C;
+  --color-brand-bg: #3C2E2A;
+  --aou-1: #3A2E29;
+  --aou-2: #4C3C35;
+  --aou-3: #5F4A41;
+  --aou-4: #74584D;
+  --aou-5: #8A6A5C;
+  --aou-6: #9C7A6E;
+  --aou-7: #B08D80;
+  --aou-8: #C7A49C;
+  --aou-9: #DCBCB4;
+  --aou-10: #F0E0DB;
+  --bg-base: #232019;
+  --bg-1: #2B2720;
+  --bg-2: #332E26;
+  --bg-3: #3C362C;
+  --bg-4: #463F33;
+  --bg-5: #584F40;
+  --bg-6: #6B6150;
+  --bg-8: #8F8574;
+  --bg-9: #B4A996;
+  --bg-10: #D8CFBE;
+  --color-bg-1: #2B2720;
+  --color-bg-2: #332E26;
+  --color-bg-3: #3C362C;
+  --color-bg-4: #463F33;
+  --bg-hover: #38322A;
+  --bg-active: #463F33;
+  --text-primary: #EDE6DB;
+  --text-secondary: #B4A996;
+  --text-disabled: #6B6150;
+  --text-0: #F7F2EA;
+  --text-white: #F7F2EA;
+  --color-text-1: #EDE6DB;
+  --color-text-2: #B4A996;
+  --color-text-3: #8F8574;
+  --color-text-4: #6B6150;
+  --border-base: #463F33;
+  --border-light: #3C362C;
+  --border-special: #6B5348;
+  --color-border: #463F33;
+  --color-border-1: #463F33;
+  --color-border-2: #3C362C;
+  --fill: #332E26;
+  --color-fill: #332E26;
+  --fill-0: #2B2720;
+  --fill-white-to-black: #1C1915;
+  --dialog-fill-0: #2E2A22;
+  --inverse: #EDE6DB;
+  --success: #9AA88F;
+  --warning: #C2A05E;
+  --danger: #C98A7C;
+  --info: #8C9CA6;
+  --message-user-bg: #4A3833;
+  --message-tips-bg: #332E26;
+  --workspace-btn-bg: #3C2E2A;
+  --color-guid-agent-bar: #2B2620;
+  --morandi-pink: #C7A49C;
+  --morandi-pink-deep: #A9837A;
+  --morandi-oat: #D8CFBE;
+  --morandi-sage: #9AA88F;
+  --morandi-grey: #8F8574;
+  --morandi-candle: #E8D9C4;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-style-morandi] {
+  --dsw-static-deepseek-50: #F0E6E1;
+  --dsw-static-blue-50: #F0E6E1;
+  --dsw-static-deepseek-50p: #E6D6D0;
+  --dsw-static-blue-50p: #E6D6D0;
+  --dsw-static-deepseek-75: #E6D6D0;
+  --dsw-static-blue-75: #E6D6D0;
+  --dsw-static-deepseek-100: #E6D6D0;
+  --dsw-static-blue-100: #E6D6D0;
+  --dsw-static-deepseek-200: #DBC3BC;
+  --dsw-static-blue-200: #DBC3BC;
+  --dsw-static-deepseek-300: #CDACA3;
+  --dsw-static-blue-300: #CDACA3;
+  --dsw-static-deepseek-400: #BF988E;
+  --dsw-static-blue-400: #BF988E;
+  --dsw-static-deepseek-450: #BF988E;
+  --dsw-static-blue-450: #BF988E;
+  --dsw-static-deepseek-500: #B08D84;
+  --dsw-static-blue-500: #B08D84;
+  --dsw-static-deepseek-600: #9C7A72;
+  --dsw-static-blue-600: #9C7A72;
+  --dsw-static-deepseek-700-delete: #8A6A62;
+  --dsw-static-deepseek-800: #8A6A62;
+  --dsw-static-blue-800: #8A6A62;
+  --dsw-static-deepseek-900: #7D615A;
+  --dsw-static-blue-900: #7D615A;
+  --dsw-static-deepseek-950: #5F4A44;
+  --dsw-static-blue-950: #5F4A44;
+  --dsw-static-neutral-bluish-00: #E9E3D8;
+  --dsw-static-neutral-00: #E9E3D8;
+  --dsw-static-neutral-bluish-50: #E7E1D6;
+  --dsw-static-neutral-50: #E7E1D6;
+  --dsw-static-neutral-bluish-60: #E7E1D6;
+  --dsw-static-neutral-60: #E7E1D6;
+  --dsw-static-neutral-bluish-75: #DED7CA;
+  --dsw-static-neutral-75: #DED7CA;
+  --dsw-static-neutral-bluish-100: #DED7CA;
+  --dsw-static-neutral-100: #DED7CA;
+  --dsw-static-neutral-bluish-150: #D4CCBE;
+  --dsw-static-neutral-150: #D4CCBE;
+  --dsw-static-neutral-bluish-200: #D4CCBE;
+  --dsw-static-neutral-200: #D4CCBE;
+  --dsw-static-neutral-bluish-250: #C9C0B1;
+  --dsw-static-neutral-250: #C9C0B1;
+  --dsw-static-neutral-bluish-300: #C9C0B1;
+  --dsw-static-neutral-300: #C9C0B1;
+  --dsw-static-neutral-bluish-400: #B4AA9B;
+  --dsw-static-neutral-400: #B4AA9B;
+  --dsw-static-neutral-bluish-500: #9C927F;
+  --dsw-static-neutral-500: #9C927F;
+  --dsw-static-neutral-bluish-550: #9C927F;
+  --dsw-static-neutral-550: #9C927F;
+  --dsw-static-neutral-bluish-600: #6E665A;
+  --dsw-static-neutral-600: #6E665A;
+  --dsw-static-neutral-bluish-700: #6E665A;
+  --dsw-static-neutral-700: #6E665A;
+  --dsw-static-neutral-bluish-750: #4A443B;
+  --dsw-static-neutral-750: #4A443B;
+  --dsw-static-neutral-bluish-800: #4A443B;
+  --dsw-static-neutral-800: #4A443B;
+  --dsw-static-neutral-bluish-850: #4A443B;
+  --dsw-static-neutral-850: #4A443B;
+  --dsw-static-neutral-bluish-875: #2B2721;
+  --dsw-static-neutral-875: #2B2721;
+  --dsw-static-neutral-bluish-900: #2B2721;
+  --dsw-static-neutral-900: #2B2721;
+  --dsw-static-neutral-bluish-950: #2B2721;
+  --dsw-static-neutral-950: #2B2721;
+  --dsw-static-neutral-bluish-1000: #2B2721;
+  --dsw-static-neutral-1000: #2B2721;
+  --dsw-static-green-50: color-mix(in srgb, #7A8B6F 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #7A8B6F 20%, white);
+  --dsw-static-green-400: #7A8B6F;
+  --dsw-static-green-500: #7A8B6F;
+  --dsw-static-green-600: color-mix(in srgb, #7A8B6F 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #7A8B6F 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #A98A4E 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #A98A4E 20%, white);
+  --dsw-static-amber-400: #A98A4E;
+  --dsw-static-amber-500: #A98A4E;
+  --dsw-static-amber-600: color-mix(in srgb, #A98A4E 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #A98A4E 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #A96A5E 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #A96A5E 20%, white);
+  --dsw-static-red-400: #A96A5E;
+  --dsw-static-red-500: #A96A5E;
+  --dsw-static-red-600: color-mix(in srgb, #A96A5E 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #A96A5E 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-style-morandi][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #3A2E29;
+  --dsw-static-blue-50: #3A2E29;
+  --dsw-static-deepseek-50p: #4C3C35;
+  --dsw-static-blue-50p: #4C3C35;
+  --dsw-static-deepseek-75: #4C3C35;
+  --dsw-static-blue-75: #4C3C35;
+  --dsw-static-deepseek-100: #4C3C35;
+  --dsw-static-blue-100: #4C3C35;
+  --dsw-static-deepseek-200: #5F4A41;
+  --dsw-static-blue-200: #5F4A41;
+  --dsw-static-deepseek-300: #74584D;
+  --dsw-static-blue-300: #74584D;
+  --dsw-static-deepseek-400: #8A6A5C;
+  --dsw-static-blue-400: #8A6A5C;
+  --dsw-static-deepseek-450: #8A6A5C;
+  --dsw-static-blue-450: #8A6A5C;
+  --dsw-static-deepseek-500: #9C7A6E;
+  --dsw-static-blue-500: #9C7A6E;
+  --dsw-static-deepseek-600: #B08D80;
+  --dsw-static-blue-600: #B08D80;
+  --dsw-static-deepseek-700-delete: #C7A49C;
+  --dsw-static-deepseek-800: #C7A49C;
+  --dsw-static-blue-800: #C7A49C;
+  --dsw-static-deepseek-900: #DCBCB4;
+  --dsw-static-blue-900: #DCBCB4;
+  --dsw-static-deepseek-950: #F0E0DB;
+  --dsw-static-blue-950: #F0E0DB;
+  --dsw-static-neutral-bluish-00: #2B2720;
+  --dsw-static-neutral-00: #2B2720;
+  --dsw-static-neutral-bluish-50: #2B2720;
+  --dsw-static-neutral-50: #2B2720;
+  --dsw-static-neutral-bluish-60: #2B2720;
+  --dsw-static-neutral-60: #2B2720;
+  --dsw-static-neutral-bluish-75: #332E26;
+  --dsw-static-neutral-75: #332E26;
+  --dsw-static-neutral-bluish-100: #332E26;
+  --dsw-static-neutral-100: #332E26;
+  --dsw-static-neutral-bluish-150: #3C362C;
+  --dsw-static-neutral-150: #3C362C;
+  --dsw-static-neutral-bluish-200: #3C362C;
+  --dsw-static-neutral-200: #3C362C;
+  --dsw-static-neutral-bluish-250: #463F33;
+  --dsw-static-neutral-250: #463F33;
+  --dsw-static-neutral-bluish-300: #463F33;
+  --dsw-static-neutral-300: #463F33;
+  --dsw-static-neutral-bluish-400: #584F40;
+  --dsw-static-neutral-400: #584F40;
+  --dsw-static-neutral-bluish-500: #6B6150;
+  --dsw-static-neutral-500: #6B6150;
+  --dsw-static-neutral-bluish-550: #6B6150;
+  --dsw-static-neutral-550: #6B6150;
+  --dsw-static-neutral-bluish-600: #8F8574;
+  --dsw-static-neutral-600: #8F8574;
+  --dsw-static-neutral-bluish-700: #8F8574;
+  --dsw-static-neutral-700: #8F8574;
+  --dsw-static-neutral-bluish-750: #B4A996;
+  --dsw-static-neutral-750: #B4A996;
+  --dsw-static-neutral-bluish-800: #B4A996;
+  --dsw-static-neutral-800: #B4A996;
+  --dsw-static-neutral-bluish-850: #B4A996;
+  --dsw-static-neutral-850: #B4A996;
+  --dsw-static-neutral-bluish-875: #D8CFBE;
+  --dsw-static-neutral-875: #D8CFBE;
+  --dsw-static-neutral-bluish-900: #D8CFBE;
+  --dsw-static-neutral-900: #D8CFBE;
+  --dsw-static-neutral-bluish-950: #D8CFBE;
+  --dsw-static-neutral-950: #D8CFBE;
+  --dsw-static-neutral-bluish-1000: #EDE6DB;
+  --dsw-static-neutral-1000: #EDE6DB;
+  --dsw-static-green-50: color-mix(in srgb, #9AA88F 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #9AA88F 20%, black);
+  --dsw-static-green-400: #9AA88F;
+  --dsw-static-green-500: #9AA88F;
+  --dsw-static-green-600: color-mix(in srgb, #9AA88F 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #9AA88F 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #C2A05E 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #C2A05E 20%, black);
+  --dsw-static-amber-400: #C2A05E;
+  --dsw-static-amber-500: #C2A05E;
+  --dsw-static-amber-600: color-mix(in srgb, #C2A05E 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #C2A05E 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #C98A7C 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #C98A7C 20%, black);
+  --dsw-static-red-400: #C98A7C;
+  --dsw-static-red-500: #C98A7C;
+  --dsw-static-red-600: color-mix(in srgb, #C98A7C 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #C98A7C 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-style-morandi] {
+  --dsw-alias-button-primary-fill: #9C7A72;
+  --dsw-alias-button-primary-hover: #8A6A62;
+  --dsw-alias-button-primary-dimmed: #E6D6D0;
+  --dsw-alias-button-info-fill: #9C7A72;
+  --dsw-alias-button-info-hover: #8A6A62;
+  --dsw-alias-button-contrast-fill: #9C7A72;
+  --dsw-alias-button-ghost-active-fill: #EDE0DB;
+  --dsw-alias-button-ghost-active-hover: #E6D6D0;
+  --dsw-alias-button-ghost-active-border: #CDACA3;
+  --dsw-alias-button-elevated-fill: #E9E3D8;
+  --dsw-alias-button-floating-fill: #E9E3D8;
+  --dsw-alias-button-floating-hover: #E0D9CC;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(156, 122, 114, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(156, 122, 114, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(156, 122, 114, 0.6);
+  --dsw-specific-bubble: #EDE0DB;
+  --dsw-specific-bubble-highlight: #DBC3BC;
+  --dsw-specific-input-major: #E9E3D8;
+  --dsw-specific-login-input: #E9E3D8;
+  --dsw-specific-sidebar-fill: #9C7A72;
+  --dsw-specific-sidebar-nav-item-active: #E6D6D0;
+  --dsw-specific-sidebar-nav-item-hover: #E0D9CC;
+  --dsw-specific-sidebar-nav-item-active-accent: #CDACA3;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-style-morandi][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #C7A49C;
+  --dsw-alias-button-primary-hover: #D4B5AD;
+  --dsw-alias-button-primary-dimmed: #4C3C35;
+  --dsw-alias-button-info-fill: #C7A49C;
+  --dsw-alias-button-info-hover: #D4B5AD;
+  --dsw-alias-button-contrast-fill: #B08D80;
+  --dsw-alias-button-ghost-active-fill: #453632;
+  --dsw-alias-button-ghost-active-hover: #4C3C35;
+  --dsw-alias-button-ghost-active-border: #74584D;
+  --dsw-alias-button-elevated-fill: #2B2720;
+  --dsw-alias-button-floating-fill: #2B2720;
+  --dsw-alias-button-floating-hover: #38322A;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(199, 164, 156, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(199, 164, 156, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(199, 164, 156, 0.6);
+  --dsw-specific-bubble: #4A3833;
+  --dsw-specific-bubble-highlight: #5F4A41;
+  --dsw-specific-input-major: #2B2720;
+  --dsw-specific-login-input: #2B2720;
+  --dsw-specific-sidebar-fill: #C7A49C;
+  --dsw-specific-sidebar-nav-item-active: #4C3C35;
+  --dsw-specific-sidebar-nav-item-hover: #38322A;
+  --dsw-specific-sidebar-nav-item-active-accent: #74584D;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-style-morandi] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-morandi]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      repeating-linear-gradient(
+        105deg,
+        #fffdf6 0 70px,
+        transparent 70px 170px
+      ),
+      radial-gradient(ellipse at 82% 8%, #fffdf6 0%, transparent 55%),
+      radial-gradient(ellipse at 10% 88%, var(--morandi-pink) 0%, transparent 48%);
+    background-size: 340px 100%, 100% 100%, 100% 100%;
+    animation: style-morandi-morandi-light-sway 26s ease-in-out infinite alternate;
+}
+
+body[data-dsh-style-morandi]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      repeating-linear-gradient(0deg, var(--morandi-ink) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(90deg, var(--morandi-ink) 0 1px, transparent 1px 5px);
+    background-size: 5px 5px;
+}
+
+body[data-dsh-style-morandi] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-morandi] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--morandi-pink);
+}
+
+body[data-dsh-style-morandi] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-morandi] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(199, 164, 156, 0.4), rgba(199, 164, 156, 0.14) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--morandi-sage);
+}
+
+body[data-dsh-style-morandi] button[class*='primary'],
+body[data-dsh-style-morandi] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(160deg, #B08D84 0%, var(--morandi-pink-deep) 60%, #8A6A62 100%) !important;
+    border: 1px solid #7D615A !important;
+    border-radius: 10px !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(156, 122, 114, 0.3), inset 0 1px 0 rgba(251, 248, 242, 0.28);
+    transition: box-shadow 0.3s ease, filter 0.3s ease, transform 0.15s ease;
+}
+
+body[data-dsh-style-morandi] button[class*='primary']:hover,
+body[data-dsh-style-morandi] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.07);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(156, 122, 114, 0.42), inset 0 1px 0 rgba(251, 248, 242, 0.36);
+}
+
+body[data-dsh-style-morandi] pre,
+body[data-dsh-style-morandi] .markdown-body pre {
+  background: linear-gradient(180deg, #45413A 0%, #3B372F 100%) !important;
+    border: 1px solid #55503F !important;
+    border-left: 3px solid var(--morandi-sage) !important;
+    border-radius: 10px;
+    box-shadow: inset 0 2px 10px rgba(43, 39, 33, 0.4);
+}
+
+body[data-dsh-style-morandi] pre code,
+body[data-dsh-style-morandi] .markdown-body pre code {
+  background: transparent !important;
+    color: #EFE9DD !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-style-morandi] code,
+body[data-dsh-style-morandi] .markdown-body code {
+  background: rgba(199, 164, 156, 0.3);
+    color: #7D615A;
+    border: 1px solid rgba(156, 122, 114, 0.35);
+    border-radius: 5px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-style-morandi]::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-style-morandi] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 14px;
+    box-shadow: inset 0 2px 6px rgba(139, 134, 128, 0.14), 0 0 0 1px rgba(251, 248, 242, 0.5);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-morandi] [class*='guidInputCard']:hover {
+  border-color: var(--morandi-pink) !important;
+}
+
+body[data-dsh-style-morandi] [class*='agent-bar'],
+body[data-dsh-style-morandi] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(199, 164, 156, 0.5);
+}
+
+body[data-dsh-style-morandi] .markdown-body blockquote {
+  border-left: none;
+    background:
+      
+      linear-gradient(180deg, rgba(156, 122, 114, 0.75) 0%, rgba(199, 164, 156, 0.3) 60%, transparent 100%) left / 3px 100% no-repeat,
+      rgba(227, 218, 203, 0.5);
+    border-radius: 0 12px 12px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-morandi] .markdown-body hr,
+body[data-dsh-style-morandi] hr {
+  border: none;
+    height: 12px;
+    background-image:
+      radial-gradient(circle at 6px 8px, rgba(156, 122, 114, 0.6) 0 3px, transparent 3.5px),
+      radial-gradient(ellipse 4px 6px at 17px 6px, rgba(163, 173, 151, 0.6) 0 4px, transparent 4.5px),
+      radial-gradient(circle at 27px 9px, rgba(139, 134, 128, 0.6) 0 2px, transparent 2.5px);
+    background-size: 36px 12px;
+    background-repeat: repeat-x;
+    background-position: center bottom;
+    opacity: 0.55;
+}
+
+body[data-dsh-style-morandi] .markdown-body a,
+body[data-dsh-style-morandi] a {
+  color: #8A6A62;
+    text-decoration-color: rgba(156, 122, 114, 0.45);
+}
+
+body[data-dsh-style-morandi] .markdown-body a:hover,
+body[data-dsh-style-morandi] a:hover {
+  color: #7D615A;
+    text-decoration-color: #9C7A72;
+}
+
+body[data-dsh-style-morandi]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-morandi]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--morandi-grey), #6E665A);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-morandi]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--morandi-pink), var(--morandi-pink-deep));
+}
+
+body[data-dsh-style-morandi]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-morandi] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--morandi-pink-deep) !important;
+    border-color: rgba(156, 122, 114, 0.5) !important;
+    background-color: rgba(199, 164, 156, 0.18) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-style-morandi][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.08;
+    background-image:
+      repeating-linear-gradient(
+        105deg,
+        var(--morandi-candle) 0 70px,
+        transparent 70px 170px
+      ),
+      radial-gradient(ellipse at 82% 8%, var(--morandi-candle) 0%, transparent 55%),
+      radial-gradient(ellipse at 10% 88%, var(--morandi-pink) 0%, transparent 48%);
+    background-size: 340px 100%, 100% 100%, 100% 100%;
+    animation: style-morandi-morandi-dark-light-sway 26s ease-in-out infinite alternate;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      repeating-linear-gradient(0deg, var(--morandi-oat) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(90deg, var(--morandi-oat) 0 1px, transparent 1px 5px);
+    background-size: 5px 5px;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 10px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover) !important;
+    box-shadow: inset 3px 0 0 0 var(--morandi-pink);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(199, 164, 156, 0.26), rgba(199, 164, 156, 0.08) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--morandi-sage);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-style-morandi][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(160deg, #D4B5AD 0%, var(--morandi-pink) 60%, var(--morandi-pink-deep) 100%) !important;
+    border: 1px solid #DCBCB4 !important;
+    border-radius: 10px !important;
+    color: #3A2E29 !important;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(199, 164, 156, 0.28), inset 0 1px 0 rgba(247, 242, 234, 0.35);
+    transition: box-shadow 0.3s ease, filter 0.3s ease, transform 0.15s ease;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-style-morandi][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 18px rgba(199, 164, 156, 0.42), inset 0 1px 0 rgba(247, 242, 234, 0.45);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] pre,
+body[data-dsh-style-morandi][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #1D1A15 0%, #181510 100%) !important;
+    border: 1px solid var(--border-base) !important;
+    border-left: 3px solid var(--morandi-sage) !important;
+    border-radius: 10px;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] pre code,
+body[data-dsh-style-morandi][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #EDE6DB !important;
+    border: none;
+    padding: 0;
+    text-shadow: none;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] code,
+body[data-dsh-style-morandi][data-ds-dark-theme] .markdown-body code {
+  background: rgba(199, 164, 156, 0.16);
+    color: #E2C7BF;
+    border: 1px solid rgba(199, 164, 156, 0.32);
+    border-radius: 5px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 38%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 14px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(199, 164, 156, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--morandi-pink-deep) !important;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-style-morandi][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(199, 164, 156, 0.35);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: none;
+    background:
+      
+      linear-gradient(180deg, rgba(199, 164, 156, 0.8) 0%, rgba(199, 164, 156, 0.3) 60%, transparent 100%) left / 3px 100% no-repeat,
+      rgba(216, 207, 190, 0.06);
+    border-radius: 0 12px 12px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-style-morandi][data-ds-dark-theme] hr {
+  border: none;
+    height: 12px;
+    background-image:
+      radial-gradient(circle at 6px 8px, rgba(199, 164, 156, 0.55) 0 3px, transparent 3.5px),
+      radial-gradient(ellipse 4px 6px at 17px 6px, rgba(154, 168, 143, 0.55) 0 4px, transparent 4.5px),
+      radial-gradient(circle at 27px 9px, rgba(143, 133, 116, 0.6) 0 2px, transparent 2.5px);
+    background-size: 36px 12px;
+    background-repeat: repeat-x;
+    background-position: center bottom;
+    opacity: 0.5;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-style-morandi][data-ds-dark-theme] a {
+  color: #D4B5AD;
+    text-decoration-color: rgba(199, 164, 156, 0.4);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-style-morandi][data-ds-dark-theme] a:hover {
+  color: #E2C7BF;
+    text-decoration-color: #C7A49C;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--morandi-grey), #584F40);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--morandi-pink), var(--morandi-pink-deep));
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-style-morandi][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--morandi-pink) !important;
+    border-color: rgba(199, 164, 156, 0.45) !important;
+    background-color: rgba(199, 164, 156, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes style-morandi-morandi-light-sway {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 90px 0, 0 0, 0 0; }
+}
+
+@keyframes style-morandi-morandi-haze-breathe {
+  0%, 100% { box-shadow: 0 1px 8px rgba(156, 122, 114, 0.14); }
+  50% { box-shadow: 0 2px 16px rgba(156, 122, 114, 0.3); }
+}
+
+@keyframes style-morandi-morandi-halo-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}
+
+@keyframes style-morandi-morandi-dark-light-sway {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  100% { background-position: 90px 0, 0 0, 0 0; }
+}
+
+@keyframes style-morandi-morandi-dark-haze-breathe {
+  0%, 100% { box-shadow: 0 1px 8px rgba(199, 164, 156, 0.1); }
+  50% { box-shadow: 0 2px 16px rgba(199, 164, 156, 0.26); }
+}
+
+@keyframes style-morandi-morandi-dark-halo-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

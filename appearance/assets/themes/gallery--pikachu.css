@@ -1,0 +1,679 @@
+/* pikachu — 宝可梦 · 皮卡丘 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-pikachu], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-pikachu] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #4a3410;
+  background-color: #fffdf4;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] {
+  color: #f5ecd2;
+  background-color: #151004;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-pikachu] {
+  --color-primary: #f0b90b;
+  --primary: #f0b90b;
+  --primary-rgb: 240, 185, 11;
+  --color-primary-light-1: #f5c93f;
+  --color-primary-light-2: #f9d876;
+  --color-primary-light-3: #fce8ac;
+  --color-primary-dark-1: #c79309;
+  --brand: #f0b90b;
+  --brand-light: #fdf3d0;
+  --brand-hover: #f5c93f;
+  --color-brand-fill: #f0b90b;
+  --color-brand-bg: #fdf3d0;
+  --aou-1: #fdf8e3;
+  --aou-2: #fbefc6;
+  --aou-3: #f8e19a;
+  --aou-4: #f4d06c;
+  --aou-5: #f0bd33;
+  --aou-6: #f0b90b;
+  --aou-7: #c99a09;
+  --aou-8: #9e7a07;
+  --aou-9: #735a05;
+  --aou-10: #473903;
+  --bg-base: #fffdf4;
+  --bg-1: #fdf6dd;
+  --bg-2: #f9edc4;
+  --bg-3: #f2dfa4;
+  --bg-4: #e6cb7f;
+  --bg-5: #d1b05f;
+  --bg-6: #b08d46;
+  --bg-8: #7a6130;
+  --bg-9: #4c3d1e;
+  --bg-10: #241d0d;
+  --color-bg-1: #fdf6dd;
+  --color-bg-2: #f9edc4;
+  --color-bg-3: #f2dfa4;
+  --color-bg-4: #e6cb7f;
+  --bg-hover: #fdf0c8;
+  --bg-active: #f9e2a0;
+  --text-primary: #4a3410;
+  --text-secondary: #8a6b33;
+  --text-disabled: #cbb98d;
+  --text-0: #2e2008;
+  --text-white: #fffdf0;
+  --color-text-1: #4a3410;
+  --color-text-2: #8a6b33;
+  --color-text-3: #ab8f56;
+  --color-text-4: #cbb98d;
+  --border-base: #e8d193;
+  --border-light: #f2e3b8;
+  --border-special: #d9bb70;
+  --color-border: #e8d193;
+  --color-border-1: #e8d193;
+  --color-border-2: #f2e3b8;
+  --fill: #fdf6dd;
+  --color-fill: #fdf6dd;
+  --fill-0: #fffdf4;
+  --fill-white-to-black: #fffdf4;
+  --dialog-fill-0: #fffdf4;
+  --inverse: #4a3410;
+  --success: #4caf50;
+  --warning: #f0b90b;
+  --danger: #e63946;
+  --info: #3b82c4;
+  --message-user-bg: #ffe680;
+  --message-tips-bg: #fdf0c8;
+  --workspace-btn-bg: #fdf3d0;
+  --color-guid-agent-bar: #fdf0d0;
+  --pika-cheek: #e63946;
+  --pika-tail: #7a6130;
+  --pika-tip: #3a2a12;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-pikachu][data-ds-dark-theme] {
+  --color-primary: #f5c93f;
+  --primary: #f5c93f;
+  --primary-rgb: 245, 201, 63;
+  --color-primary-light-1: #f9d876;
+  --color-primary-light-2: #fce8ac;
+  --color-primary-light-3: #fdf3d0;
+  --color-primary-dark-1: #f0b90b;
+  --brand: #f5c93f;
+  --brand-light: #3a2f0e;
+  --brand-hover: #f9d876;
+  --color-brand-fill: #f5c93f;
+  --color-brand-bg: #2e2509;
+  --aou-1: #2e2509;
+  --aou-2: #4c3d0e;
+  --aou-3: #735a13;
+  --aou-4: #9e7a1a;
+  --aou-5: #c99a09;
+  --aou-6: #f0b90b;
+  --aou-7: #f5c93f;
+  --aou-8: #f9d876;
+  --aou-9: #fce8ac;
+  --aou-10: #fdf3d0;
+  --bg-base: #151004;
+  --bg-1: #1e1808;
+  --bg-2: #27200c;
+  --bg-3: #312812;
+  --bg-4: #3d3118;
+  --bg-5: #4c3d1e;
+  --bg-6: #5f4c26;
+  --bg-8: #7a6130;
+  --bg-9: #a3813f;
+  --bg-10: #d1b05f;
+  --color-bg-1: #1e1808;
+  --color-bg-2: #27200c;
+  --color-bg-3: #312812;
+  --color-bg-4: #3d3118;
+  --bg-hover: #2b2210;
+  --bg-active: #3a2e15;
+  --text-primary: #f5ecd2;
+  --text-secondary: #cbb98d;
+  --text-disabled: #7a6130;
+  --text-0: #fffdf0;
+  --text-white: #fffdf0;
+  --color-text-1: #f5ecd2;
+  --color-text-2: #cbb98d;
+  --color-text-3: #ab8f56;
+  --color-text-4: #7a6130;
+  --border-base: #4c3d1e;
+  --border-light: #3d3118;
+  --border-special: #6b5526;
+  --color-border: #4c3d1e;
+  --color-border-1: #4c3d1e;
+  --color-border-2: #3d3118;
+  --fill: #27200c;
+  --color-fill: #27200c;
+  --fill-0: #1e1808;
+  --fill-white-to-black: #151004;
+  --dialog-fill-0: #1e1808;
+  --inverse: #f5ecd2;
+  --success: #5cc46a;
+  --warning: #f5c93f;
+  --danger: #ff5c66;
+  --info: #5ea3e0;
+  --message-user-bg: #3d3118;
+  --message-tips-bg: #27200c;
+  --workspace-btn-bg: #2e2509;
+  --color-guid-agent-bar: #27200c;
+  --pika-cheek: #ff5c66;
+  --pika-tail: #a3813f;
+  --pika-tip: #0f0b03;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-pikachu] {
+  --dsw-static-deepseek-50: #fdf8e3;
+  --dsw-static-blue-50: #fdf8e3;
+  --dsw-static-deepseek-50p: #fbefc6;
+  --dsw-static-blue-50p: #fbefc6;
+  --dsw-static-deepseek-75: #fbefc6;
+  --dsw-static-blue-75: #fbefc6;
+  --dsw-static-deepseek-100: #fbefc6;
+  --dsw-static-blue-100: #fbefc6;
+  --dsw-static-deepseek-200: #f8e19a;
+  --dsw-static-blue-200: #f8e19a;
+  --dsw-static-deepseek-300: #f4d06c;
+  --dsw-static-blue-300: #f4d06c;
+  --dsw-static-deepseek-400: #f0bd33;
+  --dsw-static-blue-400: #f0bd33;
+  --dsw-static-deepseek-450: #f0bd33;
+  --dsw-static-blue-450: #f0bd33;
+  --dsw-static-deepseek-500: #f0b90b;
+  --dsw-static-blue-500: #f0b90b;
+  --dsw-static-deepseek-600: #c99a09;
+  --dsw-static-blue-600: #c99a09;
+  --dsw-static-deepseek-700-delete: #9e7a07;
+  --dsw-static-deepseek-800: #9e7a07;
+  --dsw-static-blue-800: #9e7a07;
+  --dsw-static-deepseek-900: #735a05;
+  --dsw-static-blue-900: #735a05;
+  --dsw-static-deepseek-950: #473903;
+  --dsw-static-blue-950: #473903;
+  --dsw-static-neutral-bluish-00: #fffdf4;
+  --dsw-static-neutral-00: #fffdf4;
+  --dsw-static-neutral-bluish-50: #fdf6dd;
+  --dsw-static-neutral-50: #fdf6dd;
+  --dsw-static-neutral-bluish-60: #fdf6dd;
+  --dsw-static-neutral-60: #fdf6dd;
+  --dsw-static-neutral-bluish-75: #f9edc4;
+  --dsw-static-neutral-75: #f9edc4;
+  --dsw-static-neutral-bluish-100: #f9edc4;
+  --dsw-static-neutral-100: #f9edc4;
+  --dsw-static-neutral-bluish-150: #f2dfa4;
+  --dsw-static-neutral-150: #f2dfa4;
+  --dsw-static-neutral-bluish-200: #f2dfa4;
+  --dsw-static-neutral-200: #f2dfa4;
+  --dsw-static-neutral-bluish-250: #e6cb7f;
+  --dsw-static-neutral-250: #e6cb7f;
+  --dsw-static-neutral-bluish-300: #e6cb7f;
+  --dsw-static-neutral-300: #e6cb7f;
+  --dsw-static-neutral-bluish-400: #d1b05f;
+  --dsw-static-neutral-400: #d1b05f;
+  --dsw-static-neutral-bluish-500: #b08d46;
+  --dsw-static-neutral-500: #b08d46;
+  --dsw-static-neutral-bluish-550: #b08d46;
+  --dsw-static-neutral-550: #b08d46;
+  --dsw-static-neutral-bluish-600: #7a6130;
+  --dsw-static-neutral-600: #7a6130;
+  --dsw-static-neutral-bluish-700: #7a6130;
+  --dsw-static-neutral-700: #7a6130;
+  --dsw-static-neutral-bluish-750: #4c3d1e;
+  --dsw-static-neutral-750: #4c3d1e;
+  --dsw-static-neutral-bluish-800: #4c3d1e;
+  --dsw-static-neutral-800: #4c3d1e;
+  --dsw-static-neutral-bluish-850: #4c3d1e;
+  --dsw-static-neutral-850: #4c3d1e;
+  --dsw-static-neutral-bluish-875: #241d0d;
+  --dsw-static-neutral-875: #241d0d;
+  --dsw-static-neutral-bluish-900: #241d0d;
+  --dsw-static-neutral-900: #241d0d;
+  --dsw-static-neutral-bluish-950: #241d0d;
+  --dsw-static-neutral-950: #241d0d;
+  --dsw-static-neutral-bluish-1000: #4a3410;
+  --dsw-static-neutral-1000: #4a3410;
+  --dsw-static-green-50: color-mix(in srgb, #4caf50 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #4caf50 20%, white);
+  --dsw-static-green-400: #4caf50;
+  --dsw-static-green-500: #4caf50;
+  --dsw-static-green-600: color-mix(in srgb, #4caf50 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #4caf50 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f0b90b 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #f0b90b 20%, white);
+  --dsw-static-amber-400: #f0b90b;
+  --dsw-static-amber-500: #f0b90b;
+  --dsw-static-amber-600: color-mix(in srgb, #f0b90b 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f0b90b 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e63946 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e63946 20%, white);
+  --dsw-static-red-400: #e63946;
+  --dsw-static-red-500: #e63946;
+  --dsw-static-red-600: color-mix(in srgb, #e63946 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e63946 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-pikachu][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2e2509;
+  --dsw-static-blue-50: #2e2509;
+  --dsw-static-deepseek-50p: #4c3d0e;
+  --dsw-static-blue-50p: #4c3d0e;
+  --dsw-static-deepseek-75: #4c3d0e;
+  --dsw-static-blue-75: #4c3d0e;
+  --dsw-static-deepseek-100: #4c3d0e;
+  --dsw-static-blue-100: #4c3d0e;
+  --dsw-static-deepseek-200: #735a13;
+  --dsw-static-blue-200: #735a13;
+  --dsw-static-deepseek-300: #9e7a1a;
+  --dsw-static-blue-300: #9e7a1a;
+  --dsw-static-deepseek-400: #c99a09;
+  --dsw-static-blue-400: #c99a09;
+  --dsw-static-deepseek-450: #c99a09;
+  --dsw-static-blue-450: #c99a09;
+  --dsw-static-deepseek-500: #f0b90b;
+  --dsw-static-blue-500: #f0b90b;
+  --dsw-static-deepseek-600: #f5c93f;
+  --dsw-static-blue-600: #f5c93f;
+  --dsw-static-deepseek-700-delete: #f9d876;
+  --dsw-static-deepseek-800: #f9d876;
+  --dsw-static-blue-800: #f9d876;
+  --dsw-static-deepseek-900: #fce8ac;
+  --dsw-static-blue-900: #fce8ac;
+  --dsw-static-deepseek-950: #fdf3d0;
+  --dsw-static-blue-950: #fdf3d0;
+  --dsw-static-neutral-bluish-00: #1e1808;
+  --dsw-static-neutral-00: #1e1808;
+  --dsw-static-neutral-bluish-50: #1e1808;
+  --dsw-static-neutral-50: #1e1808;
+  --dsw-static-neutral-bluish-60: #1e1808;
+  --dsw-static-neutral-60: #1e1808;
+  --dsw-static-neutral-bluish-75: #27200c;
+  --dsw-static-neutral-75: #27200c;
+  --dsw-static-neutral-bluish-100: #27200c;
+  --dsw-static-neutral-100: #27200c;
+  --dsw-static-neutral-bluish-150: #312812;
+  --dsw-static-neutral-150: #312812;
+  --dsw-static-neutral-bluish-200: #312812;
+  --dsw-static-neutral-200: #312812;
+  --dsw-static-neutral-bluish-250: #3d3118;
+  --dsw-static-neutral-250: #3d3118;
+  --dsw-static-neutral-bluish-300: #3d3118;
+  --dsw-static-neutral-300: #3d3118;
+  --dsw-static-neutral-bluish-400: #4c3d1e;
+  --dsw-static-neutral-400: #4c3d1e;
+  --dsw-static-neutral-bluish-500: #5f4c26;
+  --dsw-static-neutral-500: #5f4c26;
+  --dsw-static-neutral-bluish-550: #5f4c26;
+  --dsw-static-neutral-550: #5f4c26;
+  --dsw-static-neutral-bluish-600: #7a6130;
+  --dsw-static-neutral-600: #7a6130;
+  --dsw-static-neutral-bluish-700: #7a6130;
+  --dsw-static-neutral-700: #7a6130;
+  --dsw-static-neutral-bluish-750: #a3813f;
+  --dsw-static-neutral-750: #a3813f;
+  --dsw-static-neutral-bluish-800: #a3813f;
+  --dsw-static-neutral-800: #a3813f;
+  --dsw-static-neutral-bluish-850: #a3813f;
+  --dsw-static-neutral-850: #a3813f;
+  --dsw-static-neutral-bluish-875: #d1b05f;
+  --dsw-static-neutral-875: #d1b05f;
+  --dsw-static-neutral-bluish-900: #d1b05f;
+  --dsw-static-neutral-900: #d1b05f;
+  --dsw-static-neutral-bluish-950: #d1b05f;
+  --dsw-static-neutral-950: #d1b05f;
+  --dsw-static-neutral-bluish-1000: #f5ecd2;
+  --dsw-static-neutral-1000: #f5ecd2;
+  --dsw-static-green-50: color-mix(in srgb, #5cc46a 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #5cc46a 20%, black);
+  --dsw-static-green-400: #5cc46a;
+  --dsw-static-green-500: #5cc46a;
+  --dsw-static-green-600: color-mix(in srgb, #5cc46a 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #5cc46a 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f5c93f 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #f5c93f 20%, black);
+  --dsw-static-amber-400: #f5c93f;
+  --dsw-static-amber-500: #f5c93f;
+  --dsw-static-amber-600: color-mix(in srgb, #f5c93f 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f5c93f 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #ff5c66 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #ff5c66 20%, black);
+  --dsw-static-red-400: #ff5c66;
+  --dsw-static-red-500: #ff5c66;
+  --dsw-static-red-600: color-mix(in srgb, #ff5c66 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #ff5c66 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-pikachu] {
+  --dsw-alias-button-primary-fill: #f0b90b;
+  --dsw-alias-button-primary-hover: #f5c93f;
+  --dsw-alias-button-primary-dimmed: #fbefc6;
+  --dsw-alias-button-info-fill: #f0b90b;
+  --dsw-alias-button-info-hover: #f5c93f;
+  --dsw-alias-button-contrast-fill: #c99a09;
+  --dsw-alias-button-ghost-active-fill: #fdf3d0;
+  --dsw-alias-button-ghost-active-hover: #fbefc6;
+  --dsw-alias-button-ghost-active-border: #f4d06c;
+  --dsw-alias-button-elevated-fill: #fffdf4;
+  --dsw-alias-button-floating-fill: #fffdf4;
+  --dsw-alias-button-floating-hover: #fdf0c8;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(240, 185, 11, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(240, 185, 11, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(240, 185, 11, 0.6);
+  --dsw-specific-bubble: #ffe680;
+  --dsw-specific-bubble-highlight: #f8e19a;
+  --dsw-specific-input-major: #fffdf4;
+  --dsw-specific-login-input: #fffdf4;
+  --dsw-specific-sidebar-fill: #f0b90b;
+  --dsw-specific-sidebar-nav-item-active: #fbefc6;
+  --dsw-specific-sidebar-nav-item-hover: #fdf0c8;
+  --dsw-specific-sidebar-nav-item-active-accent: #f4d06c;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-pikachu][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #f5c93f;
+  --dsw-alias-button-primary-hover: #f9d876;
+  --dsw-alias-button-primary-dimmed: #4c3d0e;
+  --dsw-alias-button-info-fill: #f5c93f;
+  --dsw-alias-button-info-hover: #f9d876;
+  --dsw-alias-button-contrast-fill: #f5c93f;
+  --dsw-alias-button-ghost-active-fill: #3a2f0e;
+  --dsw-alias-button-ghost-active-hover: #4c3d0e;
+  --dsw-alias-button-ghost-active-border: #9e7a1a;
+  --dsw-alias-button-elevated-fill: #1e1808;
+  --dsw-alias-button-floating-fill: #1e1808;
+  --dsw-alias-button-floating-hover: #2b2210;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(245, 201, 63, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(245, 201, 63, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(245, 201, 63, 0.6);
+  --dsw-specific-bubble: #3d3118;
+  --dsw-specific-bubble-highlight: #735a13;
+  --dsw-specific-input-major: #1e1808;
+  --dsw-specific-login-input: #1e1808;
+  --dsw-specific-sidebar-fill: #f5c93f;
+  --dsw-specific-sidebar-nav-item-active: #4c3d0e;
+  --dsw-specific-sidebar-nav-item-hover: #2b2210;
+  --dsw-specific-sidebar-nav-item-active-accent: #9e7a1a;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-pikachu] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pikachu]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      
+      radial-gradient(circle at 50% 50%, #f0b90b 0 3px, #3a2a12 3px 5px, transparent 6px),
+      radial-gradient(circle at 50% 50%, transparent 0 22px, #e63946 22px 24px, #3a2a12 24px 26px, transparent 27px),
+      
+      repeating-linear-gradient(
+        115deg,
+        transparent 0 46px,
+        #f0b90b 46px 50px,
+        transparent 50px 118px,
+        #7a6130 118px 120px
+      );
+    background-size: 96px 96px, 96px 96px, 420px 420px;
+    background-position: 40px 60px, 40px 60px, 0 0;
+    opacity: 0.08;
+}
+
+body[data-dsh-pikachu]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, #f0b90b 0 2px, transparent 4px),
+      radial-gradient(circle at 70% 65%, #e63946 0 2px, transparent 4px),
+      radial-gradient(circle at 45% 80%, #f0b90b 0 1.5px, transparent 3px),
+      radial-gradient(circle at 85% 20%, #c79309 0 2px, transparent 4px);
+    background-size: 520px 520px, 480px 480px, 560px 560px, 500px 500px;
+    opacity: 0.12;
+    animation: pikachu-spark-drift 16s ease-in-out infinite alternate;
+}
+
+body[data-dsh-pikachu] button[class*='primary'] {
+  background: linear-gradient(180deg, #f5c93f 0%, #f0b90b 60%, #d9a10a 100%) !important;
+    border: 2px solid #3a2a12 !important;
+    border-radius: 10px !important;
+    color: #2e2008 !important;
+    font-weight: 600;
+    box-shadow: 0 2px 0 #3a2a12;
+}
+
+body[data-dsh-pikachu] button[class*='primary']:hover,
+body[data-dsh-pikachu] button[class*='primary']:focus-visible {
+  background: linear-gradient(180deg, #f9d876 0%, #f5c93f 60%, #f0b90b 100%) !important;
+    border-color: #e63946 !important;
+    color: #2e2008 !important;
+    animation: pikachu-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-pikachu] button[class*='primary']:active {
+  box-shadow: 0 0 0 #3a2a12;
+}
+
+body[data-dsh-pikachu] pre,
+body[data-dsh-pikachu] .markdown-body pre {
+  background: #fdf6dd !important;
+    border: 1px solid var(--border-base);
+    border-left: 4px solid var(--brand);
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(58, 42, 18, 0.04);
+}
+
+body[data-dsh-pikachu] pre code,
+body[data-dsh-pikachu] .markdown-body pre code {
+  background: transparent !important;
+    color: #4a3410;
+}
+
+body[data-dsh-pikachu] code,
+body[data-dsh-pikachu] .markdown-body code {
+  background: #fbefc6;
+    color: #c22f3c;
+    border: 1px solid #f2e3b8;
+    border-radius: 6px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pikachu] pre code,
+body[data-dsh-pikachu] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-pikachu]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: #2e2008;
+}
+
+body[data-dsh-pikachu]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pikachu]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f5c93f, #c79309);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pikachu]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f9d876, #f0b90b);
+}
+
+body[data-dsh-pikachu]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pikachu]::-webkit-scrollbar-corner {
+  background: var(--bg-1);
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-pikachu][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      
+      radial-gradient(circle at 50% 50%, #f5c93f 0 3px, #e8d193 3px 5px, transparent 6px),
+      radial-gradient(circle at 50% 50%, transparent 0 22px, #ff5c66 22px 24px, #e8d193 24px 26px, transparent 27px),
+      
+      repeating-linear-gradient(
+        115deg,
+        transparent 0 46px,
+        #f0b90b 46px 50px,
+        transparent 50px 118px,
+        #a3813f 118px 120px
+      );
+    background-size: 96px 96px, 96px 96px, 420px 420px;
+    background-position: 40px 60px, 40px 60px, 0 0;
+    opacity: 0.11;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, #f5c93f 0 2px, transparent 4px),
+      radial-gradient(circle at 70% 65%, #ff5c66 0 2px, transparent 4px),
+      radial-gradient(circle at 45% 80%, #f5c93f 0 1.5px, transparent 3px),
+      radial-gradient(circle at 85% 20%, #fce8ac 0 2px, transparent 4px);
+    background-size: 520px 520px, 480px 480px, 560px 560px, 500px 500px;
+    opacity: 0.2;
+    animation: pikachu-dark-spark-drift 16s ease-in-out infinite alternate;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] button[class*='primary'] {
+  background: linear-gradient(180deg, #f9d876 0%, #f5c93f 60%, #f0b90b 100%) !important;
+    border: 2px solid #0f0b03 !important;
+    border-radius: 10px !important;
+    color: #2e2008 !important;
+    font-weight: 600;
+    box-shadow: 0 2px 0 #0f0b03, 0 0 10px rgba(245, 201, 63, 0.35);
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-pikachu][data-ds-dark-theme] button[class*='primary']:focus-visible {
+  background: linear-gradient(180deg, #fce8ac 0%, #f9d876 60%, #f5c93f 100%) !important;
+    border-color: #ff5c66 !important;
+    color: #2e2008 !important;
+    animation: pikachu-dark-btn-glow 3s ease-in-out infinite;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] button[class*='primary']:active {
+  box-shadow: 0 0 0 #0f0b03;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] pre,
+body[data-dsh-pikachu][data-ds-dark-theme] .markdown-body pre {
+  background: #1e1808 !important;
+    border: 1px solid var(--border-base);
+    border-left: 4px solid var(--brand);
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(245, 201, 63, 0.06);
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] pre code,
+body[data-dsh-pikachu][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #f5ecd2;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] code,
+body[data-dsh-pikachu][data-ds-dark-theme] .markdown-body code {
+  background: #2e2509;
+    color: #ff8a92;
+    border: 1px solid #3d3118;
+    border-radius: 6px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme] pre code,
+body[data-dsh-pikachu][data-ds-dark-theme] .markdown-body pre code {
+  border: none;
+    padding: 0;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+    color: #151004;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c99a09, #735a13);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f5c93f, #c99a09);
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-pikachu][data-ds-dark-theme]::-webkit-scrollbar-corner {
+  background: var(--bg-1);
+}
+
+/* --- keyframes --- */
+@keyframes pikachu-spark-drift {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0; opacity: 0.06; }
+  50% { opacity: 0.12; }
+  100% { background-position: 24px -30px, -20px 26px, 18px 22px, -26px -18px; opacity: 0.06; }
+}
+
+@keyframes pikachu-btn-glow {
+  0%, 100% { box-shadow: 0 2px 0 #3a2a12, 0 0 6px rgba(240, 185, 11, 0.35); }
+  50% { box-shadow: 0 2px 0 #3a2a12, 0 0 18px rgba(240, 185, 11, 0.7); }
+}
+
+@keyframes pikachu-spark-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}
+
+@keyframes pikachu-dark-spark-drift {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0; opacity: 0.1; }
+  50% { opacity: 0.22; }
+  100% { background-position: 24px -30px, -20px 26px, 18px 22px, -26px -18px; opacity: 0.1; }
+}
+
+@keyframes pikachu-dark-btn-glow {
+  0%, 100% { box-shadow: 0 2px 0 #0f0b03, 0 0 12px rgba(245, 201, 63, 0.5); }
+  50% { box-shadow: 0 2px 0 #0f0b03, 0 0 26px rgba(245, 201, 63, 0.85); }
+}
+
+@keyframes pikachu-dark-spark-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

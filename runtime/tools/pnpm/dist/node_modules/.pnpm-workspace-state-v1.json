@@ -1,0 +1,35 @@
+{
+  "lastValidatedTimestamp": 1790620037686,
+  "projects": {
+    "/home/runner/work/pnpm/pnpm/pnpm": {
+      "name": "pnpm",
+      "version": "10.34.6"
+    }
+  },
+  "pnpmfiles": [],
+  "filteredInstall": false,
+  "settings": {
+    "autoInstallPeers": true,
+    "catalogs": {},
+    "dedupeDirectDeps": false,
+    "dedupeInjectedDeps": true,
+    "dedupePeerDependents": true,
+    "dedupePeers": false,
+    "dev": true,
+    "excludeLinksFromLockfile": false,
+    "hoistPattern": [
+      "*"
+    ],
+    "hoistWorkspacePackages": true,
+    "injectWorkspacePackages": false,
+    "linkWorkspacePackages": false,
+    "minimumReleaseAge": 1440,
+    "minimumReleaseAgeIgnoreMissingTime": true,
+    "nodeLinker": "hoisted",
+    "optional": true,
+    "peersSuffixMaxLength": 1000,
+    "preferWorkspacePackages": false,
+    "production": true,
+    "publicHoistPattern": []
+  }
+}

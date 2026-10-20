@@ -1,0 +1,7 @@
+- insert:
+    - id: dsh-subagent-scheduler
+      name: dsh-peer/subagent-scheduler
+    - id: dsh-on-demand-tools
+      name: dsh-peer/on-demand-tools
+    - id: phone-qq-import
+      name: dsh-phone-qq

@@ -1,0 +1,807 @@
+/* festival-valentine — 情人节 | ported from aionui-themes by dsh-themes converter.
+   Light tokens hang on body[data-dsh-festival-valentine], dark tokens on the same attribute
+   plus [data-ds-dark-theme], so the shell day/night toggle keeps working. */
+
+body[data-dsh-festival-valentine] {
+  --dsw-font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #3d1122;
+  background-color: #fff7fa;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] {
+  color: #fbe9f1;
+  background-color: #12070d;
+}
+
+/* --- source palette (scoped): light --- */
+body[data-dsh-festival-valentine] {
+  --color-primary: #d6336c;
+  --primary: #d6336c;
+  --primary-rgb: 214, 51, 108;
+  --color-primary-light-1: #de5c88;
+  --color-primary-light-2: #e887a8;
+  --color-primary-light-3: #f3b7cc;
+  --color-primary-dark-1: #a61e4d;
+  --brand: #d6336c;
+  --brand-light: #fbe4ee;
+  --brand-hover: #e0568b;
+  --color-brand-fill: #d6336c;
+  --color-brand-bg: #fdeef4;
+  --aou-1: #fff0f6;
+  --aou-2: #ffdeeb;
+  --aou-3: #fcc2d7;
+  --aou-4: #faa2c1;
+  --aou-5: #f783ac;
+  --aou-6: #f06595;
+  --aou-7: #e64980;
+  --aou-8: #d6336c;
+  --aou-9: #a61e4d;
+  --aou-10: #751534;
+  --bg-base: #fff7fa;
+  --bg-1: #fdf0f5;
+  --bg-2: #fae8f0;
+  --bg-3: #f5dfeb;
+  --bg-4: #efd3e2;
+  --bg-5: #e6c3d5;
+  --bg-6: #dab0c6;
+  --bg-8: #c48ba6;
+  --bg-9: #a66484;
+  --bg-10: #7d3c5c;
+  --color-bg-1: #fdf0f5;
+  --color-bg-2: #fae8f0;
+  --color-bg-3: #f5dfeb;
+  --color-bg-4: #efd3e2;
+  --bg-hover: #f9e3ee;
+  --bg-active: #f3d3e4;
+  --text-primary: #3d1122;
+  --text-secondary: #7a4a5e;
+  --text-disabled: #b78fa0;
+  --text-0: #2a0a16;
+  --text-white: #ffffff;
+  --color-text-1: #3d1122;
+  --color-text-2: #7a4a5e;
+  --color-text-3: #a06b80;
+  --color-text-4: #b78fa0;
+  --border-base: #ecc6d8;
+  --border-light: #f4dcea;
+  --border-special: #e087ab;
+  --color-border: #ecc6d8;
+  --color-border-1: #ecc6d8;
+  --color-border-2: #f4dcea;
+  --fill: #fae8f0;
+  --color-fill: #fae8f0;
+  --fill-0: #fdf0f5;
+  --fill-white-to-black: #ffffff;
+  --dialog-fill-0: #ffffff;
+  --inverse: #2a0a16;
+  --success: #2f9e6e;
+  --warning: #e8890c;
+  --danger: #e03131;
+  --info: #ae3ec9;
+  --message-user-bg: #fff0f5;
+  --message-tips-bg: #fdeef4;
+  --workspace-btn-bg: #fbe4ee;
+  --color-guid-agent-bar: #fdf0f5;
+  --valentine-rose: #d6336c;
+  --valentine-pink: #f783ac;
+  --valentine-blush: #f3b7cc;
+  --valentine-cream: #fff7fa;
+  --valentine-wax: #a61e4d;
+}
+
+/* --- source palette (scoped): dark --- */
+body[data-dsh-festival-valentine][data-ds-dark-theme] {
+  --color-primary: #f06595;
+  --primary: #f06595;
+  --primary-rgb: 240, 101, 149;
+  --color-primary-light-1: #f490ae;
+  --color-primary-light-2: #f8bccf;
+  --color-primary-light-3: #fcd9e5;
+  --color-primary-dark-1: #d6336c;
+  --brand: #f06595;
+  --brand-light: #3d1524;
+  --brand-hover: #f783ac;
+  --color-brand-fill: #f06595;
+  --color-brand-bg: #38121f;
+  --aou-1: #2b0d18;
+  --aou-2: #451224;
+  --aou-3: #611831;
+  --aou-4: #80203f;
+  --aou-5: #a12950;
+  --aou-6: #c73866;
+  --aou-7: #f06595;
+  --aou-8: #f490ae;
+  --aou-9: #f9bfd2;
+  --aou-10: #fde4ee;
+  --bg-base: #12070d;
+  --bg-1: #1a0c13;
+  --bg-2: #221019;
+  --bg-3: #2b1521;
+  --bg-4: #351b2a;
+  --bg-5: #412334;
+  --bg-6: #4f2d40;
+  --bg-8: #6f4158;
+  --bg-9: #96607c;
+  --bg-10: #c490a8;
+  --color-bg-1: #1a0c13;
+  --color-bg-2: #221019;
+  --color-bg-3: #2b1521;
+  --color-bg-4: #351b2a;
+  --bg-hover: #2a1420;
+  --bg-active: #351a29;
+  --text-primary: #fbe9f1;
+  --text-secondary: #d0a3b6;
+  --text-disabled: #6f4a5a;
+  --text-0: #fff6fa;
+  --text-white: #ffffff;
+  --color-text-1: #fbe9f1;
+  --color-text-2: #d0a3b6;
+  --color-text-3: #a87a8e;
+  --color-text-4: #6f4a5a;
+  --border-base: #43202f;
+  --border-light: #311623;
+  --border-special: #7a2c48;
+  --color-border: #43202f;
+  --color-border-1: #43202f;
+  --color-border-2: #311623;
+  --fill: #221019;
+  --color-fill: #221019;
+  --fill-0: #1a0c13;
+  --fill-white-to-black: #12070d;
+  --dialog-fill-0: #1e0f17;
+  --inverse: #fbe9f1;
+  --success: #69db7c;
+  --warning: #f0a13d;
+  --danger: #ff6b6b;
+  --info: #da77f2;
+  --message-user-bg: #4d1428;
+  --message-tips-bg: #2b1521;
+  --workspace-btn-bg: #38121f;
+  --color-guid-agent-bar: #1e0f17;
+  --valentine-rose: #f06595;
+  --valentine-pink: #f8a5c2;
+  --valentine-blush: #d6336c;
+  --valentine-candle: #ffd8a8;
+  --valentine-wax: #e64980;
+}
+
+/* --- static palette: light --- */
+body[data-dsh-festival-valentine] {
+  --dsw-static-deepseek-50: #fff0f6;
+  --dsw-static-blue-50: #fff0f6;
+  --dsw-static-deepseek-50p: #ffdeeb;
+  --dsw-static-blue-50p: #ffdeeb;
+  --dsw-static-deepseek-75: #ffdeeb;
+  --dsw-static-blue-75: #ffdeeb;
+  --dsw-static-deepseek-100: #ffdeeb;
+  --dsw-static-blue-100: #ffdeeb;
+  --dsw-static-deepseek-200: #fcc2d7;
+  --dsw-static-blue-200: #fcc2d7;
+  --dsw-static-deepseek-300: #faa2c1;
+  --dsw-static-blue-300: #faa2c1;
+  --dsw-static-deepseek-400: #f783ac;
+  --dsw-static-blue-400: #f783ac;
+  --dsw-static-deepseek-450: #f783ac;
+  --dsw-static-blue-450: #f783ac;
+  --dsw-static-deepseek-500: #f06595;
+  --dsw-static-blue-500: #f06595;
+  --dsw-static-deepseek-600: #e64980;
+  --dsw-static-blue-600: #e64980;
+  --dsw-static-deepseek-700-delete: #d6336c;
+  --dsw-static-deepseek-800: #d6336c;
+  --dsw-static-blue-800: #d6336c;
+  --dsw-static-deepseek-900: #a61e4d;
+  --dsw-static-blue-900: #a61e4d;
+  --dsw-static-deepseek-950: #751534;
+  --dsw-static-blue-950: #751534;
+  --dsw-static-neutral-bluish-00: #fdf0f5;
+  --dsw-static-neutral-00: #fdf0f5;
+  --dsw-static-neutral-bluish-50: #fdf0f5;
+  --dsw-static-neutral-50: #fdf0f5;
+  --dsw-static-neutral-bluish-60: #fdf0f5;
+  --dsw-static-neutral-60: #fdf0f5;
+  --dsw-static-neutral-bluish-75: #fae8f0;
+  --dsw-static-neutral-75: #fae8f0;
+  --dsw-static-neutral-bluish-100: #fae8f0;
+  --dsw-static-neutral-100: #fae8f0;
+  --dsw-static-neutral-bluish-150: #f5dfeb;
+  --dsw-static-neutral-150: #f5dfeb;
+  --dsw-static-neutral-bluish-200: #f5dfeb;
+  --dsw-static-neutral-200: #f5dfeb;
+  --dsw-static-neutral-bluish-250: #efd3e2;
+  --dsw-static-neutral-250: #efd3e2;
+  --dsw-static-neutral-bluish-300: #efd3e2;
+  --dsw-static-neutral-300: #efd3e2;
+  --dsw-static-neutral-bluish-400: #e6c3d5;
+  --dsw-static-neutral-400: #e6c3d5;
+  --dsw-static-neutral-bluish-500: #dab0c6;
+  --dsw-static-neutral-500: #dab0c6;
+  --dsw-static-neutral-bluish-550: #dab0c6;
+  --dsw-static-neutral-550: #dab0c6;
+  --dsw-static-neutral-bluish-600: #c48ba6;
+  --dsw-static-neutral-600: #c48ba6;
+  --dsw-static-neutral-bluish-700: #c48ba6;
+  --dsw-static-neutral-700: #c48ba6;
+  --dsw-static-neutral-bluish-750: #a66484;
+  --dsw-static-neutral-750: #a66484;
+  --dsw-static-neutral-bluish-800: #a66484;
+  --dsw-static-neutral-800: #a66484;
+  --dsw-static-neutral-bluish-850: #a66484;
+  --dsw-static-neutral-850: #a66484;
+  --dsw-static-neutral-bluish-875: #7d3c5c;
+  --dsw-static-neutral-875: #7d3c5c;
+  --dsw-static-neutral-bluish-900: #7d3c5c;
+  --dsw-static-neutral-900: #7d3c5c;
+  --dsw-static-neutral-bluish-950: #7d3c5c;
+  --dsw-static-neutral-950: #7d3c5c;
+  --dsw-static-neutral-bluish-1000: #2a0a16;
+  --dsw-static-neutral-1000: #2a0a16;
+  --dsw-static-green-50: color-mix(in srgb, #2f9e6e 10%, white);
+  --dsw-static-green-100: color-mix(in srgb, #2f9e6e 20%, white);
+  --dsw-static-green-400: #2f9e6e;
+  --dsw-static-green-500: #2f9e6e;
+  --dsw-static-green-600: color-mix(in srgb, #2f9e6e 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #2f9e6e 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #e8890c 10%, white);
+  --dsw-static-amber-100: color-mix(in srgb, #e8890c 20%, white);
+  --dsw-static-amber-400: #e8890c;
+  --dsw-static-amber-500: #e8890c;
+  --dsw-static-amber-600: color-mix(in srgb, #e8890c 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #e8890c 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #e03131 10%, white);
+  --dsw-static-red-100: color-mix(in srgb, #e03131 20%, white);
+  --dsw-static-red-400: #e03131;
+  --dsw-static-red-500: #e03131;
+  --dsw-static-red-600: color-mix(in srgb, #e03131 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #e03131 35%, black);
+}
+
+/* --- static palette: dark --- */
+body[data-dsh-festival-valentine][data-ds-dark-theme] {
+  --dsw-static-deepseek-50: #2b0d18;
+  --dsw-static-blue-50: #2b0d18;
+  --dsw-static-deepseek-50p: #451224;
+  --dsw-static-blue-50p: #451224;
+  --dsw-static-deepseek-75: #451224;
+  --dsw-static-blue-75: #451224;
+  --dsw-static-deepseek-100: #451224;
+  --dsw-static-blue-100: #451224;
+  --dsw-static-deepseek-200: #611831;
+  --dsw-static-blue-200: #611831;
+  --dsw-static-deepseek-300: #80203f;
+  --dsw-static-blue-300: #80203f;
+  --dsw-static-deepseek-400: #a12950;
+  --dsw-static-blue-400: #a12950;
+  --dsw-static-deepseek-450: #a12950;
+  --dsw-static-blue-450: #a12950;
+  --dsw-static-deepseek-500: #c73866;
+  --dsw-static-blue-500: #c73866;
+  --dsw-static-deepseek-600: #f06595;
+  --dsw-static-blue-600: #f06595;
+  --dsw-static-deepseek-700-delete: #f490ae;
+  --dsw-static-deepseek-800: #f490ae;
+  --dsw-static-blue-800: #f490ae;
+  --dsw-static-deepseek-900: #f9bfd2;
+  --dsw-static-blue-900: #f9bfd2;
+  --dsw-static-deepseek-950: #fde4ee;
+  --dsw-static-blue-950: #fde4ee;
+  --dsw-static-neutral-bluish-00: #1a0c13;
+  --dsw-static-neutral-00: #1a0c13;
+  --dsw-static-neutral-bluish-50: #1a0c13;
+  --dsw-static-neutral-50: #1a0c13;
+  --dsw-static-neutral-bluish-60: #1a0c13;
+  --dsw-static-neutral-60: #1a0c13;
+  --dsw-static-neutral-bluish-75: #221019;
+  --dsw-static-neutral-75: #221019;
+  --dsw-static-neutral-bluish-100: #221019;
+  --dsw-static-neutral-100: #221019;
+  --dsw-static-neutral-bluish-150: #2b1521;
+  --dsw-static-neutral-150: #2b1521;
+  --dsw-static-neutral-bluish-200: #2b1521;
+  --dsw-static-neutral-200: #2b1521;
+  --dsw-static-neutral-bluish-250: #351b2a;
+  --dsw-static-neutral-250: #351b2a;
+  --dsw-static-neutral-bluish-300: #351b2a;
+  --dsw-static-neutral-300: #351b2a;
+  --dsw-static-neutral-bluish-400: #412334;
+  --dsw-static-neutral-400: #412334;
+  --dsw-static-neutral-bluish-500: #4f2d40;
+  --dsw-static-neutral-500: #4f2d40;
+  --dsw-static-neutral-bluish-550: #4f2d40;
+  --dsw-static-neutral-550: #4f2d40;
+  --dsw-static-neutral-bluish-600: #6f4158;
+  --dsw-static-neutral-600: #6f4158;
+  --dsw-static-neutral-bluish-700: #6f4158;
+  --dsw-static-neutral-700: #6f4158;
+  --dsw-static-neutral-bluish-750: #96607c;
+  --dsw-static-neutral-750: #96607c;
+  --dsw-static-neutral-bluish-800: #96607c;
+  --dsw-static-neutral-800: #96607c;
+  --dsw-static-neutral-bluish-850: #96607c;
+  --dsw-static-neutral-850: #96607c;
+  --dsw-static-neutral-bluish-875: #c490a8;
+  --dsw-static-neutral-875: #c490a8;
+  --dsw-static-neutral-bluish-900: #c490a8;
+  --dsw-static-neutral-900: #c490a8;
+  --dsw-static-neutral-bluish-950: #c490a8;
+  --dsw-static-neutral-950: #c490a8;
+  --dsw-static-neutral-bluish-1000: #fbe9f1;
+  --dsw-static-neutral-1000: #fbe9f1;
+  --dsw-static-green-50: color-mix(in srgb, #69db7c 10%, black);
+  --dsw-static-green-100: color-mix(in srgb, #69db7c 20%, black);
+  --dsw-static-green-400: #69db7c;
+  --dsw-static-green-500: #69db7c;
+  --dsw-static-green-600: color-mix(in srgb, #69db7c 82%, black);
+  --dsw-static-green-900: color-mix(in srgb, #69db7c 35%, black);
+  --dsw-static-amber-50: color-mix(in srgb, #f0a13d 10%, black);
+  --dsw-static-amber-100: color-mix(in srgb, #f0a13d 20%, black);
+  --dsw-static-amber-400: #f0a13d;
+  --dsw-static-amber-500: #f0a13d;
+  --dsw-static-amber-600: color-mix(in srgb, #f0a13d 82%, black);
+  --dsw-static-amber-900: color-mix(in srgb, #f0a13d 35%, black);
+  --dsw-static-red-50: color-mix(in srgb, #ff6b6b 10%, black);
+  --dsw-static-red-100: color-mix(in srgb, #ff6b6b 20%, black);
+  --dsw-static-red-400: #ff6b6b;
+  --dsw-static-red-500: #ff6b6b;
+  --dsw-static-red-600: color-mix(in srgb, #ff6b6b 82%, black);
+  --dsw-static-red-900: color-mix(in srgb, #ff6b6b 35%, black);
+}
+
+/* --- alias & specific: light --- */
+body[data-dsh-festival-valentine] {
+  --dsw-alias-button-primary-fill: #d6336c;
+  --dsw-alias-button-primary-hover: #e0568b;
+  --dsw-alias-button-primary-dimmed: #ffdeeb;
+  --dsw-alias-button-info-fill: #d6336c;
+  --dsw-alias-button-info-hover: #e0568b;
+  --dsw-alias-button-contrast-fill: #e64980;
+  --dsw-alias-button-ghost-active-fill: #fbe4ee;
+  --dsw-alias-button-ghost-active-hover: #ffdeeb;
+  --dsw-alias-button-ghost-active-border: #faa2c1;
+  --dsw-alias-button-elevated-fill: #fdf0f5;
+  --dsw-alias-button-floating-fill: #fdf0f5;
+  --dsw-alias-button-floating-hover: #f9e3ee;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(214, 51, 108, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(214, 51, 108, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(214, 51, 108, 0.6);
+  --dsw-specific-bubble: #fff0f5;
+  --dsw-specific-bubble-highlight: #fcc2d7;
+  --dsw-specific-input-major: #fdf0f5;
+  --dsw-specific-login-input: #fdf0f5;
+  --dsw-specific-sidebar-fill: #d6336c;
+  --dsw-specific-sidebar-nav-item-active: #ffdeeb;
+  --dsw-specific-sidebar-nav-item-hover: #f9e3ee;
+  --dsw-specific-sidebar-nav-item-active-accent: #faa2c1;
+}
+
+/* --- alias & specific: dark --- */
+body[data-dsh-festival-valentine][data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #f06595;
+  --dsw-alias-button-primary-hover: #f783ac;
+  --dsw-alias-button-primary-dimmed: #451224;
+  --dsw-alias-button-info-fill: #f06595;
+  --dsw-alias-button-info-hover: #f783ac;
+  --dsw-alias-button-contrast-fill: #f06595;
+  --dsw-alias-button-ghost-active-fill: #3d1524;
+  --dsw-alias-button-ghost-active-hover: #451224;
+  --dsw-alias-button-ghost-active-border: #80203f;
+  --dsw-alias-button-elevated-fill: #1a0c13;
+  --dsw-alias-button-floating-fill: #1a0c13;
+  --dsw-alias-button-floating-hover: #2a1420;
+  --dsw-alias-button-tool-bar-fill-invisible: rgba(240, 101, 149, 0.36);
+  --dsw-alias-button-tool-bar-fill: rgba(240, 101, 149, 0.5);
+  --dsw-alias-button-tool-bar-hover: rgba(240, 101, 149, 0.6);
+  --dsw-specific-bubble: #4d1428;
+  --dsw-specific-bubble-highlight: #611831;
+  --dsw-specific-input-major: #1a0c13;
+  --dsw-specific-login-input: #1a0c13;
+  --dsw-specific-sidebar-fill: #f06595;
+  --dsw-specific-sidebar-nav-item-active: #451224;
+  --dsw-specific-sidebar-nav-item-hover: #2a1420;
+  --dsw-specific-sidebar-nav-item-active-accent: #80203f;
+}
+
+/* --- signature decor: light --- */
+body[data-dsh-festival-valentine] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-valentine]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.1;
+    background-image:
+      radial-gradient(circle at 11% 22%, var(--valentine-rose) 0 2px, transparent 2.8px),
+      radial-gradient(circle at 12.4% 22%, var(--valentine-rose) 0 2px, transparent 2.8px),
+      radial-gradient(circle at 38% 9%, var(--valentine-pink) 0 1.7px, transparent 2.4px),
+      radial-gradient(circle at 39.2% 9%, var(--valentine-pink) 0 1.7px, transparent 2.4px),
+      radial-gradient(circle at 63% 41%, var(--valentine-rose) 0 2.2px, transparent 3px),
+      radial-gradient(circle at 64.6% 41%, var(--valentine-pink) 0 2.2px, transparent 3px),
+      radial-gradient(circle at 84% 70%, var(--valentine-pink) 0 1.8px, transparent 2.5px),
+      radial-gradient(circle at 85.3% 70%, var(--valentine-pink) 0 1.8px, transparent 2.5px),
+      radial-gradient(circle at 26% 82%, var(--valentine-rose) 0 1.6px, transparent 2.3px),
+      radial-gradient(circle at 27.2% 82%, var(--valentine-rose) 0 1.6px, transparent 2.3px);
+    background-size: 540px 540px, 540px 540px, 620px 620px, 620px 620px, 480px 480px,
+      480px 480px, 660px 660px, 660px 660px, 560px 560px, 560px 560px;
+    animation: festival-valentine-valentine-hearts-float 34s linear infinite;
+}
+
+body[data-dsh-festival-valentine]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.06;
+    background-image:
+      repeating-linear-gradient(115deg, var(--valentine-rose) 0 2px, transparent 2px 52px),
+      repeating-linear-gradient(115deg, var(--valentine-pink) 0 1px, transparent 1px 26px);
+    animation: festival-valentine-valentine-ribbon-drift 26s linear infinite;
+}
+
+body[data-dsh-festival-valentine] [class*='sider'] [class*='session'],
+body[data-dsh-festival-valentine] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-festival-valentine] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover);
+    box-shadow: inset 3px 0 0 0 var(--valentine-pink);
+}
+
+body[data-dsh-festival-valentine] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-valentine] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(214, 51, 108, 0.16), rgba(214, 51, 108, 0.05) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--valentine-rose);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-valentine] button[class*='primary'],
+body[data-dsh-festival-valentine] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #a61e4d 0%, var(--valentine-rose) 55%, #f06595 100%) !important;
+    border: 1px solid #f3b7cc !important;
+    color: var(--text-white) !important;
+    box-shadow: 0 2px 8px rgba(214, 51, 108, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    text-shadow: 0 1px 2px rgba(117, 21, 52, 0.5);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-valentine] button[class*='primary']:hover,
+body[data-dsh-festival-valentine] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.08);
+    box-shadow: 0 3px 16px rgba(214, 51, 108, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    animation: festival-valentine-valentine-heartbeat 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-valentine] pre,
+body[data-dsh-festival-valentine] .markdown-body pre {
+  background: linear-gradient(180deg, #fdf0f5 0%, #fae8f0 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--valentine-rose) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(214, 51, 108, 0.05);
+}
+
+body[data-dsh-festival-valentine] pre code,
+body[data-dsh-festival-valentine] .markdown-body pre code {
+  background: transparent !important;
+    color: #5c1f38 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-valentine] code,
+body[data-dsh-festival-valentine] .markdown-body code {
+  background: var(--brand-light);
+    color: var(--valentine-wax);
+    border: 1px solid rgba(214, 51, 108, 0.25);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-festival-valentine]::selection {
+  background: color-mix(in srgb, var(--brand) 32%, transparent);
+    color: var(--text-0);
+}
+
+body[data-dsh-festival-valentine] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(214, 51, 108, 0.05), 0 0 0 1px rgba(214, 51, 108, 0.06);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-valentine] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-festival-valentine] [class*='agent-bar'],
+body[data-dsh-festival-valentine] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(214, 51, 108, 0.3);
+}
+
+body[data-dsh-festival-valentine]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-valentine]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--valentine-pink), var(--valentine-rose));
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-valentine]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f06595, var(--valentine-wax));
+}
+
+body[data-dsh-festival-valentine]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-festival-valentine] .markdown-body a,
+body[data-dsh-festival-valentine] a {
+  color: var(--valentine-rose);
+}
+
+body[data-dsh-festival-valentine] .markdown-body a:hover,
+body[data-dsh-festival-valentine] a:hover {
+  color: var(--valentine-wax);
+}
+
+body[data-dsh-festival-valentine] .markdown-body blockquote {
+  border-left: 3px solid var(--valentine-rose);
+    border-top: 1px dashed rgba(214, 51, 108, 0.35);
+    border-bottom: 1px dashed rgba(214, 51, 108, 0.35);
+    background: rgba(247, 131, 172, 0.1);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-valentine] .markdown-body hr,
+body[data-dsh-festival-valentine] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(45deg, transparent 44%, rgba(214, 51, 108, 0.6) 45% 55%, transparent 56%),
+      linear-gradient(-45deg, transparent 44%, rgba(214, 51, 108, 0.6) 45% 55%, transparent 56%),
+      linear-gradient(90deg, transparent, rgba(247, 131, 172, 0.5), transparent);
+    background-size: 16px 8px, 16px 8px, 100% 1px;
+    background-position: 0 0, 0 0, 0 4px;
+    background-repeat: repeat-x, repeat-x, no-repeat;
+    opacity: 0.65;
+}
+
+body[data-dsh-festival-valentine] .arco-btn:not(button[class*='primary']):hover {
+  color: var(--valentine-rose) !important;
+    border-color: rgba(214, 51, 108, 0.5) !important;
+    background-color: rgba(214, 51, 108, 0.08) !important;
+}
+
+/* --- signature decor: dark --- */
+body[data-dsh-festival-valentine][data-ds-dark-theme] {
+  background-color: var(--bg-base) !important;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme]::before {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.11;
+    background-image:
+      radial-gradient(circle at 11% 22%, var(--valentine-rose) 0 2px, transparent 2.8px),
+      radial-gradient(circle at 12.4% 22%, var(--valentine-rose) 0 2px, transparent 2.8px),
+      radial-gradient(circle at 38% 9%, var(--valentine-candle) 0 1.6px, transparent 2.4px),
+      radial-gradient(circle at 39.2% 9%, var(--valentine-pink) 0 1.6px, transparent 2.4px),
+      radial-gradient(circle at 63% 41%, var(--valentine-rose) 0 2.2px, transparent 3px),
+      radial-gradient(circle at 64.6% 41%, var(--valentine-pink) 0 2.2px, transparent 3px),
+      radial-gradient(circle at 84% 70%, var(--valentine-candle) 0 1.7px, transparent 2.5px),
+      radial-gradient(circle at 85.3% 70%, var(--valentine-pink) 0 1.7px, transparent 2.5px),
+      radial-gradient(circle at 26% 82%, var(--valentine-rose) 0 1.6px, transparent 2.3px),
+      radial-gradient(circle at 27.2% 82%, var(--valentine-rose) 0 1.6px, transparent 2.3px);
+    background-size: 540px 540px, 540px 540px, 620px 620px, 620px 620px, 480px 480px,
+      480px 480px, 660px 660px, 660px 660px, 560px 560px, 560px 560px;
+    animation: festival-valentine-valentine-hearts-float 34s linear infinite;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme]::after {
+  content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image:
+      repeating-linear-gradient(115deg, var(--valentine-rose) 0 2px, transparent 2px 52px),
+      repeating-linear-gradient(115deg, var(--valentine-pink) 0 1px, transparent 1px 26px);
+    animation: festival-valentine-valentine-ribbon-drift 26s linear infinite;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='sider'] [class*='session'],
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='sider'] [class*='item'] {
+  border-radius: 8px;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='sider'] [class*='item']:hover {
+  background-color: var(--bg-hover);
+    box-shadow: inset 3px 0 0 0 var(--valentine-pink);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='active'],
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='sider'] [class*='item'][class*='selected'] {
+  background:
+      linear-gradient(90deg, rgba(240, 101, 149, 0.26), rgba(240, 101, 149, 0.07) 60%, transparent) !important;
+    box-shadow: inset 3px 0 0 0 var(--valentine-rose);
+    font-weight: 600;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] button[class*='primary'],
+body[data-dsh-festival-valentine][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled) {
+  background: linear-gradient(135deg, #c73866 0%, var(--valentine-rose) 55%, #f8a5c2 100%) !important;
+    border: 1px solid #f8bccf !important;
+    color: #3a0d1e !important;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(240, 101, 149, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    transition: box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] button[class*='primary']:hover,
+body[data-dsh-festival-valentine][data-ds-dark-theme] button[class*='primary']:not(.arco-btn-disabled):hover {
+  filter: brightness(1.1);
+    box-shadow: 0 3px 18px rgba(240, 101, 149, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.38);
+    animation: festival-valentine-valentine-heartbeat 2.8s ease-in-out infinite;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] pre,
+body[data-dsh-festival-valentine][data-ds-dark-theme] .markdown-body pre {
+  background: linear-gradient(180deg, #170a11 0%, #12070d 100%) !important;
+    border: 1px solid var(--border-base);
+    border-left: 3px solid var(--valentine-rose) !important;
+    border-radius: 8px;
+    box-shadow: inset 0 0 22px rgba(97, 24, 49, 0.4);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] pre code,
+body[data-dsh-festival-valentine][data-ds-dark-theme] .markdown-body pre code {
+  background: transparent !important;
+    color: #f4d7e2 !important;
+    text-shadow: none;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] code,
+body[data-dsh-festival-valentine][data-ds-dark-theme] .markdown-body code {
+  background: rgba(97, 24, 49, 0.5);
+    color: #f8a5c2;
+    border: 1px solid rgba(240, 101, 149, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme]::selection {
+  background: color-mix(in srgb, var(--brand) 42%, transparent);
+    color: var(--text-white);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='guidInputCard'] {
+  background-color: var(--dialog-fill-0) !important;
+    border: 1.5px solid var(--border-base) !important;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 8px rgba(4, 1, 3, 0.55), 0 0 0 1px rgba(240, 101, 149, 0.12);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='guidInputCard']:hover {
+  border-color: var(--border-special) !important;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='agent-bar'],
+body[data-dsh-festival-valentine][data-ds-dark-theme] [class*='agentBar'] {
+  background-color: var(--color-guid-agent-bar) !important;
+    border-top: 1px solid rgba(240, 101, 149, 0.4);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme]::-webkit-scrollbar {
+  width: 10px;
+    height: 10px;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme]::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--valentine-rose), #611831);
+    border-radius: 6px;
+    border: 2px solid var(--bg-base);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--valentine-pink), #80203f);
+    box-shadow: 0 0 8px rgba(240, 101, 149, 0.5);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme]::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] .markdown-body a,
+body[data-dsh-festival-valentine][data-ds-dark-theme] a {
+  color: var(--valentine-pink);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] .markdown-body a:hover,
+body[data-dsh-festival-valentine][data-ds-dark-theme] a:hover {
+  color: #fcd9e5;
+    text-shadow: 0 0 8px rgba(248, 165, 194, 0.5);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] .markdown-body blockquote {
+  border-left: 3px solid var(--valentine-rose);
+    border-top: 1px dashed rgba(240, 101, 149, 0.4);
+    border-bottom: 1px dashed rgba(240, 101, 149, 0.4);
+    background: rgba(97, 24, 49, 0.3);
+    border-radius: 0 10px 10px 0;
+    color: var(--text-secondary);
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] .markdown-body hr,
+body[data-dsh-festival-valentine][data-ds-dark-theme] hr {
+  border: none;
+    height: 8px;
+    background-image:
+      linear-gradient(45deg, transparent 44%, rgba(240, 101, 149, 0.65) 45% 55%, transparent 56%),
+      linear-gradient(-45deg, transparent 44%, rgba(240, 101, 149, 0.65) 45% 55%, transparent 56%),
+      linear-gradient(90deg, transparent, rgba(248, 165, 194, 0.4), transparent);
+    background-size: 16px 8px, 16px 8px, 100% 1px;
+    background-position: 0 0, 0 0, 0 4px;
+    background-repeat: repeat-x, repeat-x, no-repeat;
+    opacity: 0.65;
+}
+
+body[data-dsh-festival-valentine][data-ds-dark-theme] .arco-btn:not(button[class*='primary']):hover {
+  color: #f8bccf !important;
+    border-color: rgba(240, 101, 149, 0.5) !important;
+    background-color: rgba(240, 101, 149, 0.12) !important;
+}
+
+/* --- keyframes --- */
+@keyframes festival-valentine-valentine-hearts-float {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 30px -540px, 30px -540px, -24px -620px, -24px -620px,
+    18px -480px, 18px -480px, -30px -660px, -30px -660px, 22px -560px, 22px -560px; }
+}
+
+@keyframes festival-valentine-valentine-ribbon-drift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 104px 0, 52px 0; }
+}
+
+@keyframes festival-valentine-valentine-titlebar-glow {
+  0%, 100% { box-shadow: 0 2px 10px rgba(214, 51, 108, 0.18); }
+  50% { box-shadow: 0 2px 18px rgba(214, 51, 108, 0.38); }
+}
+
+@keyframes festival-valentine-valentine-heartbeat {
+  0%, 100% { transform: scale(1); }
+  18% { transform: scale(1.045); }
+  32% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  66% { transform: scale(1); }
+}
+
+@keyframes festival-valentine-valentine-seal-glow {
+  0%, 100% { box-shadow: 0 1px 4px rgba(166, 30, 77, 0.4), inset 0 0 0 1.5px rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 1px 8px rgba(214, 51, 108, 0.65), inset 0 0 0 1.5px rgba(255, 255, 255, 0.45); }
+}
+
+@keyframes festival-valentine-valentine-ribbon-flow {
+  0% { background-position: center center, 0% 50%; }
+  100% { background-position: center center, 300% 50%; }
+}

@@ -1,0 +1,74 @@
+name: test
+
+# main is the live update source. Contributor checks do not need a signing key,
+# but the separate release-readiness check must pass before merging shipped
+# changes into main. Maintainers prepare signatures on the reviewed candidate.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      # `catalog-test.mjs` compares the recorded revision against the last commit that
+      # touched the release content, and it can only do that with history to walk.
+      # checkout's default `fetch-depth: 1` leaves a single commit with no parent to
+      # diff against, so that walk answers HEAD for any path list — which made the gate
+      # fail on every commit that only refreshes the catalog records, on `main` and on
+      # pull requests alike (where HEAD is GitHub's throwaway merge ref).
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      # No install step and no dependencies: the suites are plain Node scripts and
+      # none of them touch the network, so this cannot spend free-lane quota.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Validate code or the complete main tree
+        env:
+          TEST_MODE: ${{ github.event_name == 'pull_request' && 'contributor' || 'all' }}
+        run: node scripts/test-all.mjs --mode "$TEST_MODE"
+
+  # Keep this check required on main. A red result on a source PR means the
+  # maintainer still has release preparation to do, not that the author needs
+  # access to the publisher's private key.
+  release-readiness:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: npm run test:release
+
+  # The adapter seam (and only it) is kept under strict TypeScript checking. This
+  # job installs the one devDependency; the offline job above stays install-free.
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run typecheck
+
+  standalone-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix packages/standalone --ignore-scripts
+      - run: npm run typecheck:standalone
+      - run: node scripts/build-standalone-ui.mjs --check

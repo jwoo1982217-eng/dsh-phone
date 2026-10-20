@@ -1,0 +1,7 @@
+# dsh-model-routing: mounts the host half. The browser half is declared in
+# package.json (`dsh.client`). Enable by inserting this entry into the profile
+# (or by listing the package in the profile's dependencies).
+- insert:
+    - id: model-routing
+      name: 'dsh-model-routing'
+      config: {}

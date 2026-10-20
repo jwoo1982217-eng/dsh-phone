@@ -1,0 +1,3525 @@
+{
+  "version": 1,
+  "providers": [
+    {
+      "id": "local",
+      "name": "现有皮肤",
+      "description": "保留桃云、薄荷手记和原版",
+      "themes": [
+        {
+          "id": "local:peach",
+          "provider": "local",
+          "file": "local--peach",
+          "name": "小甜桃 · 桃云",
+          "mode": "dual",
+          "swatches": [
+            "#fff8fa",
+            "#b74670",
+            "#201720"
+          ]
+        },
+        {
+          "id": "local:mint",
+          "provider": "local",
+          "file": "local--mint",
+          "name": "薄荷手记",
+          "mode": "dual",
+          "swatches": [
+            "#f3fbf8",
+            "#267660",
+            "#101e1c"
+          ]
+        },
+        {
+          "id": "local:original",
+          "provider": "local",
+          "file": "local--original",
+          "name": "原版",
+          "mode": "dual",
+          "swatches": [
+            "#ffffff",
+            "#537cef",
+            "#151517"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opencode",
+      "name": "现有插件 · OpenCode",
+      "description": "38 套经典配色，纳入统一外观管理",
+      "url": "https://github.com/FeatherHunter/dsh-opencode-palette",
+      "version": "2.0.26",
+      "license": "MIT",
+      "themes": [
+        {
+          "id": "opencode:amoled",
+          "provider": "opencode",
+          "file": "opencode--amoled",
+          "name": "AMOLED",
+          "mode": "dark",
+          "swatches": [
+            "#000000",
+            "#B388FF",
+            "#FF4081"
+          ]
+        },
+        {
+          "id": "opencode:aura",
+          "provider": "opencode",
+          "file": "opencode--aura",
+          "name": "光环",
+          "mode": "dark",
+          "swatches": [
+            "#0F0F0F",
+            "#A277FF",
+            "#A277FF"
+          ]
+        },
+        {
+          "id": "opencode:ayu",
+          "provider": "opencode",
+          "file": "opencode--ayu",
+          "name": "Ayu",
+          "mode": "dark",
+          "swatches": [
+            "#0B0E14",
+            "#59C2FF",
+            "#E6B450"
+          ]
+        },
+        {
+          "id": "opencode:carbonfox",
+          "provider": "opencode",
+          "file": "opencode--carbonfox",
+          "name": "碳狐",
+          "mode": "dark",
+          "swatches": [
+            "#161616",
+            "#33B1FF",
+            "#FF7EB6"
+          ]
+        },
+        {
+          "id": "opencode:catppuccin",
+          "provider": "opencode",
+          "file": "opencode--catppuccin",
+          "name": "卡布奇诺",
+          "mode": "dark",
+          "swatches": [
+            "#1E1E2E",
+            "#89B4FA",
+            "#F5C2E7"
+          ]
+        },
+        {
+          "id": "opencode:catppuccin-frappe",
+          "provider": "opencode",
+          "file": "opencode--catppuccin-frappe",
+          "name": "卡布奇诺·冰沙",
+          "mode": "dark",
+          "swatches": [
+            "#303446",
+            "#8DA4E2",
+            "#F4B8E4"
+          ]
+        },
+        {
+          "id": "opencode:catppuccin-macchiato",
+          "provider": "opencode",
+          "file": "opencode--catppuccin-macchiato",
+          "name": "卡布奇诺·玛奇朵",
+          "mode": "dark",
+          "swatches": [
+            "#24273A",
+            "#8AADF4",
+            "#F5BDE6"
+          ]
+        },
+        {
+          "id": "opencode:cobalt2",
+          "provider": "opencode",
+          "file": "opencode--cobalt2",
+          "name": "钴蓝",
+          "mode": "dark",
+          "swatches": [
+            "#193549",
+            "#0088FF",
+            "#2AFFDF"
+          ]
+        },
+        {
+          "id": "opencode:cursor",
+          "provider": "opencode",
+          "file": "opencode--cursor",
+          "name": "Cursor",
+          "mode": "dark",
+          "swatches": [
+            "#181818",
+            "#88C0D0",
+            "#88C0D0"
+          ]
+        },
+        {
+          "id": "opencode:dracula",
+          "provider": "opencode",
+          "file": "opencode--dracula",
+          "name": "德古拉",
+          "mode": "dark",
+          "swatches": [
+            "#282A36",
+            "#BD93F9",
+            "#8BE9FD"
+          ]
+        },
+        {
+          "id": "opencode:everforest",
+          "provider": "opencode",
+          "file": "opencode--everforest",
+          "name": "常青森林",
+          "mode": "dark",
+          "swatches": [
+            "#2D353B",
+            "#A7C080",
+            "#D699B6"
+          ]
+        },
+        {
+          "id": "opencode:flexoki",
+          "provider": "opencode",
+          "file": "opencode--flexoki",
+          "name": "Flexoki",
+          "mode": "dark",
+          "swatches": [
+            "#100F0F",
+            "#DA702C",
+            "#8B7EC8"
+          ]
+        },
+        {
+          "id": "opencode:github",
+          "provider": "opencode",
+          "file": "opencode--github",
+          "name": "GitHub",
+          "mode": "dark",
+          "swatches": [
+            "#0D1117",
+            "#58A6FF",
+            "#39C5CF"
+          ]
+        },
+        {
+          "id": "opencode:gruvbox",
+          "provider": "opencode",
+          "file": "opencode--gruvbox",
+          "name": "Gruvbox",
+          "mode": "dark",
+          "swatches": [
+            "#282828",
+            "#83A598",
+            "#8EC07C"
+          ]
+        },
+        {
+          "id": "opencode:kanagawa",
+          "provider": "opencode",
+          "file": "opencode--kanagawa",
+          "name": "神奈川",
+          "mode": "dark",
+          "swatches": [
+            "#1F1F28",
+            "#7E9CD8",
+            "#D27E99"
+          ]
+        },
+        {
+          "id": "opencode:lucent-orng",
+          "provider": "opencode",
+          "file": "opencode--lucent-orng",
+          "name": "透光橙",
+          "mode": "dual",
+          "swatches": [
+            "#EC5B2B",
+            "#FFF7F1"
+          ]
+        },
+        {
+          "id": "opencode:material",
+          "provider": "opencode",
+          "file": "opencode--material",
+          "name": "材料设计",
+          "mode": "dark",
+          "swatches": [
+            "#263238",
+            "#82AAFF",
+            "#89DDFF"
+          ]
+        },
+        {
+          "id": "opencode:matrix",
+          "provider": "opencode",
+          "file": "opencode--matrix",
+          "name": "黑客帝国",
+          "mode": "dark",
+          "swatches": [
+            "#0A0E0A",
+            "#2EFF6A",
+            "#C770FF"
+          ]
+        },
+        {
+          "id": "opencode:mercury",
+          "provider": "opencode",
+          "file": "opencode--mercury",
+          "name": "水星",
+          "mode": "dark",
+          "swatches": [
+            "#171721",
+            "#8DA4F5",
+            "#8DA4F5"
+          ]
+        },
+        {
+          "id": "opencode:monokai",
+          "provider": "opencode",
+          "file": "opencode--monokai",
+          "name": "Monokai",
+          "mode": "dark",
+          "swatches": [
+            "#272822",
+            "#66D9EF",
+            "#A6E22E"
+          ]
+        },
+        {
+          "id": "opencode:nightowl",
+          "provider": "opencode",
+          "file": "opencode--nightowl",
+          "name": "夜猫子",
+          "mode": "dark",
+          "swatches": [
+            "#011627",
+            "#82AAFF",
+            "#C792EA"
+          ]
+        },
+        {
+          "id": "opencode:nord",
+          "provider": "opencode",
+          "file": "opencode--nord",
+          "name": "北极",
+          "mode": "dark",
+          "swatches": [
+            "#2E3440",
+            "#88C0D0",
+            "#8FBCBB"
+          ]
+        },
+        {
+          "id": "opencode:oc-2",
+          "provider": "opencode",
+          "file": "opencode--oc-2",
+          "name": "OC 2",
+          "mode": "dark",
+          "swatches": [
+            "#1F1F1F",
+            "#FAB283",
+            "#034CFF"
+          ]
+        },
+        {
+          "id": "opencode:one-dark",
+          "provider": "opencode",
+          "file": "opencode--one-dark",
+          "name": "One Dark",
+          "mode": "dark",
+          "swatches": [
+            "#282C34",
+            "#61AFEF",
+            "#56B6C2"
+          ]
+        },
+        {
+          "id": "opencode:onedarkpro",
+          "provider": "opencode",
+          "file": "opencode--onedarkpro",
+          "name": "One Dark Pro",
+          "mode": "dark",
+          "swatches": [
+            "#1E222A",
+            "#61AFEF",
+            "#E06C75"
+          ]
+        },
+        {
+          "id": "opencode:opencode",
+          "provider": "opencode",
+          "file": "opencode--opencode",
+          "name": "opencode",
+          "mode": "dark",
+          "swatches": [
+            "#0A0A0A",
+            "#FAB283",
+            "#9D7CD8"
+          ]
+        },
+        {
+          "id": "opencode:orng",
+          "provider": "opencode",
+          "file": "opencode--orng",
+          "name": "纯橙",
+          "mode": "dark",
+          "swatches": [
+            "#0A0A0A",
+            "#EC5B2B",
+            "#FFF7F1"
+          ]
+        },
+        {
+          "id": "opencode:osaka-jade",
+          "provider": "opencode",
+          "file": "opencode--osaka-jade",
+          "name": "大阪翡翠",
+          "mode": "dark",
+          "swatches": [
+            "#111C18",
+            "#2DD5B7",
+            "#549E6A"
+          ]
+        },
+        {
+          "id": "opencode:palenight",
+          "provider": "opencode",
+          "file": "opencode--palenight",
+          "name": "苍白之夜",
+          "mode": "dark",
+          "swatches": [
+            "#292D3E",
+            "#82AAFF",
+            "#89DDFF"
+          ]
+        },
+        {
+          "id": "opencode:rosepine",
+          "provider": "opencode",
+          "file": "opencode--rosepine",
+          "name": "玫瑰松林",
+          "mode": "dark",
+          "swatches": [
+            "#191724",
+            "#9CCFD8",
+            "#EBBCBA"
+          ]
+        },
+        {
+          "id": "opencode:shadesofpurple",
+          "provider": "opencode",
+          "file": "opencode--shadesofpurple",
+          "name": "紫影",
+          "mode": "dark",
+          "swatches": [
+            "#1A102B",
+            "#C792FF",
+            "#FF7AC6"
+          ]
+        },
+        {
+          "id": "opencode:solarized",
+          "provider": "opencode",
+          "file": "opencode--solarized",
+          "name": "Solarized",
+          "mode": "dark",
+          "swatches": [
+            "#002B36",
+            "#268BD2",
+            "#2AA198"
+          ]
+        },
+        {
+          "id": "opencode:synthwave84",
+          "provider": "opencode",
+          "file": "opencode--synthwave84",
+          "name": "合成波 84",
+          "mode": "dark",
+          "swatches": [
+            "#262335",
+            "#36F9F6",
+            "#B084EB"
+          ]
+        },
+        {
+          "id": "opencode:system",
+          "provider": "opencode",
+          "file": "opencode--system",
+          "name": "跟随系统",
+          "mode": "dual",
+          "swatches": []
+        },
+        {
+          "id": "opencode:tokyonight",
+          "provider": "opencode",
+          "file": "opencode--tokyonight",
+          "name": "东京之夜",
+          "mode": "dark",
+          "swatches": [
+            "#1A1B26",
+            "#82AAFF",
+            "#FF966C"
+          ]
+        },
+        {
+          "id": "opencode:vercel",
+          "provider": "opencode",
+          "file": "opencode--vercel",
+          "name": "Vercel",
+          "mode": "dark",
+          "swatches": [
+            "#000000",
+            "#0070F3",
+            "#8E4EC6"
+          ]
+        },
+        {
+          "id": "opencode:vesper",
+          "provider": "opencode",
+          "file": "opencode--vesper",
+          "name": "黄昏星",
+          "mode": "dark",
+          "swatches": [
+            "#101010",
+            "#FFC799",
+            "#FFC799"
+          ]
+        },
+        {
+          "id": "opencode:zenburn",
+          "provider": "opencode",
+          "file": "opencode--zenburn",
+          "name": "禅燃",
+          "mode": "dark",
+          "swatches": [
+            "#3F3F3F",
+            "#8CD0D3",
+            "#93E0E3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dream",
+      "name": "梦幻皮肤",
+      "description": "玻璃质感与渐变 · 8 套独立配色",
+      "url": "https://github.com/RevolutionLA/dsh-dream-skin",
+      "commit": "8fd400696ed542217490a9aa5f4d74fd574ff1de",
+      "license": "MIT",
+      "themes": [
+        {
+          "id": "dream:abyss",
+          "provider": "dream",
+          "file": "dream--abyss",
+          "name": "沉静蓝",
+          "mode": "dark",
+          "swatches": [
+            "#111317",
+            "#edf0f7"
+          ]
+        },
+        {
+          "id": "dream:aurora",
+          "provider": "dream",
+          "file": "dream--aurora",
+          "name": "极光青",
+          "mode": "dark",
+          "swatches": [
+            "#0f1415",
+            "#eaf2f3"
+          ]
+        },
+        {
+          "id": "dream:nebula",
+          "provider": "dream",
+          "file": "dream--nebula",
+          "name": "星云紫",
+          "mode": "dark",
+          "swatches": [
+            "#131116",
+            "#f1eff6"
+          ]
+        },
+        {
+          "id": "dream:ember",
+          "provider": "dream",
+          "file": "dream--ember",
+          "name": "余烬橙",
+          "mode": "dark",
+          "swatches": [
+            "#15110e",
+            "#f5efea"
+          ]
+        },
+        {
+          "id": "dream:midnight",
+          "provider": "dream",
+          "file": "dream--midnight",
+          "name": "午夜黑",
+          "mode": "dark",
+          "swatches": [
+            "#0b0b0c",
+            "#eff0f1"
+          ]
+        },
+        {
+          "id": "dream:ivory",
+          "provider": "dream",
+          "file": "dream--ivory",
+          "name": "iOS 扁平",
+          "mode": "light",
+          "swatches": [
+            "#f3f0e7",
+            "#272623"
+          ]
+        },
+        {
+          "id": "dream:mist",
+          "provider": "dream",
+          "file": "dream--mist",
+          "name": "干净明亮",
+          "mode": "light",
+          "swatches": [
+            "#e3edf4",
+            "#242729"
+          ]
+        },
+        {
+          "id": "dream:rose",
+          "provider": "dream",
+          "file": "dream--rose",
+          "name": "Material 粉",
+          "mode": "light",
+          "swatches": [
+            "#f8eced",
+            "#292526"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "beizi",
+      "name": "主题调色",
+      "description": "经典配色 · 深浅色成对",
+      "url": "https://github.com/BeiZi6/dsh-theme-plugin",
+      "commit": "b3e7e143532c4b6df71da753d2336bb018949d2a",
+      "license": "MIT",
+      "themes": [
+        {
+          "id": "beizi:stock",
+          "provider": "beizi",
+          "file": "beizi--stock",
+          "name": "DeepSeek 默认",
+          "mode": "dual",
+          "swatches": [
+            "#f4f5f7",
+            "#6e82be",
+            "#232734"
+          ]
+        },
+        {
+          "id": "beizi:codex-warm",
+          "provider": "beizi",
+          "file": "beizi--codex-warm",
+          "name": "Codex 暖色",
+          "mode": "dual",
+          "swatches": [
+            "#F5F3EE",
+            "#DA7756",
+            "#2D2D2B"
+          ]
+        },
+        {
+          "id": "beizi:nord",
+          "provider": "beizi",
+          "file": "beizi--nord",
+          "name": "Nord",
+          "mode": "dual",
+          "swatches": [
+            "#ECEFF4",
+            "#5E81AC",
+            "#2E3440"
+          ]
+        },
+        {
+          "id": "beizi:solarized",
+          "provider": "beizi",
+          "file": "beizi--solarized",
+          "name": "Solarized",
+          "mode": "dual",
+          "swatches": [
+            "#FDF6E3",
+            "#B58900",
+            "#002B36"
+          ]
+        },
+        {
+          "id": "beizi:graphite",
+          "provider": "beizi",
+          "file": "beizi--graphite",
+          "name": "Graphite",
+          "mode": "dual",
+          "swatches": [
+            "#FAFAFA",
+            "#525252",
+            "#171717"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "oil",
+      "name": "Theme Studio",
+      "description": "15 套配色与字体方案",
+      "url": "https://github.com/oil-oil/dsh-theme",
+      "commit": "38c3cf09f1ece363283d29224c61ac369b0ffabc",
+      "license": "MIT",
+      "themes": [
+        {
+          "id": "oil:codex",
+          "provider": "oil",
+          "file": "oil--codex",
+          "name": "Codex",
+          "mode": "dual",
+          "swatches": [
+            "#FFFFFF",
+            "#0169CC",
+            "#111111"
+          ]
+        },
+        {
+          "id": "oil:proof",
+          "provider": "oil",
+          "file": "oil--proof",
+          "name": "Proof",
+          "mode": "dual",
+          "swatches": [
+            "#FAF9F6",
+            "#3D755D",
+            "#171A17"
+          ]
+        },
+        {
+          "id": "oil:everforest",
+          "provider": "oil",
+          "file": "oil--everforest",
+          "name": "Everforest",
+          "mode": "dual",
+          "swatches": [
+            "#F8FAF6",
+            "#4E713F",
+            "#181C1A"
+          ]
+        },
+        {
+          "id": "oil:github",
+          "provider": "oil",
+          "file": "oil--github",
+          "name": "Github",
+          "mode": "dual",
+          "swatches": [
+            "#FFFFFF",
+            "#0969DA",
+            "#0D1117"
+          ]
+        },
+        {
+          "id": "oil:gruvbox",
+          "provider": "oil",
+          "file": "oil--gruvbox",
+          "name": "Gruvbox",
+          "mode": "dual",
+          "swatches": [
+            "#FAF8F1",
+            "#8F4F18",
+            "#1F1F1D"
+          ]
+        },
+        {
+          "id": "oil:linear",
+          "provider": "oil",
+          "file": "oil--linear",
+          "name": "Linear",
+          "mode": "dual",
+          "swatches": [
+            "#FFFFFF",
+            "#5864C7",
+            "#15161B"
+          ]
+        },
+        {
+          "id": "oil:notion",
+          "provider": "oil",
+          "file": "oil--notion",
+          "name": "Notion",
+          "mode": "dual",
+          "swatches": [
+            "#FFFFFF",
+            "#1969AA",
+            "#191919"
+          ]
+        },
+        {
+          "id": "oil:raycast",
+          "provider": "oil",
+          "file": "oil--raycast",
+          "name": "Raycast",
+          "mode": "dual",
+          "swatches": [
+            "#FFFFFF",
+            "#0A6BC0",
+            "#141414"
+          ]
+        },
+        {
+          "id": "oil:rosePine",
+          "provider": "oil",
+          "file": "oil--rosePine",
+          "name": "Rosé Pine",
+          "mode": "dual",
+          "swatches": [
+            "#FAF8F7",
+            "#A14F5D",
+            "#201E2C"
+          ]
+        },
+        {
+          "id": "oil:graphite",
+          "provider": "oil",
+          "file": "oil--graphite",
+          "name": "Graphite",
+          "mode": "dual",
+          "swatches": [
+            "#FCFCFC",
+            "#8A1C1C",
+            "#171717"
+          ]
+        },
+        {
+          "id": "oil:editorial",
+          "provider": "oil",
+          "file": "oil--editorial",
+          "name": "Editorial",
+          "mode": "dual",
+          "swatches": [
+            "#F3F2EE",
+            "#065588",
+            "#211C1A"
+          ]
+        },
+        {
+          "id": "oil:midnight",
+          "provider": "oil",
+          "file": "oil--midnight",
+          "name": "Midnight",
+          "mode": "dual",
+          "swatches": [
+            "#F7F9FA",
+            "#216A8A",
+            "#363B40"
+          ]
+        },
+        {
+          "id": "oil:folio",
+          "provider": "oil",
+          "file": "oil--folio",
+          "name": "Folio",
+          "mode": "dual",
+          "swatches": [
+            "#FFFFFF",
+            "#36598A",
+            "#1E2025"
+          ]
+        },
+        {
+          "id": "oil:porcelain",
+          "provider": "oil",
+          "file": "oil--porcelain",
+          "name": "Porcelain",
+          "mode": "dual",
+          "swatches": [
+            "#FEFEFE",
+            "#176895",
+            "#18191B"
+          ]
+        },
+        {
+          "id": "oil:carbon",
+          "provider": "oil",
+          "file": "oil--carbon",
+          "name": "Carbon",
+          "mode": "dual",
+          "swatches": [
+            "#FAFBFC",
+            "#2D65A3",
+            "#282C34"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gallery",
+      "name": "主题画廊",
+      "description": "纹理、装饰与主题合集",
+      "url": "https://github.com/whyihaveyou/dsh-themes",
+      "commit": "e5bc0d953fe38ee26ee749618a3d7ee3b17464da",
+      "license": "Apache-2.0",
+      "themes": [
+        {
+          "id": "gallery:ayu",
+          "provider": "gallery",
+          "file": "gallery--ayu",
+          "name": "Ayu Light",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#F29718",
+            "#242635"
+          ],
+          "description": "Ayu 官方 Light 版，净白暖橙",
+          "tags": [
+            "经典配色",
+            "Ayu"
+          ]
+        },
+        {
+          "id": "gallery:catppuccin",
+          "provider": "gallery",
+          "file": "gallery--catppuccin",
+          "name": "Catppuccin Latte",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#8839ef",
+            "#242635"
+          ],
+          "description": "Latte 晨光奶咖，Mauve 马卡龙紫",
+          "tags": [
+            "经典配色",
+            "Catppuccin"
+          ]
+        },
+        {
+          "id": "gallery:darcula",
+          "provider": "gallery",
+          "file": "gallery--darcula",
+          "name": "IntelliJ Light",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#0033b3",
+            "#242635"
+          ],
+          "description": "IntelliJ 经典白底与藏青关键字",
+          "tags": [
+            "经典配色",
+            "JetBrains"
+          ]
+        },
+        {
+          "id": "gallery:donald-duck",
+          "provider": "gallery",
+          "file": "gallery--donald-duck",
+          "name": "唐老鸭",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#1a3a8f",
+            "#242635"
+          ],
+          "description": "水手蓝帽衫配黄嘴红领结的海军风",
+          "tags": [
+            "动画",
+            "迪士尼"
+          ]
+        },
+        {
+          "id": "gallery:dracula",
+          "provider": "gallery",
+          "file": "gallery--dracula",
+          "name": "Dracula",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#8a50d8",
+            "#242635"
+          ],
+          "description": "羊皮纸白底上的紫粉语法色，白昼古堡",
+          "tags": [
+            "经典配色",
+            "Dracula"
+          ]
+        },
+        {
+          "id": "gallery:egg-matrix",
+          "provider": "gallery",
+          "file": "gallery--egg-matrix",
+          "name": "黑客帝国 Matrix",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#008f11",
+            "#242635"
+          ],
+          "description": "白昼矩阵：纸上打印的绿色代码流",
+          "tags": [
+            "彩蛋",
+            "黑客帝国",
+            "Matrix"
+          ]
+        },
+        {
+          "id": "gallery:egg-pacman",
+          "provider": "gallery",
+          "file": "gallery--egg-pacman",
+          "name": "吃豆人 Pac-Man",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2121de",
+            "#242635"
+          ],
+          "description": "白昼街机厅，迷宫依旧运转",
+          "tags": [
+            "彩蛋",
+            "街机"
+          ]
+        },
+        {
+          "id": "gallery:everforest",
+          "provider": "gallery",
+          "file": "gallery--everforest",
+          "name": "Everforest",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#8da101",
+            "#242635"
+          ],
+          "description": "晨雾米白纸面，林间新绿的护眼浅色",
+          "tags": [
+            "经典配色",
+            "编辑器"
+          ]
+        },
+        {
+          "id": "gallery:festival-christmas",
+          "provider": "gallery",
+          "file": "gallery--festival-christmas",
+          "name": "圣诞节",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c2262f",
+            "#242635"
+          ],
+          "description": "白昼雪景，红绿金装点圣诞",
+          "tags": [
+            "节日限定",
+            "圣诞节"
+          ]
+        },
+        {
+          "id": "gallery:festival-dragonboat",
+          "provider": "gallery",
+          "file": "gallery--festival-dragonboat",
+          "name": "端午",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2e7d4f",
+            "#242635"
+          ],
+          "description": "艾草绿粽叶香，龙舟红漆竞渡忙",
+          "tags": [
+            "节日限定"
+          ]
+        },
+        {
+          "id": "gallery:festival-halloween",
+          "provider": "gallery",
+          "file": "gallery--festival-halloween",
+          "name": "万圣节",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c2571a",
+            "#242635"
+          ],
+          "description": "白昼糖果色的南瓜与蝙蝠巡游",
+          "tags": [
+            "节日限定",
+            "万圣节"
+          ]
+        },
+        {
+          "id": "gallery:festival-lantern",
+          "provider": "gallery",
+          "file": "gallery--festival-lantern",
+          "name": "元宵",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c22a1c",
+            "#242635"
+          ],
+          "description": "汤圆白底，灯谜红纸点睛",
+          "tags": [
+            "节日限定",
+            "元宵"
+          ]
+        },
+        {
+          "id": "gallery:festival-midautumn",
+          "provider": "gallery",
+          "file": "gallery--festival-midautumn",
+          "name": "中秋",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#a87b16",
+            "#242635"
+          ],
+          "description": "白昼桂香米纸色，金月玉兔照旧圆",
+          "tags": [
+            "节日限定"
+          ]
+        },
+        {
+          "id": "gallery:festival-newyear",
+          "provider": "gallery",
+          "file": "gallery--festival-newyear",
+          "name": "跨年夜",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#a87b1f",
+            "#242635"
+          ],
+          "description": "香槟白昼里的烟花碎金与倒数",
+          "tags": [
+            "节日限定"
+          ]
+        },
+        {
+          "id": "gallery:festival-qixi",
+          "provider": "gallery",
+          "file": "gallery--festival-qixi",
+          "name": "七夕",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b02740",
+            "#242635"
+          ],
+          "description": "晨光里的红线与鹊桥余韵",
+          "tags": [
+            "节日限定",
+            "七夕"
+          ]
+        },
+        {
+          "id": "gallery:festival-sakura",
+          "provider": "gallery",
+          "file": "gallery--festival-sakura",
+          "name": "樱花季",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c94f6d",
+            "#242635"
+          ],
+          "description": "粉樱吹雪与日式暖帘的春日白昼",
+          "tags": [
+            "节日限定",
+            "樱花"
+          ]
+        },
+        {
+          "id": "gallery:festival-spring",
+          "provider": "gallery",
+          "file": "gallery--festival-spring",
+          "name": "春节",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c81e10",
+            "#242635"
+          ],
+          "description": "宣纸暖白衬红金窗花与灯笼",
+          "tags": [
+            "节日限定",
+            "春节"
+          ]
+        },
+        {
+          "id": "gallery:festival-valentine",
+          "provider": "gallery",
+          "file": "gallery--festival-valentine",
+          "name": "情人节",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d6336c",
+            "#242635"
+          ],
+          "description": "玫瑰红粉、爱心挂串与情书火漆",
+          "tags": [
+            "节日限定"
+          ]
+        },
+        {
+          "id": "gallery:flexoki",
+          "provider": "gallery",
+          "file": "gallery--flexoki",
+          "name": "Flexoki",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#24837B",
+            "#242635"
+          ],
+          "description": "暖纸墨字亮色系，青墨点睛",
+          "tags": [
+            "经典配色",
+            "Flexoki"
+          ]
+        },
+        {
+          "id": "gallery:game-amongus",
+          "provider": "gallery",
+          "file": "gallery--game-amongus",
+          "name": "Among Us",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b30f0f",
+            "#242635"
+          ],
+          "description": "飞船食堂晨光里的红色船员",
+          "tags": [
+            "游戏",
+            "Among Us"
+          ]
+        },
+        {
+          "id": "gallery:game-animalcrossing",
+          "provider": "gallery",
+          "file": "gallery--game-animalcrossing",
+          "name": "集合啦动物森友会",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#4fa24b",
+            "#242635"
+          ],
+          "description": "嫩绿叶子与狸克木牌的岛屿小清新",
+          "tags": [
+            "游戏",
+            "动物森友会"
+          ]
+        },
+        {
+          "id": "gallery:game-cyberpunk2077",
+          "provider": "gallery",
+          "file": "gallery--game-cyberpunk2077",
+          "name": "赛博朋克2077",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b8a300",
+            "#242635"
+          ],
+          "description": "白昼夜之城，黄黑警示与残存霓虹",
+          "tags": [
+            "游戏",
+            "赛博朋克2077"
+          ]
+        },
+        {
+          "id": "gallery:game-eldenring",
+          "provider": "gallery",
+          "file": "gallery--game-eldenring",
+          "name": "艾尔登法环",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#a07c2a",
+            "#242635"
+          ],
+          "description": "黄金树晨光下的赐福指引",
+          "tags": [
+            "游戏",
+            "艾尔登法环"
+          ]
+        },
+        {
+          "id": "gallery:game-hollowknight",
+          "provider": "gallery",
+          "file": "gallery--game-hollowknight",
+          "name": "空洞骑士",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#35608f",
+            "#242635"
+          ],
+          "description": "圣巢晨雾中的小骑士面具",
+          "tags": [
+            "游戏",
+            "空洞骑士"
+          ]
+        },
+        {
+          "id": "gallery:game-kirby",
+          "provider": "gallery",
+          "file": "gallery--game-kirby",
+          "name": "星之卡比",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e2447f",
+            "#242635"
+          ],
+          "description": "粉红圆球与星星棒的软萌白昼",
+          "tags": [
+            "游戏",
+            "星之卡比"
+          ]
+        },
+        {
+          "id": "gallery:game-minecraft",
+          "provider": "gallery",
+          "file": "gallery--game-minecraft",
+          "name": "我的世界 · 苦力怕",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#43a047",
+            "#242635"
+          ],
+          "description": "苦力怕绿的像素方块世界",
+          "tags": [
+            "游戏",
+            "Minecraft"
+          ]
+        },
+        {
+          "id": "gallery:game-portal",
+          "provider": "gallery",
+          "file": "gallery--game-portal",
+          "name": "传送门",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e07800",
+            "#242635"
+          ],
+          "description": "光圈科技白舱与橙蓝双传送门",
+          "tags": [
+            "游戏",
+            "Portal"
+          ]
+        },
+        {
+          "id": "gallery:game-stardew",
+          "provider": "gallery",
+          "file": "gallery--game-stardew",
+          "name": "星露谷物语",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2d7dbd",
+            "#242635"
+          ],
+          "description": "田园像素农场，蓝鸡与四季作物",
+          "tags": [
+            "游戏",
+            "星露谷物语"
+          ]
+        },
+        {
+          "id": "gallery:game-tetris",
+          "provider": "gallery",
+          "file": "gallery--game-tetris",
+          "name": "俄罗斯方块",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#1488c0",
+            "#242635"
+          ],
+          "description": "白昼竞技场上的七彩像素方块",
+          "tags": [
+            "游戏",
+            "俄罗斯方块"
+          ]
+        },
+        {
+          "id": "gallery:genshin-ayaka",
+          "provider": "gallery",
+          "file": "gallery--genshin-ayaka",
+          "name": "原神 · 神里绫华",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3d7ea8",
+            "#242635"
+          ],
+          "description": "白鹭公主的冰蓝折扇与椿花",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-furina",
+          "provider": "gallery",
+          "file": "gallery--genshin-furina",
+          "name": "原神 · 芙宁娜",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3585c8",
+            "#242635"
+          ],
+          "description": "水神的歌剧舞台，聚光灯与泡泡",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-ganyu",
+          "provider": "gallery",
+          "file": "gallery--genshin-ganyu",
+          "name": "原神 · 甘雨",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3e7cb0",
+            "#242635"
+          ],
+          "description": "冰蓝麒麟的云海与清心",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-hutao",
+          "provider": "gallery",
+          "file": "gallery--genshin-hutao",
+          "name": "原神 · 胡桃",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c42331",
+            "#242635"
+          ],
+          "description": "白梅映雪的火红昼行",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-klee",
+          "provider": "gallery",
+          "file": "gallery--genshin-klee",
+          "name": "原神 · 可莉",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e0352b",
+            "#242635"
+          ],
+          "description": "蹦蹦炸弹与火花四叶草的童趣涂鸦",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-nahida",
+          "provider": "gallery",
+          "file": "gallery--genshin-nahida",
+          "name": "原神 · 纳西妲",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3d9a52",
+            "#242635"
+          ],
+          "description": "草绿梦境与四叶草的净善宫晨光",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-raiden",
+          "provider": "gallery",
+          "file": "gallery--genshin-raiden",
+          "name": "原神 · 雷电将军",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#7a4fc4",
+            "#242635"
+          ],
+          "description": "白无垢上的紫电金纹",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-wanderer",
+          "provider": "gallery",
+          "file": "gallery--genshin-wanderer",
+          "name": "原神 · 散兵",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#5748c8",
+            "#242635"
+          ],
+          "description": "白昼风起，斗笠下的旅人",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-xiao",
+          "provider": "gallery",
+          "file": "gallery--genshin-xiao",
+          "name": "原神 · 魈",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#1a9c7d",
+            "#242635"
+          ],
+          "description": "傩面夜叉昼行，青绿风息拂过璃月山野",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:genshin-zhongli",
+          "provider": "gallery",
+          "file": "gallery--genshin-zhongli",
+          "name": "原神 · 钟离",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#9a6b1e",
+            "#242635"
+          ],
+          "description": "岩王帝君的宣纸金纹与茶烟",
+          "tags": [
+            "游戏",
+            "原神"
+          ]
+        },
+        {
+          "id": "gallery:github",
+          "provider": "gallery",
+          "file": "gallery--github",
+          "name": "GitHub Light",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#0969da",
+            "#242635"
+          ],
+          "description": "GitHub 官方浅色，白底蓝链与贡献格绿",
+          "tags": [
+            "经典配色",
+            "GitHub"
+          ]
+        },
+        {
+          "id": "gallery:gruvbox",
+          "provider": "gallery",
+          "file": "gallery--gruvbox",
+          "name": "Gruvbox",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b57614",
+            "#242635"
+          ],
+          "description": "复古暖黄做旧纸底的日光模式",
+          "tags": [
+            "经典配色",
+            "Gruvbox"
+          ]
+        },
+        {
+          "id": "gallery:hsr-acheron",
+          "provider": "gallery",
+          "file": "gallery--hsr-acheron",
+          "name": "崩坏星穹铁道 · 黄泉",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#7b3fc4",
+            "#242635"
+          ],
+          "description": "雾紫晨空下的血刃与彼岸花",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:hsr-danheng",
+          "provider": "gallery",
+          "file": "gallery--hsr-danheng",
+          "name": "崩坏星穹铁道 · 丹恒",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#1f8a99",
+            "#242635"
+          ],
+          "description": "青龙水纹与长枪寒光的清晓",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:hsr-firefly",
+          "provider": "gallery",
+          "file": "gallery--hsr-firefly",
+          "name": "崩坏星穹铁道 · 流萤",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#12835c",
+            "#242635"
+          ],
+          "description": "白昼薄暮下的萤火绿与银白装甲",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:hsr-jingyuan",
+          "provider": "gallery",
+          "file": "gallery--hsr-jingyuan",
+          "name": "崩坏星穹铁道 · 景元",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#9c7408",
+            "#242635"
+          ],
+          "description": "白金神君的雷霆棋局",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:hsr-kafka",
+          "provider": "gallery",
+          "file": "gallery--hsr-kafka",
+          "name": "崩坏星穹铁道 · 卡芙卡",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#a82f74",
+            "#242635"
+          ],
+          "description": "白昼酒杯里游走的紫红蛛丝",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:hsr-march7",
+          "provider": "gallery",
+          "file": "gallery--hsr-march7",
+          "name": "崩坏星穹铁道 · 三月七",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d0448c",
+            "#242635"
+          ],
+          "description": "粉蓝相机与冰晶的元气少女",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:hsr-silverwolf",
+          "provider": "gallery",
+          "file": "gallery--hsr-silverwolf",
+          "name": "崩坏星穹铁道 · 银狼",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#6d3fd8",
+            "#242635"
+          ],
+          "description": "银白浅紫的像素故障网吧白昼",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:hsr-sparkle",
+          "provider": "gallery",
+          "file": "gallery--hsr-sparkle",
+          "name": "崩坏星穹铁道 · 花火",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#cf1f3a",
+            "#242635"
+          ],
+          "description": "红金狐面昼场，烟花落入白昼",
+          "tags": [
+            "游戏",
+            "崩坏星穹铁道"
+          ]
+        },
+        {
+          "id": "gallery:kanagawa",
+          "provider": "gallery",
+          "file": "gallery--kanagawa",
+          "name": "Kanagawa Lotus",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#4d699b",
+            "#242635"
+          ],
+          "description": "葛饰北斋浮世绘，米纸白莲昼卷",
+          "tags": [
+            "经典配色",
+            "莲米纸"
+          ]
+        },
+        {
+          "id": "gallery:mario",
+          "provider": "gallery",
+          "file": "gallery--mario",
+          "name": "超级马里奥",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e52521",
+            "#242635"
+          ],
+          "description": "帽衫红、工装蓝与金币黄的蘑菇王国",
+          "tags": [
+            "游戏",
+            "任天堂"
+          ]
+        },
+        {
+          "id": "gallery:mario-bowser",
+          "provider": "gallery",
+          "file": "gallery--mario-bowser",
+          "name": "超级马里奥 · 库巴",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d95f0e",
+            "#242635"
+          ],
+          "description": "日光下的橙黄刺壳与绿壳城堡",
+          "tags": [
+            "游戏",
+            "超级马里奥"
+          ]
+        },
+        {
+          "id": "gallery:mario-luigi",
+          "provider": "gallery",
+          "file": "gallery--mario-luigi",
+          "name": "超级马里奥 · 路易吉",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#159a3c",
+            "#242635"
+          ],
+          "description": "绿帽L与幽灵吸尘器的白昼冒险",
+          "tags": [
+            "游戏",
+            "超级马里奥"
+          ]
+        },
+        {
+          "id": "gallery:mario-peach",
+          "provider": "gallery",
+          "file": "gallery--mario-peach",
+          "name": "超级马里奥 · 桃花公主",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d6378b",
+            "#242635"
+          ],
+          "description": "粉色城堡与皇冠的甜心主题",
+          "tags": [
+            "游戏",
+            "超级马里奥"
+          ]
+        },
+        {
+          "id": "gallery:mario-toad",
+          "provider": "gallery",
+          "file": "gallery--mario-toad",
+          "name": "超级马里奥 · 奇诺比奥",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e52521",
+            "#242635"
+          ],
+          "description": "白底红点蘑菇头与蓝马甲的寻宝之旅",
+          "tags": [
+            "游戏",
+            "超级马里奥"
+          ]
+        },
+        {
+          "id": "gallery:mario-yoshi",
+          "provider": "gallery",
+          "file": "gallery--mario-yoshi",
+          "name": "超级马里奥 · 耀西",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#1e8a34",
+            "#242635"
+          ],
+          "description": "耀西绿蛋壳白，斑点蛋童话手绘",
+          "tags": [
+            "游戏",
+            "超级马里奥"
+          ]
+        },
+        {
+          "id": "gallery:mickey-mouse",
+          "provider": "gallery",
+          "file": "gallery--mickey-mouse",
+          "name": "米老鼠",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d92323",
+            "#242635"
+          ],
+          "description": "红短裤黑圆耳黄鞋的复古胶片",
+          "tags": [
+            "动画",
+            "迪士尼"
+          ]
+        },
+        {
+          "id": "gallery:monokai",
+          "provider": "gallery",
+          "file": "gallery--monokai",
+          "name": "Monokai",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#f92672",
+            "#242635"
+          ],
+          "description": "Monokai 语法色的纸面浅色演绎",
+          "tags": [
+            "经典配色",
+            "Monokai"
+          ]
+        },
+        {
+          "id": "gallery:night-owl",
+          "provider": "gallery",
+          "file": "gallery--night-owl",
+          "name": "Night Owl Light",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2AA298",
+            "#242635"
+          ],
+          "description": "Light Owl 白日版，清爽蓝青",
+          "tags": [
+            "经典配色",
+            "Night Owl"
+          ]
+        },
+        {
+          "id": "gallery:nord",
+          "provider": "gallery",
+          "file": "gallery--nord",
+          "name": "Nord",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#5e81ac",
+            "#242635"
+          ],
+          "description": "Snow Storm 雪原昼色，Frost 冰蓝点缀",
+          "tags": [
+            "经典配色",
+            "Nord"
+          ]
+        },
+        {
+          "id": "gallery:one",
+          "provider": "gallery",
+          "file": "gallery--one",
+          "name": "One Light",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#4078f2",
+            "#242635"
+          ],
+          "description": "Atom 经典浅色，清爽日间语法色",
+          "tags": [
+            "经典配色",
+            "Atom"
+          ]
+        },
+        {
+          "id": "gallery:os-aero",
+          "provider": "gallery",
+          "file": "gallery--os-aero",
+          "name": "Windows Vista Aero",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2e7d38",
+            "#242635"
+          ],
+          "description": "白昼毛玻璃里的极光缎带",
+          "tags": [
+            "系统复古",
+            "Windows"
+          ]
+        },
+        {
+          "id": "gallery:os-bliss",
+          "provider": "gallery",
+          "file": "gallery--os-bliss",
+          "name": "Windows XP Bliss",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#0058e0",
+            "#242635"
+          ],
+          "description": "蓝天白云绿地与 Luna 蓝主题",
+          "tags": [
+            "系统复古",
+            "Windows XP"
+          ]
+        },
+        {
+          "id": "gallery:os-fc",
+          "provider": "gallery",
+          "file": "gallery--os-fc",
+          "name": "红白机 FC",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d10f1c",
+            "#242635"
+          ],
+          "description": "红白机身配卡带金手指，像素硬边",
+          "tags": [
+            "系统复古",
+            "红白机",
+            "FC",
+            "8bit"
+          ]
+        },
+        {
+          "id": "gallery:os-gameboy",
+          "provider": "gallery",
+          "file": "gallery--os-gameboy",
+          "name": "Game Boy",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#306230",
+            "#242635"
+          ],
+          "description": "四阶绿灰点阵屏与轻微扫描线",
+          "tags": [
+            "系统复古",
+            "Game Boy",
+            "像素"
+          ]
+        },
+        {
+          "id": "gallery:os-ios",
+          "provider": "gallery",
+          "file": "gallery--os-ios",
+          "name": "iOS",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#007aff",
+            "#242635"
+          ],
+          "description": "系统蓝毛玻璃与灵动岛",
+          "tags": [
+            "系统复古",
+            "iOS"
+          ]
+        },
+        {
+          "id": "gallery:os-luna",
+          "provider": "gallery",
+          "file": "gallery--os-luna",
+          "name": "Windows XP Luna",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#245edb",
+            "#242635"
+          ],
+          "description": "蓝天草地与绿色开始按钮",
+          "tags": [
+            "系统复古",
+            "Windows XP"
+          ]
+        },
+        {
+          "id": "gallery:os-macos-aqua",
+          "provider": "gallery",
+          "file": "gallery--os-macos-aqua",
+          "name": "macOS Aqua",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#0a7edb",
+            "#242635"
+          ],
+          "description": "千禧年水蓝凝胶与拉丝金属",
+          "tags": [
+            "系统复古",
+            "macOS"
+          ]
+        },
+        {
+          "id": "gallery:os-msdos",
+          "provider": "gallery",
+          "file": "gallery--os-msdos",
+          "name": "MS-DOS",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#0000aa",
+            "#242635"
+          ],
+          "description": "假如 DOS 有白昼纸白屏",
+          "tags": [
+            "系统复古",
+            "MS-DOS"
+          ]
+        },
+        {
+          "id": "gallery:os-win95",
+          "provider": "gallery",
+          "file": "gallery--os-win95",
+          "name": "Windows 95",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#000080",
+            "#242635"
+          ],
+          "description": "浮雕灰窗口与蓝色标题栏的 95 记忆",
+          "tags": [
+            "系统复古",
+            "Windows 95"
+          ]
+        },
+        {
+          "id": "gallery:os-winamp",
+          "provider": "gallery",
+          "file": "gallery--os-winamp",
+          "name": "Winamp",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#0a8a34",
+            "#242635"
+          ],
+          "description": "假如 Winamp 有昼间银色皮肤",
+          "tags": [
+            "系统复古",
+            "Winamp"
+          ]
+        },
+        {
+          "id": "gallery:palenight",
+          "provider": "gallery",
+          "file": "gallery--palenight",
+          "name": "Material Theme Lighter",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#9c3eda",
+            "#242635"
+          ],
+          "description": "紫调浅昼，Lighter 官方色板",
+          "tags": [
+            "经典配色",
+            "Material Theme"
+          ]
+        },
+        {
+          "id": "gallery:pikachu",
+          "provider": "gallery",
+          "file": "gallery--pikachu",
+          "name": "宝可梦 · 皮卡丘",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#f0b90b",
+            "#242635"
+          ],
+          "description": "电气黄配脸颊红的十万伏特",
+          "tags": [
+            "游戏",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:pokemon-charizard",
+          "provider": "gallery",
+          "file": "gallery--pokemon-charizard",
+          "name": "宝可梦 · 喷火龙",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e87722",
+            "#242635"
+          ],
+          "description": "橙色天空下喷火龙展开龙翼，尾焰不熄",
+          "tags": [
+            "游戏",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:pokemon-eevee",
+          "provider": "gallery",
+          "file": "gallery--pokemon-eevee",
+          "name": "宝可梦 · 伊布",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#9a6230",
+            "#242635"
+          ],
+          "description": "棕绒奶油领结，进化之光",
+          "tags": [
+            "游戏",
+            "动漫",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:pokemon-gengar",
+          "provider": "gallery",
+          "file": "gallery--pokemon-gengar",
+          "name": "宝可梦 · 耿鬼",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#7c3aed",
+            "#242635"
+          ],
+          "description": "薄雾薰衣草色里的紫影坏笑",
+          "tags": [
+            "游戏",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:pokemon-mewtwo",
+          "provider": "gallery",
+          "file": "gallery--pokemon-mewtwo",
+          "name": "宝可梦 · 超梦",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#7a4ac0",
+            "#242635"
+          ],
+          "description": "白昼实验室里的紫白超能力波",
+          "tags": [
+            "游戏",
+            "动漫",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:pokemon-mimikyu",
+          "provider": "gallery",
+          "file": "gallery--pokemon-mimikyu",
+          "name": "宝可梦 · 谜拟丘",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#6f4fb3",
+            "#242635"
+          ],
+          "description": "破布涂鸦在日光下晾着暗影",
+          "tags": [
+            "游戏",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:pokemon-snorlax",
+          "provider": "gallery",
+          "file": "gallery--pokemon-snorlax",
+          "name": "宝可梦 · 卡比兽",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2e6e64",
+            "#242635"
+          ],
+          "description": "树荫下午睡的蓝绿大肚与奶油肚皮",
+          "tags": [
+            "游戏",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:pokemon-umbreon",
+          "provider": "gallery",
+          "file": "gallery--pokemon-umbreon",
+          "name": "宝可梦 · 月亮伊布",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#a17707",
+            "#242635"
+          ],
+          "description": "月光晒成的暖金清晨",
+          "tags": [
+            "游戏",
+            "宝可梦"
+          ]
+        },
+        {
+          "id": "gallery:retro-terminal",
+          "provider": "gallery",
+          "file": "gallery--retro-terminal",
+          "name": "Retro Terminal Amber",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b26a00",
+            "#242635"
+          ],
+          "description": "P3 琥珀磷光终端的亮屏",
+          "tags": [
+            "经典配色",
+            "CRT"
+          ]
+        },
+        {
+          "id": "gallery:rose-pine",
+          "provider": "gallery",
+          "file": "gallery--rose-pine",
+          "name": "Rosé Pine Dawn",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b4637a",
+            "#242635"
+          ],
+          "description": "晨光里的玫瑰金与松木绿",
+          "tags": [
+            "经典配色",
+            "Rosé Pine"
+          ]
+        },
+        {
+          "id": "gallery:solarized",
+          "provider": "gallery",
+          "file": "gallery--solarized",
+          "name": "Solarized Light",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#268bd2",
+            "#242635"
+          ],
+          "description": "米色纸底与精确Lab对比度的经典配色",
+          "tags": [
+            "经典配色",
+            "Solarized"
+          ]
+        },
+        {
+          "id": "gallery:street-fighter",
+          "provider": "gallery",
+          "file": "gallery--street-fighter",
+          "name": "街头霸王",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d8262e",
+            "#242635"
+          ],
+          "description": "阳光道场里的红头带与波动拳蓝焰",
+          "tags": [
+            "游戏",
+            "格斗"
+          ]
+        },
+        {
+          "id": "gallery:style-art-deco",
+          "provider": "gallery",
+          "file": "gallery--style-art-deco",
+          "name": "Art Deco 装饰艺术",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#8f6f1d",
+            "#242635"
+          ],
+          "description": "象牙纸面上的金墨几何与太阳放射线",
+          "tags": [
+            "美学风格",
+            "Art Deco"
+          ]
+        },
+        {
+          "id": "gallery:style-bauhaus",
+          "provider": "gallery",
+          "file": "gallery--style-bauhaus",
+          "name": "包豪斯 Bauhaus",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d22630",
+            "#242635"
+          ],
+          "description": "红黄蓝三原色，圆方三角的理性构成",
+          "tags": [
+            "美学风格",
+            "包豪斯",
+            "几何"
+          ]
+        },
+        {
+          "id": "gallery:style-cottagecore",
+          "provider": "gallery",
+          "file": "gallery--style-cottagecore",
+          "name": "田园 Cottagecore",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#5c744a",
+            "#242635"
+          ],
+          "description": "奶油亚麻、小碎花与午后阳光",
+          "tags": [
+            "美学风格",
+            "田园"
+          ]
+        },
+        {
+          "id": "gallery:style-dark-academia",
+          "provider": "gallery",
+          "file": "gallery--style-dark-academia",
+          "name": "暗黑学术",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#8a6d2f",
+            "#242635"
+          ],
+          "description": "羊皮纸晨光里的黄铜与旧皮革",
+          "tags": [
+            "美学风格",
+            "Dark Academia"
+          ]
+        },
+        {
+          "id": "gallery:style-doodle",
+          "provider": "gallery",
+          "file": "gallery--style-doodle",
+          "name": "手绘涂鸦 Doodle",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3563e9",
+            "#242635"
+          ],
+          "description": "马克笔涂鸦手账，格纹贴纸与手绘星星",
+          "tags": [
+            "美学风格",
+            "手绘"
+          ]
+        },
+        {
+          "id": "gallery:style-dunhuang",
+          "provider": "gallery",
+          "file": "gallery--style-dunhuang",
+          "name": "敦煌壁画",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#a85e1f",
+            "#242635"
+          ],
+          "description": "赭石石绿石青，飞天藻井千年壁色",
+          "tags": [
+            "美学风格",
+            "敦煌"
+          ]
+        },
+        {
+          "id": "gallery:style-galaxy",
+          "provider": "gallery",
+          "file": "gallery--style-galaxy",
+          "name": "星云 Galaxy",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#5b45b8",
+            "#242635"
+          ],
+          "description": "白昼星云，淡紫天光里的星尘",
+          "tags": [
+            "美学风格"
+          ]
+        },
+        {
+          "id": "gallery:style-glassmorphism",
+          "provider": "gallery",
+          "file": "gallery--style-glassmorphism",
+          "name": "玻璃拟态 Glassmorphism",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#5b5bd6",
+            "#242635"
+          ],
+          "description": "毛玻璃悬浮卡片与柔光渐变",
+          "tags": [
+            "美学风格"
+          ]
+        },
+        {
+          "id": "gallery:style-glitch",
+          "provider": "gallery",
+          "file": "gallery--style-glitch",
+          "name": "故障艺术 Glitch",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c4005a",
+            "#242635"
+          ],
+          "description": "白昼信号干扰下的色散崩坏",
+          "tags": [
+            "美学风格",
+            "故障艺术"
+          ]
+        },
+        {
+          "id": "gallery:style-ink-wash",
+          "provider": "gallery",
+          "file": "gallery--style-ink-wash",
+          "name": "水墨 Ink Wash",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b23a28",
+            "#242635"
+          ],
+          "description": "宣纸米白上墨色晕染与朱砂印章",
+          "tags": [
+            "美学风格",
+            "水墨"
+          ]
+        },
+        {
+          "id": "gallery:style-macaron",
+          "provider": "gallery",
+          "file": "gallery--style-macaron",
+          "name": "马卡龙 Macaron",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d75a8a",
+            "#242635"
+          ],
+          "description": "法式甜点粉彩，薄荷粉蓝柠檬",
+          "tags": [
+            "美学风格",
+            "马卡龙"
+          ]
+        },
+        {
+          "id": "gallery:style-memphis",
+          "provider": "gallery",
+          "file": "gallery--style-memphis",
+          "name": "孟菲斯 Memphis",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e6007e",
+            "#242635"
+          ],
+          "description": "80年代撞色几何与波浪锯齿",
+          "tags": [
+            "美学风格",
+            "孟菲斯"
+          ]
+        },
+        {
+          "id": "gallery:style-morandi",
+          "provider": "gallery",
+          "file": "gallery--style-morandi",
+          "name": "莫兰迪 Morandi",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#9C7A72",
+            "#242635"
+          ],
+          "description": "高级灰静物，雾粉燕麦柔光",
+          "tags": [
+            "美学风格",
+            "莫兰迪"
+          ]
+        },
+        {
+          "id": "gallery:style-neo-chinese",
+          "provider": "gallery",
+          "file": "gallery--style-neo-chinese",
+          "name": "新中式 Neo-Chinese",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2e4f63",
+            "#242635"
+          ],
+          "description": "月白黛蓝，窗棂祥云飞白",
+          "tags": [
+            "美学风格",
+            "新中式"
+          ]
+        },
+        {
+          "id": "gallery:style-paper-minimal",
+          "provider": "gallery",
+          "file": "gallery--style-paper-minimal",
+          "name": "极简纸 Paper Minimal",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c92a2a",
+            "#242635"
+          ],
+          "description": "大量留白与一根红线的印刷排版",
+          "tags": [
+            "美学风格",
+            "极简"
+          ]
+        },
+        {
+          "id": "gallery:style-pixel-art",
+          "provider": "gallery",
+          "file": "gallery--style-pixel-art",
+          "name": "像素艺术",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#1d5cd6",
+            "#242635"
+          ],
+          "description": "卡带纸色的8bit硬边像素风",
+          "tags": [
+            "美学风格",
+            "像素",
+            "8bit"
+          ]
+        },
+        {
+          "id": "gallery:style-rococo",
+          "provider": "gallery",
+          "file": "gallery--style-rococo",
+          "name": "洛可可 Rococo",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#b85c7e",
+            "#242635"
+          ],
+          "description": "粉金卷草纹的法式宫廷昼宴",
+          "tags": [
+            "美学风格",
+            "洛可可"
+          ]
+        },
+        {
+          "id": "gallery:style-steampunk",
+          "provider": "gallery",
+          "file": "gallery--style-steampunk",
+          "name": "蒸汽朋克 Steampunk",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#8f6b12",
+            "#242635"
+          ],
+          "description": "羊皮纸上的黄铜齿轮与铜管",
+          "tags": [
+            "美学风格",
+            "蒸汽朋克"
+          ]
+        },
+        {
+          "id": "gallery:style-vaporwave",
+          "provider": "gallery",
+          "file": "gallery--style-vaporwave",
+          "name": "蒸汽波 Vaporwave",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e055b8",
+            "#242635"
+          ],
+          "description": "白昼大理石广场上的粉青霓虹落日",
+          "tags": [
+            "美学风格",
+            "蒸汽波"
+          ]
+        },
+        {
+          "id": "gallery:style-y2k",
+          "provider": "gallery",
+          "file": "gallery--style-y2k",
+          "name": "Y2K 千禧",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d02f96",
+            "#242635"
+          ],
+          "description": "金属银与泡泡糖粉的千禧光泽",
+          "tags": [
+            "美学风格",
+            "Y2K"
+          ]
+        },
+        {
+          "id": "gallery:synthwave84",
+          "provider": "gallery",
+          "file": "gallery--synthwave84",
+          "name": "Synthwave '84",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c22c9e",
+            "#242635"
+          ],
+          "description": "落日余晖下的霓虹粉紫白夜",
+          "tags": [
+            "经典配色",
+            "Synthwave"
+          ]
+        },
+        {
+          "id": "gallery:tokyo-night",
+          "provider": "gallery",
+          "file": "gallery--tokyo-night",
+          "name": "Tokyo Night Day",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2e7de9",
+            "#242635"
+          ],
+          "description": "白昼东京的清爽蓝调",
+          "tags": [
+            "经典配色"
+          ]
+        },
+        {
+          "id": "gallery:vscode-plus",
+          "provider": "gallery",
+          "file": "gallery--vscode-plus",
+          "name": "Light+",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#007acc",
+            "#242635"
+          ],
+          "description": "Light+ 白底编辑器与经典蓝调",
+          "tags": [
+            "经典配色",
+            "VS Code"
+          ]
+        },
+        {
+          "id": "gallery:zelda-link",
+          "provider": "gallery",
+          "file": "gallery--zelda-link",
+          "name": "塞尔达传说 · 林克",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3d8a3f",
+            "#242635"
+          ],
+          "description": "海利亚绿、大师剑蓝与三角力量金",
+          "tags": [
+            "游戏",
+            "任天堂",
+            "塞尔达传说"
+          ]
+        },
+        {
+          "id": "gallery:zzz-alice",
+          "provider": "gallery",
+          "file": "gallery--zzz-alice",
+          "name": "绝区零 · 爱丽丝",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d93a5e",
+            "#242635"
+          ],
+          "description": "金发异色瞳的怪啖屋大小姐",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-anby",
+          "provider": "gallery",
+          "file": "gallery--zzz-anby",
+          "name": "绝区零 · 安比",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3f8f68",
+            "#242635"
+          ],
+          "description": "银白浅绿，狡兔屋的清冷刀手",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-anton",
+          "provider": "gallery",
+          "file": "gallery--zzz-anton",
+          "name": "绝区零 · 安东",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2456d6",
+            "#242635"
+          ],
+          "description": "白祇重工蓝白工装，钻头兄弟热血轰鸣",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "热血"
+          ]
+        },
+        {
+          "id": "gallery:zzz-astra",
+          "provider": "gallery",
+          "file": "gallery--zzz-astra",
+          "name": "绝区零 · 耀嘉音",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#8f4ad8",
+            "#242635"
+          ],
+          "description": "丽都歌后的白昼应援舞台与紫金晴光",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "偶像"
+          ]
+        },
+        {
+          "id": "gallery:zzz-banyue",
+          "provider": "gallery",
+          "file": "gallery--zzz-banyue",
+          "name": "绝区零 · 般岳",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e06412",
+            "#242635"
+          ],
+          "description": "云岿山晨光里的命破烈焰",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-ben",
+          "provider": "gallery",
+          "file": "gallery--zzz-ben",
+          "name": "绝区零 · 本",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#bc7a06",
+            "#242635"
+          ],
+          "description": "棕熊与安全帽的黄黑工地安全色",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-billy",
+          "provider": "gallery",
+          "file": "gallery--zzz-billy",
+          "name": "绝区零 · 比利",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d91f26",
+            "#242635"
+          ],
+          "description": "红铬骑士与银色盔甲的星徽枪手",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "热血"
+          ]
+        },
+        {
+          "id": "gallery:zzz-burnice",
+          "provider": "gallery",
+          "file": "gallery--zzz-burnice",
+          "name": "绝区零 · 柏妮思",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e0631a",
+            "#242635"
+          ],
+          "description": "日光吧台与燃油火焰的午后狂欢",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "火焰"
+          ]
+        },
+        {
+          "id": "gallery:zzz-caesar",
+          "provider": "gallery",
+          "file": "gallery--zzz-caesar",
+          "name": "绝区零 · 凯撒",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c2241a",
+            "#242635"
+          ],
+          "description": "红黑机车霸主，披风燃于正午荒原",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-corin",
+          "provider": "gallery",
+          "file": "gallery--zzz-corin",
+          "name": "绝区零 · 可琳",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#58a05a",
+            "#242635"
+          ],
+          "description": "抹茶绿小女仆，白围裙藏着电锯",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "女仆"
+          ]
+        },
+        {
+          "id": "gallery:zzz-ellen",
+          "provider": "gallery",
+          "file": "gallery--zzz-ellen",
+          "name": "绝区零 · 艾莲",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d21f2f",
+            "#242635"
+          ],
+          "description": "鲨鱼女仆的白围裙与晨光红丝带",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-evelyn",
+          "provider": "gallery",
+          "file": "gallery--zzz-evelyn",
+          "name": "绝区零 · 伊芙琳",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d92638",
+            "#242635"
+          ],
+          "description": "白昼纸面上的炽红特工密令",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-grace",
+          "provider": "gallery",
+          "file": "gallery--zzz-grace",
+          "name": "绝区零 · 格莉丝",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e8700f",
+            "#242635"
+          ],
+          "description": "白祇重工橙白工装与蓝屏仪光",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "机械"
+          ]
+        },
+        {
+          "id": "gallery:zzz-harumasa",
+          "provider": "gallery",
+          "file": "gallery--zzz-harumasa",
+          "name": "绝区零 · 悠真",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#1ea88c",
+            "#242635"
+          ],
+          "description": "白金弓手，薄荷清风",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-hugo",
+          "provider": "gallery",
+          "file": "gallery--zzz-hugo",
+          "name": "绝区零 · 雨果",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3f63c6",
+            "#242635"
+          ],
+          "description": "白昼怪盗的冰蓝信笺与扑克绯红",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-jane",
+          "provider": "gallery",
+          "file": "gallery--zzz-jane",
+          "name": "绝区零 · 简",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c25d7e",
+            "#242635"
+          ],
+          "description": "鼠希人灰粉与白昼刑侦暖灰调",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-jufufu",
+          "provider": "gallery",
+          "file": "gallery--zzz-jufufu",
+          "name": "绝区零 · 橘福福",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#f0831e",
+            "#242635"
+          ],
+          "description": "云岿山小猛虎的橘色火锅蒸汽",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "可爱"
+          ]
+        },
+        {
+          "id": "gallery:zzz-koleda",
+          "provider": "gallery",
+          "file": "gallery--zzz-koleda",
+          "name": "绝区零 · 珂蕾妲",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d43a33",
+            "#242635"
+          ],
+          "description": "白祇重工社长，白红战衣配警示条纹",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-lighter",
+          "provider": "gallery",
+          "file": "gallery--zzz-lighter",
+          "name": "绝区零 · 莱特",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d62e20",
+            "#242635"
+          ],
+          "description": "白昼擂台上的赤红金拳冠军",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-lucy",
+          "provider": "gallery",
+          "file": "gallery--zzz-lucy",
+          "name": "绝区零 · 露西",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d42c34",
+            "#242635"
+          ],
+          "description": "粉金不良少女与野猪暴走族",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-lycaon",
+          "provider": "gallery",
+          "file": "gallery--zzz-lycaon",
+          "name": "绝区零 · 莱卡恩",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2b7dad",
+            "#242635"
+          ],
+          "description": "白昼执事：霜白礼服上的冰蓝银辉",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-miyabi",
+          "provider": "gallery",
+          "file": "gallery--zzz-miyabi",
+          "name": "绝区零 · 星见雅",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2f9fd8",
+            "#242635"
+          ],
+          "description": "白昼雪原上的冰蓝太刀寒光",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-nekomata",
+          "provider": "gallery",
+          "file": "gallery--zzz-nekomata",
+          "name": "绝区零 · 猫又",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e02b2b",
+            "#242635"
+          ],
+          "description": "白昼黑猫，赤红围巾与暖阳金币",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-nicole",
+          "provider": "gallery",
+          "file": "gallery--zzz-nicole",
+          "name": "绝区零 · 妮可",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#f0338a",
+            "#242635"
+          ],
+          "description": "粉发双马尾的狡兔屋甜辣老大",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "粉色"
+          ]
+        },
+        {
+          "id": "gallery:zzz-orphie",
+          "provider": "gallery",
+          "file": "gallery--zzz-orphie",
+          "name": "绝区零 · 奥菲丝",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d95410",
+            "#242635"
+          ],
+          "description": "白昼军服上的焰橙与晴空磷火",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-panyinhu",
+          "provider": "gallery",
+          "file": "gallery--zzz-panyinhu",
+          "name": "绝区零 · 潘引壶",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2e7d46",
+            "#242635"
+          ],
+          "description": "熊猫大侠的竹绿茶馆闲趣",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "熊猫"
+          ]
+        },
+        {
+          "id": "gallery:zzz-piper",
+          "provider": "gallery",
+          "file": "gallery--zzz-piper",
+          "name": "绝区零 · 派派",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e09a2a",
+            "#242635"
+          ],
+          "description": "沙漠黄昏黄与卡车工装的慵懒公路",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "公路"
+          ]
+        },
+        {
+          "id": "gallery:zzz-pulchra",
+          "provider": "gallery",
+          "file": "gallery--zzz-pulchra",
+          "name": "绝区零 · 波可娜",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#f0a500",
+            "#242635"
+          ],
+          "description": "黄黑虎纹的元气佣兵大猫",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-qingyi",
+          "provider": "gallery",
+          "file": "gallery--zzz-qingyi",
+          "name": "绝区零 · 青衣",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#0e8a76",
+            "#242635"
+          ],
+          "description": "青花瓷白底，青绿纹路绕机娘关节",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "新中式"
+          ]
+        },
+        {
+          "id": "gallery:zzz-rina",
+          "provider": "gallery",
+          "file": "gallery--zzz-rina",
+          "name": "绝区零 · 丽娜",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#7a4fd0",
+            "#242635"
+          ],
+          "description": "幽灵女仆的午后茶会与淡紫微光",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "女仆"
+          ]
+        },
+        {
+          "id": "gallery:zzz-seed",
+          "provider": "gallery",
+          "file": "gallery--zzz-seed",
+          "name": "绝区零 · 席德",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#ffd21f",
+            "#242635"
+          ],
+          "description": "白昼钢甲与电弧黄的白色恶魔",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "机甲"
+          ]
+        },
+        {
+          "id": "gallery:zzz-seth",
+          "provider": "gallery",
+          "file": "gallery--zzz-seth",
+          "name": "绝区零 · 赛斯",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2f6fe4",
+            "#242635"
+          ],
+          "description": "白蓝猫警官的治安局制式清爽风",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "清爽"
+          ]
+        },
+        {
+          "id": "gallery:zzz-soldier11",
+          "provider": "gallery",
+          "file": "gallery--zzz-soldier11",
+          "name": "绝区零 · 11号",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#d92f2f",
+            "#242635"
+          ],
+          "description": "白昼阅兵场的白红信号旗",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "军武"
+          ]
+        },
+        {
+          "id": "gallery:zzz-soukaku",
+          "provider": "gallery",
+          "file": "gallery--zzz-soukaku",
+          "name": "绝区零 · 苍角",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#2f86c0",
+            "#242635"
+          ],
+          "description": "蓝肤鬼族的雪原白昼冰蓝幻想",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-trigger",
+          "provider": "gallery",
+          "file": "gallery--zzz-trigger",
+          "name": "绝区零 · 扳机",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#667d2a",
+            "#242635"
+          ],
+          "description": "军绿狙击与白昼战术目镜的清晰锁定",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "军绿"
+          ]
+        },
+        {
+          "id": "gallery:zzz-vivian",
+          "provider": "gallery",
+          "file": "gallery--zzz-vivian",
+          "name": "绝区零 · 薇薇安",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#7e4ec2",
+            "#242635"
+          ],
+          "description": "晨光下的紫罗兰花园",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "哥特"
+          ]
+        },
+        {
+          "id": "gallery:zzz-yanagi",
+          "provider": "gallery",
+          "file": "gallery--zzz-yanagi",
+          "name": "绝区零 · 月城柳",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c26ba8",
+            "#242635"
+          ],
+          "description": "粉紫发丝与紫瞳的六课副课长",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "粉紫"
+          ]
+        },
+        {
+          "id": "gallery:zzz-yeshunguang",
+          "provider": "gallery",
+          "file": "gallery--zzz-yeshunguang",
+          "name": "绝区零 · 叶瞬光",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c22f34",
+            "#242635"
+          ],
+          "description": "白昼楼群间的红绫与银青剑光",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "虚狩"
+          ]
+        },
+        {
+          "id": "gallery:zzz-yidhari",
+          "provider": "gallery",
+          "file": "gallery--zzz-yidhari",
+          "name": "绝区零 · 伊德海莉",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#7e4ec0",
+            "#242635"
+          ],
+          "description": "触手紫与冰青的白昼浅海",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "克系"
+          ]
+        },
+        {
+          "id": "gallery:zzz-yixuan",
+          "provider": "gallery",
+          "file": "gallery--zzz-yixuan",
+          "name": "绝区零 · 仪玄",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#a87f2a",
+            "#242635"
+          ],
+          "description": "宣纸云白，鎏金朱砂的虚狩宗师",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-yuzuha",
+          "provider": "gallery",
+          "file": "gallery--zzz-yuzuha",
+          "name": "绝区零 · 浮波柚叶",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#3b9d63",
+            "#242635"
+          ],
+          "description": "狸猫绿棕的夏夜怪谈收藏屋",
+          "tags": [
+            "游戏",
+            "绝区零",
+            "怪啖屋"
+          ]
+        },
+        {
+          "id": "gallery:zzz-zhao",
+          "provider": "gallery",
+          "file": "gallery--zzz-zhao",
+          "name": "绝区零 · 照",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#e05a7d",
+            "#242635"
+          ],
+          "description": "粉发兔耳裁决官的糖果审判",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        },
+        {
+          "id": "gallery:zzz-zhuyuan",
+          "provider": "gallery",
+          "file": "gallery--zzz-zhuyuan",
+          "name": "绝区零 · 朱鸢",
+          "mode": "dual",
+          "swatches": [
+            "#f5f1eb",
+            "#c93b39",
+            "#242635"
+          ],
+          "description": "晨光卷宗上的藏青墨与朱红绳结",
+          "tags": [
+            "游戏",
+            "绝区零"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tweaks",
+      "name": "UI Tweaks",
+      "description": "极简、海报与规格书外观",
+      "url": "https://github.com/wlj521/dsh-ui-tweaks",
+      "commit": "e0186824ff1f45ee62c9d3ab37ad5ef06264e1e2",
+      "license": "MIT",
+      "themes": [
+        {
+          "id": "tweaks:default",
+          "provider": "tweaks",
+          "file": "tweaks--default",
+          "name": "默认",
+          "mode": "dual",
+          "swatches": [
+            "#f4f5f7",
+            "#6e82be",
+            "#232734"
+          ]
+        },
+        {
+          "id": "tweaks:minimal",
+          "provider": "tweaks",
+          "file": "tweaks--minimal",
+          "name": "极简",
+          "mode": "dual",
+          "swatches": [
+            "#ffffff",
+            "#c15f3c",
+            "#151517"
+          ]
+        },
+        {
+          "id": "tweaks:neon-lime",
+          "provider": "tweaks",
+          "file": "tweaks--neon-lime",
+          "name": "荧光海报",
+          "mode": "dual",
+          "swatches": [
+            "#f5f6ec",
+            "#cdff00",
+            "#e64b38"
+          ]
+        },
+        {
+          "id": "tweaks:spec-sheet",
+          "provider": "tweaks",
+          "file": "tweaks--spec-sheet",
+          "name": "规格书",
+          "mode": "dual",
+          "swatches": [
+            "#f7f8f2",
+            "#002fa7",
+            "#172230"
+          ]
+        }
+      ]
+    }
+  ]
+}

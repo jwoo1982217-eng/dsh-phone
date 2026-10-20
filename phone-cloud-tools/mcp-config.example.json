@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "phone_tools": {
+      "command": "node",
+      "args": ["/opt/dsh-phone-tools/bin/mcp.mjs", "--pair-file", "/opt/dsh-phone-tools/private/phone-pair.json"]
+    }
+  }
+}

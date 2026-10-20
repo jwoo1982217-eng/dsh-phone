@@ -1,0 +1,128 @@
+{
+  "version": "0.2.1-alpha.1",
+  "files": [
+    {
+      "path": "lib/minimax-messages.js",
+      "old": "0aab65589ec2d6c50bf45c028ca1599764623372009725c2aa02a7c5de440f8f",
+      "new": "c0b5ffb1937e7757c2f0f11213d7efad15176761812a24d84f894fdffb61c678",
+      "upstreamRc3": "c0b5ffb1937e7757c2f0f11213d7efad15176761812a24d84f894fdffb61c678"
+    },
+    {
+      "path": "lib/lobsterai-adapter.js",
+      "old": "eceb280c4510fda9b66a5fea53700a3c4a41fbaa1c3c26b52b6124e3ca6b78e3",
+      "new": "538bc3fffe8fde0baab4f4145b1fc3f2cbb89d7e9a97d51e274ccc38a969c6dd",
+      "upstreamRc3": "9adef2d6529f8df80f39f8a560a865bdd78743272ccd415c408745f11e27f1ff"
+    },
+    {
+      "path": "lib/buddy-adapter.js",
+      "old": "54edf9c76ac07f29cc8c4e58bddcb2141f82dfa07ab2c57f7fb29c4d457b0f35",
+      "new": "ba4afc595536e1a85ffa2e61bdc07898efcc550076068f27db7a5376f46cc346",
+      "upstreamRc3": "6cfffbc8974efb2bc420a8f373bd2fe8c0bed9cbb60dad1c6ce968bc30e5cc05"
+    },
+    {
+      "path": "lib/trae-adapter.js",
+      "old": "b09c0df6a4283d82ed632ef35bf1a33f567d022b89ea0ed070cff989253b6bd5",
+      "new": "b31441aadf6c69b728a6b252979252351138d66a701533a26c9dd75011ba9749",
+      "upstreamRc3": "476848a672b7a92596a31a50bf450388ff111398dbdb43345968a260d8eade60"
+    },
+    {
+      "path": "lib/llm-adapter.js",
+      "old": "bc2b5a76d88a51cc8b41d44bbf8b7c470b7e6d83b958eef3af00d32ca48a6eb7",
+      "new": "bd746e043e0b539aecf72dfc50534a3a7a127340b3d78475efb2a991c49539d7",
+      "upstreamRc3": "3684c5e4f48a0f2d4089ba86d80a73469258d638affbc3835219c06fb7bfe749"
+    },
+    {
+      "path": "lib/llm-register-compat.js",
+      "old": "8a2b827cfe89e592c1bf4879bec293d47cc3b30a64174125f4070728b7558c7a",
+      "new": "18b6a66192c18316cb2bb606acdc78d797107464db1557e0641aa35119d2bb59",
+      "rotation": "03437e0e56dec545137c594ba33d187047d670fba53dc60e28c877e7672164d0",
+      "upstreamRc3": "0083467b88d2c07363cc403f672f7955c651ae7424bd10237b958e4ac507f77e"
+    },
+    {
+      "path": "lib/zcode-anthropic.js",
+      "old": "a6db46cd8aaf29123bfd65cd912670f831c46087052ea112f8f0eacdbe8213e6",
+      "new": "95500701671a67ee48e5045d77e2b90fddf4efdb4c47296155c3161e6f2e70cf",
+      "upstreamRc3": "36372ac1fb062cd187b17cc4dabfdada2a2c64b9d9a208b7197c1e622f349d60"
+    },
+    {
+      "path": "lib/openai-compat.js",
+      "old": "232137431212a7b0754809de24f3be9c85957cf3bb65941fb15c41f99316a729",
+      "new": "dde7a3f2dee3ca56dd7342cbaa3a394020d15324331ea52fea2b643249f10af4",
+      "upstreamRc3": "dde7a3f2dee3ca56dd7342cbaa3a394020d15324331ea52fea2b643249f10af4"
+    },
+    {
+      "path": "src/llm-adapter.ts",
+      "old": "7e93888a84855b15e805786240a499553ec678ca7b4e31fe488f964b0cec0f65",
+      "new": "b7d4bc98aa9ee8be581853998a2cfd5413c722fd303ad7d0c03bec43f436722e",
+      "upstreamRc3": "73eb1aa7af34768b65d2df7ebdbf4e3f110fcdd52f020cf0d498098f0e1eb45c"
+    },
+    {
+      "path": "src/llm-register-compat.ts",
+      "old": "571aa0bb2920cc35dde1d2258bcc6572e277469ee20437220edff9598fcaddaa",
+      "new": "e85cc49d534e233acd7cf5151281ef886a448c4a18c884851be336a299dcc832",
+      "rotation": "42a30cb24a7cdd087d74aefb2579ebd846560eb19fc2d5f6dd87475ed616da94",
+      "upstreamRc3": "98f9e0c75cdebd910073d9d096a249bd080370899e45cf6599453e031f6f1cc5"
+    },
+    {
+      "path": "src/zcode-anthropic.ts",
+      "old": "8ea757096140eca28d45f0b4185ed4602175b2ea09ecbbc254ac1efc617d6724",
+      "new": "17fb58fdbe34249af32e60d05e26dd47f3db4366967267f32c1b5a8a03ca5123",
+      "upstreamRc3": "73a6a3e6ed4a4b58223f0ad10a921ca3a2c1b99fc83980c7c4f723778bc706ec"
+    },
+    {
+      "path": "src/openai-compat.ts",
+      "old": "22c9c26b81290ab458a014f5ec44b3560747f5676e15ba72f390470a08c08c9a",
+      "new": "9252a4aab6661a20a89d6fceae925d614443cc3cb4e941273c4812b4ba9075c2",
+      "upstreamRc3": "9252a4aab6661a20a89d6fceae925d614443cc3cb4e941273c4812b4ba9075c2"
+    },
+    {
+      "path": "src/minimax-messages.ts",
+      "old": "2fbef9fca974e7e8b43e0efd9369559666be11cf2c6474cbd14c34fe86010197",
+      "new": "5a15bca0ced1662b4d678cfb2139ae210e3ebd1fd5200fc8ba312c70a6eb113b",
+      "upstreamRc3": "b89cc75bce146e63cfdd35fa7b16bf167fae4a275459005b53d6decf7c502fc0"
+    },
+    {
+      "path": "src/lobsterai-adapter.ts",
+      "old": "7c34600b8e56530cf2b299cda54a71a6c710e2c0a9e751aa3f10f0bfa98ed126",
+      "new": "7395b068a92e1b2686bb738a9f3f9033b670a5f9871bce294c08af9d43a9b4ab",
+      "upstreamRc3": "5e9f43c38b64b8d1669999e9f959edf2f31e721767bb2299e64364a9c23d7bc3"
+    },
+    {
+      "path": "src/buddy-adapter.ts",
+      "old": "726ccbdfddc270b2d9a923b34215fff0de710c9b3d814d330bd12e8cccb1c6a5",
+      "new": "71a81c8ffbe8186f78f0681851b1af2078747661a64d2d108f9db5e37d37a5b7",
+      "upstreamRc3": "0145b69512ae016dac59feea10b3909fa74c141137209e79184fcfdfa449e82d"
+    },
+    {
+      "path": "src/trae-adapter.ts",
+      "old": "7e98271f127c0c6485c7de2a9f0c450b1539a6993c139e3abdae87da3440b5d1",
+      "new": "57a7b1ccc0b29ba4f66777df6aa4e58317961a2442db3235c729013bb5a92fc5",
+      "upstreamRc3": "0d8add35b50f65e68dd297ad6cdd472e04acd799071680f89235c3bbb048c247"
+    },
+    {
+      "path": "lib/openai-gateway/messages.js",
+      "old": "87465ab74ffb49d2ce1c587e897c5eef005d67c977f457b5f5a715378b17c7bd",
+      "new": "aad0ac353a51beeec1e94ff8e092f3423fa595041675c5764a5a9d7d43a1d8fc",
+      "upstreamRc3": "f6c43522165a56c8dd8bc7a9c319d9d9338e5d1dd24c810f38eb25efd4417572"
+    },
+    {
+      "path": "src/openai-gateway/messages.ts",
+      "old": "3123e29eac34b4f228c8a599e8e0b35507f1818d67bb561cc2e8289c9e960725",
+      "new": "166f56ce5033129812bb8311b4377788059f68d4a981f78b143a1a4ebb91311f",
+      "upstreamRc3": "4d565beab605085e1ccd17234428d90d5d0546e6bc77a6ef866cd6dffc2e0f81"
+    },
+    {
+      "path": "src/openai-gateway/stream.ts",
+      "old": "030202a9ecd8b2e20835ba918b1e24c4dda63ae576bd03d91d6167867548d724",
+      "new": "7136e4f3407972de862fe07f3feebe3a17b4342fd698d875e398af47f3a3bfdd",
+      "upstreamRc3": "a916ae1e23fa154b170a38281f274fd70a18326df011678a74113aad0b85ff1e"
+    },
+    {
+      "path": "lib/openai-gateway/stream.js",
+      "old": "7d137eff5699b3f02652c0f34a49561e61421c1d501b1689c6247786c8ec99eb",
+      "new": "257f15c84112f963dbfb524fcdff56b97d4b96a051b8b179e6956a18bbb35331",
+      "upstreamRc3": "b6b2579d4d6e8f0e7c03158d350adac7a093d4fb37aff2f8f9e76fb9987dce9f"
+    }
+  ],
+  "jetHubUpstream": "8bf1c6f82ea977267c4b95575d706b835d20ef64"
+}
