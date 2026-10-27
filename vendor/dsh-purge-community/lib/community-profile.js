@@ -1,3 +1,4 @@
+import { assertCurrentNativeRecipe } from "./core-version-guard.js";
 import * as core from "./core.js";
 import fs from "node:fs";
 import { selectPatches } from "./hooks-deny.js";
@@ -18,6 +19,7 @@ export function initializeCommunityProfile(ctx) {
 export async function applyCurrentProfile(ctx) {
   const profile = profileOf(ctx);
   assertCommunityLiveProfile(validateCommunityProfilePaths(profile, { requireLauncherFiles: true, requireHomeEnvironment: true }));
+  assertCurrentNativeRecipe(profile, 'Apply');
   const result = await applyPrivateOverlay(ctx, {
     patch: async aiBase => {
       core.configureCommunityProfileScope(profile, { aiBase });
@@ -56,6 +58,7 @@ export async function applyCurrentProfile(ctx) {
 export async function revertCurrentProfile(ctx) {
   const profile = profileOf(ctx);
   assertCommunityLiveProfile(validateCommunityProfilePaths(profile, { requireLauncherFiles: true, requireHomeEnvironment: true }));
+  assertCurrentNativeRecipe(profile, 'Revert');
   const result = await restorePrivateOverlay(ctx, {
     revert: async aiBase => {
       core.configureCommunityProfileScope(profile, { aiBase });

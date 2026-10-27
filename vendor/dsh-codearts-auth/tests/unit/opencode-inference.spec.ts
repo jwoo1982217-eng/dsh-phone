@@ -6,8 +6,8 @@ import {
 import {
   OPENCODE, OPENCODE_INFERENCE_MODELS, isFreeOpencodeModel, mergeInferenceModels,
   usesInferenceLane,
-} from '../../src/opencode-product.js'
-import { OpencodeAdapter, clearOpencodeCatalogCache } from '../../src/opencode-adapter.js'
+} from '../../src/opencode-inference-product.js'
+import { OpencodeAdapter, clearOpencodeCatalogCache } from '../../src/opencode-inference-adapter.js'
 import { listIdentitySlots, newAccountFingerprint, type IdentitySlot } from '../../src/opencode-auth.js'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 

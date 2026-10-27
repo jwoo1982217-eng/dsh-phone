@@ -111,8 +111,17 @@ export interface UsageBadgeDeps {
   /**
    * 取某渠道的余额行 —— **必须复用 `credits.balances` 的实现**（装配层直接调
    * 内部 `handleMethod`），不要在调用方另写一套 provider 分派。
+   *
+   * @param accountIds - **只查这些账号**（2026-10-15 加，规格 §7-8）。
+   *   徽标只需要启用账号的读数（停用账号既不进合计、也不渲染明细）⇒ 传启用账号
+   *   的 id 能少查几个号。⚠️ 它**不影响自愈**：端点入口的 `healExpiredAccounts`
+   *   仍对全部账号跑（本仓库铁律「续期不得按 `enabled` 过滤」）。
+   *   ⚠️ 省略 ⇒ 查全部（那是积分面板的语义）。
    */
-  collectBalances(provider: string): Promise<BadgeRpcResult<RpcCreditsBalancesResponse>>
+  collectBalances(
+    provider: string,
+    accountIds?: readonly string[],
+  ): Promise<BadgeRpcResult<RpcCreditsBalancesResponse>>
   /**
    * 取某渠道的**订阅窗口**读数；返回 `undefined` 表示「该渠道没有窗口式订阅」
    * （目前只有 Cline 有，由装配层判渠道，本模块不认识任何具体渠道）。
@@ -192,21 +201,30 @@ export function createUsageBadge(deps: UsageBadgeDeps): UsageBadge {
 
   /** 读取并折算一份快照（缓存未命中时才会被调用；抛错即「失败不缓存」）。 */
   async function loadSnapshot(provider: string): Promise<BadgeSnapshot> {
-    const balances = await deps.collectBalances(provider)
+    // ⚠️ **先算启用账号，只查它们**（2026-10-15，规格 §7-8）：停用账号既不进合计、
+    //    也不该被渲染明细 ⇒ 让端点少查几个号（每次渲染省 N 个顺序上游请求）。
+    //    判据与 `provider.status` 一致（`enabled !== false`，老文档缺该字段时语义等同启用）。
+    //
+    //    ⚠️⚠️ **本字段只裁剪余额查询，不影响自愈**：`credits.balances` 入口的
+    //    `healExpiredAccounts` 仍对**全部**账号跑 —— 本仓库铁律「续期不得按
+    //    `enabled` 过滤」（停用期间凭据一路放到失效，用户重启用后只能重新登录）。
+    //    ⚠️ 修订历史：本函数此前是「查全部、再在客户端过滤」，同样的显示结果但多查
+    //    了停用账号；改成传 `accountIds` 后展示语义不变（有一条用例锁它）。
+    const pool = deps.listAccounts(provider)
+    const enabledIds = pool.filter((entry) => entry.enabled !== false).map((entry) => entry.id)
+    const balances = await deps.collectBalances(provider, enabledIds)
     if (!balances.ok) throw new BadgeRpcFailure(balances.error)
 
-    // 只保留**启用**账号：判据与 `provider.status` 一致（`enabled !== false`，
-    // 老文档缺该字段时语义等同启用）。停用账号既不进合计，也不该被渲染明细。
-    const pool = deps.listAccounts(provider)
-    const enabledIds = new Set(pool.filter((entry) => entry.enabled !== false).map((entry) => entry.id))
-    const accounts = balances.value.accounts.filter((row) => enabledIds.has(row.accountId))
+    const accounts = balances.value.accounts
     const snapshot: BadgeSnapshot = {
       at: now(),
       accounts,
-      disabledCount: pool.length - enabledIds.size,
+      disabledCount: pool.length - enabledIds.length,
       ...balances.value.windowDays === undefined ? {} : { windowDays: balances.value.windowDays },
     }
-    const subscription = await subscriptionOf(provider, enabledIds, accounts)
+    // ⚠️ `subscriptionOf` 的第二个参数是 `ReadonlySet`（它按 id 判「这条余额行
+    //    属不属于启用账号」）—— 上面为了传 `accountIds` 用的是数组，这里再包一次。
+    const subscription = await subscriptionOf(provider, new Set(enabledIds), accounts)
     if (subscription !== undefined) snapshot.subscription = subscription
     return snapshot
   }

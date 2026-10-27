@@ -107,10 +107,33 @@ export interface ClineRecommendedModels {
  *
  * ⚠️ **`clinePass` 不是免费集合**：它是 Cline Pass 订阅制模型
  * （`cline-pass/*`），按订阅额度计费而非免费。把它当免费会误导用户。
+ *
+ * ⚠️ 形状不可识别时返回全空 —— 但调用方**必须**用
+ * {@link isClineRecommendedShape} 另行判定「这次到底算不算取到」，
+ * 否则「HTTP 200 + 网关降级返回 `{}`」会被当成成功（issue IKJVTF）。
  */
 export declare function parseClineRecommendedModels(value: unknown): ClineRecommendedModels;
+/**
+ * `recommended-models` 的响应形状是否**可识别**（issue IKJVTF）。
+ *
+ * 判据是「至少有一个已知键是数组」：
+ * - 三个键全缺（`{}` / HTML 解析出的对象 / 错误 JSON）⇒ 不可识别；
+ * - 任一键是数组（含**合法空数组**）⇒ 可识别 —— 上游把免费模型**全部**下架
+ *   时 `free: []` 是合法状态，不能当成失败（那会让冷却永不清理）。
+ *
+ * ⚠️ 这条判据是必需的：`parseClineRecommendedModels` 对异常形状**静默**返回
+ * 全空，只靠 `warnings` 区分不出「取到了空目录」与「根本没取到」。
+ */
+export declare function isClineRecommendedShape(value: unknown): boolean;
 /** 解析 `/api/v1/models` 响应，取出 id 列表。 */
 export declare function parseClineRemoteModelIds(value: unknown): string[];
+/**
+ * `/api/v1/models` 的响应形状是否**可识别**（issue IKJVTF）。
+ *
+ * 判据是 `data` 是数组（**空数组也算**：上游下架全部模型是合法状态）。
+ * `{}` / HTML / 错误 JSON ⇒ 不可识别。
+ */
+export declare function isClineModelsShape(value: unknown): boolean;
 /**
  * 合并三个来源为最终目录。
  *
@@ -147,6 +170,24 @@ export interface ClineRemoteModels {
     }>;
     /** 各来源的失败原因（供日志与探针诊断；成功时为空）。 */
     warnings: string[];
+    /**
+     * **两个来源是否都真的取到了**（issue IKJVTF）。
+     *
+     * ⚠️ **不能**用 `warnings.length === 0` 反推（那是本字段存在的理由）：
+     * 「**主动跳过**一个来源」与「**取到了**一个来源」在 warnings 上不可区分。
+     * 实测两条例外，都会让残缺目录被误判成完整（⇒ 清冷却 + 永久缓存）：
+     *
+     * 1. **无凭据**时 `/api/v1/models` 根本不发请求（见下面的实现）——
+     *    那是**主动跳过**，不是成功。而 `providerCatalogVisible` 只查「有没有
+     *    已登录账号」、**不过滤 `enabled`**，`getAvailableAccount` 却过滤
+     *    ⇒「有账号但全部停用」时门控通过、凭据为 undefined，这条路径真实可达。
+     * 2. **HTTP 200 + 形状异常**（网关降级返回 `{}` 或错误 JSON）：解析器静默
+     *    返回空表，零 warning ⇒ 免费集合永久丢失且不再重试。
+     *
+     * ⇒ 判据必须是**每个来源各自的取数结果**（请求成功 + 形状可识别），
+     * 由 {@link fetchClineRemoteModels} 显式给出。
+     */
+    complete: boolean;
 }
 /**
  * 拉取远端模型数据。

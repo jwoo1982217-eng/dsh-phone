@@ -1,9 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
+  CLINE_MODELS_DEV_TIMEOUT_MS,
   applyModelsDevCatalog,
   makeClineModelsDevLoader,
   parseClineModelsDev,
 } from '../../src/cline-models-dev.js'
+import { clearModelsDevCache, setModelsDevForTest } from '../../src/models-dev-cache.js'
+
+const here = dirname(fileURLToPath(import.meta.url))
 
 /**
  * models.dev 目录来源的回归：**图片能力** + **补缺的模型** + **可读名**。
@@ -116,6 +123,41 @@ describe('applyModelsDevCatalog', () => {
     expect(ids[lastPass + 1]?.startsWith('cline-pass/')).toBe(true)
   })
 
+  // ⚠️⚠️ **明确 false 必须落成字段，而不是省略**（issue IKKZUG 第 1 点的前置）。
+  //
+  // 修复前补进来的条目写作
+  //   `...entry.supportsImage ? { supportsImage: true } : {}`
+  // ⇒ models.dev **明确说 false**（实测 `cline-pass/glm-5.3` 就是不带图的）
+  // 时字段**缺席** ⇒ 在三态语义下被读成「**未知**」，而它其实是
+  // 「**确认不支持**」。
+  //
+  // 后果有两个方向都真实存在：宿主会按「未知」**放行**图片（发到不支持图的服务端），
+  // 而门禁文案会说「能力尚未加载完成」—— 与事实相反。
+  //
+  // ⚠️ 这条在**两态**下无害（`['text']` 两边一致），是三态改造**暴露**出来的。
+  it('models.dev 明确 supportsImage=false 时必须落成 false（不得省略成「未知」）', () => {
+    const dev = new Map([
+      ['cline-pass/glm-5.3', { id: 'cline-pass/glm-5.3', supportsImage: false }],
+    ])
+    const merged = applyModelsDevCatalog([{ id: 'other/model', name: 'other' }], dev)
+    const glm = merged.find((m) => m.id === 'cline-pass/glm-5.3')
+    expect(glm, '补进来的条目').toBeDefined()
+    // ⚠️ 用 `toBe(false)` 而不是 `toBeDefined()`：后者对 `undefined` 也成立。
+    expect(glm?.supportsImage, '明确 false 不能退化成 undefined（= 未知）').toBe(false)
+  })
+
+  it('⚠️ 但「本地兜底表显式 false」仍然赢（models.dev 不得覆盖它）', () => {
+    // 与上一条**成对**：新条目用 dev 的值，已有条目仍「本地优先」。
+    const dev = new Map([
+      ['cline-free/local-false', { id: 'cline-free/local-false', supportsImage: true }],
+    ])
+    const merged = applyModelsDevCatalog(
+      [{ id: 'cline-free/local-false', name: 'local', supportsImage: false }],
+      dev,
+    )
+    expect(merged.find((m) => m.id === 'cline-free/local-false')?.supportsImage).toBe(false)
+  })
+
   it('网关把 id 当名字下发时，用可读名替换', () => {
     const merged = applyModelsDevCatalog(base, parseClineModelsDev(REAL_SHAPE))
     const pass = merged.find((m) => m.id === 'cline-pass/deepseek-v4.1-flash')!
@@ -159,9 +201,15 @@ describe('applyModelsDevCatalog', () => {
 })
 
 describe('makeClineModelsDevLoader', () => {
+  // ⚠️ 全组的公共前提：共享缓存是**模块级单例**，前一个 describe 的用例
+  //   往里塞过数据 ⇒ 不清就会命中缓存而走不到 fetcher（症状：明明注入了
+  //   失败 fetcher，却拿到一张完整的表）。
+  const immediate = async (): Promise<void> => {}
+
   it('命中 TTL 缓存：多次调用只发一次请求', async () => {
+    await clearModelsDevCache()
     const fetcher = vi.fn(async () => new Response(JSON.stringify(REAL_SHAPE), { status: 200 }))
-    const load = makeClineModelsDevLoader({ fetcher: fetcher as never })
+    const load = makeClineModelsDevLoader({ fetcher: fetcher as never, sleep: immediate })
     await load()
     await load()
     expect(fetcher).toHaveBeenCalledTimes(1)
@@ -171,12 +219,85 @@ describe('makeClineModelsDevLoader', () => {
    * ⚠️ 失败**必须抛**（而不是返回空表）：调用方据此区分「没读到」与
    * 「读到了且不支持」。把失败记成空表会让图片能力永久打回纯文本 ——
    * 那正是本次要修的缺陷形态。
+   *
+   * ⚠️ 2026-10-17：加载器改为**读共享本地缓存**（`models-dev-cache.ts` 是
+   * 全仓唯一直读点），失败文案随之改变 —— 断言改为「抛出**含 models.dev 的
+   * 可读消息**」，而不锁死具体措辞：措辞是实现细节，「抛了 + 指名来源」才是契约。
    */
-  it('HTTP 失败向上抛（不缓存失败，下次可重试）', async () => {
+  it('⚠️ 刷新失败向上抛（不缓存失败，下次可重试）', async () => {
+    // ⚠️⚠️ **必须先清空共享缓存**：加载器改读 `models-dev-cache.ts` 的
+    // 模块级单例，而前面的用例往里塞过数据 ⇒ 不清就会命中缓存而**不抛**
+    // （症状：明明 fetcher 返回 500，却拿到了一张完整的表）。
+    // 这不是测试写错，而是「全局缓存 + 跨用例」必然的耦合，必须显式隔离。
+    await clearModelsDevCache()
     const fetcher = vi.fn(async () => new Response('boom', { status: 500 }))
-    const load = makeClineModelsDevLoader({ fetcher: fetcher as never })
-    await expect(load()).rejects.toThrow(/HTTP 500/)
-    await expect(load()).rejects.toThrow(/HTTP 500/)
-    expect(fetcher).toHaveBeenCalledTimes(2)
+    // ⚠️ **必须注入 sleep**：共享缓存的重试是指数退避（2s → 4s），
+    //   而本用例要连续失败两轮 ⇒ 不注入会真等 12 秒并撞 5s 单测超时。
+    const load = makeClineModelsDevLoader({ fetcher: fetcher as never, sleep: async () => {} })
+    await expect(load()).rejects.toThrow(/models\.dev/)
+    await expect(load()).rejects.toThrow(/models\.dev/)
+    // ⚠️ 失败**不写缓存** ⇒ 第二次必须真的再发一次请求（否则「失败被固化」）。
+    expect(fetcher).toHaveBeenCalledTimes(2 * 3)
+  })
+
+  /**
+   * ⚠️⚠️ **回归**：加载器命中共享缓存时**完全不碰网络**。
+   *
+   * 这条锁的是本次改造的核心承诺（用户原话：「冷启动就读本地文件缓存，
+   * 读不到就 fallback 不会直读 models.dev」）—— 改前每次冷启动都要下载 5 MB。
+   */
+  it('⚠️⚠️ 命中共享缓存时零请求（冷启动不下载 5MB）', async () => {
+    await clearModelsDevCache()
+    setModelsDevForTest({
+      'cline-pass': {
+        'deepseek-v4.1-flash': {
+          name: 'DeepSeek V4.1 Flash',
+          modalities: { input: ['text', 'image'] },
+          limit: { context: 1000000 },
+        },
+      },
+    })
+    const fetcher = vi.fn(async () => { throw new Error('命中缓存时不得发请求') })
+    const load = makeClineModelsDevLoader({ fetcher: fetcher as never, sleep: immediate })
+    const first = await load()
+    expect(first.get('cline-pass/deepseek-v4.1-flash')?.name).toBe('DeepSeek V4.1 Flash')
+    const second = await load()
+    expect(second.size).toBe(first.size)
+    expect(fetcher, '命中缓存时不得有任何请求').not.toHaveBeenCalled()
+    await clearModelsDevCache()
+  })
+
+  // ── issue IKKZUG：拉取本身要健壮 ──
+  //
+  // 真实测（用户 oct_heaven，Windows 直连 3 次）：20010ms 超时 / 20010ms 超时 /
+  // 1908ms 成功。目标 api.json **解压后 5.39 MB**、Brotli 编码、无 Content-Length。
+  // 成功那次只用 1.9 秒，失败的都是整段卡死 —— 说明慢链路需要余量，
+  // 而 20 秒在 5.39MB 上偏紧。
+
+  it('⚠️ 超时上限是 60 秒（5.39MB 的目标，20 秒偏紧）', () => {
+    // 反向验证：把常量改回 20_000 本条即红。
+    expect(CLINE_MODELS_DEV_TIMEOUT_MS).toBe(60_000)
+  })
+
+  /**
+   * ⚠️ 2026-10-17：显式 Brotli 与 ETag 条件请求都已**上移到共享缓存模块**
+   * （`models-dev-cache.ts`）—— 那是全仓唯一的直读点，本模块不再自己发请求。
+   *
+   * ⚠️ **这两条断言现在打在共享缓存上**，而不是打在 `cline-models-dev.ts`：
+   * 判据「压缩传输 + 条件请求」依然重要（缺前者白下 5 MB 明文、极易撞超时上限），
+   * 但它的**归属地**变了。若继续打在已不发请求的模块上，那是一条**恒真**断言
+   * ——「守卫写在不会执行的地方」比没有守卫更糟（它给人虚假的安全感）。
+   * 新位置的对应断言见 `tests/unit/models-dev-cache.spec.ts` 与下方。
+   */
+  it('⚠️ Brotli 与条件请求的职责已上移：cline 侧不再持有任何请求实现', () => {
+    const src = readFileSync(join(here, '../../src/cline-models-dev.ts'), 'utf8')
+    expect(src, 'cline-models-dev.ts 不得再自己 fetch models.dev').not.toMatch(/fetch\s*\(/)
+    expect(src, 'Accept-Encoding 只该出现在唯一直读点').not.toMatch(/Accept-Encoding/i)
+    expect(src, 'ETag 条件请求只该出现在唯一直读点').not.toMatch(/if-none-match|If-None-Match/i)
+  })
+
+  it('ETag 条件请求与 Brotli 在**共享缓存**里（唯一直读点）', () => {
+    const src = readFileSync(join(here, '../../src/models-dev-cache.ts'), 'utf8')
+    expect(src).toMatch(/Accept-Encoding/i)
   })
 })

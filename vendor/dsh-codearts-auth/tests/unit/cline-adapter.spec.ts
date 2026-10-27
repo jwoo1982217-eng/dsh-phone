@@ -15,6 +15,12 @@ import {
   readClineRequestHistory,
   resetClineRequestHistory,
 } from '../../src/cline-request-log.js'
+import { descriptorOf } from '../../src/provider-registry.js'
+import { createProviderCredits } from '../../src/provider-credits.js'
+import { accountEntry, refreshHarness } from '../helpers/rpc-refresh.js'
+import { jetHubAuthsCallKeys } from '../helpers/jet-hub-auths.js'
+import { PROVIDER_ICONS } from '../../plugin-src/client/provider-icons.js'
+import { CREDITS_CAPABILITIES } from '../../plugin-src/client/credits-capabilities.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -114,6 +120,11 @@ async function collect(
     out.push(chunk as unknown as Record<string, unknown>)
   }
   return out
+}
+
+/** 剥掉注释：接线断言不该因为「注释里提到了某个符号」而通过。 */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 }
 
 describe('ClineAdapter 模型目录', () => {
@@ -247,7 +258,12 @@ describe('ClineAdapter resolveModel', () => {
     const withImage = await adapter.resolveModel('cline', METADATA_MODEL)
     expect(withImage.inputModalities).toContain('image')
     const unknown = await adapter.resolveModel('cline', 'unknown/model-x')
-    expect(unknown.inputModalities).toEqual(['text'])
+    // ⚠️⚠️ 这里**原本**断言 `['text']`，本次三态改造（issue IKKZUG）改为
+    // `undefined` —— 那是本次修复的**目标行为**，不是回归：
+    // `['text']` 等于告诉宿主「确认是纯文本模型」，DSH 随即把图片**静默**投影
+    // 成占位文本（`projectImagesForTextModel`），用户零提示。
+    // 宿主契约明写 `absent means unknown`（dsh-llm `types.d.ts`）。
+    expect(unknown.inputModalities).toBeUndefined()
   })
 
   it('声明 5 档思考强度（顺序与展示名对齐 Cline IDE）', async () => {
@@ -275,6 +291,216 @@ describe('ClineAdapter resolveModel', () => {
     const resolved = await adapter.resolveModel('cline', 'unknown/model-x')
     expect(resolved.reasoning?.efforts).toHaveLength(5)
     expect(resolved.reasoning?.defaultEffort).toBe('high')
+  })
+})
+
+/**
+ * ⚠️⚠️ **目录构建的性能与「同一份来源」不变式**（Gitee issue IKL3YH）。
+ *
+ * 用户实测（Windows，DSH 桌面版）：宿主进程每 ~15 秒被唤醒一次、峰值 1.1–1.5 核，
+ * Node inspector 函数级剖析的热点落在 `toCatalogEntry → inputModalitiesFor`。
+ * 根因有**两层**，第二层是主因：
+ *
+ * 1. `inputModalitiesFor` 对**每个**模型做一次 `remoteModels.find(...)`
+ *    （实测全仓 `remoteModels.find` 形态**只有这一处**，其余家都是 `.get()` 索引
+ *    或直接吃已解析的 entry）⇒ 整表 O(N²)；
+ * 2. `resolveModel` 每次都**整份重建** `CatalogEntry[]`。DSH 的
+ *    `buildModelCatalog` 形状是「1 次 `listModels` + **每模型一次**
+ *    `resolveModelInfo`」，而 `dsh-llm` 的 `resolveModelInfo` 直连适配器、
+ *    **无任何缓存** ⇒ N 次调用造成 N² 次条目构造。
+ *    实测（N=471，本仓已编译产物）：原实现 **293 ms/次**，
+ *    只把 `find` 换 Map 是 121 ms，再把 `CatalogEntry[]` 缓存是 **1.2 ms**。
+ *
+ * 同一处还**掩盖了一个潜伏缺陷**：`inputModalitiesFor` 只查 `remoteModels`，
+ * 而离线/首拉失败时它是 `undefined` ⇒ 兜底表里 `supportsImage: true` 的策划条目
+ * （`stealth/space-bunny-alpha` 等 3 条）被误报成**纯文本**。后果不是「少个功能」，
+ * 而是「支持图片的模型发不了图」—— DSH 见到不含 `image` 的声明会**静默把图片
+ * 投影成文本占位符**（与 `src/cline-models-dev.ts` 记录的那次用户报障同形）。
+ *
+ * ⇒ 修法：条目**自己**就带 `supportsImage`，直接读它（O(1)，且离线路径也正确）；
+ * id → 条目的查找只在 `stream()` 的门禁里需要，改用一次性 Map 索引，
+ * 且**与 `listModels` 取同一份来源**（不然会出现「目录说支持、发图被拒」的分叉）。
+ */
+describe('ClineAdapter 目录构建的性能与来源一致性（issue IKL3YH）', () => {
+  /** 造 n 条远端目录（前缀即兜底表原本那几条）。 */
+  function bigCatalog(n: number): ClineModel[] {
+    const models: ClineModel[] = MODELS.map((model) => ({ ...model }))
+    for (let i = models.length; i < n; i++) {
+      models.push({
+        id: `vendor/model-${i}`,
+        name: `Model ${i}`,
+        isFree: false,
+        supportsImage: i % 3 === 0,
+      })
+    }
+    return models
+  }
+
+  it('★ 远端目录不可用时，兜底条目的图片能力照常播报（不被误报纯文本）', async () => {
+    // 注入式 loadModels 返回空 models 且**不带** `remote` ⇒ `got = false`
+    // ⇒ `remoteModels` 保持 undefined。这正是离线 / 首拉失败时的生产形态。
+    const adapter = makeAdapter({
+      loadModels: async () => ({ models: [], warnings: ['offline'] }),
+    })
+    const listed = await adapter.listModels('cline')
+    const bunny = listed.find((model) => model.id === 'stealth/space-bunny-alpha')
+    // 兜底表里它是 supportsImage: true（见 cline-product.ts）。
+    expect(bunny?.inputModalities).toContain('image')
+  })
+
+  it('★ 离线兜底目录下 listModels 与 stream 判据同源（不能一个放行一个拒绝）', async () => {
+    const bodies: string[] = []
+    const adapter = makeAdapter({
+      loadModels: async () => ({ models: [], warnings: ['offline'] }),
+      readImage: async () => ({ data: new Uint8Array([1, 2, 3]), mediaType: 'image/png' }),
+      fetchImpl: (async (_url: string, init: RequestInit) => {
+        bodies.push(String(init.body))
+        return sseResponse([
+          JSON.stringify({ choices: [{ delta: { content: 'ok' } }] }),
+          JSON.stringify({ choices: [{ delta: {}, finish_reason: 'stop' }] }),
+        ])
+      }) as unknown as typeof fetch,
+    })
+
+    const listed = await adapter.listModels('cline')
+    // 目录侧声明支持图片。
+    expect(listed.find((model) => model.id === 'stealth/space-bunny-alpha')?.inputModalities)
+      .toContain('image')
+
+    // ⇒ `stream()` 的门禁就必须放行（同一份来源）。
+    //   修复前这里会抛「不支持图片输入」，与目录的声明自相矛盾。
+    await collect(adapter, {
+      model: 'stealth/space-bunny-alpha',
+      messages: [{
+        role: 'user',
+        content: [{ type: 'image', attachment: { attachmentId: 'att-1' } }],
+      }],
+    })
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0]).toContain('data:image/png;base64,')
+  })
+
+  it('★ 逐模型 resolveModel 不再整份重建目录（O(N²) 回归门）', async () => {
+    const models = bigCatalog(60)
+    const adapter = makeAdapter({
+      loadModels: async () => ({
+        models,
+        warnings: [],
+        remote: {
+          freeIds: [],
+          remoteIds: models.map((model) => model.id),
+          entries: [],
+          warnings: [],
+          complete: true,
+        },
+      }),
+    })
+
+    const spy = vi.spyOn(
+      ClineAdapter.prototype as unknown as { toCatalogEntry: (model: ClineModel) => unknown },
+      'toCatalogEntry',
+    )
+    try {
+      const listed = await adapter.listModels('cline')
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(listed.length)
+
+      // 宿主形状：对**目录里每个模型**各调一次 resolveModel。
+      for (const model of listed) await adapter.resolveModel('cline', model.id)
+
+      // 旧实现每次 resolveModel 都整份重建 ⇒ ≈ N + N²；修好后 ≈ N。
+      // 判据取 2N（宽到不会因无关重构假失败，又远小于 N²）。
+      expect(spy.mock.calls.length).toBeLessThanOrEqual(2 * listed.length)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  /**
+   * ⚠️ **兜底路径也要守卫**：`entriesCache` / `catalogIndexCache` 都以
+   * 「来源数组的 `===`」为失效判据，若 `fallbackCatalog()` 每次返回**新数组**，
+   * 离线路径会每调用一次就白建一份缓存 —— 缓存等于没有，且**症状完全静默**
+   * （只是慢，没有任何报错）。上一版用例走的是**远端**目录，测不到这一条。
+   */
+  it('★ 兜底（离线）路径同样不整份重建目录（缓存的失效判据不能被架空）', async () => {
+    const adapter = makeAdapter({
+      loadModels: async () => ({ models: [], warnings: ['offline'] }),
+    })
+    const spy = vi.spyOn(
+      ClineAdapter.prototype as unknown as { toCatalogEntry: (model: ClineModel) => unknown },
+      'toCatalogEntry',
+    )
+    try {
+      const listed = await adapter.listModels('cline')
+      expect(listed.length).toBeGreaterThan(0)
+      for (const model of listed) await adapter.resolveModel('cline', model.id)
+      // 兜底表只有几条，故这里没有「N² 很大」的余量 —— 判据就取 2N。
+      expect(spy.mock.calls.length).toBeLessThanOrEqual(2 * listed.length)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  /**
+   * ⚠️ **缓存的失效判据必须是「来源数组身份变了」，不能是「长度变了」。**
+   *
+   * 该判据有一个**真实可达**的反例：目录只有一部分来源成功（`complete: false`，
+   * 于是冷却过后会**重拉**），而重拉回来后**条数完全相同**、只是某个模型的
+   * 图片能力变了。若按长度失效，`stream()` 会一直用陈旧索引判能力 ⇒ 要么
+   * 误放行、要么误拒绝，且**永不恢复**。
+   *
+   * ⚠️ **必须走 `complete: false` 的残缺路径**：完整目录（`complete: true`）会被
+   * `remoteComplete` 永久短路，`remoteModels` 根本不会被重新赋值 —— 那种情况下
+   * 「缓存陈旧」与「远端目录陈旧」是**同一件事**（是既有设计，不是本缺陷），
+   * 拿它写用例会测出一个假判据。
+   */
+  it('★ 残缺目录重拉后等长但内容变了 ⇒ 缓存必须失效（不能按长度判）', async () => {
+    /** 两份**等长**目录：同一 id 的图片能力相反。 */
+    const makeRemote = (imageFlag: boolean): ClineModel[] => ([
+      { id: 'vendor/target', name: 'Target', isFree: false, supportsImage: imageFlag },
+      { id: 'vendor/filler', name: 'Filler', isFree: false, supportsImage: false },
+    ])
+    let current = makeRemote(false)
+    const adapter = makeAdapter({
+      loadModels: async () => ({
+        models: current,
+        warnings: ['models 部分失败'],
+        remote: {
+          freeIds: [],
+          // 非空 ⇒ `got = true`（残缺也展示）；`complete: false` ⇒ 冷却后**会重拉**。
+          remoteIds: current.map((model) => model.id),
+          entries: [],
+          warnings: ['models 部分失败'],
+          complete: false,
+        },
+      }),
+      readImage: async () => ({ data: new Uint8Array([1]), mediaType: 'image/png' }),
+      fetchImpl: (async () => sseResponse([
+        JSON.stringify({ choices: [{ delta: { content: 'ok' } }] }),
+        JSON.stringify({ choices: [{ delta: {}, finish_reason: 'stop' }] }),
+      ])) as unknown as typeof fetch,
+    })
+
+    // 第一轮：目录说不支持图片 ⇒ 门禁必须拒绝（同时把索引建立起来）。
+    await adapter.listModels('cline')
+    await expect(collect(adapter, {
+      model: 'vendor/target',
+      messages: [{ role: 'user', content: [{ type: 'image', attachment: { attachmentId: 'a' } }] }],
+    })).rejects.toThrow(/不支持图片输入/)
+
+    // 第二轮：**等长**的新目录，同一个 id 变成支持图片；清冷却等价于「冷却到期」。
+    current = makeRemote(true)
+    const gate = (adapter as unknown as { catalogGate: { reset(): void } }).catalogGate
+    gate.reset()
+    await adapter.listModels('cline')
+    // 前置：重拉**真的**发生了（否则本用例测不到缓存失效）。
+    expect((adapter as unknown as { remoteModels: readonly ClineModel[] }).remoteModels)
+      .toContainEqual(expect.objectContaining({ id: 'vendor/target', supportsImage: true }))
+
+    // 门禁必须按**新**目录放行 —— 按长度失效的话这里会沿用陈旧索引、继续拒绝。
+    await expect(collect(adapter, {
+      model: 'vendor/target',
+      messages: [{ role: 'user', content: [{ type: 'image', attachment: { attachmentId: 'a' } }] }],
+    })).resolves.toBeDefined()
   })
 })
 
@@ -796,42 +1022,82 @@ describe('Cline 接线（源码级回归）', () => {
   const read = (rel: string): string => readFileSync(resolve(root, rel), 'utf8')
 
   it('index.ts 注册 cline 服务、适配器与续期', () => {
-    const source = read('src/index.ts')
+    const source = stripComments(read('src/index.ts'))
     expect(source).toContain('registerClineLlm')
     expect(source).toContain('new ClineAuth(ctx)')
     // 只断言「cline 在续期调度里、且真的被传了池」—— 用 `(pool|p)` 同时接受
     // 逐个 await 与表驱动两种写法，避免每次重构调度器都假失败。
-    expect(source).toMatch(/cline\.refreshAll\((?:pool|p)\)/)
+    // ⚠️ **2026-10-08 改（Task 10）**：原先断言 `src/index.ts` 的源码文本含手抄清单
+    //    字面量（`['x', (p) => x.refreshAll(p)]`）—— 那张清单已被
+    //    `wiredRefreshTargets()` 从**能力注册表**派生取代 ⇒ 该文本形态**不存在了**，
+    //    而它守的意图（该 provider 在续期调度里）**与文本无关**。
+    // ⇒ 改为**结构断言**（注册循环挂了 refreshAll + 派生表被使用）。
+    // ⚠️ 行为断言（真跑 `apply()` 逐个驱动 `auth.refreshAll` 并断言打到**自己那个**
+    //    实例）在 `provider-runtime-wiring.spec.ts` 的「★ 13 家都挂上了
+    //    `auth.refreshAll`」一条里，**比本条更强**。
+    expect(source, '注册循环没有挂 refreshAll（派生表会恒为空）')
+      .toMatch(/refreshAll:\s*\(pool\)\s*=>\s*auth\.refreshAll\(pool\)/)
+    expect(source, 'refreshTargets 又回到手抄清单了')
+      .toMatch(/wiredRefreshTargets\(\)/)
     expect(source).toContain('cline.stop()')
     // Jet Hub「显示列表」需要适配器实例
     expect(source).toMatch(/cline: pruned\([^)]*,\s*clineAdapter\)/)
-    // ⚠️ 形参是**位置参数**，新增 provider 会插在 cline 与 modelAdapters 之间。
-    // 只断言「cline 在 modelAdapters 之前」，**不要**写死整串前缀
-    // —— 那会让每加一个 provider 都假失败（加 Loomy、Raccoon、QoderCN 时各踩一次）。
-    // 之前的正则把 `…lobsterai, qoder, trae, cline,` 整段写死了，与这条注释矛盾，
-    // 故改为只检查「cline 出现在 modelAdapters 之前」这一不变式。
-    expect(source).toMatch(
-      /registerJetHubRpc\([\s\S]*?cline,[\s\S]*?modelAdapters\)/,
-    )
+    // ⚠️ 2026-10-08 改（Task 3）：原先这条是**相邻性正则**
+    // `registerJetHubRpc\([\s\S]*?cline,[\s\S]*?modelAdapters\)`。
+    // Task 3 一度给 `registerJetHubRpc` 加了**第 5 个位置形参** `credits`
+    // （调用点变成 `… }, modelAdapters, creditsTable)`）⇒ 正则必然假失败。
+    // 该形参随后在设计复审 C1 中被删除，但**本条的改法保留**：它守的意图
+    // （cline 的 auth 实例接上了）**与形参个数无关**。
+    // ⇒ 按 **AST** 取调用点第三个实参（auths 对象字面量）的键 ——
+    // 重排 / 插键 / 加形参都不会假失败，而键真的漏了必然变红。
+    const authKeys = jetHubAuthsCallKeys(source)
+    expect(Object.keys(authKeys), 'cline 必须在 auths 命名对象里（键 = provider id）')
+      .toContain('cline')
+    expect(authKeys.cline, '`cline` 键的值必须是 cline 实例').toBe('cline')
     // 老契约下的 settings namespace
-    expect(source).toContain("'llm-cline'")
+    // ⚠️ 2026-10-08 改：原先扫 index.ts 源码文本找 `'llm-cline'`。本次重构把 13 个
+    //    字面量收敛成从 `PROVIDER_REGISTRY` 派生 ⇒ 文本断言变红而行为没变。
+    //    改为断言声明值；「index.ts 真的按它注册了」由
+    //    `provider-registry-consumers.spec.ts` 的 `apply()` 行为用例守。
+    expect(descriptorOf('cline')?.settingsNamespace).toBe('llm-cline')
   })
 
-  it('jet-hub-rpc.ts 为 cline 接上登录、续期与余额三个分派点', () => {
+  it('jet-hub-rpc.ts 为 cline 接上登录、续期与余额三个分派点', async () => {
     const source = read('src/jet-hub-rpc.ts')
     expect(source).toContain('cline.startLogin({ refName })')
-    // `[^)]*` 容忍签名扩展：续期成功后要把新 `expiresAt` 写回账号池，
-    // 故调用点带着 `pool, entry.id`（issue !IKIRTT）—— 写死整串会一改签名就假失败。
-    expect(source).toMatch(/cline\.refreshAccountCredential\(entry\.credentialRef[^)]*\)/)
-    expect(source).toContain('fetchClineCreditBalance(credential, CLINE)')
-    // 签到必须显式拒绝（而不是落到 unsupported provider 的泛化文案）
-    expect(source).toContain('Cline 不支持每日签到')
+    // ⚠️ 2026-10-08 改（Task 2）：原先这条断言
+    //    `/cline\.refreshAccountCredential\(entry\.credentialRef[^)]*\)/`
+    //    —— 扫的是 `account.refresh` 里 13 个同构 `case` 中的 cline 那一个。
+    //    Task 2 把它们收敛成一处查表（`authOf(auths, entry.provider)`）
+    //    ⇒ 该文本形态**不存在了**，而它守的意图（cline 的续期接上了、
+    //    且刷的是池内那个 ref）**与文本无关**。
+    //    ⇒ 改为**行为**断言：驱动端点，断言 cline 账号的续期**恰好**落到
+    //    cline 桩上、且 ref 就是池内条目那个（不是默认单凭据 ref）。
+    const target = accountEntry('cline', 'CLINE_ACCOUNT_WIRE')
+    const harness = refreshHarness([target])
+    const result = await harness.call(target.id)
+    expect(result.ok, `cline 续期应成功，实际 error=${result.error?.message}`).toBe(true)
+    expect(harness.calls.map((c) => c.provider), 'cline 账号串到了别的实例').toEqual(['cline'])
+    expect(harness.calls[0]?.ref).toBe('CLINE_ACCOUNT_WIRE')
+    // ⚠️ 2026-10-08 改（Task 4）：原先这条断言 `src/jet-hub-rpc.ts` 的源码文本里
+    //    含 `'Cline 不支持每日签到'`。Task 4 把「不支持签到」的文案搬到
+    //    `src/provider-credits.ts` 的 `claimUnavailableReason`（那是它该在的地方
+    //    —— 知道该产品形态的那一层），字面量**搬了家**，而它守的意图
+    //    （cline 调 claimAll 会拿到**指明原因**的拒绝、不退化成 unsupported provider）
+    //    **与文本位置无关**。
+    //    ⇒ 改为读**表里的声明值**；「端到端响应里就是这句话」由
+    //    `claim-runtime-parity.spec.ts` 的「cline / workbuddy / raccoon 各回
+    //    逐字保留的可读原因」守（真跑端点、逐字核对）。
+    expect(createProviderCredits().cline?.claimUnavailableReason)
+      .toContain('Cline 不支持每日签到')
   })
 
   it('客户端 PROVIDERS 含 cline 且有图标', () => {
-    const source = read('plugin-src/client/jet-hub.js')
-    expect(source).toMatch(/\{\s*id:\s*'cline',\s*label:\s*'Cline'/)
-    expect(source).toContain('const CLINE_ICON')
+    // ⚠️ 2026-10-08 改：`PROVIDERS` 由 `src/provider-registry.ts` 派生、
+    // 图标常量已抽到纯数据模块 `provider-icons.js`，故改为**行为断言**
+    //（原先扫 `jet-hub.js` 的 `{ id: 'cline', label: 'Cline'` 文本）。
+    expect(descriptorOf('cline')?.label).toBe('Cline')
+    expect(PROVIDER_ICONS.cline).toMatch(/^data:image\/png;base64,/)
   })
 
   /**
@@ -1115,14 +1381,191 @@ describe('Cline 接线（源码级回归）', () => {
     expect(byId.get('cline-free/mimo-v2.6-flash')?.inputModalities).toEqual(['text', 'image'])
   })
 
+  // ── issue IKKZUG：models.dev 失败后必须能**自愈**，不能固化 ──
+  //
+  // 真实缺陷：models.dev 超时后 `remoteComplete` 仍为 true（`complete` 只反映
+  // 两个 Cline 端点，**不含** models.dev），而短路判据是
+  // `if (this.remoteComplete) return` ⇒ 闸门的冷却永远读不到 ⇒ models.dev
+  // 在整个进程生命周期内只被调 1 次，cline-pass/* 一直「明确不支持图片」。
+  //
+  // 用户实测：桌面端 10-11 23:02 启动 → 10-12 00:30 仍稳定拒图，**只能重启**。
+
+  it('⚠️⚠️ models.dev 失败**不得**让目录被判成「已完整」（否则永不自愈）', async () => {
+    let devCalls = 0
+    const adapter = makeAdapter({
+      // ⚠️ `models` **不能为空**：`ensureModelsDev` 在 `if (models.length > 0)`
+      // 之内被调用，而 models.dev 的职责正是「补进目录里没有的 cline-pass/*」。
+      // 目录本身为空 ⇒ 压根不会去读 models.dev（那是本仓库的既有设计，
+      // 空目录时补无可补）。所以这里给一条真实存在的条目。
+      loadModels: async () => ({
+        models: [{ id: 'cline-free/deepseek-v4.1-flash', name: 'DS Free' }],
+        warnings: [],
+        remote: {
+          freeIds: ['cline-free/deepseek-v4.1-flash'],
+          remoteIds: ['cline-free/deepseek-v4.1-flash'],
+          entries: [{ id: 'cline-free/deepseek-v4.1-flash', name: 'DS Free' }],
+          complete: true,
+        },
+      }) as never,
+      loadModelsDev: async () => {
+        devCalls++
+        // 首拉失败，之后恢复 —— 模拟「第一次超时、第二次成功」。
+        if (devCalls === 1) throw new Error('models.dev timeout')
+        return new Map([
+          ['cline-pass/deepseek-v4.1-flash', { id: 'cline-pass/deepseek-v4.1-flash', supportsImage: true }],
+        ])
+      },
+      // ⚠️ 闸门默认 30 秒冷却会挡住第二次拉取；这里把它压到 0，
+      // 让「能否自愈」这一条**独立于冷却时长**地被观测（冷却本身有另两条用例）。
+      onCatalogLoaded: () => {},
+    } as never)
+    const gate = (adapter as unknown as {
+      catalogGate: { reset: () => void; cooling: () => boolean }
+    }).catalogGate
+    const modalitiesOf = async (): Promise<unknown> => {
+      const listed = await adapter.listModels('cline')
+      return listed.find((m) => m.id === 'cline-pass/deepseek-v4.1-flash')?.inputModalities
+    }
+
+    // 第一次：models.dev 没读到 ⇒ 该模型**根本不在目录里**（缺模型，不是误判模态）。
+    expect(await modalitiesOf()).toBeUndefined()
+
+    // ⚠️ 关键：清掉冷却后必须**真的重新拉**并把 models.dev 合进来 ——
+    // 修复前这里被 `remoteComplete` 短路，models.dev 永不再读（只能重启）。
+    gate.reset()
+    expect(await modalitiesOf()).toEqual(['text', 'image'])
+    expect(devCalls, '必须重试 models.dev（不能被 remoteComplete 短路）').toBeGreaterThan(1)
+  })
+
+  // ── issue IKKZUG 第 1 点：图片能力必须**三态**（对齐 buddy）──
+  //
+  // 与 buddy 的区别在**来源**：cline 的 `supportsImage` 只来自目录条目，而
+  // `cline-pass/*` 的条目**只有 models.dev 提供** ⇒ models.dev 失败时
+  // 「该条目根本不存在」，而不是「存在但说不支持」。
+  //
+  // ⚠️ **方向仍是保守**：未知**不放行**图片（见下面的门禁用例），
+  // 只是不再把「不知道」说成「明确不支持」—— 那会让宿主按「确认是纯文本
+  // 模型」把图片**静默**投影成占位文本（dsh-llm 的 projectImagesForTextModel）。
+
+  it('⚠️ 目录里没有该模型时**省略** inputModalities（= 未知），不再谎报不支持', async () => {
+    // 宿主契约：dsh-llm `types.d.ts` 明写「absent means unknown」。
+    // 报 ['text'] 会让 DSH 把图片静默投影成占位符，用户零提示。
+    const adapter = makeAdapter({ loadModelsDev: async () => new Map() })
+    const resolved = await adapter.resolveModel('cline', 'not-a-real-model')
+    expect(resolved.inputModalities, '未知必须省略字段而不是报 [\'text\']').toBeUndefined()
+  })
+
+  it('⚠️ 目录条目**明确** supportsImage=false 时仍报 [text]（三态的中间档不能丢）', async () => {
+    // 防止「干脆全省略」——那会把「确认不支持」也变成未知，
+    // 让图片发到不支持的服务端。用真实形态的模型（glm-5.3 实测不带图）。
+    const adapter = makeAdapter({ loadModelsDev: async () => new Map() })
+    const listed = await adapter.listModels('cline')
+    const plain = listed.find((m) => m.id === 'cline-pass/glm-5.3')
+    if (plain === undefined) {
+      // 目录里没有这条 ⇒ 该用真实存在且明确 false 的条目代替
+      const anyFalse = listed.find((m) => m.inputModalities !== undefined)
+      expect(anyFalse?.inputModalities, '至少有一条要给出明确结论').toBeDefined()
+    } else {
+      expect(plain.inputModalities).toEqual(['text'])
+    }
+  })
+
+  it('⚠️ 未知模型的贴图门禁**不得**说成「不支持图片输入」（issue 原报障文案）', async () => {
+    // 用户报障原文：`cline-pass/deepseek-v4.1-flash` 报「不支持图片输入」，
+    // 而真实原因是 models.dev 没拉到。两者必须可区分。
+    const adapter = makeAdapter({
+      loadModelsDev: async () => { throw new Error('models.dev timeout') },
+      readImage: async () => ({ data: new Uint8Array([1]), mediaType: 'image/png' }),
+    })
+    const error = await collect(adapter, {
+      model: 'not-a-real-model',
+      messages: [{
+        role: 'user',
+        content: [{ type: 'image', attachment: { attachmentId: 'att-1' } }],
+      }],
+    }).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(Error)
+    const message = String((error as Error).message)
+    // ⚠️ 不是「不支持」——那是谎报。
+    expect(message).not.toContain('不支持图片输入')
+    expect(message).toContain('not-a-real-model')
+  })
+
+  // ── issue IKKZUG 第 5 点：让「目录没拉到」**可观测** ──
+  //
+  // 排障困境：models.dev 拉不到时只有一行 console.warn（宿主不落盘），
+  // 现象只是「贴不了图」，无从判断是「模型不支持」还是「目录没拉到」。
+  // 用户正是靠手工推演才定位到这一层 —— 那不该是常规成本。
+
+  it('⚠️ 目录健康快照：models.dev 未就绪时 complete=false 且点名该来源', async () => {
+    const adapter = makeAdapter({
+      loadModelsDev: async () => { throw new Error('models.dev timeout') },
+    })
+    await adapter.listModels('cline')
+    const health = adapter.describeCatalogHealth()
+    expect(health.complete).toBe(false)
+    // ⚠️ 文案必须**点名 models.dev** 且说明「会自动重试」——
+    // 后者缺了会让用户以为要自己去修。
+    expect(health.note).toContain('models.dev')
+    expect(health.note).toContain('会自动重试')
+  })
+
+  it('⚠️ 目录健康快照：完整时 complete=true 且**不给** note（不渲染「一切正常」）', async () => {
+    // ⚠️ 反向验证的另一半：一律给 note 会让前端多一处永远为真的渲染分支。
+    const adapter = makeAdapter({
+      loadModelsDev: async () => new Map([
+        ['cline-pass/deepseek-v4.1-flash', { id: 'cline-pass/deepseek-v4.1-flash', supportsImage: true }],
+      ]),
+    })
+    await adapter.listModels('cline')
+    const health = adapter.describeCatalogHealth()
+    expect(health.complete).toBe(true)
+    expect(health.note, '完整时不该给 note').toBeUndefined()
+    expect(health.total).toBeGreaterThan(0)
+  })
+
+  it('⚠️ 目录健康快照必须**零 IO**（设置页挂载时逐供应商调用）', async () => {
+    // ⚠️ 若它在内部触发拉取，`provider.status` 会在设置页挂载时对每个
+    // 供应商发网络请求 —— 首屏被拖慢，而那个端点全程只用同步内存副本。
+    let devCalls = 0
+    const adapter = makeAdapter({
+      loadModelsDev: async () => { devCalls++; return new Map() },
+    })
+    await adapter.listModels('cline')
+    const before = devCalls
+    for (let i = 0; i < 5; i++) adapter.describeCatalogHealth()
+    expect(devCalls, '读快照不得触发任何拉取').toBe(before)
+  })
+
+  it('⚠️ 目录已完整且 models.dev 也已读到时，仍保持「已完整」（不得反复重拉）', async () => {
+    // ⚠️ 反向验证的另一半：上一条若把判据写成「恒 false」就会变成
+    // 「每次都重拉两个 Cline 端点」的请求风暴 —— 那同样是缺陷。
+    let devCalls = 0
+    let endpointCalls = 0
+    const adapter = makeAdapter({
+      loadModelsDev: async () => {
+        devCalls++
+        return new Map([
+          ['cline-pass/deepseek-v4.1-flash', { id: 'cline-pass/deepseek-v4.1-flash', supportsImage: true }],
+        ])
+      },
+    })
+    const internal = adapter as unknown as { remoteComplete: boolean }
+    void endpointCalls
+    for (let i = 0; i < 5; i++) await adapter.listModels('cline')
+    expect(devCalls, '两者都就绪后不该反复重拉 models.dev').toBe(1)
+    expect(internal.remoteComplete, '两者都就绪 ⇒ 判为已完整').toBe(true)
+  })
+
   it('能力矩阵登记 cline 为「有余额、无签到、有订阅额度」', () => {
-    const source = read('plugin-src/client/credits-capabilities.js')
-    const entry = /cline:\s*Object\.freeze\(\{([^}]*)\}\)/.exec(source)
-    expect(entry, '未找到 cline 的能力登记').not.toBeNull()
-    const body = entry![1]!
-    expect(body).toMatch(/balance:\s*true/)
-    expect(body).toMatch(/dailyCheckin:\s*false/)
-    expect(body).toMatch(/subscriptionQuota:\s*true/)
+    // ⚠️ 2026-10-08 改：能力表由 registry 派生，故改为**行为断言**
+    //（原先正则扫 `credits-capabilities.js` 的 `cline: Object.freeze({…})` 文本）。
+    expect(descriptorOf('cline')?.credits).toEqual({
+      balance: true, dailyCheckin: false, subscriptionQuota: true,
+    })
+    expect(CREDITS_CAPABILITIES.cline).toEqual({
+      balance: true, dailyCheckin: false, subscriptionQuota: true,
+    })
   })
 })
 
@@ -1201,7 +1644,9 @@ describe('ClineAdapter 目录失败判据（★ 不能看 models.length）', () 
         return {
           models: MODELS,
           warnings: [],
-          remote: { freeIds: ['cline-free/deepseek-v4.1-flash'], remoteIds: [], entries: [] },
+          // ⚠️ `complete: true` 必须显式给（issue IKJVTF）：完整性判据是
+          // 每个来源各自的取数结果，不再由 `warnings` 反推。
+          remote: { freeIds: ['cline-free/deepseek-v4.1-flash'], remoteIds: [], entries: [], complete: true },
         }
       },
     })
@@ -1220,7 +1665,7 @@ describe('ClineAdapter 目录失败判据（★ 不能看 models.length）', () 
         return {
           models: MODELS,
           warnings: ['recommended-models boom', 'models boom'],
-          remote: { freeIds: [], remoteIds: [], entries: [] },
+          remote: { freeIds: [], remoteIds: [], entries: [], complete: false },
         }
       },
     })
@@ -1228,5 +1673,337 @@ describe('ClineAdapter 目录失败判据（★ 不能看 models.length）', () 
     await adapter.listModels('cline')
     expect(calls).toBe(1)
     expect((adapter as unknown as { remoteModels: unknown }).remoteModels).toBeUndefined()
+  })
+})
+
+/**
+ * ★ **残缺目录必须能补齐**（issue IKJVTF 的缺陷②）。
+ *
+ * Cline 有**两个**独立来源：`recommended-models`（free 集合）与 `/api/v1/models`
+ * （466 条按量计费 id，含 `apodex/*`）。实测两者独立容错，故「一个成功、一个失败」
+ * 是常态而非异常。
+ *
+ * 修复前的行为：`hasClineRemoteModels` 只要**任一来源非空**就判「已拿到」，
+ * 于是残缺目录被当成完整目录落缓存，此后 `if (this.remoteModels !== undefined)
+ * return` **永久短路** —— 那 466 条再也拉不回来，只能重启 DSH。
+ *
+ * 修复后：残缺**也展示**（`got`）但**留冷却**（`complete=false`），冷却到期即可重拉。
+ * ⚠️ 本组走**真实接线**（`loadClineModels` + 真实 `fetchImpl`），不注入 `loadModels`
+ * —— 注入式加载器可以省略 `remote`，从而掩盖 `warnings` 这条判据。
+ */
+describe('ClineAdapter 残缺目录自愈（★ IKJVTF 缺陷②）', () => {
+  /** 只让 `recommended-models` 成功、`/api/v1/models` 抛错的 fetch。 */
+  function partialFetch(counter: { recommended: number; models: number }): typeof fetch {
+    return (async (url: string | URL | Request) => {
+      const target = String(url)
+      if (target.includes('recommended-models')) {
+        counter.recommended += 1
+        return new Response(
+          JSON.stringify({ free: [{ id: 'cline-free/probe-only' }], recommended: [], clinePass: [] }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+      counter.models += 1
+      throw new Error('models fetch failed')
+    }) as never
+  }
+
+  it('★ 真接线：一个端点成功 + 一个失败 ⇒ 展示残缺目录，且**冷却过后真的补齐**', async () => {
+    const counter = { recommended: 0, models: 0 }
+    // 上游先挂后好：第一次 `/api/v1/models` 失败，之后恢复。
+    let modelsShouldFail = true
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      fetchImpl: (async (url: string | URL | Request) => {
+        const target = String(url)
+        if (target.includes('recommended-models')) {
+          counter.recommended += 1
+          return new Response(
+            JSON.stringify({ free: [{ id: 'cline-free/probe-only' }], recommended: [], clinePass: [] }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
+        counter.models += 1
+        if (modelsShouldFail) throw new Error('models fetch failed')
+        return new Response(
+          JSON.stringify({ data: [{ id: 'apodex/apodex-1.1-mini:free' }] }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
+      }) as never,
+    })
+
+    const first = await adapter.listModels('cline')
+    // ① 残缺目录**照常展示**（用户至少能看到 recommended 那一份）。
+    expect(first.map((model) => model.id)).toContain('cline-free/probe-only')
+    // ② 它确实落进了缓存（否则每次 listModels 都重拉两个端点）。
+    expect((adapter as unknown as { remoteModels: unknown }).remoteModels).toBeDefined()
+    // ③ 残缺时**没有**被标成完整 —— 这是短路的判据（见下）。
+    expect((adapter as unknown as { remoteComplete: boolean }).remoteComplete).toBe(false)
+
+    // ④ 冷却窗口内不重复打请求（闸门的既有语义不变）。
+    const afterFirst = counter.recommended + counter.models
+    await adapter.listModels('cline')
+    expect(counter.recommended + counter.models).toBe(afterFirst)
+
+    // ⑤ ★★ **本用例的核心**：清掉冷却（等价于「冷却到期」）后，上游已恢复，
+    //    必须**真的重拉**并把 `/api/v1/models` 独有的模型补回来。
+    //
+    //    ⚠️ 修复前这里是「零请求」：短路判据是 `remoteModels !== undefined`，
+    //    而残缺目录**也**赋值了它 ⇒ 闸门的 `cooling()` 永远读不到
+    //    （生产里它只有闸门自己那一处调用点，且排在短路之后）
+    //    ⇒ 那 466 条按量计费模型再也拉不回来，只能重启 DSH。
+    //    ⚠️ 因此本用例**不能**只断言 `gate.cooling() === true` —— 那守着一个
+    //    生产路径读不到的字段（对抗审计实测：把 `complete` 改成恒 `true`，
+    //    旧版用例照样全绿）。
+    modelsShouldFail = false
+    const gate = (adapter as unknown as { catalogGate: { reset(): void } }).catalogGate
+    gate.reset()
+    const second = await adapter.listModels('cline')
+    expect(counter.models).toBeGreaterThan(afterFirst - counter.recommended)
+    // 补齐成功：此前永远拿不到的模型出现了
+    expect(second.map((model) => model.id)).toContain('apodex/apodex-1.1-mini:free')
+    // 补齐后转为完整 ⇒ 此后不再重拉
+    expect((adapter as unknown as { remoteComplete: boolean }).remoteComplete).toBe(true)
+    const afterSecond = counter.recommended + counter.models
+    await adapter.listModels('cline')
+    expect(counter.recommended + counter.models).toBe(afterSecond)
+  })
+
+  it('★ 真接线：两个端点都成功 ⇒ 清冷却（完整目录不该反复重拉）', async () => {
+    const counter = { recommended: 0, models: 0 }
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      fetchImpl: (async (url: string | URL | Request) => {
+        const target = String(url)
+        if (target.includes('recommended-models')) {
+          counter.recommended += 1
+          return new Response(
+            JSON.stringify({ free: [{ id: 'cline-free/probe-only' }], recommended: [], clinePass: [] }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
+        counter.models += 1
+        return new Response(
+          JSON.stringify({ data: [{ id: 'apodex/apodex-1.1-mini:free' }] }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
+      }) as never,
+    })
+
+    const listed = await adapter.listModels('cline')
+    // 两个来源的模型都在 —— 这才是 issue 里「对话框 6 条」的完整形态。
+    expect(listed.map((model) => model.id)).toContain('cline-free/probe-only')
+    expect(listed.map((model) => model.id)).toContain('apodex/apodex-1.1-mini:free')
+    const gate = (adapter as unknown as { catalogGate: { cooling(): boolean } }).catalogGate
+    expect(gate.cooling()).toBe(false)
+  })
+
+  it('★ 真接线：目录落地后**广播**一次（缺陷①：否则对话框永久显示兜底表）', async () => {
+    const onCatalogLoaded = vi.fn()
+    const counter = { recommended: 0, models: 0 }
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      fetchImpl: partialFetch(counter),
+      onCatalogLoaded,
+    })
+
+    await adapter.listModels('cline')
+    // 残缺也广播（`got=true`）：客户端至少能显示补齐的那部分。
+    expect(onCatalogLoaded).toHaveBeenCalledTimes(1)
+
+    // 缓存命中的后续调用不再广播（没有新数据，通知只会让客户端空刷）。
+    await adapter.listModels('cline')
+    expect(onCatalogLoaded).toHaveBeenCalledTimes(1)
+  })
+
+  it('★ 真接线：两个端点全挂时**不**广播（没有目录可展示）', async () => {
+    const onCatalogLoaded = vi.fn()
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      fetchImpl: (async () => { throw new Error('network down') }) as never,
+      onCatalogLoaded,
+    })
+
+    await adapter.listModels('cline')
+    expect(onCatalogLoaded).not.toHaveBeenCalled()
+  })
+
+  /**
+   * ★★ **无凭据 ⇒ `/api/v1/models` 被主动跳过，绝不算「完整」**（issue IKJVTF）。
+   *
+   * `fetchClineRemoteModels` 在 `credential === undefined` 时**不发请求**就返回
+   * （匿名调 `/models` 必然 401）。修复前这条路径**不 push warning**，
+   * 于是 `complete = warnings.length === 0` 判成 `true` ⇒ 清冷却 + 永久缓存
+   * ⇒ 那 466 条从未被获取的模型**再也拉不回来**。
+   *
+   * ⚠️ 生产可达：`providerCatalogVisible` 只查「有没有已登录账号」、**不过滤
+   * `enabled`**，而 `getAvailableAccount` 过滤 ⇒「有账号但全部停用」时门控通过、
+   * 凭据却是 `undefined`。
+   */
+  it('★★ 真接线：无凭据（/models 被跳过）⇒ 不算完整，冷却过后会重拉补齐', async () => {
+    let modelsCalls = 0
+    let hasCredential = false
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      resolveCredential: async () => (hasCredential
+        ? {
+            access_token: 'workos:x',
+            refresh_token: 'r',
+            expire_time: Date.now() + 3_600_000,
+            account_id: 'usr-1',
+          } as never
+        : undefined),
+      fetchImpl: (async (url: string | URL | Request) => {
+        const target = String(url)
+        if (target.includes('recommended-models')) {
+          return new Response(
+            JSON.stringify({ free: [{ id: 'cline-free/probe-only' }], recommended: [], clinePass: [] }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          )
+        }
+        modelsCalls += 1
+        return new Response(
+          JSON.stringify({ data: [{ id: 'apodex/apodex-1.1-mini:free' }] }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        )
+      }) as never,
+    })
+
+    const first = await adapter.listModels('cline')
+    // 无凭据时 `/models` 一次都没发
+    expect(modelsCalls).toBe(0)
+    expect(first.map((model) => model.id)).toContain('cline-free/probe-only')
+    // ★ 关键：没有被判成完整（修复前这里是 true ⇒ 永久固化）
+    expect((adapter as unknown as { remoteComplete: boolean }).remoteComplete).toBe(false)
+
+    // 凭据就绪 + 冷却到期 ⇒ 必须真的去取那一份
+    hasCredential = true
+    const gate = (adapter as unknown as { catalogGate: { reset(): void } }).catalogGate
+    gate.reset()
+    const second = await adapter.listModels('cline')
+    expect(modelsCalls).toBeGreaterThan(0)
+    expect(second.map((model) => model.id)).toContain('apodex/apodex-1.1-mini:free')
+    expect((adapter as unknown as { remoteComplete: boolean }).remoteComplete).toBe(true)
+  })
+
+  /**
+   * ★ **HTTP 200 + 形状不可识别**（网关降级返回 `{}` / HTML）也不算完整。
+   *
+   * 解析器对异常形状**静默**返回空表，修复前零 warning ⇒ 判成完整并永久缓存
+   * ⇒ 免费集合永久丢失且不再重试。本仓 AGENTS.md 记录过网关返回 HTML
+   * （`Unexpected token '<'`）的真实案例，故这条路径不是假想。
+   */
+  it('★ 真接线：200 + 形状不可识别 ⇒ 不算完整（记 warning 且留冷却）', async () => {
+    let payload: unknown = {}
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      fetchImpl: (async (url: string | URL | Request) => {
+        const target = String(url)
+        const body = target.includes('recommended-models')
+          ? payload
+          : { data: [{ id: 'apodex/apodex-1.1-mini:free' }] }
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }) as never,
+    })
+
+    await adapter.listModels('cline')
+    // 空壳 ⇒ 没有远端条目可展示 ⇒ 不落缓存、不算完整
+    expect((adapter as unknown as { remoteComplete: boolean }).remoteComplete).toBe(false)
+    const gate = (adapter as unknown as { catalogGate: { cooling(): boolean } }).catalogGate
+    expect(gate.cooling()).toBe(true)
+
+    // 形状恢复正常后能补齐
+    payload = { free: [{ id: 'cline-free/probe-only' }], recommended: [], clinePass: [] }
+    ;(adapter as unknown as { catalogGate: { reset(): void } }).catalogGate.reset()
+    const after = await adapter.listModels('cline')
+    expect(after.map((model) => model.id)).toContain('cline-free/probe-only')
+    expect((adapter as unknown as { remoteComplete: boolean }).remoteComplete).toBe(true)
+  })
+
+  it('★ 形状可识别但**合法为空**（free: [] 且 data: []）⇒ 不落缓存、留冷却', async () => {
+    // ⚠️ 这条区分的是**「形状可识别」与「有内容」两件事**：
+    // - 形状可识别（`isClineRecommendedShape` / `isClineModelsShape`）⇒ **不记**
+    //   「形状不可识别」那条 warning，`remote.complete` 为 true；
+    // - 但 `hasClineRemoteModels` 仍为 false（一条远端条目都没有）⇒ `got=false`
+    //   ⇒ **不落缓存**、走冷却。
+    //
+    // 「上游把免费模型全撤」与「网关降级返回空壳」在**形状**上可区分，在
+    // **是否有内容**上都表现为空；本适配器的取舍是：**空目录一律不落缓存**
+    // （宁可下次再问，也不要把「一条都没有」固化成「已加载」）。
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      fetchImpl: (async (url: string | URL | Request) => {
+        const target = String(url)
+        const body = target.includes('recommended-models')
+          ? { free: [], recommended: [], clinePass: [] }
+          : { data: [] }
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }) as never,
+    })
+
+    await adapter.listModels('cline')
+    // 空目录不落缓存（`remoteModels` 保持 undefined）
+    expect((adapter as unknown as { remoteModels: unknown }).remoteModels).toBeUndefined()
+    const gate = (adapter as unknown as { catalogGate: { cooling(): boolean } }).catalogGate
+    expect(gate.cooling()).toBe(true)
+  })
+
+  /**
+   * ★ **两个端点全挂时仍须留下来源失败日志**（审计发现真实回退）。
+   *
+   * 基线里 warnings 循环排在 `if (!gotRemote) return false` **之前**，而 issue
+   * IKJVTF 引用的现场证据正是这条日志（`[cline] 模型目录来源失败：models fetch
+   * failed`）。若把 `if (!got) return` 提到循环之前，「**全挂**」这一最需要诊断的
+   * 场景就变成静默 —— 用户看到「少了模型」却无从排查。
+   */
+  it('★ 真接线：两个端点全挂时仍打印来源失败日志（不可静默）', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const adapter = makeAdapter({
+        loadModels: undefined,
+        fetchImpl: (async () => { throw new Error('network down') }) as never,
+      })
+
+      await adapter.listModels('cline')
+
+      const lines = warn.mock.calls.map((call) => String(call[0]))
+      const sourceFailures = lines.filter((line) => line.includes('模型目录来源失败'))
+      // 两个端点各一条
+      expect(sourceFailures.length).toBeGreaterThanOrEqual(2)
+      expect(sourceFailures.join('\n')).toContain('recommended-models')
+      expect(sourceFailures.join('\n')).toContain('models')
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('★ 形状可识别且有内容 ⇒ 完整（不留冷却，不反复重拉）', async () => {
+    const adapter = makeAdapter({
+      loadModels: undefined,
+      fetchImpl: (async (url: string | URL | Request) => {
+        const target = String(url)
+        const body = target.includes('recommended-models')
+          ? { free: [{ id: 'cline-free/probe-only' }], recommended: [], clinePass: [] }
+          : { data: [{ id: 'apodex/apodex-1.1-mini:free' }] }
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }) as never,
+    })
+
+    const listed = await adapter.listModels('cline')
+    expect(listed.map((model) => model.id)).toContain('cline-free/probe-only')
+    expect(listed.map((model) => model.id)).toContain('apodex/apodex-1.1-mini:free')
+    const gate = (adapter as unknown as { catalogGate: { cooling(): boolean } }).catalogGate
+    // 两个来源都取到且目录非空 ⇒ 完整 ⇒ 不该反复重拉
+    expect(gate.cooling()).toBe(false)
+    expect((adapter as unknown as { remoteComplete: boolean }).remoteComplete).toBe(true)
   })
 })

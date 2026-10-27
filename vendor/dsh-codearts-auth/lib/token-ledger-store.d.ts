@@ -10,30 +10,12 @@
  * - **独立文档**（`token-ledger.json`），不进 state.json —— 理由与
  *   `permanent-lock-store.ts` 完全同源：state.json 被**另一条工作区的旧代码**
  *   整体重写时会静默抹掉它不认识的键。
- * - **节流落盘**（2 秒防抖）：记账在推理关键路径上，每笔都同步写盘会把
- *   「一次推理」变成「一次磁盘写」。防抖窗口内崩溃最多丢最近 2 秒的计数 ——
- *   对统计型数据是可接受的精度损失（换取零阻塞）。
- * - **落盘是「增量合并写」，不是整体覆盖**（真实缺陷，审计发现并原样复现）：
- *   两个实例并存时（fiber 重启交错；或同机多 profile 共享同一 home——见上条
- *   与 `permanent-lock-store.ts`）各自内存视图独立，整体覆盖会**互相抹掉**。
- *   详见 `FileLedgerStore.flush` 的注释。
+ * - **节流落盘**（1 秒防抖）：记账不在推理关键路径同步写盘；落盘前 flush 文件，
+ *   插件正常 dispose 也会立即刷盘。进程异常崩溃最多丢最近 1 秒的计数。
+ * - **跨进程互斥增量合并写**：同一账本路径通过原子创建锁目录串行化
+ *   read-merge-rename；锁占用时 flush 延后重试，过期且进程退出的锁会被回收。
  *
- * ## ⚠️ 已知限制一：跨进程并发仍非原子（审计实测，未修）
- *
- * `flush()` 是 `readFile → 合并 → writeFile(tmp) → rename`，**不是原子
- * read-modify-write**：`rename` 本身原子，但「读」与「写」之间存在窗口，两个
- * **真实进程**密集并发写时，后写者可能基于陈旧快照覆盖。
- *
- * 实测（4 进程 × 60 轮密集 append+flush，期望 240）：实得 209 / 220 / 232 / 224。
- * ⚠️ 如实说明：该场景在**首轮的整体覆盖实现上同样丢**（同压测丢 8 条），故本轮
- * 合并写**不是纯回归** —— 它另修好了一个首轮才有的「跨实例可见性」缺陷。但窗口
- * 确实从「写」扩大到「读+写」。
- *
- * **影响面有限**：真实规模下日桶数受 provider × model 数量限制，且 DSH 通常
- * 单进程使用同一 profile。**根治**需文件锁（advisory lock）或改追加日志形态
- * ——超出本次范围，在此显式记录以免被当成"已解决"。
- *
- * ## ⚠️ 已知限制二：「外部删除某日键 + 该日之后又有增量」⇒ 本次运行内读数偏高
+ * ## 已知限制：「外部删除某日键 + 该日之后又有增量」⇒ 本次运行内读数偏高
  *
  * `flush()` 只写**增量**，而增量的基线是**本实例内存里的值**。若盘上某日键被
  * 外部删除（手工编辑 / 另一工作区的旧版本整体覆盖 / 从备份恢复），而该日随后
@@ -65,7 +47,7 @@ export declare const TOKEN_LEDGER_FILE = "token-ledger.json";
 /** 日聚合保留天数（落盘时淘汰更早的日键）。 */
 export declare const TOKEN_LEDGER_DAYS = 90;
 /** 落盘节流窗口（毫秒）。 */
-export declare const TOKEN_LEDGER_FLUSH_MS = 2000;
+export declare const TOKEN_LEDGER_FLUSH_MS = 1000;
 /** 日聚合的持久化后端接口（同步读、节流异步写）。 */
 export interface TokenLedgerStore {
     /**
@@ -79,6 +61,8 @@ export interface TokenLedgerStore {
     load(): TokenLedgerDayMap;
     /** 把一笔请求并入日聚合（内存即时、落盘节流）。 */
     append(entry: import('./token-ledger.js').TokenLedgerEntry): void;
+    /** 删除指定 UTC+8 日键的历史累计；同步落盘，其他日期不变。 */
+    deleteDay(day: string): boolean;
     /** 立即落盘（dispose / 测试用；正常路径靠节流自动刷）。 */
     flush(): void;
 }

@@ -82,7 +82,7 @@ object ControlRuntime {
                     "browser" -> {
                         val grant = lease.check(owner)
                         val method = payload.getString("method")
-                        check(method in setOf("status", "open", "read", "screenshot", "close", "scroll", "back", "forward", "reload") || grant.policyMode == "danger-full-access") { "浏览器点击和输入请使用当前聊天完全权限" }
+                        check(method in setOf("status", "open", "read", "screenshot", "close", "scroll", "back", "forward", "reload", "profile", "select") || grant.policyMode == "danger-full-access") { "浏览器点击和输入请使用当前聊天完全权限" }
                         val window = payload.getString("window")
                         require(window.matches(Regex("mcp_[a-f0-9]{40}"))) { "浏览器窗口无效" }
                         com.dshphone.browser.BrowserClient.call(ctx, window, method, payload.optJSONObject("args") ?: JSONObject()).whenComplete { value, error ->
@@ -113,11 +113,11 @@ object ControlRuntime {
                         val request = lease.request(owner, payload.getString("task"), packages, payload.optInt("minutes", 10))
                         future.complete(JSONObject().put("status", "approval_required").put("requestId", request.id).put("hint", "外部工具箱任务需要手机原生确认；本机 DSH 使用聊天已有的三种权限模式，无需申请"))
                     }
-                    "execute" -> {
+                    "execute", "virtual" -> {
                         val id = payload.getString("requestId"); require(id.matches(Regex("[a-f0-9-]{36}"))) { "操作标识无效" }
                         val key = "$owner:$id"
                         val grant = lease.check(owner, expectedEpoch = payload.getLong("epoch"))
-                        val signature = payload.getJSONObject("args").toString()
+                        val signature = payload.getString("command") + ":" + payload.getJSONObject("args").toString()
                         receipts[key]?.let { check(receiptArgs[key] == signature) { "同一操作标识不能更改动作" }; future.complete(JSONObject(it.toString())); return@post }
                         check(key !in cancelled) { "本次调用已经取消，未执行" }
                         if (receipts.size >= if (grant.continuous) 4096 else 256) {
@@ -129,10 +129,59 @@ object ControlRuntime {
                         receiptArgs[key] = signature; remember(key, JSONObject().put("status", "running"))
                         executions[key] = future
                         try {
-                            (service ?: error("请在系统设置启用 DSH 手机操作无障碍服务")).execute(owner, grant.epoch, payload.getJSONObject("args"), false) { result ->
+                            val finish: (JSONObject) -> Unit = { result ->
                                 executions.remove(key)
-                                if (future.isDone) return@execute
-                                remember(key, result); if (lease.current()?.epoch == grant.epoch) lastResult = result; future.complete(result)
+                                if (!future.isDone) {
+                                    remember(key, result); if (lease.current()?.epoch == grant.epoch) lastResult = result; future.complete(result)
+                                }
+                            }
+                            if (payload.getString("command") == "virtual") {
+                                val args = payload.getJSONObject("args"); val action = args.getString("action")
+                                require(action in setOf("status","create","destroy","launch","read","screenshot","tap","swipe","back")) { "无效的虚拟屏动作" }
+                                require(args.optString("screenId","virtual-1") == "virtual-1") { "不会操作真实屏或未知虚拟屏" }
+                                if (action !in setOf("status","read","screenshot")) check(grant.policyMode == "danger-full-access") { "虚拟屏操作需要已有聊天完全权限" }
+                                if (action == "launch") lease.check(owner,args.getString("package"),grant.epoch)
+                                if (action in setOf("tap","swipe","back")) com.dshphone.virtualscreen.VirtualScreenGuard.check(com.dshphone.virtualscreen.VirtualScreenController.status().optInt("displayId",0),owner)
+                                val canRun = {
+                                    val allowed = CompletableFuture<Boolean>()
+                                    handler.post {
+                                        try {
+                                            check(!future.isDone)
+                                            lease.check(owner,expectedEpoch = grant.epoch)
+                                            if (action in setOf("tap","swipe","back")) com.dshphone.virtualscreen.VirtualScreenGuard.check(com.dshphone.virtualscreen.VirtualScreenController.status().optInt("displayId",0),owner)
+                                            allowed.complete(true)
+                                        } catch (_: Throwable) { allowed.complete(false) }
+                                    }
+                                    runCatching { allowed.get(2,java.util.concurrent.TimeUnit.SECONDS) }.getOrDefault(false)
+                                }
+                                com.dshphone.virtualscreen.VirtualScreenController.dispatch(ctx,owner,args,canRun).whenComplete { result,error ->
+                                    handler.post {
+                                        if (error != null) {
+                                            executions.remove(key); val value = failure(error.cause ?: error); remember(key,value)
+                                            if (!future.isDone) future.completeExceptionally(error.cause ?: error)
+                                        } else if (!future.isDone) {
+                                            if (lease.current()?.epoch != grant.epoch) {
+                                                executions.remove(key); future.completeExceptionally(IllegalStateException("虚拟屏调用授权已撤回；已提交动作请先核对结果"))
+                                            } else finish(result.put("epoch",grant.epoch))
+                                        }
+                                    }
+                                }
+                            } else {
+                                val currentService = service
+                                if (currentService != null) currentService.execute(owner, grant.epoch, payload.getJSONObject("args"), false, finish)
+                                else if (grant.policyMode == "danger-full-access" && ControlRepair.automaticEnabled(ctx)) {
+                                    ControlRepair.ensureConnected(ctx).whenComplete { restored, error -> handler.post recovery@{
+                                        if (future.isDone) return@recovery
+                                        try {
+                                            if (error != null) throw IllegalStateException("无障碍自动恢复未完成；本次动作未提交。请到服务→手机操作查看 Shizuku 和受限设置", error)
+                                            lease.check(owner, expectedEpoch = grant.epoch)
+                                            check(service === restored) { "无障碍连接又发生变化，本次动作未提交" }
+                                            restored.execute(owner, grant.epoch, payload.getJSONObject("args"), false, finish)
+                                        } catch (error: Throwable) {
+                                            executions.remove(key); remember(key, failure(error)); future.completeExceptionally(error)
+                                        }
+                                    } }
+                                } else error("无障碍通道未连接；聊天权限保持不变，请到服务→手机操作点“开启并检查”")
                             }
                         } catch (error: Throwable) { executions.remove(key); remember(key, failure(error)); throw error }
                     }
@@ -162,11 +211,13 @@ object ControlRuntime {
         val grant = lease.current(); val request = lease.currentRequest()
         if (pendingAction?.deadline?.let { SystemClock.elapsedRealtime() >= it } == true) pendingAction = null
         return JSONObject().put("status", if (grant == null) "off" else "authorized").put("paused", stoppedAt > 0).put("stoppedAt", stoppedAt).put("permissionMode", grant?.policyMode ?: JSONObject.NULL).put("accessibilityConnected", service != null).put("accessibilityIssue", accessibilityIssue ?: JSONObject.NULL).put("logs", AppLogs.status()).put("termux", TermuxCommands.status(context ?: error("手机操作尚未启动"))).put("apps", apps())
+            .put("virtualScreen",com.dshphone.virtualscreen.VirtualScreenController.status())
             .put("grant", if (grant != null && (owner.isEmpty() || owner == grant.owner)) JSONObject().put("owner", grant.owner).put("task", grant.task).put("epoch", grant.epoch)
                 .put("packages", JSONArray(grant.packages.toList())).put("continuous", grant.continuous).put("allApps", grant.allApps).put("policyMode", grant.policyMode ?: JSONObject.NULL).put("remainingSeconds", if (grant.continuous) JSONObject.NULL else (grant.deadline - SystemClock.elapsedRealtime()).coerceAtLeast(0) / 1000) else JSONObject.NULL)
             .put("request", if (request != null && (owner.isEmpty() || owner == request.owner)) JSONObject().put("id", request.id).put("owner", request.owner).put("task", request.task).put("packages", JSONArray(request.packages.toList())).put("minutes", request.minutes) else JSONObject.NULL)
             .put("confirmation", pendingAction?.takeIf { owner.isEmpty() || it.owner == owner }?.let { JSONObject().put("id", it.id).put("label", it.label).put("package", it.packageName) } ?: JSONObject.NULL)
             .put("lastResult", if (owner.isEmpty() || owner == grant?.owner) lastResult else JSONObject.NULL)
+            .also { ControlSetup.addReadiness(it, context ?: error("手机操作尚未启动")) }
     }
     private fun resetTaskData() {
         pendingAction = null; approvedAction = null; receipts.clear(); receiptArgs.clear(); cancelled.clear()

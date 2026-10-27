@@ -90,8 +90,35 @@ export declare function parseMinimaxSigninPanel(data: unknown): MinimaxSigninPan
  * 否则会把「今天已领」误报成「签到活动未开启」（Qoder 同型缺陷）。
  */
 export declare function minimaxPanelToCheckinStatus(panel: MinimaxSigninPanel): CheckinStatus;
-/** 查询签到状态；失败返回 `null`（不抛错）。 */
-export declare function fetchMinimaxSigninStatus(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct): Promise<CheckinStatus | null>;
+/**
+ * 查询签到状态；失败返回 `null`（不抛错）。
+ *
+ * ⚠️⚠️ **本函数会丢弃失败原因**（返回 `null` 而非原因）—— 面板只能显示一句
+ * 写死的「余额查询失败」。要拿到原因请用 {@link fetchMinimaxSigninStatusDetailed}。
+ * 保留本签名是为了不破坏既有调用点与 `ProviderCredits.fetchStatus` 契约。
+ */
+export declare function fetchMinimaxSigninStatus(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct, xff?: string): Promise<CheckinStatus | null>;
+/**
+ * 查询签到状态，**失败时带原因**（`{ status: null, error }`）。
+ *
+ * ## ⚠️⚠️ 为什么必须有这个变体（真实缺陷，2026-10-17 审计打穿）
+ *
+ * `requestEnvelope` 会为失败构造**可操作**的文案（地理路由的两条出路 /
+ * `凭据已失效（HTTP 401）：invalid access token` / `服务端返回 HTTP 400：invalid signature`），
+ * 但 {@link fetchMinimaxSigninStatus} 与 {@link fetchMinimaxCreditBalance} 在
+ * `!result.ok` 时**直接 `return null`** ⇒ 那条文案**一行都到不了 UI**，
+ * 面板最终只显示 `jet-hub-rpc.ts` 里写死的「余额查询失败」。
+ *
+ * ⇒ 症状就是用户报障的原话「余额查询失败」**在修复后逐字未变** ——
+ *   修好了判据，却把判据的结论扔掉了。
+ *
+ * 本仓库既有先例：`fetchBalanceDetailed`（codearts / gemini / clio 那一批）
+ * 就是为「失败原因必须区分」而存在的。这里照同一模式补两个 Detailed 变体。
+ */
+export declare function fetchMinimaxSigninStatusDetailed(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct, xff?: string): Promise<{
+    status: CheckinStatus | null;
+    error?: string;
+}>;
 /**
  * 领取每日签到。
  *
@@ -100,7 +127,7 @@ export declare function fetchMinimaxSigninStatus(credential: MinimaxCredential, 
  *
  * ⚠️ 本函数**不抛错**（失败也返回 `failed`），保证批量领取不因单账号中断。
  */
-export declare function claimMinimaxDailyCheckin(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct): Promise<ClaimOutcome>;
+export declare function claimMinimaxDailyCheckin(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct, xff?: string): Promise<ClaimOutcome>;
 /**
  * 查询积分余额。
  *
@@ -137,5 +164,17 @@ export declare function claimMinimaxDailyCheckin(credential: MinimaxCredential, 
  *（`credit_type` 的语义未实测），故**不凭猜测分类**。`packages` 同理留空 ——
  * 需要时再按实测补充，**不得**用 locale 文案反推字段名。
  */
-export declare function fetchMinimaxCreditBalance(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct): Promise<CreditBalance | null>;
+export declare function fetchMinimaxCreditBalance(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct, xff?: string): Promise<CreditBalance | null>;
+/**
+ * 查询积分余额，**失败时带原因**（`{ balance: null, error }`）。
+ *
+ * ⚠️⚠️ 理由见 {@link fetchMinimaxSigninStatusDetailed}：原变体把
+ * `requestEnvelope` 的可操作文案**整个丢弃**（`return null`），面板只显示写死的
+ * 「余额查询失败」—— 于是用户永远不知道是地理分流、凭据失效还是网关签名。
+ * 本函数把它透出来，供 `fetchBalanceDetailed` 通道使用。
+ */
+export declare function fetchMinimaxCreditBalanceDetailed(credential: MinimaxCredential, fetcher?: typeof fetch, product?: MinimaxProduct, xff?: string): Promise<{
+    balance: CreditBalance | null;
+    error?: string;
+}>;
 //# sourceMappingURL=minimax-credits.d.ts.map

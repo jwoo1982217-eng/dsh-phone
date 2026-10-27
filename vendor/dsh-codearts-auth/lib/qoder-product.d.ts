@@ -45,7 +45,31 @@ export interface QoderFallbackModel {
     contextWindow: number;
     /** 是否接受图片输入（远端 `is_vl`；实测 17 个全为 true）。 */
     supportsImage?: boolean;
-    /** 是否支持思考档位（远端 `is_reasoning`）。 */
+    /**
+     * **请求体 `model_config.is_reasoning` 的原样透传值**（远端目录 `is_reasoning`）。
+     *
+     * ## ⚠️⚠️ 它不是「是否支持思考」的开关 —— 别拿它推 UI
+     *
+     * 上游这两个信号**相互独立**，且经常反向：
+     *
+     * | 信号 | 来源 | 决定什么 |
+     * |---|---|---|
+     * | **思考档位清单** | 目录 `thinking_config.enabled.efforts` 的键 + `disabled` 分支 | **UI 的档位下拉**（`qoderEffortsFor`） |
+     * | **是否真的思考** | 请求体 `parameters.reasoning_effort` + `enable_thinking` | 服务端行为 |
+     * | 本字段 | 目录 `is_reasoning` | **只是**写进 `model_config.is_reasoning` / `chat_context.extra.modelConfig.is_reasoning`，与服务端语义无关（未验证） |
+     *
+     * 实测（2026-10-20，CN `dfmodel`，其 `is_reasoning` = **false**）：我们的链路
+     * 照样出思考，且档位真实生效 —— `reasoning_effort` 取 `max` → **238 字符**
+     * 思考、`low` → **199**、`none` → **0**（关得掉）。
+     *
+     * 客户端源码同款（`qoder-worker-runtime` 的 `fal()`）：`s = r?.is_reasoning ?? false`
+     * → `modelConfig.is_reasoning = s`，之后**只在关掉思考时**把它强制成 `false`
+     * （`(0===thinkingBudget || 'none'===reasoning_effort || false===enable_thinking) && (is_reasoning=false)`），
+     * **从不置 true** ⇒ IDE 对同一个模型发出去的也是 `false`。
+     *
+     * ⇒ 界面上「有档位」与这里 `is_reasoning=false` **不矛盾**，也不该据此把
+     * `efforts` 丢掉（本仓 CN `dfmodel` 就是这么处理的：保留档位、不声明本字段）。
+     */
     supportsThinking?: boolean;
     /** 是否免费额度模型（远端 `is_free`）。 */
     isFree?: boolean;
@@ -100,6 +124,51 @@ export interface QoderFallbackModel {
      * 1. **取值来源是 `efforts` 的键名，不是值**：目录形如
      *    `efforts: { xhigh: {}, low: {}, medium: { is_default: true } }`，
      *    键即档位 id。本字段按**目录原始顺序**保存（客户端也按对象键序渲染）。
+     *
+     *    ⚠️⚠️ **这份顺序在各账号之间恒为「乱序」，而它就是上游原样下发的事实**
+     *    （Issue IKLIDV 实测：本机 8 个账号目录 CN 3 + 国际版 5，逐条解出的
+     *    `thinking_config.enabled.efforts` 键序**完全相同**，无第二种形态）：
+     *    `xhigh > high > low > max > medium`（ultimate/performance/smodel/cmodel）、
+     *    `high > low > max`（gmodel/kmodel*）、`xhigh > low > medium`（qmodel_38max/qfmodel）、
+     *    `high > max > low`（dfmodel）。
+     *
+     *    ⚠️ **故这里刻意不重排**，理由有二，缺一不可：
+     *    ① 本字段是「兜底镜像」，其正当性来自**与远端目录逐条可比**
+     *      （对账用 `JSON.stringify` **按序**比对，重排会让 17 条模型全部报
+     *      「档位不符」，对账从此失效 —— 该对账脚本**未入库**，见
+     *      `docs/agent-notes/misc.md` 的「`scripts/` 里哪些入库、哪些不入库」：
+     *      `git ls-files scripts/` 只有 `copy-assets.mjs` / `extract-qoder-wasm.mjs`
+     *      两个，其余是**本地指针**。故本条不要只靠脚本自证 —— 更硬的判据是
+     *      ② 与「上游目录本身就是这份乱序」（下有实测记录））；
+     *    ② 官方客户端**自己就按键序渲染**，重排会让我们与 IDE 的档位条不一致。
+     *
+     *    ⇒ **排序责任在渲染方**：需要「由弱到强」的横向档位轴，应由客户端按
+     *    `REASONING_EFFORT_RANK` 排序，**不要**在数据层规整 Qoder（那是改事实）。
+     *
+     *    ⚠️⚠️ **但本仓库当前没有这个「渲染方」**（对抗审计指出的实质缺口，已核实）：
+     *    全仓 `efforts.sort` / `toSorted` **零命中**，也没有任何按 rank 排序的出口；
+     *    本仓 Jet Hub 客户端只把 `efforts` 用于**文本对照表**（`join(' · ')` 成一行字，
+     *    `plugin-src/client/openai-gateway-panel.js`），**不渲染档位轴**。
+     *    ⇒ 该宣告目前是一条**给外部渲染方的约定**，不是本仓已实现的机制：
+     *    DSH 官方那个纵向列表不排序（纵向无观感问题），而**横向渲染的第三方客户端**
+     *    （issue IKLIDV 的报告方即此类）拿到 Qoder 的乱序时会**原样透传**成
+     *    「左强右弱」。**结论**：本仓库**不该**在数据层改事实，但也**不该**把
+     *    这条责任当成「已解决」—— 若将来本仓自己渲染档位轴（或用户要求 Qoder
+     *    与其它家观感一致），**在渲染处按 `REASONING_EFFORT_RANK` 排序**才是修法。
+     *
+     *    ⚠️ **那为什么 `zcode` 就在适配器里主动排序（`orderReasoningLevels`）？
+     *    两者不矛盾，判据是同一条：「**对齐官方 IDE 的档位条**」——
+     *    - `zcode`：上游键序（实测插入序 `low, max, high`）**与它的 IDE 显示不一致**
+     *      （IDE 显示 `low, high, max`，有用户截图为证）⇒ 不排就会与 IDE 不一致，
+     *      故**必须排**；
+     *    - `qoder`：上游键序**就是** IDE 的渲染序（客户端 `Cj()`/`gU()` 用
+     *      `Object.entries` 遍历，即对象键序 —— 由 `scripts/probe-qoder-effort-fields.mjs`
+     *      按客户端算法完整复刻）⇒ 排了**反而**与 IDE 不一致。
+     *
+     *    ⇒ 两家的差别来自**上游本身是否已与它的 UI 一致**，不是标准不统一。
+     *    判断「该不该排」只问一句：**上游键序与官方 IDE 的显示是否一致**？
+     * 对照：codearts / raccoon / minimax 的「开启-关闭」两档是**我们自己构造**的
+     *    声明（不是上游目录），故那三处按强度序排是修「我们的显示顺序」，与此处不同。
      * 2. **`*`（`is_default`）是"默认选中"，不是"多选"**：
      *    IDE 里是**下拉单选**，「极高/低/中」三选一，默认落在「中」
      *    （见 {@link defaultEffort}）。
@@ -285,13 +354,35 @@ export interface QoderProduct {
     /**
      * 单张请求图片的编码字节目标。
      *
-     * 未配置时用 `DEFAULT_BODY_LIMITED_IMAGE_MAX_BYTES`（1 MiB）——
-     * 取值的算术依据记在 `src/image-budget.ts`。
+     * 取 `DEFAULT_BODY_LIMITED_IMAGE_MAX_BYTES`（**1 MiB**）—— 取值的算术依据
+     * 记在 `src/image-budget.ts`。
+     *
+     * ⚠️ **这个字段必须显式赋值，不能靠 `requestImageTargetFor` 的默认参数兜底**
+     * （2026-10-12 修）：那个默认是 `REQUEST_IMAGE_MAX_BYTES` = **2 MiB**
+     * （为腾讯系那道**图片 token 预算**准备的，字节不是它的约束），
+     * 而 qoder 撞的是**请求体体积**。漏赋值时生效的是 2 MiB，于是
+     * 「24 张 × 2 MiB × 4/3 = **64 MiB**」**超过**上游写明的 50 MiB 硬限
+     * （`52428800 bytes`，issue IKKX0T 实测报文里的精确值）——
+     * 与 `image-budget.ts` 记的「1 MiB 下 24 张 ≈32 MiB，远低于实测边界」自相矛盾。
+     *
      * ⚠️ 与 raccoon 的 512 KB 不同值是**有意的**（那家硬限 10 MB），别合并。
      */
     imageMaxBytes?: number;
     /**
-     * 模型列表不可用时的兜底模型目录（本插件不发远端请求，恒用它）。
+     * **兜底**模型目录（远端目录取不到时用）。
+     *
+     * ⚠️ **2026-10-20 起它不是线上主路径**：模型列表优先走远端
+     * `/api/v2/model/list?Encode=1`（见 `src/qoder-catalog.ts`），本表只在
+     * 「未登录 / 目录接口故障 / 形状不符」时兜底 —— 与其余 12 家的
+     * `loadCatalog`（远端）/ `syncCatalog`（本表）两段式同形。
+     *
+     * ⚠️ 之所以要改：本表是**编译期快照**（国际版 2026-09-21 / 中国版 2026-09-27），
+     * 而上游改价、改免费额度、上下架模型都不会通知任何人。真实报障
+     * （2026-10-20）：`dfmodel`（DeepSeek-Flash）上游已是 `price_factor = 0` +
+     * `is_free`（IDE 显示 `0.1×` 划掉 `0×`），本表还写着 `0.1`；
+     * `mmodel` 上游已改名 `MiniMax-M3.1-Flash`、倍率 0.1，本表还是 `MiniMax-M2.7` / 0.2。
+     * ⇒ **不要把新采集的值当长期事实填进来**：那只是把快照换新一点，
+     *   下次上游调价仍会腐坏。改这张表只应用来修「远端拿不到时希望看到什么」。
      *
      * ⚠️ **只有模型列表需要 WASM 签名**，不要据此推断其它端点：
      * 推理（`model/v1/chat/completions`）、用户信息（`api/v1/userinfo`）、

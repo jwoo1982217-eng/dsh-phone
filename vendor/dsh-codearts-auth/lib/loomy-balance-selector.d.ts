@@ -55,9 +55,30 @@ export type LoomyNoAccountReason =
 {
     kind: 'exhausted';
 }
-/** 至少一个候选**查询失败**，无法判定它是否真的没额度。 */
+/**
+ * ⚠️ **全部**候选都查询失败（issue IKMCOO 缺陷 2，2026-10-16 新增）。
+ *
+ * ## 为什么必须与 `partial` 分开
+ *
+ * 原实现只有一档 `unknown`（判据：「有任一候选失败就是 unknown」）⇒
+ * **全员失败与部分失败得到逐字相同的文案**，而两者要用户做的事**完全不同**：
+ *
+ * | 档位 | 事实 | 用户该做什么 |
+ * |---|---|---|
+ * | `all-unknown` | **一个**可用号都没查出来 | 多半是上游限流/风控/代理 ⇒ **稍后再试 / 换 provider / 临时解锁** |
+ * | `partial` | 其余候选**确实**查到 0 了 | 至少有一个号**确实**没额度 ⇒ 点名是哪几个，可核对凭据 |
+ *
+ * ⚠️ 原文案在 `all-unknown` 下说「部分账号的余额查询失败」并让用户
+ *   「去检查凭据是否失效」—— 而本机 2026-10-16 实测凭据**全部有效**
+ *   （`/points/records` 返回 200），照着做完全无效。
+ */
  | {
-    kind: 'unknown';
+    kind: 'all-unknown';
+    errors: string[];
+}
+/** 部分候选查询失败，无法判定它们是否真的没额度（其余候选已确认）。 */
+ | {
+    kind: 'partial';
     errors: string[];
 };
 /** 选号结果：选中，或「为什么没选中」。 */
@@ -82,6 +103,29 @@ export interface LoomySelectionDeps {
     ttlMs?: number;
     /** **失败**结果的 TTL 覆盖（测试用）。 */
     errorTtlMs?: number;
+    /**
+     * ★ **共享读数**（2026-10-16，issue IKMCOO 缺陷 1 + 用户要求）。
+     *
+     * ## 为什么需要它（消除「面板有余额、请求说查不到」）
+     *
+     * 本模块自带一份 60 秒 TTL 缓存，而 Jet Hub 面板走的是**另一条**路径
+     * （`provider-credits.ts` → `fetchLoomyCreditBalance`）⇒ 同一个账号被查两遍，
+     * 且两侧结论可以不一致：面板刚拿到成功结论的那 60 秒内，本模块可能因为一次
+     * 新查询失败而判定「余额查询失败」。用户无从判断该信哪边。
+     *
+     * ⇒ 注入本字段后，本模块**吃面板已经查过的那份读数**（含陈旧兼顶），
+     *   两侧看同一份数据。⚠️ 缺席时行为与升级前**逐字节相同**。
+     *
+     * @returns 读数；`undefined` ⇒ **没有可用的共享读数**，调用方照常自己取数
+     *   （兼顶**不得**取代真实取数能力，否则未接线时该渠道会恒不可用）。
+     */
+    sharedReading?: (accountId: string, credentialRef: string) => Promise<{
+        daily?: number;
+        permanent?: number;
+        stale: boolean;
+        at: number;
+        error?: string;
+    } | undefined>;
 }
 /**
  * 余额缓存 + 选号器。
@@ -106,7 +150,17 @@ export declare class LoomyBalanceSelector {
      * 留 5 秒只为防同一轮里重复打（`select` 内部已并发只查一次，故实际影响很小）。
      */
     balanceOf(account: LoomyCandidateAccount): Promise<LoomyAccountBalanceEntry>;
-    /** 真正发请求查一次余额。 */
+    /**
+     * 真正取一次余额。
+     *
+     * ★ 2026-10-16：**先吃共享读数**（面板刚查过的那份），命中即零网络请求。
+     *
+     * ⚠️ **共享读数缺席时照常自己取数**（`undefined` ⇒ 往下走原路径）：
+     *   兼顶**不得**取代真实取数能力，否则「未接线」会变成「该渠道恒不可用」。
+     * ⚠️ **兼顶读数（`stale: true`）按成功处理**，但把失败原因带在 `error` 里
+     *   供诊断（`ok` 仍为 true —— 我们**确实**拿到了可用余额，标成失败会让
+     *   「有今日额度的号」被踢出候选，那正是本 issue 的核心症状）。
+     */
     private fetchBalance;
     /**
       * 从候选账号中按余额优先选一个。
@@ -127,10 +181,14 @@ export declare class LoomyBalanceSelector {
         preferOrder?: boolean;
     }): Promise<LoomySelectionResult>;
     /**
-     * 判定「为什么没有可用账号」：区分**真的用尽**与**查不到**。
+     * 判定「为什么没有可用账号」：**三分档**（issue IKMCOO 缺陷 2）。
      *
-     * 只要有任何一个候选是查询失败，就不能断言"额度都已用尽"——我们对它的余额
-     * 其实一无所知。
+     * - 全员查询失败 ⇒ `all-unknown`（上游整体不可用，**不是**凭据问题）
+     * - 部分查询失败 ⇒ `partial`（其余候选**确实**查到 0 了）
+     * - 无人失败 ⇒ `exhausted`（**唯一**有事实依据说「用尽」的一档）
+     *
+     * ⚠️ 分档判据是「**失败的占比**」，不是「有没有失败」—— 后者会把
+     * 「3 个号全查不到」说成「部分账号」（实测症状逐字相同）。
      */
     private noAccountReason;
 }

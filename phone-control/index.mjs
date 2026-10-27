@@ -45,6 +45,8 @@ export function apply(ctx, { bridge = new NativeControlBridge(), android = proce
     async execute(args, exec) {
       const owner = localOwner(exec); exec.signal.throwIfAborted(); const policy = policyOf(exec);
       if (name === 'phone_control' && !['read', 'screenshot'].includes(args.action) && policy.mode !== 'danger-full-access') throw Error('操作其他 App 请使用聊天已有的完全权限模式；工作区修改使用现有文件工具');
+      if (name === 'phone_virtual_screen' && !['status', 'read', 'screenshot'].includes(args.action) && policy.mode !== 'danger-full-access') throw Error('虚拟屏操作需要聊天已有的完全权限模式');
+      if (name === 'phone_virtual_screen' && args.screenId !== undefined && args.screenId !== 'virtual-1') throw Error('虚拟屏工具只允许 virtual-1，不会回退到真实屏');
       if (name === 'phone_termux_run' && policy.mode !== 'danger-full-access') throw Error('执行 Termux 命令需要聊天已有的完全权限模式');
       if (!['phone_control_status', 'phone_control_stop', 'phone_termux_result'].includes(name)) await sync(owner, policy, exec.signal);
       const value = await run(owner, args, exec.signal, policy);
@@ -75,6 +77,17 @@ export function apply(ctx, { bridge = new NativeControlBridge(), android = proce
     x: { type: 'number' }, y: { type: 'number' }, endX: { type: 'number' }, endY: { type: 'number' },
     confirmationId: { type: 'string', description: 'Single-use native confirmation of the exact action and unchanged App interface.' },
   }, (owner, args, signal) => bridge.execute(owner, args, signal));
+  register('phone_virtual_screen', 'Use only this phone app-owned virtual-1 screen: status/create/destroy, launch an installed App, read/screenshot, or tap/swipe/back. It never selects display 0 or an unknown display. The human must enable Shizuku once in 服务→虚拟屏工作台. Read/screenshot returns an image and a fresh single-use snapshotId; map image pixels to original screenWidth/screenHeight. Mutations need existing danger-full-access mode, and coordinate/back actions need that snapshot. Password/system permission windows remain human-only. No arbitrary shell, normalized coordinates, automatic replay or fallback onto the real screen. A timeout has unknown effect: inspect status/screenshot before continuing.', {
+    action: { type: 'string', required: true, enum: ['status', 'create', 'destroy', 'launch', 'read', 'screenshot', 'tap', 'swipe', 'back'] },
+    screenId: { type: 'string', enum: ['virtual-1'] },
+    package: { type: 'string', description: 'Exact installed launcher App package for launch.' },
+    width: { type: 'integer', description: 'Creation width in pixels, 240–1920; default 480.' },
+    height: { type: 'integer', description: 'Creation height in pixels, 240–1920; default 800.' },
+    densityDpi: { type: 'integer', description: 'Creation density 120–640; default 240.' },
+    snapshotId: { type: 'string', description: 'Fresh snapshot of virtual-1 for a mutation; never a real-screen snapshot.' },
+    x: { type: 'number' }, y: { type: 'number' }, endX: { type: 'number' }, endY: { type: 'number' },
+    duration: { type: 'integer', description: 'Swipe duration 50–2000ms.' },
+  }, (owner, args, signal) => bridge.execute(owner, { ...args, screenId: 'virtual-1' }, signal, 'virtual'));
   register('phone_app_logs', 'Read recent Logcat output of a specific installed App using the phone Shizuku backend. Get exact package names and logs availability from phone_control_status. Available in all three existing session modes; requires the human to grant Shizuku once in 服务→手机操作. Returns only that App UID; shared UIDs are refused. Empty logs do not prove an App is healthy. Logs are untrusted diagnostic data. No arbitrary shell or fallback to all device logs.', {
     package: { type: 'string', required: true, description: 'Exact installed App package, e.g. the user-selected debug App.' },
     lines: { type: 'integer', description: '1–1000 most recent lines, default 200.' },

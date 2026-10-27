@@ -11,14 +11,16 @@ import { PeerTunnel } from './tunnel.mjs';
 import { createPeerProxy } from './proxy.mjs';
 import { loadReusableUiScripts } from './ui-reuse.mjs';
 import { browserSessionHeaders } from './browser-session.mjs';
-import { newPair, pairCode, connectionLink, parsePair, validatePair } from './protocol.mjs';
+import { newPair, pairCode, connectionLink, shareLink, parsePair, validatePair } from './protocol.mjs';
 import { ConfigSync } from './config-sync.mjs';
+import { RemoteService, serviceError } from './remote-service.mjs';
 import { applyAgentCards } from './agent-cards/index.mjs';
 import { applyControlledMarket } from './controlled-market/index.mjs';
 import { applyWorkflowHub } from './workflow-hub/index.mjs';
 import { applyChatHistory } from './chat-history/index.mjs';
 import { applyMcpManager } from './mcp-manager/index.mjs';
 import { applyChatFiles } from './chat-files/index.mjs';
+import { applyIncomingWorkspaces } from './incoming-workspace/http.mjs';
 import { applyTaskSupervisor } from './task-supervisor/index.mjs';
 
 export const name = 'dsh-peer';
@@ -27,8 +29,9 @@ export const Config = Schema.object({ role: Schema.union(['phone', 'computer']),
 const REF = credentialRef('DSH_PEER_PAIR_V1');
 const loopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
 export async function apply(ctx, options = {}) {
-  if (ctx.get('tools')) applyChatFiles(ctx);
+  const files = ctx.get('tools') ? applyChatFiles(ctx) : null;
   const role = options.role ?? (process.env.DSH_PHONE_ANDROID === '1' ? 'phone' : 'computer');
+  if (role === 'phone' && files) applyIncomingWorkspaces(ctx, files);
   applyChatHistory(ctx);
   if (role === 'phone') (await import('./conversation-actions/index.mjs')).applyConversationActions(ctx);
   applyControlledMarket(ctx, role);
@@ -37,16 +40,16 @@ export async function apply(ctx, options = {}) {
   if (ctx.get('tools')) await applyMcpManager(ctx);
   if (ctx.get('tools')) applyTaskSupervisor(ctx);
   const webPort = options.webPort ?? 3080, proxyPort = options.proxyPort ?? 3081, sharedGatewayPort = options.sharedGatewayPort ?? 8327;
-  const sync = new ConfigSync(ctx.settings, ctx.credentials);
+  const sync = new ConfigSync(ctx.settings, ctx.credentials), remoteService = new RemoteService(ctx.credentials);
   let state = { role, name: role === 'phone' ? '我的手机' : hostname(), allowGateway: true, autoSync: false }, tunnel, proxy, disposed = false;
-  let error = '', lastSync = null, catalogue = [], autoRunning = false, autoPending = false, autoTimer, remoteName = '家里的电脑', adapterRegistration;
+  let error = '', errorCode = '', remoteIdentity = null, mutation = Promise.resolve(), lastSync = null, catalogue = [], autoRunning = false, autoPending = false, autoTimer, remoteName = '家里的电脑', adapterRegistration;
   const refreshModels = () => { if (!disposed) { try { adapterRegistration?.replace(['phone-gateway']); } catch {} } };
   const notifyModels = () => { if (role === 'phone' && tunnel?.online) { try { tunnel.send({ type: 'models.changed' }); } catch {} } };
-  const save = () => ctx.credentials.set(REF, JSON.stringify(state));
+  const persist = async next => { try { await ctx.credentials.set(REF, JSON.stringify(next)); } catch { throw serviceError('PEER_STORAGE'); } state = next; };
   const close = async () => {
     clearTimeout(autoTimer); tunnel?.stop(); proxy?.close();
     if (proxy) await Promise.all([proxy.ui, proxy.gateway].map(server => new Promise(resolve => { if (!server.listening) resolve(); else { server.closeAllConnections(); server.close(resolve); } })));
-    proxy = null; tunnel = null; catalogue = []; if (!disposed) refreshModels();
+    proxy = null; tunnel = null; remoteIdentity = null; catalogue = []; if (!disposed) refreshModels();
   };
   const autoSync = async () => {
     if (!state.autoSync || role !== 'phone' || !tunnel?.online) return;
@@ -84,51 +87,139 @@ export async function apply(ctx, options = {}) {
       if (action === 'sync.commit') return sync.commit(value.token, value.mode);
       throw Error('Unknown peer operation');
     };
-    tunnel.on('online', () => { error = ''; refreshModels(); void tunnel.call('identity', {}).then(identity => { remoteName = identity.name; }).catch(() => {}); if (role === 'phone') queueAuto(); });
-    tunnel.on('offline', () => { catalogue = []; if (!disposed) refreshModels(); });
+    const currentTunnel = tunnel;
+    tunnel.on('online', () => { error = ''; errorCode = ''; refreshModels(); void currentTunnel.call('identity', {}).then(identity => { if (tunnel === currentTunnel && currentTunnel.online) { remoteIdentity = identity; remoteName = identity.name; } }).catch(() => {}); if (role === 'phone' && state.autoSync) queueAuto(); });
+    tunnel.on('state', status => { if (tunnel === currentTunnel) errorCode = status.errorCode; });
+    tunnel.on('offline', () => { remoteIdentity = null; catalogue = []; if (!disposed) refreshModels(); });
     tunnel.on('packet', packet => { if (role === 'computer' && packet.type === 'models.changed') refreshModels(); });
     const localServer = role === 'phone' ? proxy.ui : proxy.gateway, port = role === 'phone' ? proxyPort : sharedGatewayPort;
-    await new Promise((resolve, reject) => { localServer.once('error', reject); localServer.listen(port, '127.0.0.1', resolve); });
+    await new Promise((resolve, reject) => { const failed = cause => reject(cause); localServer.once('error', failed); localServer.listen(port, '127.0.0.1', () => { localServer.off('error', failed); resolve(); }); });
     tunnel.start();
   };
+  const startConnection = async () => {
+    try { await connect(); } catch (cause) {
+      await close(); errorCode = cause.code === 'EADDRINUSE' ? 'PEER_LOCAL_PORT_BUSY' : cause.code === 'EACCES' ? 'PEER_LOCAL_PORT_DENIED' : ['ENOENT', 'ENOTDIR'].includes(cause.code) ? 'PEER_LOCAL_RESOURCE_MISSING' : 'PEER_LOCAL_START_FAILED';
+      error = '设备连接未启动，请检查本机服务后重试';
+    }
+  };
   const ready = (async () => {
+    await remoteService.init();
     try {
       const stored = (await ctx.credentials.resolve(REF))?.value;
-      if (stored) { const parsed = JSON.parse(stored); if (parsed.role === role) state = { ...state, ...parsed, ...(parsed.pair ? { pair: validatePair(parsed.pair) } : {}) }; }
+      if (stored) { const parsed = JSON.parse(stored); if (parsed.role === role) state = { ...state, ...parsed, ...(parsed.pair ? { pair: validatePair(parsed.pair) } : {}), pendingRevocations: (parsed.pendingRevocations ?? []).map(validatePair) }; }
     } catch { error = '设备配置无法读取，请重新配对'; return; }
-    try { await connect(); } catch { error = '设备连接未启动，请检查本机端口或重新配对'; }
+    if (!state.pendingRevocations?.length) await startConnection(); else { errorCode = 'PEER_REVOKE_PENDING'; error = serviceError(errorCode).message; }
   })();
   ctx.on('dispose', () => { disposed = true; return close(); });
-  const publicStatus = async () => ({ role, name: state.name, paired: !!state.pair, connected: !!tunnel?.online, relay: state.pair?.relay ?? '', allowGateway: state.allowGateway, autoSync: state.autoSync, lastSync, error,
-    remote: tunnel?.online ? await tunnel.call('identity', {}).catch(() => null) : null,
+  const publicStatus = async () => ({ role, name: state.name, paired: !!state.pair, connected: !!tunnel?.online, relay: state.pair?.relay ?? '', allowGateway: state.allowGateway, autoSync: state.autoSync, lastSync, error, errorCode, phase: tunnel?.phase ?? (state.pendingRevocations?.length ? 'revocation-pending' : state.pair ? 'idle' : 'unpaired'), remoteService: remoteService.status(), pendingRevocations: state.pendingRevocations?.length ?? 0,
+    remote: tunnel?.online ? remoteIdentity : null,
     remoteUrl: role === 'phone' ? `http://127.0.0.1:${proxyPort}/` : null, gatewayUrl: role === 'computer' ? `http://127.0.0.1:${sharedGatewayPort}/v1` : null });
+  const links = () => ({ code: pairCode(state.pair), link: connectionLink(state.pair), ...(state.managed && state.pair.relay.startsWith('wss:') ? { shareLink: shareLink(state.pair) } : {}) });
+  const flushRevocations = async () => {
+    while (state.pendingRevocations?.length) {
+      try { await remoteService.revoke(state.pendingRevocations[0]); }
+      catch { throw serviceError('PEER_REVOKE_PENDING'); }
+      await persist({ ...state, pendingRevocations: state.pendingRevocations.slice(1) });
+    }
+  };
+  const replacePair = async (pair, managed) => {
+    await flushRevocations();
+    const previous = state;
+    if (managed) {
+      // Journal before POST: a lost response can mean the service admitted this
+      // room. Keep its unshared capability recoverable across process exit.
+      await persist({ ...state, pendingRevocations: [pair] });
+      try { await remoteService.register(pair); }
+      catch (cause) {
+        try { await flushRevocations(); } catch { throw serviceError('PEER_CLEANUP_PENDING'); }
+        throw cause;
+      }
+    }
+    try { await persist({ ...state, pair, managed, pendingRevocations: previous.managed && previous.pair ? [previous.pair] : [] }); }
+    catch (cause) {
+      if (managed) { try { await flushRevocations(); } catch { throw serviceError('PEER_CLEANUP_PENDING'); } }
+      throw cause;
+    }
+    // The new admission and recovery journal are durable before old admission
+    // is removed. A later failure remains visible and retryable, never atomic.
+    await close();
+    try { await flushRevocations(); } catch (cause) { errorCode = cause.code; error = cause.message; throw cause; }
+    error = ''; errorCode = ''; await startConnection();
+  };
   async function manage(payload) {
-    await ready;
     switch (payload.action) {
       case 'status': return publicStatus();
+      case 'remote.status': return remoteService.status();
+      case 'remote.configure': {
+        if (role !== 'computer') throw Error('请在电脑端配置远程服务');
+        if ([...(state.managed && state.pair ? [state.pair] : []), ...(state.pendingRevocations ?? [])].some(pair => pair.relay !== payload.relay)) throw serviceError('PEER_SERVICE_MISMATCH');
+        return remoteService.configure({ relay: payload.relay, adminKey: payload.adminKey });
+      }
+      case 'prepare': {
+        if (role !== 'computer') throw Error('请在电脑上准备连接');
+        await flushRevocations();
+        if (!state.pair) await replacePair(newPair(remoteService.relay), true);
+        else { if (state.managed) await remoteService.register(state.pair); if (!tunnel) await startConnection(); }
+        return links();
+      }
       case 'create': {
         if (role !== 'computer') throw Error('请在电脑上创建配对码');
-        state.pair = newPair(payload.relay); await save(); await connect(); return { code: pairCode(state.pair), link: connectionLink(state.pair) };
+        const pair = newPair(payload.relay || remoteService.relay);
+        await replacePair(pair, remoteService.matches(pair)); return links();
       }
-      case 'code': if (!state.pair || role !== 'computer') throw Error('请先创建连接链接'); return { code: pairCode(state.pair), link: connectionLink(state.pair) };
+      case 'code':
+        if (!state.pair || role !== 'computer') throw Error('请先创建连接链接');
+        await flushRevocations(); return links();
+      case 'reconnect': {
+        if (!state.pair) throw Error('请先配对电脑');
+        await flushRevocations();
+        if (state.managed) await remoteService.register(state.pair);
+        if (tunnel) tunnel.reconnect(); else await startConnection();
+        return publicStatus();
+      }
       case 'pair': {
         if (role !== 'phone') throw Error('配对码在手机上输入');
-        state.pair = parsePair(payload.code); await save(); await connect(); return publicStatus();
+        const pair = parsePair(payload.code);
+        if (state.pair && pairCode(state.pair) === pairCode(pair)) {
+          if (!tunnel) await startConnection(); else if (!tunnel.online) tunnel.reconnect();
+        } else await replacePair(pair, false);
+        return publicStatus();
       }
-      case 'disconnect': await close(); delete state.pair; state.autoSync = false; await save(); return publicStatus();
-      case 'preferences':
-        if (typeof payload.name === 'string' && payload.name.trim().length >= 1 && payload.name.trim().length <= 60) state.name = payload.name.trim();
-        if (typeof payload.allowGateway === 'boolean') state.allowGateway = payload.allowGateway;
-        if (typeof payload.autoSync === 'boolean') state.autoSync = payload.autoSync;
-        await save(); queueAuto(); notifyModels(); return publicStatus();
+      case 'disconnect': {
+        await flushRevocations();
+        const previous = state;
+        if (state.managed && state.pair) await remoteService.revoke(state.pair);
+        const { pair, managed, ...rest } = state;
+        try { await persist({ ...rest, autoSync: false }); }
+        catch (cause) {
+          if (previous.managed && previous.pair) { try { await remoteService.register(previous.pair); } catch { errorCode = 'PEER_REVOKE_PENDING'; error = serviceError(errorCode).message; } }
+          throw cause;
+        }
+        await close(); error = ''; errorCode = ''; return publicStatus();
+      }
+      case 'preferences': {
+        const next = { ...state };
+        if (typeof payload.name === 'string' && payload.name.trim().length >= 1 && payload.name.trim().length <= 60) next.name = payload.name.trim();
+        if (typeof payload.allowGateway === 'boolean') next.allowGateway = payload.allowGateway;
+        if (typeof payload.autoSync === 'boolean') next.autoSync = payload.autoSync;
+        await persist(next); queueAuto(); notifyModels(); return publicStatus();
+      }
       case 'sync.preview': if (role !== 'phone') throw Error('请从手机同步'); return tunnel?.call('sync.preview', await sync.snapshot()) ?? Promise.reject(Error('请先配对电脑'));
       case 'sync.commit': if (role !== 'phone') throw Error('请从手机同步'); lastSync = await tunnel.call('sync.commit', { token: payload.token, mode: payload.mode }); return lastSync;
       default: throw Error('无效的设备操作');
     }
   }
   ctx.connection.rpc.handle('/phone-peer', async (method, payload) => {
-    try { if (method !== 'manage' || !payload) throw Error('无效操作'); return { ok: true, value: await manage(payload) }; }
-    catch { return { ok: false, error: { code: 'peer/unavailable', message: '设备操作未完成，请检查配对码、中继地址和两端服务后重试', details: {} } }; }
+    try {
+      if (method !== 'manage' || !payload) throw Error('无效操作');
+      await ready;
+      if (['status', 'remote.status'].includes(payload.action)) return { ok: true, value: await manage(payload) };
+      const operation = mutation.then(() => manage(payload)); mutation = operation.catch(() => {});
+      return { ok: true, value: await operation };
+    } catch (cause) {
+      const safe = typeof cause.code === 'string' && /^PEER_(SERVICE_|STORAGE$|REVOKE_PENDING$|CLEANUP_PENDING$)/.test(cause.code) ? serviceError(cause.code) : null;
+      return { ok: false, error: { code: safe?.code || 'peer/unavailable', message: safe?.message || '设备操作未完成，请检查连接链接和两端服务后重试', details: {} } };
+    }
   }, { authority: 'loopback' });
   const page = readFileSync(new URL('./page.html', import.meta.url));
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/phone-peer', handler: (req, res) => {

@@ -15,7 +15,7 @@
  * 3. **图片两跳**：先 `projectRequestImage`（插件侧缩放，640,000 px），
  *    拿不到才 `readImage`（原图）。两者都拿不到**抛错**，绝不静默丢图。
  * 4. **`toolChoice` 恒 AUTO**：`@deepseek-ai/dsh-llm` 的 `GenerateOptions`
- *    **没有** `toolChoice` 字段（实测 `lib/types/types.d.ts:380-416`），
+ *    **没有** `toolChoice` 字段（实测 `lib/types/types.d.ts`），
  *    故不传；`translateGeminiRequest` 内部默认走 `AUTO`。
  */
 
@@ -35,7 +35,8 @@ import type {
 } from '@deepseek-ai/dsh-llm'
 import type { Context } from '@deepseek-ai/cordis'
 import type { CredentialRef } from '@deepseek-ai/dsh-credentials'
-import { providerCatalogVisible, type AccountPool } from './account-pool.js'
+import { type AccountPool } from './account-pool.js'
+import { createModelCatalog, type CatalogEntry, type ModelCatalog } from './model-catalog.js'
 import { collectImages, httpErrorCode } from './openai-compat.js'
 import { projectRequestImage } from './image-budget.js'
 import { registerAdapterIdempotent } from './llm-register-compat.js'
@@ -63,7 +64,9 @@ import {
   type GeminiProduct,
 } from './gemini.js'
 import { consumeGeminiSse, translateGeminiRequest } from './gemini-messages.js'
+import { planSessionTitleThinking } from './session-title.js'
 import { persistGeminiProject, resolveGeminiProject } from './gemini-project.js'
+import { geminiNetworkHint } from './gemini-proxy.js'
 import type { GeminiSigStore } from './gemini-sigstore.js'
 
 /** 最多换几个账号（含起始账号）。 */
@@ -201,7 +204,7 @@ export interface GeminiAdapterOptions {
   /**
    * 内联一张图片为**原始字节**（由调用方桥接 `ctx.attachments.readImage`）。
    *
-   * ⚠️ 契约与 `buddy-adapter.ts:195` 一致：**读不到必须抛错**，不得返回空。
+   * ⚠️ 契约与 `buddy-adapter.ts` 一致：**读不到必须抛错**，不得返回空。
    * 静默丢图会让用户以为图片被模型看到了（与 cline / lobsterai 同口径）。
    */
   readImage?: (attachment: unknown) => Promise<{ data: Uint8Array; mediaType: string }>
@@ -209,7 +212,7 @@ export interface GeminiAdapterOptions {
    * 取**请求版本**图片（附件服务按目标尺寸缩放）。
    *
    * ⚠️ 契约与 `readImage` **相反**：不可用时返回 `undefined`（不是抛错）——
-   * 缩放是优化，拿不到就发原图（见 `image-budget.ts:151`）。
+   * 缩放是优化，拿不到就发原图（见 `image-budget.ts`）。
    */
   readImageRequest?: (
     attachment: unknown,
@@ -246,6 +249,51 @@ export interface GeminiAdapterOptions {
   /** 探测用的 fetch（测试注入；缺省全局 `fetch`）。 */
   projectFetcher?: typeof fetch
   /**
+   * 推理请求用的 fetch（Gitee issue IKLTZ2）。
+   *
+   * ⚠️ **这一处此前连 seam 都没有**：`stream()` 里的 `streamGenerateContent`
+   * 直接写死裸 `fetch`，因此 issue 建议里「接上已有的 seam」若照字面实现，
+   * **推理主路径会漏掉**（而它恰恰是用户唯一会卡住的那条路）。
+   *
+   * ⚠️ 与 `projectFetcher` **分成两个字段**：项目探测与推理是两次独立请求，
+   * 测试替身通常只想拦其中一条；合成一个字段会让「只拦探测」的用例意外拦到推理。
+   */
+  fetchImpl?: typeof fetch
+  /**
+   * 按**账号 id** 取 fetcher（代理支持，Gitee issue IKLTZ2）。
+   *
+   * ⚠️ 必须是**函数**而不是一份定好的 fetcher：本适配器在一轮请求内会**换号**
+   * （限流 / 401 时 `getAvailableAccount` 换人），出口必须跟着换。
+   */
+  fetchFor?: (accountId: string) => typeof fetch
+  /**
+   * **显式**指定本适配器代表的账号池条目 id（Gitee issue IKLTZ2 审计 P1-1）。
+   *
+   * ## ⚠️ 为什么必须有它（真实缺陷，独立审计实测）
+   *
+   * 出口代理是**账号维度**的，而「本适配器正在替哪个账号发请求」有两个来源：
+   *
+   * - 主推理路径：有 `accountPool` ⇒ 按 `access_token` 反查（既有逻辑）；
+   * - **探测路径**（账号卡片上的「测试」/「重测」）：`account-probe.ts` **刻意
+   *   不传 `accountPool`**（见其 L213 的注释：探测只测这一个账号、且不写标记）
+   *   ⇒ 反查那一条路**根本不存在** ⇒ `currentAccountId` 恒为 `''`
+   *   ⇒ 解析器按「空 id = 直连」处理 ⇒ **该账号的代理被完全绕过**。
+   *
+   * 症状与 issue 原话同形：墙外环境下「测试 / 重测」**恒失败**，而这个失败
+   * 与「账号已失效」在 UI 上**完全同形** ⇒ 用户会去误删好号。
+   *
+   * ## ⚠️ 为什么是「显式传入」而不是「探测时也传 accountPool」
+   *
+   * 传池会把探测接进换号/写标记的整套编排，而探测的**既定语义**就是不写任何
+   * 东西、只测这一个账号。改 `account-probe.ts` 会破坏那套语义并波及十家适配器。
+   *
+   * ## ⚠️ 为什么**优先于**反查
+   *
+   * 探测时反查恰恰是拿不到的那条路；即便将来有人给探测也挂了池，显式值也是
+   * 更权威的（调用方明确说了「我代表这个账号」）。
+   */
+  accountIdOverride?: string
+  /**
    * 把探测到的项目号回写凭据（跨启动缓存，best-effort）。
    *
    * ⚠️ 只回写**探测到的真值**，不回写兜底串 —— 理由见 `persistGeminiProject`。
@@ -260,10 +308,27 @@ export interface GeminiAdapterOptions {
 /** Gemini（Cloud Code Assist）模型适配器。 */
 export class GeminiAdapter extends LlmAdapter {
   private readonly product: GeminiProduct
+  /**
+   * ⚠️ **2026-10-08 Task 7b：三个方法收敛到共享骨架** `createModelCatalog`。
+   * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架，
+   * 现在只剩 `toCatalogEntry`（本家私有形状 + 静态表判据）。
+   */
+  private readonly catalog: ModelCatalog
 
   constructor(private readonly options: GeminiAdapterOptions) {
     super()
     this.product = options.product ?? GEMINI
+    // ⚠️ 本家目录是**静态表**（无远端拉取）⇒ 两个取数回调是同一份。
+    this.catalog = createModelCatalog(
+      { accountPool: options.accountPool },
+      {
+        product: this.product,
+        loadCatalog: () => this.catalogEntries(),
+        // ⚠️ 未知 id 保守报 ['text']（宁可少报能力，也不报服务端可能不认的模态）。
+        unknownModelInputModalities: () => ['text'] as const,
+        syncCatalog: () => this.catalogEntries(),
+      },
+    )
   }
 
   providerInfo(provider: string): LlmProviderInfo {
@@ -284,70 +349,55 @@ export class GeminiAdapter extends LlmAdapter {
   /**
    * 完整目录（**不套黑名单**），供 Jet Hub「显示列表」用。
    *
-   * ⚠️ **必须同步返回数组，不能是 `async`**（`minimax-adapter.ts:218-242`
-   * 记录的同类缺陷：写成 async 会让 `jet-hub-rpc.ts:2041 [...all]` 与
-   * `:2125 all.map` 抛 `TypeError: all is not iterable`）。
+   * ⚠️ **必须同步返回数组，不能是 `async`**（`minimax-adapter.ts`
+   * 记录的同类缺陷：写成 async 会让 `jet-hub-rpc.ts` 的两个消费者（`[...all]` 与
+   * `all.map`）都抛 `TypeError: all is not iterable`）。
+   *
+   * ⚠️ **2026-10-08 Task 7b**：该同步契约（连同上面这条缺陷史）已在
+   * `src/model-catalog.ts` 的 `syncCatalog` 上统一持有；此处只剩委托。
    */
   listAllModels(): readonly { id: string; name: string }[] {
-    return this.loadModels().map((model) => ({ id: model.id, name: model.name }))
+    return this.catalog.listAllModels()
   }
 
-  private inputModalitiesFor(
-    entry: GeminiModelEntry | undefined,
-  ): readonly ('text' | 'image')[] {
-    return entry?.supportsImage === true ? ['text', 'image'] : ['text']
+  /**
+   * 把本家私有条目转成共享骨架的中间结构。
+   *
+   * ⚠️ 本家目录是**静态表**（`geminiFallbackEntries()`，无远端拉取），
+   * 故 `loadCatalog` 与 `syncCatalog` 取同一份数据。
+   */
+  private toCatalogEntry(entry: GeminiModelEntry): CatalogEntry {
+    const reasoning = geminiReasoningInfo(entry)
+    const contextWindow = entry.contextWindow
+    const maxTokens = entry.maxTokens
+    return {
+      id: entry.id,
+      name: entry.name,
+      // ⚠️ 本家**不剥倍率**（`resolveModel` 也用 `name`）⇒ 不提供 `bareName`。
+      // ⚠️ 模态判据**内联在此**（Task 7b：原 `inputModalitiesFor` 已删除）——
+      // 它是本家私有的「该 entry 支不支持图片」，骨架不认识 `supportsImage`。
+      // ⚠️ 三态：本家静态表**总是**带 `supportsImage` 布尔 ⇒ 恒为数组，不会是 undefined。
+      inputModalities: entry.supportsImage === true ? ['text', 'image'] : ['text'],
+      ...contextWindow !== undefined && contextWindow > 0 ? { contextWindow } : {},
+      ...maxTokens !== undefined ? { maxTokens } : {},
+      ...reasoning !== undefined ? { reasoning } : {},
+    }
+  }
+
+  private catalogEntries(): readonly CatalogEntry[] {
+    return this.loadModels().map((entry) => this.toCatalogEntry(entry))
   }
 
   async listModels(_provider: string): Promise<readonly LlmModelInfo[]> {
-    // ⚠️ 无已登录账号时返回 `[]` → DSH 把整个 provider 分组隐藏。
-    // **必须返回空数组而不能抛错**（抛错会多一条 provider 报错）。
-    if (!await providerCatalogVisible(this.options.accountPool, this.product.id)) return []
-
-    const all = this.loadModels()
-    const disabled = this.options.accountPool?.disabledModelsFor(this.product.id)
-    const listed = disabled === undefined || disabled.size === 0
-      ? all
-      : all.filter((model) => !disabled.has(model.id))
-
-    return listed.map((model) => ({
-      provider: this.product.id,
-      id: model.id,
-      name: model.name,
-      inputModalities: this.inputModalitiesFor(model),
-    }))
+    return this.catalog.listModels(_provider)
   }
 
   async resolveModel(
     provider: string,
     model: string,
-    _signal?: AbortSignal,
+    signal?: AbortSignal,
   ): Promise<LlmResolvedModelInfo> {
-    const entry = this.loadModels().find((item) => item.id === model)
-    const resolved: LlmResolvedModelInfo = {
-      provider,
-      id: model,
-      name: entry?.name ?? model,
-      inputModalities: this.inputModalitiesFor(entry),
-    }
-    // ⚠️ 未知模型不编造 context（宁可让 DSH 用默认值，也不报一个假窗口）
-    if (entry !== undefined && entry.contextWindow > 0) {
-      resolved.context = { contextWindow: entry.contextWindow }
-    }
-    // ⚠️ 远端/静态非法值必须过滤：0/负数/NaN 会让 DSH 抛
-    // `INVALID_MODEL_MAX_TOKENS`，**整轮对话起不来**（不是降级，是崩）。
-    // ⚠️ 先取局部变量再判：`entry.maxTokens` 是可选属性，
-    // `Number.isSafeInteger` 不做类型收窄，直接连写会报 TS18048。
-    const maxTokens = entry?.maxTokens
-    if (maxTokens !== undefined && Number.isSafeInteger(maxTokens) && maxTokens > 0) {
-      resolved.defaultMaxTokens = maxTokens
-    }
-    // ⚠️ 无档位的模型（例如用户手填的未知 id）⇒ `undefined` ⇒ **不声明**
-    //（空数组会让面板显示一个点不开的空下拉框）。
-    if (entry !== undefined) {
-      const reasoning = geminiReasoningInfo(entry)
-      if (reasoning !== undefined) resolved.reasoning = reasoning
-    }
-    return resolved
+    return this.catalog.resolveModel(provider, model, signal)
   }
 
   /** 兼容 0.1.1-rc.2 的 `prepareCall` shim（与其余适配器同款）。 */
@@ -378,7 +428,7 @@ export class GeminiAdapter extends LlmAdapter {
   /**
    * 收集并内联本次请求涉及的全部图片。
    *
-   * ⚠️ 两跳都失败时**必须抛错**（`buddy-adapter.ts:1239-1285` 的权威写法）：
+   * ⚠️ 两跳都失败时**必须抛错**（`buddy-adapter.ts` 的权威写法）：
    * 静默丢弃会表现为「图片凭空消失、模型答非所问」，是最难排查的一类问题。
    */
   private async collectInlineImages(
@@ -497,6 +547,28 @@ export class GeminiAdapter extends LlmAdapter {
       : undefined
     const spec = geminiModelSpec(options.model, effort)
 
+    /**
+     * 会话自动命名（`purpose: 'session-title'`）的思考与预算决策（issue IKKVDH）。
+     *
+     * DSH 用 **64 token** 发标题请求且**不传 `reasoningEffort`**，而宿主会把
+     * 本模型的默认档注入进来。本家档位实测为 `['low','medium','high','tiered']`
+     * （**没有 `off`/`none`**），且 `gemini.ts` 的模块头明确写着
+     * 「关掉 `includeThoughts` 照样思考照样计费（假关）」⇒ 本家**关不掉**思考，
+     * 只能走抬预算兜底。
+     *
+     * ⚠️ 缺口尤其明显：`medium` 档的 `thinkingBudget` 实测为 **4000**，而标题
+     * 请求只给 **64** —— 思考预算本身是输出上限的 **62 倍**，必然被腰斩。
+     *
+     * ⚠️ `declaredEfforts` 与 `resolveModel` 的 `reasoningFor` **同源**
+     * （都取 `geminiReasoningInfo(entry)`），避免「UI 与请求」分叉。
+     */
+    const titlePlan = planSessionTitleThinking({
+      purpose: options.purpose,
+      requestedEffort: requested,
+      declaredEfforts: declared?.efforts.map((item) => String(item.id)) ?? [],
+      maxTokens: options.maxTokens,
+    })
+
     const images = await this.collectInlineImages(options.messages, entry, options.model)
 
     const sessionLane = this.options.sessionLane ?? GEMINI_SESSION_LANE_INFER
@@ -505,8 +577,13 @@ export class GeminiAdapter extends LlmAdapter {
 
     // ⚠️ 起点账号：**局部可变**。不能每次问回调 —— 回调返回的是池的当前
     // 默认账号，换号后不跟着变，会让「换号」变成在两个账号间无限来回。
-    let currentAccountId = ''
-    if (pool !== undefined && credential.access_token !== '') {
+    //
+    // ⚠️ `accountIdOverride` **优先于**反查（IKLTZ2 审计 P1-1）：探测路径
+    // 刻意不挂 `accountPool` ⇒ 反查那条路不存在 ⇒ 没有这个覆盖值时
+    // `currentAccountId` 恒为 `''` ⇒ 账号代理被完全绕过（且症状与
+    // 「账号已失效」同形，用户会去误删好号）。
+    let currentAccountId = this.options.accountIdOverride ?? ''
+    if (currentAccountId === '' && pool !== undefined && credential.access_token !== '') {
       currentAccountId = await pool
         .findAccountIdByCredential(this.product.id, credential.access_token)
         .catch(() => '')
@@ -519,6 +596,21 @@ export class GeminiAdapter extends LlmAdapter {
     // 项目号缓存：**跨账号共用一份 Map**（键是凭据身份），故放在循环外。
     // 见 `gemini-project.ts` 的三级缓存。
     const projectCache = this.options.projectCache ?? new Map<string, string>()
+
+    /**
+     * 取当前账号该走的 fetcher（Gitee issue IKLTZ2）。
+     *
+     * ⚠️ **在循环内按 `currentAccountId` 现取**：换号后出口必须跟着换 ——
+     * 循环外固化一份会让换号后**仍走旧账号的代理**（症状是「换了号还是超时」，
+     * 且无任何报错，属最难查的一类静默失效）。
+     *
+     * ⚠️ 优先级：`fetchImpl`（单测替身）> `fetchFor`（生产代理）> 全局 `fetch`。
+     */
+    const fetcherForCurrentAccount = (): typeof fetch => {
+      if (this.options.fetchImpl !== undefined) return this.options.fetchImpl
+      if (this.options.fetchFor !== undefined) return this.options.fetchFor(currentAccountId)
+      return fetch
+    }
 
     let endpointIdx = 0
     let endpointSwitched = false
@@ -553,9 +645,11 @@ export class GeminiAdapter extends LlmAdapter {
           const probe = await resolveGeminiProject({
             credential,
             cache: projectCache,
-            ...this.options.projectFetcher === undefined
-              ? {}
-              : { fetcher: this.options.projectFetcher },
+            // ⚠️ 项目探测与推理**共用同一个账号出口**（否则探测走代理、推理直连，
+            // 用户会看到「项目号探测失败」这种指向错误的原因）。故这里也走
+            // `fetcherForCurrentAccount()`，但仍尊重显式注入的 `projectFetcher`
+            // —— 测试里「只拦探测、不拦推理」是常见需求。
+            fetcher: this.options.projectFetcher ?? fetcherForCurrentAccount(),
             // ⚠️ 透传调用方信号：否则探测自带的 30s 超时会把更短的调用方超时拖长。
             ...options.signal === undefined ? {} : { signal: options.signal },
           })
@@ -590,7 +684,9 @@ export class GeminiAdapter extends LlmAdapter {
           ...options.system === undefined ? {} : { system: options.system },
           ...options.tools === undefined ? {} : { tools: options.tools },
           ...options.temperature === undefined ? {} : { temperature: options.temperature },
-          ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
+          // ⚠️ 标题请求走 `titlePlan.maxTokens`（关不掉思考时已抬到兜底下限）——
+          // 它最终成为 `generationConfig.maxOutputTokens`（见 `gemini-messages.ts`）。
+          ...titlePlan.maxTokens === undefined ? {} : { maxTokens: titlePlan.maxTokens },
           ...this.options.sessionId === undefined ? {} : { sessionId: this.options.sessionId },
           sessionLane,
           sessionGeneration,
@@ -623,7 +719,10 @@ export class GeminiAdapter extends LlmAdapter {
         }
         let response: Response
         try {
-          response = await fetch(url, {
+          // ⚠️ **走 `fetcherForCurrentAccount()`**（Gitee issue IKLTZ2）：此处原先是
+          // 写死的裸 `fetch`，没有任何 seam —— 那正是 issue 建议里没点到的缺口
+          // （照字面只接 `fetchImpl` / `projectFetcher` 会让**推理主路径**漏掉代理）。
+          response = await fetcherForCurrentAccount()(url, {
             method: 'POST',
             // ⚠️ 流式**刻意不带 `Accept`**（抓包一致，见 `geminiHeaders`）。
             headers: geminiHeaders(credential),
@@ -634,8 +733,15 @@ export class GeminiAdapter extends LlmAdapter {
           // 网络层失败：**如实抛 TRANSPORT**，让 harness 的退避去处理
           // （本适配器不自己重试网络错误 —— 那会与 harness 的退避叠加）。
           if (error instanceof LlmError) throw error
+          // ⚠️ **点名代理**（IKLTZ2 修法 3 / 审计 P2-2）：「连不上 Google」与
+          // 「Google 报错」在 TRANSPORT 这一格同形，而前者唯一出路是配代理。
+          // ⚠️ `aborted` 必须**真读调用方的 signal**（原先恒传字面量 `false`）：
+          // harness 给的 deadline 到期时，报文是 `AbortError`、**不带**
+          // `UND_ERR_*` 码 ⇒ 恒 false 会让「调用方超时」这类墙外症状拿不到提示。
+          const hint = geminiNetworkHint(error, options.signal?.aborted === true)
           throw new LlmError(
-            `gemini: 请求发送失败 — ${error instanceof Error ? error.message : String(error)}`,
+            `gemini: 请求发送失败 — ${error instanceof Error ? error.message : String(error)}`
+            + (hint === undefined ? '' : `；${hint}`),
             'TRANSPORT',
             { cause: error },
           )
@@ -733,12 +839,12 @@ export class GeminiAdapter extends LlmAdapter {
               .catch(() => {})
           }
           if (rotations < GEMINI_MAX_ROTATE - 1) {
-            const next = await pool.getAvailableAccount(this.product.id, options.model, tried)
+            const next = await pool.getAvailableAccount<GeminiCredential>(this.product.id, options.model, tried)
             if (next !== null && next !== undefined && !tried.has(next.entry.id)) {
               rotations++
               tried.add(next.entry.id)
               currentAccountId = next.entry.id
-              credential = next.credential as unknown as GeminiCredential
+              credential = next.credential
               // 换号后重置端点与去签状态：新账号值得从默认端点、带签名再试一次。
               endpointIdx = 0
               endpointSwitched = false

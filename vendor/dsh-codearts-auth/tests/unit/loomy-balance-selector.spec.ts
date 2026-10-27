@@ -354,7 +354,7 @@ describe('LoomyBalanceSelector.select', () => {
    * ⇒ 有号查不到时原因必须是 `unknown`，文案要说"可能仍有额度、请重试"，
    * 而不是让用户去解锁或白等一天。
    */
-  it('有号查询失败时原因是 unknown（不谎报"额度已用尽"）', async () => {
+  it('有号查询失败时原因是 partial（不谎报"额度已用尽"）', async () => {
     const cred2: LoomyCredential = { ...CRED, access_token: 'T'.repeat(32) }
     const fetcher = makeFetcher({
       [CRED.access_token]: 'error',                            // 查不到
@@ -372,10 +372,51 @@ describe('LoomyBalanceSelector.select', () => {
     )
     expect(result.ok).toBe(false)
     if (!result.ok) {
-      expect(result.reason.kind).toBe('unknown')
-      if (result.reason.kind === 'unknown') {
+      // ⚠️ 档位名 2026-10-16 由 `unknown` 拆成 `partial` / `all-unknown`
+      //    （issue IKMCOO 缺陷 2）：本例是**一个**失败、另一个确认无额度
+      //    ⇒ `partial`，**不是** `all-unknown`。
+      expect(result.reason.kind).toBe('partial')
+      if (result.reason.kind === 'partial') {
         expect(result.reason.errors).toHaveLength(1)
         expect(result.reason.errors[0]).toContain('失效')
+      }
+    }
+  })
+
+  /**
+   * ★★ **全员查不到 ≠ 部分查不到**（issue IKMCOO 缺陷 2，2026-10-16）。
+   *
+   * 原实现的判据是「有任一候选失败就是 unknown」⇒ 三个号全查不到也被说成
+   * 「**部分**账号的余额查询失败」，并让用户去「检查凭据是否失效」——
+   * 而本机实测凭据全部有效（`/points/records` 返回 200）。
+   */
+  it('★★ 全部候选都查询失败 ⇒ all-unknown（不得说成「部分」）', async () => {
+    const cred2: LoomyCredential = { ...CRED, access_token: 'T'.repeat(32) }
+    const cred3: LoomyCredential = { ...CRED, access_token: 'U'.repeat(32) }
+    const fetcher = makeFetcher({
+      [CRED.access_token]: 'error',
+      [cred2.access_token]: 'error',
+      [cred3.access_token]: 'error',
+    })
+    const selector = new LoomyBalanceSelector({
+      product: LOOMY,
+      resolveCredential: makeResolver({ r1: CRED, r2: cred2, r3: cred3 }),
+      fetcher: fetcher as unknown as typeof fetch,
+    })
+
+    const result = await selector.select(
+      [
+        { id: 'a1', credentialRef: 'r1' },
+        { id: 'a2', credentialRef: 'r2' },
+        { id: 'a3', credentialRef: 'r3' },
+      ],
+      { allowPermanent: false },
+    )
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.reason.kind, '★★ 全员失败必须是 all-unknown').toBe('all-unknown')
+      if (result.reason.kind === 'all-unknown') {
+        expect(result.reason.errors, '三个失败都要列出').toHaveLength(3)
       }
     }
   })

@@ -1,16 +1,85 @@
-import { attributionHeaders, CONTEXT_WINDOW_EXCEEDED_CODE, isContextWindowExceededError, isQuotaExceededError, LlmAdapter, LlmError, QUOTA_EXCEEDED_CODE, } from '@deepseek-ai/dsh-llm';
+import { directFetch } from './direct-fetch.js';
+import { attributionHeaders, CONTEXT_WINDOW_EXCEEDED_CODE, isContextWindowExceededError, isQuotaExceededError, LlmAdapter, LlmError, } from '@deepseek-ai/dsh-llm';
 import { ReasoningEffortId, ToolCallId as CallId } from '@deepseek-ai/dsh-llm';
-import { providerCatalogVisible } from './account-pool.js';
+import { createModelCatalog, isCatalogFreshFor } from './model-catalog.js';
 import { RemoteCatalogGate } from './remote-catalog-gate.js';
+import { broadcastCatalogChanged } from './catalog-broadcast.js';
 import { nextUtc8DayStartMs } from './model-queue.js';
 import { isCodeArtsBenefitModel } from './models.js';
 import { normalizeHarnessMessages } from './message-shape.js';
 import { signRequestHuawei } from './sign.js';
-import { createBlankReasoningSuppressor, createReasoningLoopDetector, hasUsableToolName, isReasoningLoopGuardEnabled, isTruncatedArguments, normalizeToolArguments, readWithIdleTimeout, reasoningLoopFailure, resolveEmptyResponseReason, resolveToolPairing, stripCourseLeakFromHistoryContent, stripCourseLeakIfEnabled } from './sse.js';
+// ⚠️ `detailFieldText`（`detail` 那条腿）**只留一份实现** —— 本仓库 6 份同义的
+// `errorDetail` 各写一条判据必然漂移（见 `openai-compat.ts` 的注释，IKLBSH A1）。
+import { detailFieldText } from './openai-compat.js';
+import { createBlankReasoningSuppressor, createDsmlMarkerNormalizer, createReasoningLoopDetector, hasUsableToolName, isReasoningLoopGuardEnabled, isTruncatedArguments, normalizeToolArguments, readWithIdleTimeout, reasoningLoopFailure, resolveEmptyResponseReason, resolveToolPairing, stripCourseLeakFromHistoryContent, stripCourseLeakIfEnabled } from './sse.js';
+import { planSessionTitleThinking } from './session-title.js';
 import { registerAdapterIdempotent, } from './llm-register-compat.js';
 import { reportLedgerAccount } from './token-ledger.js';
 export const CHAT_API_BASE = 'https://snap-access.cn-north-4.myhuaweicloud.com/api/v2';
 export const PROVIDER = 'codearts';
+/**
+ * 本家**恒声明**的两档思考开关 —— 顺序即**强度序（弱 → 强）**（Issue IKLIDV）。
+ *
+ * ## 为什么顺序是「关闭 → 开启」
+ *
+ * DSH 的契约把该数组当作**展示顺序**
+ *（`dsh-llm/lib/types/types.d.ts` 原文：`Supported efforts in adapter-preferred
+ * display order`），而官方客户端**直接 `map`、不排序**
+ *（`dsh-client-ui-model-selection/lib/client.js` 的 `effortChoices`：
+ * `[…, ...reasoning.efforts.map(…)]`）。故任何「把档位数组铺成一条轴」的渲染
+ * —— 官方那个纵向 `menuitemradio` 列表、以及第三方横向滑条 —— 都直接吃这个顺序。
+ *
+ * 原实现写成 `['on','off']`（把默认档排在最前）。那个动机在**纵向列表**里成立，
+ * 一旦铺成**横向轴**就变成「左强右弱」：「开启」贴最左、「关闭」贴最右，
+ * 与「左弱右强」的直觉相反。
+ *
+ * 强度序的**唯一权威**是本仓库的 `reasoning-ladder.ts`
+ *（`REASONING_EFFORT_RANK`：`off: 0` / `on: 5`）⇒ `off` 必须在前。
+ * 三处旁证同向：
+ * - DSH 自家 `dsh-llm-deepseek` 声明 `[off, low, high, max]`；
+ * - DSH 自家 `dsh-llm-pi-ai` 的 `THINKING_LEVELS` 是
+ *   `[off, minimal, low, medium, high, xhigh, max]`；
+ * - 本仓库 `zcode-upstream.ts` 的 `orderReasoningLevels` **主动**把上游的
+ *   乱序（实测插入序 `low, max, high`）排成 `none → minimal → low → … → max`。
+ *
+ * ⚠️ **`defaultEffort` 与数组位置是两件事**：默认档由 {@link CODEARTS_DEFAULT_EFFORT}
+ * 单独表达，**不**靠「排在首位」。故本顺序的调整不改变任何默认行为。
+ *
+ * ⚠️ **本声明的顺序不参与任何语义判断**：关闭思考靠
+ * `thinkingOffEffortOf` 的 `.find(isThinkingOffEffort)`（按 rank 找，不按位置），
+ * `session-title` 那条路径也只用它当集合。
+ *
+ * ⚠️ **本常量是这两档的唯一定义处**：同一文件里原先写了**两份**逐字相同的
+ * 数组（已知模型的 `toCatalogEntry` 与未知模型的 `unknownModelReasoning`）——
+ * 那正是「一文件两套同义判据」的形态，改一处必漏另一处（用户手填模型 id 时会
+ * 看到与已知模型相反方向的档位轴）。现已收敛到这一份。
+ *
+ * ⚠️ 网关的 `openai_efforts` 是这份顺序的**机械投影**
+ *（`openai-gateway/effort-view.ts` 逐个 push `canonical`），故本顺序同时决定
+ * `/v1/models` 里那一列的可读性：升序 ⇒ `["none","high"]`。
+ */
+export const CODEARTS_REASONING_EFFORTS = Object.freeze([
+    { id: ReasoningEffortId('off'), name: '关闭' },
+    { id: ReasoningEffortId('on'), name: '开启' },
+]);
+/**
+ * 默认思考档 = `开启`。
+ *
+ * 依据（实测 2026-09-29）：不传 `thinking` 与服务端默认等价，而服务端**默认就开着**
+ *（`{type:'enabled'}` 与不传的 `reasoning_tokens` 落在同一基线）⇒ 标成 `on`
+ * 是**如实描述**，不是我们强行改变行为。
+ *
+ * ⚠️ 必须落在 {@link CODEARTS_REASONING_EFFORTS} 内：DSH 在 `normalizeModelInfo`
+ * 里校验「`defaultEffort` 必须是被声明过的 id」，不在则抛 **`INVALID_MODEL_REASONING`**
+ *（整轮对话起不来）。
+ * ⚠️ 别与 `UNSUPPORTED_REASONING_EFFORT` 混淆 —— 那个码是**另一回事**：
+ * 指「**请求**里带的档位不在该模型声明内」（`resolveCallWithInfo` 抛）。
+ * 审计实测（2026-10-14，`dsh-llm/lib/index.js`）：`defaultEffort='on'` 而
+ * `efforts=[low,high]` ⇒ code 为 `INVALID_MODEL_REASONING`。本行原写
+ * `UNSUPPORTED_REASONING_EFFORT` 是**张冠李戴**（同型措辞在 `raccoon-adapter.ts`
+ * 与 `trae-adapter.ts` 是既有问题，本次只修这一处新增注释）。
+ */
+export const CODEARTS_DEFAULT_EFFORT = 'on';
 /**
  * 「该账号没有 benefit（免费额度）包」的稳定失败码。
  *
@@ -22,6 +91,47 @@ export const PROVIDER = 'codearts';
 const BENEFIT_NOT_FOUND_CODE = 'BENEFIT_NOT_FOUND';
 /** CodeArts 在账号没有 benefit 包时下发的事件 error_code。 */
 const CODEARTS_BENEFIT_NOT_FOUND_ERROR_CODE = 'InferHub.4004.200';
+/**
+ * 额度用尽时抛出的错误码 —— **字面量 `'QUOTA_EXCEEDED'`，不是 harness 常量**。
+ *
+ * ## ⚠️ 为什么不能用 `QUOTA_EXCEEDED_CODE`（真实缺陷，Gitee issue IKJVCW）
+ *
+ * harness 导出的 `QUOTA_EXCEEDED_CODE` 字面值是 **`'QUOTA'`**，而 DSH 客户端
+ * 对这三个码会**丢弃适配器精心写的 message、换成一句固定文案**
+ * （实测 `dsh-client-ui-chat/lib/client.js`，桌面端 `app.asar` 内为逐字节同串）：
+ * ```js
+ * if (code === "QUOTA" || code === "ACCOUNT_QUOTA") return t("message.failure.quota");
+ * return code === "AUTH" ? t("message.failure.auth") : message;
+ * ```
+ * locale 表：`"message.failure.quota": "当前请求的额度已用尽"`。
+ *
+ * 于是 {@link codeartsQuotaExhaustedMessage} 里那句**带解禁时间**的说明
+ * （「预计 5.5 小时后重置（按 UTC+8 自然日结算…）可改用其它模型…」）
+ * 一个字都到不了用户眼前 —— 用户只看到「当前请求的额度已用尽」，
+ * 既没有原因也没有出路。这与 `docs/agent-notes/client-ui.md` 记的
+ * 「凡是要把自定义文案送到用户眼前，码必须避开这三个」是**同一条铁律**；
+ * buddy 的 `11140` 当初正因如此才从 `AUTH` 改成 `PERMISSION_DENIED`。
+ *
+ * ## 为什么取字面量而不是 `PERMISSION_DENIED`
+ *
+ * ① **语义准确**：额度用尽的出路是「等重置 / 充值 / 换模型」，不是「没权限」。
+ *    仓库里 buddy / cline / lobsterai / trae / zcode / minimax 等 **~20 处**
+ *    额度错误一律用字面量 `'QUOTA_EXCEEDED'`，且**都不被客户端替换** ——
+ *    本处改用 harness 常量才是异类（codearts 是**唯一**用它的 provider，
+ *    这正是缺陷只在本家复现的原因）。
+ * ② **可重试性不变**：`'QUOTA_EXCEEDED'` 与 `'QUOTA'` **同样不在**
+ *    harness 的 `DEFAULT_RETRYABLE_CODES`（`EMPTY_RESPONSE / RATE_LIMIT /
+ *    SERVER / TIMEOUT / TRANSPORT`）里 ⇒ 仍是「确定性、不白退避」。
+ * ③ **下游判据已双认**：`account-probe.isRateLimitFailure` 与
+ *    `qoder-adapter.isQuotaExceededError` 都同时接受 `'QUOTA_EXCEEDED'`
+ *    与 `'QUOTA'`；`dead-model-store` 的 `IGNORED_CODES` 更是**只收**
+ *    `'QUOTA_EXCEEDED'` —— 原先靠 `NOT_GONE_PATTERNS` 的 `/额度/` 文案兜底
+ *    才没被误记成模型失效，改后是显式命中，比原来更稳。
+ *
+ * ⚠️ **不要改回 `QUOTA_EXCEEDED_CODE`**，也不要为「与 harness 词汇一致」
+ * 而改回 `'QUOTA'`：那正是本缺陷的成因，会让解禁时间再次从 UI 上消失。
+ */
+const CODEARTS_QUOTA_EXHAUSTED_CODE = 'QUOTA_EXCEEDED';
 // DeepSeek V4（CodeArts Agent 模型列表新增，UI 标注"每日 1000 万免费 Tokens"福利）：
 //
 // 修正（2026-09-23，对齐 deveco-code-rust fb1b4a2）：早期注释称
@@ -199,14 +309,18 @@ export function serializeMessages(messages) {
  * 模型将工具 schema 注入 system 消息、请求体不发送 `tools` 字段，让模型
  * 以 DSML 流式输出工具调用，从根上规避网关空闲断连。
  */
-function isDeepseekV4Model(model) {
-    return /^deepseek-v4-(flash|pro)$/.test(model);
-}
+/**
+ * ⚠️ **已移至共享层 `./dsml.js`**（2026-10-13）。
+ *
+ * OfficeAce 通道复用不到本文件的实现 ⇒ 漏注入 DSML 提示 ⇒ 模型臆造
+ * `<｜DSML｜ calls>` 语法。协议定义**必须只有一份**。
+ */
+export { isDeepseekV4Model, needsDsmlToolMode, buildDsmlSystemPrompt } from './dsml.js';
+import { buildDsmlSystemPrompt, DsmlContentExtractor, needsDsmlToolMode, } from './dsml.js';
 /**
  * 工具名匹配大参数写文件类工具（content/arguments 可能达到数万 token）。
  * 仅用于对非 deepseek-v4 模型的 DSML 模式降级判定（当前全量模式不再使用此列表）。
  */
-const DSML_LARGE_PARAM_TOOLS = ['write', 'file_write', 'apply_patch'];
 /**
  * 判断模型是否应使用 DSML 原生工具调用语法输出。
  *
@@ -224,39 +338,6 @@ const DSML_LARGE_PARAM_TOOLS = ['write', 'file_write', 'apply_patch'];
  * 非 deepseek-v4 模型（如 openpangu / GLM-5.2 等）使用华为标准 IAM AK/SK 鉴权，
  * 不走 CodeArts Agent APIG 网关，无 60s 空闲断连问题，继续保持标准 tool_calls。
  */
-function needsDsmlToolMode(model, _toolNames) {
-    return isDeepseekV4Model(model);
-}
-/**
- * 构造让 deepseek-v4 以原生 DSML 格式调用工具的 system 提示。
- *
- * 适配器不把 `tools` 字段发给后端（否则模型走标准 tool_calls 一次性
- * 打包路径），而是把 OpenAI function schema 以文本注入 system 消息，
- * 并明确要求模型使用 `<｜DSML｜tool_calls>` 语法。`parseDsmlToolCalls`
- * 会把模型输出的 DSML 块解析为结构化 tool-call，harness 无需感知差异。
- */
-function buildDsmlSystemPrompt(tools) {
-    const toolJson = JSON.stringify(tools.map((tool) => ({
-        name: tool.function.name,
-        description: tool.function.description,
-        parameters: tool.function.parameters,
-    })), null, 2);
-    return [
-        '以下是你可用的工具及其 JSON Schema。当需要调用工具完成任务时，',
-        '必须使用原生 DSML 工具调用语法输出，格式如下：',
-        '<｜DSML｜tool_calls><｜DSML｜invoke name="工具名"><｜DSML｜parameter name="参数名" string="true">参数值</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>',
-        '',
-        '规则：',
-        '- 工具名必须是下面列表中的 name。',
-        '- 每个参数用一个 <｜DSML｜parameter> 标签包裹，参数值放在标签之间。',
-        '- 字符串参数加 string="true" 属性；对象/数组/数字/布尔参数不要加该属性。',
-        '- 一次可以输出多个 <｜DSML｜invoke> 调用（工具可以并行）。',
-        '- 文件内容请一次性完整写入单个 write 调用的 content 参数，不要拆分或省略。',
-        '',
-        '工具列表（JSON Schema）：',
-        toolJson,
-    ].join('\n');
-}
 /**
  * CodeArts 并发排队端点。当后端按账户的会话
  * 并发上限达到时，chat completions 请求会以
@@ -268,6 +349,15 @@ export const QUEUE_STATUS_BASE = 'https://snap-access.cn-north-4.myhuaweicloud.c
 const QUEUE_RETRY_DELAY_MS = 10_000;
 /** 轮询上限：180 × 10 秒 = 30 分钟，与 deveco-code 参考实现一致。 */
 const QUEUE_MAX_ATTEMPTS = 180;
+/**
+ * APIG「正文哈希对不上」时**直接重发**的次数上限。
+ *
+ * 取 2：该故障是上游网关侧的瞬时状态，实测两次连续失败后第三次即可成功；
+ * 再多只是把真正的持续故障拖长，反而掩盖问题。
+ */
+const SIGNATURE_RETRY_MAX = 2;
+/** 重发的退避基数：第 n 次等 n × 该值（500ms、1000ms）。 */
+const SIGNATURE_RETRY_DELAY_MS = 500;
 /**
  * SSE 流空闲超时。CodeArts 后端 / APIG 网关对 SSE 连接有 ~60 秒无数据即
  * 断开的策略：当模型生成超长推理或大工具调用参数时，两次 chunk 之间可能
@@ -423,8 +513,14 @@ function isQueueError(status, body) {
  * 才抛 AUTH，避免把可自愈的瞬时鉴权失败暴露给用户。
  */
 function isAuthError(status, body) {
-    if (status === 401 || status === 403)
+    if (status === 401 || status === 403) {
+        // ⚠️ 先排除「网关瞬时签名故障」（`body hash mismatch`），否则会白跑一次
+        // 凭据续期：它与 AK/SK、security_token 都无关，重发就能过（见
+        // {@link isTransientSignatureFailure} 的实测依据）。
+        if (isTransientSignatureFailure(status, body))
+            return false;
         return true;
+    }
     return body.includes('APIG.0602') || /invalid\s+token|token\s+expired|token\s+is\s+invalid/i.test(body);
 }
 /**
@@ -497,20 +593,127 @@ export function isSseQueueErrorCode(code) {
 export function isSseQuotaExhaustedErrorCode(code, message) {
     return code.includes('4291') || /insufficient[\s_-]+quota/i.test(message);
 }
-/** 从错误体提取可分类的 detail 文本（OpenAI 风格 error 或 CodeArts error_code/error_msg）。 */
-function errorDetail(body) {
+/**
+ * HTTP **4xx** 报文里是否表示「该账号没有 benefit（免费额度）包」。
+ *
+ * ## 为什么需要它（Gitee issue IKLBSH A6）
+ *
+ * 同一个上游条件走**两条**通道下发：
+ *
+ * | 通道 | 形态 | 修复前 |
+ * |---|---|---|
+ * | SSE | HTTP 200 + `{error_code:"InferHub.4004.200", …}` | ✅ 已接（`consumeSse` 抛 `BENEFIT_NOT_FOUND_CODE`）|
+ * | HTTP | **4xx** + 同一码 | ❌ **未接** ⇒ 去头重试一次也不试，直接归 `INVALID_REQUEST` 抛出 |
+ *
+ * 「SSE 能自愈、4xx 却硬报错」＝同一个语义两套判据，正是本仓库首条红线的形态。
+ *
+ * ⚠️ **该缺陷已被独立锁定**：`origin/issue/IKJOF7-benefit-diagnostics` 分支
+ *（2026-10-05）用 `it.fails` 显式锁死了它（「HTTP 4xx + 正文含
+ * `InferHub.4004.200` 时也应当去头重试」），当时结论是「已确认，但本分支不修」。
+ *
+ * ⚠️ **判据复用同一个码值常量**（`CODEARTS_BENEFIT_NOT_FOUND_ERROR_CODE`），
+ * 不另写第二份 —— 与 SSE 通道的判据（`consumeSse` 的 `===` 比较）**同源**，
+ * 否则两条通道会在上游改码时分别漂移（这正是本缺陷的成因形态）。
+ *
+ * ⚠️ 与 {@link isSseQuotaExhaustedErrorCode} 的 `4291` **刻意不同**：那条腿用
+ * 子串是为了容忍 `InferHub.4291.xxx` 的其它尾号，而 `4004` 这一族里
+ * **没有证据**表明其它尾号是同一语义（`4004.200` 是实测唯一的 benefit 码）。
+ * 按证据收紧到**全等**：放宽成 `InferHub.4004.` 前缀会把该族里未知语义的
+ * 报文也变成可重试，属行为变更。将来真抓到别的尾号**再按实测放宽**。
+ *
+ * ⚠️ 不解析 JSON 而直接判原文：4xx 的报文形态与 SSE 不同（字段名可能不叫
+ * `error_code`），这正是上面那条注释记录的教训。
+ */
+export function isBenefitNotFoundBody(body) {
+    return body.includes(CODEARTS_BENEFIT_NOT_FOUND_ERROR_CODE);
+}
+/**
+ * 从错误体提取可分类的 detail 文本（OpenAI 风格 error 或 CodeArts error_code/error_msg）。
+ *
+ * ⚠️ **本次只「加腿」，且如实标注证据强度**：新增顶层字符串 `error` 一条。
+ *
+ * 该项的**证据是「同族实现已修」+「形态确实无法解析」，不是 codearts 的线上实录**
+ * （141 个真实会话里没有 codearts 的 `{"error":"<字符串>"}` 报文）——
+ * `src/openai-compat.ts` 的**同名函数**早已修过这个形态，其注释写明
+ * 「只认 code/message/msg 会把整个 JSON 原样返回，用户看到一坨不可读的裸 JSON」，
+ * 而本文件的这份没跟上（「一文件两套同义判据」是本仓库点名的复发形态，
+ * 两处改一处时**必须同时改另一处**）。
+ *
+ * 之所以加：该形态在本份实现里**必然**退化成整段裸 JSON（`parts` 为空 ⇒
+ * `return body`），而修法是把另一份已被验证的腿搬过来，零新增取舍 ——
+ * 与 `httpErrorCode` 那次「调整判据优先级」不同，这里**不改变任何已有分类**，
+ * 纯属补齐漏掉的形态（codearts 的 `errorDetail` 与 OpenAI 兼容报文同源）。
+ *
+ * ⚠️ **绝不「减腿」**：原有的 `error.code` / `error.type` / `error.message` /
+ * `error_code`+`error_msg` / 顶层 `message` 五条**必须全部保留** ——
+ * OpenAI 形态常把额度语义写在 `{"error":{"code":"insufficient_quota"}}` 里，
+ * 少了 code 那条腿，该报文会从额度**掉回** `AUTH`/`INVALID_REQUEST`
+ * （实测：`isQuotaExceededError` 对 `insufficient_quota` 为 true，
+ * 但只有在它被拼进 detail 时才生效）。改的第一版真的把几条腿一起删了。
+ *
+ * ⚠️ **导出仅供单测直接锁定「形态覆盖」这一判据本身**（与
+ * {@link isSseQueueErrorCode} / {@link isSseQuotaExhaustedErrorCode} 同款惯例）。
+ * **不要**绕道「分类结果」去测它：`{"error":"insufficient balance"}` 这种报文，
+ * 即使字符串腿失效、函数退回整段 JSON，**整段 JSON 里也含该短语** ⇒
+ * 额度判据照样命中 ⇒ 那是**假守卫**（实测确认过，第一版就是这么错的）。
+ * 直接断言本函数的**返回值**才测得到那条腿。
+ *
+ * ## ⚠️⚠️ 本函数是**展示**出口；分类出口是 {@link errorDetailForClassify}
+ *
+ * 无条件把 `detail` 计入产物会**翻转错误码**（真实净回归，两轮审计独立确证）：
+ *
+ * | 报文 | 只算既有腿 | 加上 detail 腿 |
+ * |---|---|---|
+ * | `{"message":"bad request","detail":"insufficient quota"}` | `INVALID_REQUEST` | **`QUOTA_EXCEEDED`** |
+ * | `{"message":"bad request","detail":"prompt is too long for this model"}` | `INVALID_REQUEST` | **`CONTEXT_WINDOW_EXCEEDED`** |
+ *
+ * 后者还会**触发 DSH 的上下文溢出压缩**。本函数是 `httpErrorCode` 与 4xx 额度判据
+ * 的**唯一分类输入** ⇒ 那两处**必须**改走 {@link errorDetailForClassify}，
+ * 否则一个纯展示改进会静默改变分类行为（且我加的用例只断言返回值，零分类守卫）。
+ *
+ * ⚠️ **本份（codearts）与 `openai-compat.ts` 那份是同名不同实现**，
+ * 两条出口的语义必须两处一致。
+ */
+export function errorDetail(body) {
+    return errorDetailImpl(body, true);
+}
+/**
+ * 从错误体提取**分类用**的可读文本 —— **不含**顶层 `detail` 字段。
+ *
+ * ⚠️ 分类调用点（`httpErrorCode` / `isSseQuotaExhaustedErrorCode`）**必须**走本出口：
+ * 它保证分类输入与「加 detail 腿之前」**逐字节相同**（见 {@link errorDetail} 的实测表）。
+ */
+export function errorDetailForClassify(body) {
+    return errorDetailImpl(body, false);
+}
+/**
+ * `errorDetail` 的唯一实现（两条出口共用，**不各写一份** —— 那是本仓库首条红线
+ * 「同一语义两套判据」，且必然漂移）。
+ *
+ * @param includeDetailField - `true` = 展示出口；`false` = 分类出口。
+ */
+function errorDetailImpl(body, includeDetailField) {
     try {
         const data = JSON.parse(body);
         const error = typeof data.error === 'object' && data.error !== null
             ? data.error
             : undefined;
+        // 顶层 `error` 是**字符串**的形态（`openai-compat` 那份已覆盖，本份原先漏掉）。
+        const errorText = typeof data.error === 'string' ? data.error : undefined;
         const parts = [
             typeof error?.code === 'string' ? error.code : undefined,
             typeof error?.type === 'string' ? error.type : undefined,
             typeof error?.message === 'string' ? error.message : undefined,
+            errorText,
             typeof data.error_code === 'string' ? data.error_code : undefined,
             typeof data.error_msg === 'string' ? data.error_msg : undefined,
             typeof data.message === 'string' ? data.message : undefined,
+            // ⚠️ 上游代理的 `{"error":"acp-proxy failure","detail":"<真实原因>"}` 形态
+            //（Gitee issue IKLBSH A1）—— 只认 `error` 会丢掉真正的原因。
+            // 判据**只留一份实现**（`openai-compat.ts` 的 `detailFieldText`）；本仓库
+            // 6 份同义 `errorDetail` 各写一条必然漂移（「同一语义两套判据」）。
+            // ⚠️ **只在展示出口计入**（见上）。
+            includeDetailField ? detailFieldText(data) : undefined,
         ].filter((value) => value !== undefined);
         if (parts.length > 0)
             return parts.join(' ');
@@ -525,13 +728,31 @@ function errorDetail(body) {
  * httpErrorCode 词汇一致：400 且命中上下文超限措辞时归为
  * CONTEXT_WINDOW_EXCEEDED（触发 dsh compaction 自动压缩上下文），
  * 而不是不可重试的 HTTP_400，避免长会话在接近窗口上限时直接中断。
+ *
+ * ⚠️ **额度判据不得抢到 401/403 之前**（曾被审计建议改成这样，**已否决**）：
+ * 「同一文案用 400 归额度、用 403 归 `AUTH`」看起来不一致，但那正是**有意**的 ——
+ * codearts 的 401/403 来自**网关**（APIG.0602 Invalid token / APIG.0301 验签失败），
+ * 而本仓库有一条**成文铁律**（`AGENTS.md` 的「同族判据必须逐格同构」）：
+ * > **401/403 先判**，恒归认证类 —— 状态码与额度文案并存时
+ * > （网关侧故障常在报文里捎带余额提示）**以状态码为准**
+ *
+ * 该铁律是 2026-10-06 raccoon / loomy「一个请求内 6 个号各被封 24h」事故的产物。
+ * 把额度判据提到前面，就等于让网关故障时捎带的余额词**改写分类** ⇒
+ * 真凭据失效被说成「额度用尽」，用户被引向「等额度恢复」而不是重新登录。
+ *
+ * ⚠️ 而且「codearts 会用 401/403 下发额度文案」这一前提**没有实测支撑**：
+ * 141 个真实会话里 `InferHub.4291` 仅 1 次命中（还是在讨论参考实现的 Rust 源码），
+ * 无任何真实 401/403 + 额度文案的记录。**将来若真抓到该报文，再按实测处理** ——
+ * 不要据构造的报文改分类顺序。
  */
 function httpErrorCode(status, body) {
     if (status === 401 || status === 403)
         return 'AUTH';
-    const detail = errorDetail(body);
+    // ⚠️ **分类必须走 `errorDetailForClassify`**（不含 detail 腿）—— 用展示出口会让
+    // detail 里的额度/超限措辞**翻转错误码**（实测表见 `errorDetail` 的 doc）。
+    const detail = errorDetailForClassify(body);
     if (isQuotaExceededError(detail))
-        return QUOTA_EXCEEDED_CODE;
+        return CODEARTS_QUOTA_EXHAUSTED_CODE;
     if (status === 429)
         return 'RATE_LIMIT';
     if (status === 400) {
@@ -542,6 +763,37 @@ function httpErrorCode(status, body) {
     if (status >= 500)
         return 'SERVER';
     return `HTTP_${status}`;
+}
+/**
+ * 华为 API 网关（APIG）**瞬时**签名故障的判据。
+ *
+ * 报文形态（用户报障 2026-10-03 的会话日志原文）：
+ * `401 APIG.0301 Incorrect IAM authentication information: calc ak sk
+ *  signature fail:body hash mismatch x-sdk-content-sha256 header`
+ *
+ * 为什么必须单独判它：这句说的是「网关收到的正文哈希 ≠ 我方
+ * `x-sdk-content-sha256` 头」，**与 AK/SK、security_token 都无关**。
+ * 本模块的签名实现（`sign.ts`）用**同一份字节**算哈希与发请求
+ * （`signRequestHuawei(…, new TextEncoder().encode(body), …)` 的入参与
+ * 传给 `fetch` 的 `body` 是同一个字符串）⇒ 本方不存在能把两者算岔的路径。
+ * ⚠️ 这一点是**读码推导**，不是逐请求实测：仓库里没有对应的探针脚本。
+ * 2026-10-19 审计已复核该不变量本身成立（空串 / 中文 / emoji /
+ * 20 万字符 / 组合字符 5 组样本的 `sha256(body)` 与头恒等），但当时引用的
+ * 「已用探针逐请求核对过」在本仓库**不存在** —— 按证据强度如实标注。
+ *
+ * 处置：直接重发（见 `SIGNATURE_RETRY_MAX`），**不要**刷新凭据 ——
+ * 凭据与此故障无关，刷新只是白跑一次网络往返；
+ * 也就不能让它落入 {@link isAuthError} 的「静默 refresh + 重发」分支。
+ *
+ * ⚠️ 判据刻意只认 `body hash mismatch`：`APIG.0301` 的另一半
+ * （`verify ak sk signature fail`）**同时覆盖真实的 AK/SK 错误**
+ * （`AGENTS.md` 记录了把 `Agent-Type` 误当签名头传入也会得到它），
+ * 按它放宽会把真凭据问题误判成瞬时故障、让用户永远等不到「请重新登录」。
+ */
+export function isTransientSignatureFailure(status, body) {
+    if (status !== 401 && status !== 403)
+        return false;
+    return typeof body === 'string' && /body hash mismatch/i.test(body);
 }
 /** 可中止的休眠；当信号中止时立即 resolve。 */
 function delay(ms, signal) {
@@ -606,308 +858,60 @@ function readCodeArtsChunk(reader, timeoutMs, signal, phase = 'chunk') {
  * - 边界：DSML 标签使用全角 `｜`（U+FF5C）而非半角 `|`，与模型实际
  *   输出一致。`<thought>` 为半角普通 XML 标签，与 DSML 官方文档一致。
  */
-const DSML_TOOL_CALLS_OPEN = '<｜DSML｜tool_calls>';
-const DSML_TOOL_CALLS_CLOSE = '</｜DSML｜tool_calls>';
-const DSML_INVOKE_OPEN_PREFIX = '<｜DSML｜invoke';
-const DSML_INVOKE_CLOSE = '</｜DSML｜invoke>';
-const DSML_PARAM_OPEN_PREFIX = '<｜DSML｜parameter';
-const DSML_PARAM_CLOSE = '</｜DSML｜parameter>';
-const THOUGHT_OPEN = '<thought>';
-const THOUGHT_CLOSE = '</thought>';
-/** 解析单个 DSML invoke 块为 { name, arguments }。 */
-/**
- * 对标记 string="true" 的参数值做宽松解析：若值恰好是 number/boolean
- * /null 字面量（如 "1304"、"true"、"null"），返回原始类型；若值是合法
- * JSON 数组或对象（如 todo_write 的 todos 被写成 `[{"content":...}]`），
- * 还原为原始类型；否则保持字符串。用于纠正模型对数字/数组/对象参数误标
- * string 的 DSML 输出（如 read 的 offset 被写成 offset="1304"、
- * todo_write 的 todos 被写成 string="true" 的 JSON 数组字符串），使工具
- * schema 校验通过。
- */
-function tryParseScalar(value) {
-    if (value === '')
-        return '';
-    const trimmed = value.trim();
-    if (trimmed === '')
-        return value;
-    if (trimmed === 'null')
-        return null;
-    if (trimmed === 'true')
-        return true;
-    if (trimmed === 'false')
-        return false;
-    // 带引号的 JSON 字符串字面量：deepseek-v4-pro 常把数字/布尔参数值用
-    // JSON 字符串编码（如 "840"），即便标记了 string="true" 也只输出引号
-    // 包裹的字面量。先 JSON.parse 解码去掉外层引号，再递归尝试标量转换：
-    // "840" → 840(number)、"true" → true(boolean)、"hello" → "hello"(string)。
-    // 仅当整体是合法 JSON 字符串字面量（"..." 配对）时才解码，避免误伤
-    // 含引号的普通文本（如路径中的引号片段）。flash 模型输出纯数字字面量
-    // 不带引号，不会进入此分支；pro 模型带引号才命中，故 pro 出错多。
-    if (trimmed.length >= 2 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
-        try {
-            const decoded = JSON.parse(trimmed);
-            if (typeof decoded === 'string')
-                return tryParseScalar(decoded);
-            return decoded;
-        }
-        catch { /* 非合法 JSON 字符串字面量，按原样处理 */ }
-    }
-    // 整数 / 浮点数 / 负数：仅当整体匹配数字语法时才转换，避免误伤路径
-    // 中的数字片段（如 "v1.2" 不含；"123abc" 不含）。
-    if (/^-?\d+$/.test(trimmed))
-        return Number(trimmed);
-    if (/^-?\d+\.\d+$/.test(trimmed))
-        return Number(trimmed);
-    // 数组 / 对象：模型常对数组/对象参数（如 todo_write 的 todos）误标
-    // string="true"，把 JSON 编码的数组/对象当作字符串输出。若值是合法
-    // JSON 数组或对象，还原为原始类型，使工具 schema 校验通过。仅对
-    // `[` / `{` 开头尝试 JSON.parse，避免误伤普通字符串（路径、正文等
-    // 极少以这两个字符开头且整段恰为合法 JSON）。
-    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-        try {
-            return JSON.parse(trimmed);
-        }
-        catch { /* 非合法 JSON，保持字符串 */ }
-    }
-    return value;
-}
-function parseDsmlInvoke(block) {
-    // 提取 name="..." 属性
-    const nameMatch = /name\s*=\s*"([^"]*)"/.exec(block);
-    if (nameMatch === null)
-        return undefined;
-    const name = nameMatch[1];
-    // 提取所有 parameter 子节点，按出现顺序拼装 arguments JSON
-    const params = {};
-    let cursor = 0;
-    for (;;) {
-        const openStart = block.indexOf(DSML_PARAM_OPEN_PREFIX, cursor);
-        if (openStart === -1)
-            break;
-        const openEnd = block.indexOf('>', openStart);
-        if (openEnd === -1)
-            break;
-        const openTag = block.slice(openStart, openEnd + 1);
-        const paramNameMatch = /name\s*=\s*"([^"]*)"/.exec(openTag);
-        if (paramNameMatch === null) {
-            cursor = openEnd + 1;
-            continue;
-        }
-        const paramName = paramNameMatch[1];
-        const closeStart = block.indexOf(DSML_PARAM_CLOSE, openEnd + 1);
-        if (closeStart === -1)
-            break;
-        const value = block.slice(openEnd + 1, closeStart);
-        // string="true" 属性标记字符串类型。但模型经常对数字参数（如 read 的
-        // offset/limit、write 的 offset）误标 string="true"，把 "1304" 当作字符串
-        // 输出，工具 schema 校验报 `"offset" must be a number`。因此即使标记了
-        // string，也尝试 JSON 解析：若是 number/boolean/null 字面量则按原始类型
-        // 使用，其余（路径、正文等）保持字符串。
-        const isString = /string\s*=\s*"true"/.test(openTag);
-        if (isString) {
-            const parsed = tryParseScalar(value);
-            params[paramName] = parsed;
-        }
-        else {
-            // 非 string 参数理论上应是 number/array/object/boolean。但
-            // deepseek-v4-pro 有时把数字参数值用 JSON 字符串引号包裹（如 "840"）
-            // 且不加 string="true"：JSON.parse('"840"') 得到字符串 "840"，
-            // schema 校验仍报 "offset" must be a number。对 JSON.parse 得到的
-            // 字符串结果再走一次 tryParseScalar，把数字字面量还原为 number。
-            try {
-                const parsed = JSON.parse(value);
-                params[paramName] = typeof parsed === 'string' ? tryParseScalar(parsed) : parsed;
-            }
-            catch {
-                params[paramName] = value;
-            }
-        }
-        cursor = closeStart + DSML_PARAM_CLOSE.length;
-    }
-    return { name, arguments: JSON.stringify(params) };
-}
-/**
- * 从一段已闭合的 DSML tool_calls 块中解析所有 invoke，返回结构化
- * tool-call 列表。返回 undefined 表示解析失败（调用方应回退为纯文本）。
- */
-function parseDsmlToolCalls(block) {
-    // block 形如 `<｜DSML｜tool_calls>...invokes...</｜DSML｜tool_calls>`
-    let inner = block;
-    if (inner.startsWith(DSML_TOOL_CALLS_OPEN))
-        inner = inner.slice(DSML_TOOL_CALLS_OPEN.length);
-    if (inner.endsWith(DSML_TOOL_CALLS_CLOSE))
-        inner = inner.slice(0, inner.length - DSML_TOOL_CALLS_CLOSE.length);
-    const calls = [];
-    let cursor = 0;
-    for (;;) {
-        const openStart = inner.indexOf(DSML_INVOKE_OPEN_PREFIX, cursor);
-        if (openStart === -1)
-            break;
-        const openEnd = inner.indexOf('>', openStart);
-        if (openEnd === -1)
-            break;
-        const closeStart = inner.indexOf(DSML_INVOKE_CLOSE, openEnd + 1);
-        if (closeStart === -1)
-            break;
-        const invokeBlock = inner.slice(openStart, closeStart + DSML_INVOKE_CLOSE.length);
-        const parsed = parseDsmlInvoke(invokeBlock);
-        if (parsed === undefined)
-            return undefined;
-        calls.push(parsed);
-        cursor = closeStart + DSML_INVOKE_CLOSE.length;
-    }
-    return calls;
-}
-/**
- * 计算缓冲区末尾与任一开标签的最长公共前缀长度。用于流式提取器决定
- * 保留多少缓冲区等待下次 feed：若末尾是某开标签的不完整前缀（例如
- * `<tho` 跨 chunk 到达），保留该前缀；否则全部放行，避免短文本被
- * 过度缓冲延迟输出。
- */
-function longestOpenPrefixTail(buffer, prefixes) {
-    let keepLen = 0;
-    const maxCheck = Math.min(buffer.length, Math.max(...prefixes.map(p => p.length)));
-    for (let i = 1; i <= maxCheck; i++) {
-        const tail = buffer.slice(buffer.length - i);
-        if (prefixes.some(p => p.startsWith(tail)))
-            keepLen = i;
-    }
-    return keepLen;
-}
-/**
- * 流式 DSML 提取器。feed() 接收 content delta，返回一个结果对象：
- * - `text`：应作为 text-delta 输出的纯文本（可能为空串）
- * - `reasoning`：应作为 reasoning-delta 输出的推理增量（可能为空串）
- * - `toolCalls`：已完整解析的 DSML tool-call 列表（可能为空数组）
- * flush() 在流结束时调用，把残留缓冲区作为纯文本返回。
- *
- * 状态机三态：
- * - normal：寻找 `<thought>` 或 `<｜DSML｜tool_calls>` 开标签
- * - in-thought：寻找 `</thought>` 闭标签，期间内容作为 reasoning 流式输出
- * - in-dsml：寻找 `</｜DSML｜tool_calls>` 闭标签，完整后解析为 tool-call
- */
-class DsmlContentExtractor {
-    buffer = '';
-    state = 'normal';
-    feed(chunk) {
-        let text = '';
-        let reasoning = '';
-        const toolCalls = [];
-        this.buffer += chunk;
-        for (;;) {
-            if (this.state === 'normal') {
-                // 寻找最早出现的开标签（thought 或 DSML tool_calls）
-                const thoughtIdx = this.buffer.indexOf(THOUGHT_OPEN);
-                const dsmlIdx = this.buffer.indexOf(DSML_TOOL_CALLS_OPEN);
-                let openIdx = -1;
-                let nextState = 'in-thought';
-                if (thoughtIdx !== -1 && (dsmlIdx === -1 || thoughtIdx < dsmlIdx)) {
-                    openIdx = thoughtIdx;
-                    nextState = 'in-thought';
-                }
-                else if (dsmlIdx !== -1) {
-                    openIdx = dsmlIdx;
-                    nextState = 'in-dsml';
-                }
-                if (openIdx === -1) {
-                    // 没有完整开标签：但缓冲区末尾可能是任一开标签的不完整前缀
-                    const keepLen = longestOpenPrefixTail(this.buffer, [THOUGHT_OPEN, DSML_TOOL_CALLS_OPEN]);
-                    if (keepLen === 0) {
-                        text += this.buffer;
-                        this.buffer = '';
-                    }
-                    else if (this.buffer.length > keepLen) {
-                        text += this.buffer.slice(0, this.buffer.length - keepLen);
-                        this.buffer = this.buffer.slice(this.buffer.length - keepLen);
-                    }
-                    break;
-                }
-                // 放行开标签之前的纯文本
-                if (openIdx > 0)
-                    text += this.buffer.slice(0, openIdx);
-                this.buffer = this.buffer.slice(openIdx);
-                // 跳过开标签本身
-                const openLen = nextState === 'in-thought' ? THOUGHT_OPEN.length : DSML_TOOL_CALLS_OPEN.length;
-                this.buffer = this.buffer.slice(openLen);
-                this.state = nextState;
-                continue;
-            }
-            if (this.state === 'in-thought') {
-                // 寻找 </thought> 闭标签，期间内容作为 reasoning 流式输出
-                const closeIdx = this.buffer.indexOf(THOUGHT_CLOSE);
-                if (closeIdx === -1) {
-                    // 闭标签未到达：放行除可能的不完整闭标签前缀外的内容
-                    const keepLen = longestOpenPrefixTail(this.buffer, [THOUGHT_CLOSE]);
-                    if (keepLen === 0) {
-                        reasoning += this.buffer;
-                        this.buffer = '';
-                    }
-                    else if (this.buffer.length > keepLen) {
-                        reasoning += this.buffer.slice(0, this.buffer.length - keepLen);
-                        this.buffer = this.buffer.slice(this.buffer.length - keepLen);
-                    }
-                    break;
-                }
-                // 放行闭标签之前的推理
-                if (closeIdx > 0)
-                    reasoning += this.buffer.slice(0, closeIdx);
-                this.buffer = this.buffer.slice(closeIdx + THOUGHT_CLOSE.length);
-                this.state = 'normal';
-                continue;
-            }
-            // state === 'in-dsml'：寻找闭标签，完整块才解析
-            const closeIdx = this.buffer.indexOf(DSML_TOOL_CALLS_CLOSE);
-            if (closeIdx === -1) {
-                // 闭标签未到达，等待更多数据
-                break;
-            }
-            const block = this.buffer.slice(0, closeIdx + DSML_TOOL_CALLS_CLOSE.length);
-            const parsed = parseDsmlToolCalls(block);
-            if (parsed === undefined) {
-                // 解析失败：把整个块作为纯文本放行，避免吞内容
-                text += block;
-            }
-            else {
-                toolCalls.push(...parsed);
-            }
-            this.buffer = this.buffer.slice(closeIdx + DSML_TOOL_CALLS_CLOSE.length);
-            this.state = 'normal';
-            continue;
-        }
-        return { text, reasoning, toolCalls };
-    }
-    flush() {
-        // 流结束：残留缓冲根据状态决定输出通道
-        const remaining = this.buffer;
-        this.buffer = '';
-        if (this.state === 'in-thought') {
-            // 不完整的 thought 块：作为 reasoning 放行（避免泄漏到正文）
-            this.state = 'normal';
-            return { text: '', reasoning: remaining };
-        }
-        if (this.state === 'in-dsml') {
-            // 不完整的 DSML 块：开标签已在进入 in-dsml 状态时被消耗，需加回
-            // 才能保持用户可见内容的完整性（避免 dump 出缺少开标签的残片）。
-            this.state = 'normal';
-            return { text: DSML_TOOL_CALLS_OPEN + remaining, reasoning: '' };
-        }
-        // normal 拘留：作为纯文本放行
-        this.state = 'normal';
-        return { text: remaining, reasoning: '' };
-    }
-}
 /** 兼容 OpenAI 格式的 CodeArts 模型适配器，使用华为请求签名。 */
 export class CodeArtsAdapter extends LlmAdapter {
     options;
     fetchImpl;
     chatId;
     sessionId;
+    /**
+     * ⚠️ **2026-10-08 Task 7b：三个方法收敛到共享骨架** `createModelCatalog`。
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架，
+     * 现在只剩 `toCatalogEntry`（本家私有形状 + VL 过滤 + 静态 context 表）。
+     */
+    catalog;
     constructor(options) {
         super();
         this.options = options;
-        this.fetchImpl = options.fetchImpl ?? fetch;
+        this.fetchImpl = options.fetchImpl ?? directFetch;
         this.chatId = options.chatId ?? crypto.randomUUID().replace(/-/g, '');
         this.sessionId = options.sessionId ?? crypto.randomUUID().replace(/-/g, '');
+        // 目录落地后通知客户端重读（issue IKJVTF 的缺陷①）。
+        this.catalogGate = new RemoteCatalogGate(options.onCatalogLoaded === undefined ? {} : { onLoaded: options.onCatalogLoaded });
+        // ⚠️ 共享骨架（Task 7b）：门控 → 读目录 → 黑名单 → 回填 → 三态。
+        this.catalog = createModelCatalog({ accountPool: options.accountPool }, {
+            product: { id: PROVIDER },
+            loadCatalog: () => this.catalogEntries(),
+            syncCatalog: () => this.syncCatalogEntries(),
+            // ⚠️ 未知 id 恒声明 `['text']`（本家是纯文本网关）。
+            // ⚠️ 这是**用户 2026-10-08 裁定的一处行为变更**：原 `resolveModel` 对未知 id
+            //    **省略**该字段（而 `listModels` 却声明 `['text']`，同一家内部不一致）
+            //    ⇒ 统一为声明。影响面为零：CodeArts 是纯文本网关，VL 模型已被滤掉。
+            unknownModelInputModalities: () => ['text'],
+            // ⚠️ **未知模型也声明思考档位**（7b 曾在此引入回归、7d 补回）：
+            // 本网关唯一生效的思考控制是顶层 `thinking.type`，与模型无关 ⇒
+            // 原实现对未知 id 同样给这两档。
+            // ⚠️ 顺序规则见 `CODEARTS_REASONING_EFFORTS` 的长注释（**强度序：弱 → 强**）。
+            // 未知模型与已知模型必须同一份顺序，否则用户手填 id 时档位轴会翻向。
+            unknownModelReasoning: () => ({
+                efforts: [...CODEARTS_REASONING_EFFORTS],
+                defaultEffort: ReasoningEffortId(CODEARTS_DEFAULT_EFFORT),
+            }),
+            /**
+             * ★ **强制重拉**（供后台 20 分钟刷新器与「用户改设置」）。
+             *
+             * ⚠️ 与 `loadCatalog` 的差别：后者内部有 `isCatalogFreshFor` 判据
+             *    ⇒ 新鲜时**不拉**。本回调要的是「无视新鲜度，强制拉一次」，
+             *    故先清 `catalogAt` 再调**同一个** `ensureRemoteModels()` ——
+             *    **不另写一份拉取逻辑**（那会让两条路的上游行为分叉）。
+             *    ⚠️ `ensureRemoteModels` 的入口就是 TTL gate ⇒ 清掉 `catalogAt`
+             *    正是让它失效的承重动作（与 loomy / zcode 等家同型）。
+             */
+            refresh: async () => {
+                this.catalogAt = 0;
+                await this.ensureRemoteModels();
+            },
+        });
     }
     /**
      * 描述本适配器拥有的 provider 路由。
@@ -924,22 +928,66 @@ export class CodeArtsAdapter extends LlmAdapter {
     /** 动态模型缓存（首次 listModels 成功后填充）。 */
     remoteModels;
     /**
+     * 已落缓存的目录是否**所有来源都取全**（issue IKJVTF，审计 I3）。
+     *
+     * ⚠️ **这是短路判据的第二半**：CodeArts 有两个目录端点，残缺目录也落
+     * `remoteModels`，故只判「已定义」会让残缺永久固化（见 `ensureRemoteModels`）。
+     */
+    remoteComplete = false;
+    /**
+     * ⚠️ 上次**成功**读到远端目录的时刻（0 = 从未成功过）。
+     *
+     * ⚠️ 与 `remoteModels` **并存**、不是替代：`remoteModels` 存「有哪些模型」，
+     *    本字段存「何时读到的」。只有 `remoteModels` 时目录**永不刷新**（原行为）。
+     */
+    catalogAt = 0;
+    /**
      * 目录加载闸门：并发去重 + 失败冷却。
      *
      * ⚠ **不能省**：DSH 的 `buildModelCatalog` 对每个 provider `await listModels()`
      * 后再对每个模型 `await resolveModelInfo()`，两处都会走到这里。原实现失败
      * 直接返回（不落缓存）⇒ 一次网络故障被放大成「每模型重试一次」，每次顶着
-     * 10s 超时（`src/models.ts:55 FETCH_TIMEOUT_MS`），首屏因此长时间空转。
+     * 10s 超时（`src/models.ts FETCH_TIMEOUT_MS`），首屏因此长时间空转。
      */
-    catalogGate = new RemoteCatalogGate();
+    catalogGate;
     /**
-     * 懒加载远端模型目录。resolveModel 可能先于 listModels 被调用
-     * （如直接进入会话），此时同样触发远端拉取。
+     * 懒加载远端模型目录（**每 20 分钟**重新拉一次，用户 2026-10-18 的要求）。
+     *
+     * resolveModel 可能先于 listModels 被调用（如直接进入会话），此时同样触发远端拉取。
      */
     async ensureRemoteModels() {
         const fetchRemote = this.options.fetchRemoteModels;
-        if (this.remoteModels !== undefined || fetchRemote === undefined)
+        // ⚠️ `fetchRemote === undefined` 那半边**原样保留** —— 它判的是「有没有远端
+        //    可拉」（无凭据/无接线），与新鲜度是两件事。
+        if (fetchRemote === undefined)
             return;
+        // ⚠️⚠️ **短路判据是「已完整」+「未超 20 分钟」，不是「已定义」**
+        //    （issue IKJVTF 复审，审计 I3；TTL 由 `isCatalogFresh` 给出）。
+        //
+        // CodeArts 有两个独立目录端点，残缺目录**也**要落 `remoteModels`
+        //（展示需要 —— 目录服务抖动时用户的模型列表不该整个消失），但那时**不能**
+        // 短路：`RemoteCatalogGate` 的冷却（`retryAt` / `cooling()`）在生产里只有
+        // 闸门自己那一处调用点，而它排在短路**之后** ⇒ 残缺目录一旦落缓存，
+        // 冷却永远读不到、残缺永远补不齐（与 Cline 的缺陷② 完全同构）。
+        //
+        // ⚠️⚠️ **加 TTL 为什么不会破坏残缺恢复**（加 TTL 前逐行核实）：
+        // TTL 那一腿是 `&&` 的**后半截**，前半截 `remoteComplete` 未变。残缺时
+        // `remoteComplete === false` ⇒ 短路判据恒为假 ⇒ **残缺目录不会被判为
+        // 「新鲜」，闸门冷却与补齐逻辑原样生效**。TTL 只让「重新拉取」变得可发生
+        // （完整目录满 20 分钟会被重新拉，倍率/目录变化能跟上），不改变残缺的纠正路径。
+        // ⇒ **未改任何合并逻辑**（两个端点各自成败仍由接线层经 `catalogComplete` 上报）。
+        // ⚠️ **TTL 那一腿用 `isCatalogFreshFor`**（带「用户主动失效」）：用户在 Jet Hub
+        //    改开关后要**立即**重拉（规格 §6 的正确性要求，见 `invalidateCatalogCache`）。
+        //    ⚠️ 本家走 `LlmAdapter` 基类、`createModelCatalog` 的 `product` 是
+        //    `{ id: PROVIDER }` ⇒ 登记的 provider id 恒为 `PROVIDER`（`codearts`），
+        //    没有「一个类服务两个站」的情况（qoder / buddy 才有）。
+        //    ⚠️ 失效腿与完整性腿是 `&&` ⇒ 失效让整条合取为假、照常进闸门；
+        //    拉取失败时**保留**旧 `remoteModels`（本方法不清它）⇒ 用户看到的仍是
+        //    上次那份完整列表，不会退化成兜底**子集**（规格 §7 的核心取舍）。
+        if (this.remoteComplete
+            && isCatalogFreshFor(PROVIDER, this.catalogAt, this.options.now?.() ?? Date.now())) {
+            return;
+        }
         await this.catalogGate.run(async () => {
             const models = await fetchRemote();
             // 空目录同样算「没拿到」：既不应落缓存（否则再也拉不回来），
@@ -947,7 +995,14 @@ export class CodeArtsAdapter extends LlmAdapter {
             if (models.length === 0)
                 return false;
             this.remoteModels = models;
-            return true;
+            // ⚠️ **只在成功赋值后**记时刻：失败/空结果不写，否则一次抖动会把上界
+            //    刷新掉、下轮还要等满 20 分钟才发现上游没恢复。
+            this.catalogAt = this.options.now?.() ?? Date.now();
+            // ⚠️ 完整性由接线层桥接的数据源上报（两来源各自的成败）。
+            // 拿不到判定时退回 `got`（= 旧行为），避免把「判不出」当成「残缺」
+            // 而让每个 provider 都反复重拉。
+            this.remoteComplete = this.options.catalogComplete?.() ?? true;
+            return { got: true, complete: this.remoteComplete };
         });
     }
     /**
@@ -957,65 +1012,95 @@ export class CodeArtsAdapter extends LlmAdapter {
      * 黑名单过滤掉它们 —— RPC 层只能凭裸 id 补回，展示名随之丢失
      * （用户报障：「关闭的就没有显示倍率」）。CodeArts 目录虽无倍率，但同样
      * 需要正确的 `name`（否则关闭项显示 `deepseek-v4-flash` 这类裸 id）。
+     *
+     * ⚠️ **2026-10-08 Task 7b**：骨架已上移到 `src/model-catalog.ts`，此处只剩委托。
+     * ⚠️ 本家有一处**特有**的「可见性过滤」（VL 多模态不参与，见 `toCatalogEntry`），
+     * 它在 `listModels` 与 `listAllModels` **两条路径上都要生效** ——
+     * 故放在 `toCatalogEntry` 之前的取数回调里（`catalogEntries()`）。
      */
+    /**
+     * ★ **后台目录刷新器入口**（`src/index.ts` 的 `refreshOf` 调 `adapter.refresh?.()`）。
+     *
+     * ⚠️⚠️ 必须由适配器**显式转发** `catalog.refresh`：`ModelCatalog`（`model-catalog.ts`）
+     *    上的这个成员**不会**自动变成适配器的成员 —— `pruned()` 的 Proxy 只透传
+     *    **适配器自己的**成员（`dead-model-store.ts:748-749`）。
+     *    漏转发 ⇒ 刷新器「已武装」却对这家**空转**，且**零日志**（`refreshOf` 返回
+     *    `undefined` 时静默跳过 —— `index.ts` 的装配注释写着这件事）。
+     *    ⚠️ 与 `options.refresh`（HTTP 401 后的**凭据**重取）**不是同一件事**，
+     *    两者同名纯属巧合，**不得合并**。
+     */
+    async refresh() {
+        await this.catalog.refresh?.();
+    }
     listAllModels() {
+        return this.catalog.listAllModels();
+    }
+    /**
+     * 把本家条目转成共享骨架的中间结构。
+     *
+     * ⚠️ 本家三处**真实差异**（不要「顺手统一」）：
+     * 1. **VL 多模态不参与目录**（`-VL-` / `-VL` 结尾的 id 被滤掉）——
+     *    这是本家的可见性判据，骨架不认识；
+     * 2. `contextWindow` 来自静态 `CONTEXT_WINDOWS` 表（不是远端字段）；
+     * 3. `reasoning` 是**恒声明**的两档（关闭/开启，**强度序**），与 entry 无关 ——
+     *    实测（2026-09-29）：本网关**唯一**真正生效的思考控制是顶层
+     *    `thinking.type`，`reasoning_effort`（含 low/high/none/minimal）与嵌套
+     *    `reasoning.effort` 都被服务端接受但**完全无效果**（判据为服务端上报的
+     *    `reasoning_tokens`，落在基线噪声内；`none` 也照常思考）。
+     *    故**不**臆造 low/high/max 强度阶梯。
+     */
+    toCatalogEntry(model) {
+        const contextWindow = CONTEXT_WINDOWS.get(model.id);
+        return {
+            id: model.id,
+            name: model.name,
+            // ⚠️ 本家恒声明 `['text']`（CodeArts 是纯文本网关；VL 模型上面已滤掉）。
+            inputModalities: ['text'],
+            ...contextWindow !== undefined ? { contextWindow } : {},
+            reasoning: {
+                // ⚠️ 顺序 = **强度序（弱 → 强）**，逐条理由见 `CODEARTS_REASONING_EFFORTS`
+                // 的长注释（Issue IKLIDV）—— 简言之：DSH 把该数组当展示顺序、客户端不排序，
+                // 故 `['on','off']` 会让「开启」落在横向轴的最左。
+                // ⚠️ `defaultEffort` 仍由 `CODEARTS_DEFAULT_EFFORT` 单独表达，与位置无关。
+                efforts: [...CODEARTS_REASONING_EFFORTS],
+                defaultEffort: ReasoningEffortId(CODEARTS_DEFAULT_EFFORT),
+            },
+        };
+    }
+    /**
+     * 本家全部条目（**含 VL 可见性过滤**）。
+     *
+     * ⚠️ `await this.ensureRemoteModels()` 是**必需**的（不是可选优化）：
+     * 早期实现用 `void` 丢弃 Promise，冷缓存时远端目录尚未落地就走静态兜底表，
+     * 模型选择器会短暂显示错误的模型集合（Jet Hub 的模型开关也据此渲染，
+     * 会造成「关掉的模型又冒出来」）。
+     */
+    async catalogEntries() {
+        await this.ensureRemoteModels();
         const source = this.remoteModels ?? DEFAULT_MODELS.map((id) => ({ id, name: id }));
-        // 与 listModels 保持同一套「可见性」过滤（VL 多模态不参与），
-        // 唯一区别是不套用户黑名单。
+        // ⚠️ 与 `listModels` 保持**同一套**「可见性」过滤（VL 多模态不参与），
+        // 唯一区别是不套用户黑名单 —— 那条区别现在由骨架的 `listAllModels` 承担。
         return source
             .filter((m) => !/-VL-/i.test(m.id) && !/-VL$/i.test(m.id))
-            .map((m) => ({ id: m.id, name: m.name }));
+            .map((m) => this.toCatalogEntry(m));
+    }
+    /**
+     * 同步视图（`listAllModels` 用）。
+     *
+     * ⚠️ **不能** `await ensureRemoteModels()`（同步契约）—— 读 `remoteModels`
+     * 缓存，未落地时回退静态兜底表（这正是原实现的语义）。
+     */
+    syncCatalogEntries() {
+        const source = this.remoteModels ?? DEFAULT_MODELS.map((id) => ({ id, name: id }));
+        return source
+            .filter((m) => !/-VL-/i.test(m.id) && !/-VL$/i.test(m.id))
+            .map((m) => this.toCatalogEntry(m));
     }
     async listModels(_provider) {
-        // ⚠️ 没有任何已登录账号时返回空数组 → DSH 的 `buildModelCatalog` 把整个
-        // provider 分组隐藏（它显式 `.filter(group => group.models.length > 0)`）。
-        // ⚠️ 必须返回 `[]` 而**不能抛错**（抛错会被归入 catalog 的 `failures`，
-        // 界面上反而多出一条 provider 报错）。
-        //
-        // ⚠️ **CodeArts 不再有单凭据例外**：早期它额外把固定 ref
-        // `CODEARTS_ACCESS_TOKEN` 计入判据（单凭据模式），该模式已随
-        // `credentialRef` 回退解析一并移除 —— 六个 provider 现在判据完全一致，
-        // 都只看账号池。
-        //
-        // ⚠️ 门控放在 `ensureRemoteModels()` **之前**：没有已登录账号时连远端目录都
-        // 不必拉。
-        if (!await providerCatalogVisible(this.options.accountPool, PROVIDER))
-            return [];
-        // 必须 await：ensureRemoteModels 是异步的，早期实现用 `void` 丢弃 Promise，
-        // 冷缓存时远端目录尚未落地就走静态兜底表，模型选择器会短暂显示错误的
-        // 模型集合（Jet Hub 的模型开关也据此渲染，会造成"关掉的模型又冒出来"）。
-        await this.ensureRemoteModels();
-        const visible = this.listAllModels();
-        // 用户在 Jet Hub 关闭的模型（黑名单制：不在表里即默认打开）。
-        // 只影响此处对外播报的模型目录，不改变 resolveModel/stream 的路由能力
-        // ——与 DSH 对 listModels 的约定一致（目录是建议性的，缺省不构成拒绝）。
-        const disabled = this.options.accountPool?.disabledModelsFor(PROVIDER);
-        const listed = disabled === undefined || disabled.size === 0
-            ? visible
-            : visible.filter((m) => !disabled.has(m.id));
-        return listed.map((m) => ({ provider: PROVIDER, id: m.id, name: m.name, inputModalities: ['text'] }));
+        return this.catalog.listModels(_provider);
     }
-    async resolveModel(provider, model, _signal) {
-        await this.ensureRemoteModels();
-        const remoteModel = this.remoteModels?.find((m) => m.id === model);
-        const name = remoteModel?.name ?? model;
-        const contextWindow = CONTEXT_WINDOWS.get(model);
-        const resolved = { provider, id: model, name };
-        if (contextWindow !== undefined)
-            resolved.context = { contextWindow };
-        // 思考开关（实测，2026-09-29）：本网关**唯一**真正生效的思考控制是
-        // 顶层 `thinking.type`。`reasoning_effort`（含 low/high/none/minimal）与
-        // 嵌套 `reasoning.effort` 都被服务端接受但**完全无效果**（判据为服务端
-        // 上报的 reasoning_tokens，落在基线噪声内；`none` 也照常思考）。
-        // 故这里只声明「开启 / 关闭」两档，**不**臆造 low/high/max 强度阶梯。
-        resolved.reasoning = {
-            efforts: [
-                { id: ReasoningEffortId('on'), name: '开启' },
-                { id: ReasoningEffortId('off'), name: '关闭' },
-            ],
-            defaultEffort: ReasoningEffortId('on'),
-        };
-        return resolved;
+    async resolveModel(provider, model, signal) {
+        return this.catalog.resolveModel(provider, model, signal);
     }
     async prepareCall(provider, model, signal) {
         return {
@@ -1080,6 +1165,28 @@ export class CodeArtsAdapter extends LlmAdapter {
             messages.splice(messages.findIndex(m => m.role === 'system') + 1, 0, { role: 'system', content: buildDsmlSystemPrompt(wireTools) });
             wireTools = undefined;
         }
+        /**
+         * 会话自动命名（`purpose: 'session-title'`）的思考与预算决策（issue IKKVDH）。
+         *
+         * DSH 用 **64 token** 发标题请求且**不传 `reasoningEffort`**，而宿主会把
+         * 本模型声明的默认档（本家恒为 `'on'`）注入进来
+         * （`effective = requested ?? reasoning.defaultEffort`）。照常开思考时实测
+         * 64 个 token 会被思考**全部吃满**、正文 0 字符、`finish_reason:'length'`
+         * ⇒ `dsh-session-title-llm` 直接拒绝，标题永远停在 fallback。
+         *
+         * 本家的档位表是**恒声明的两档**（`on`/`off`，见 `resolveModel`），
+         * 与具体模型无关 ⇒ 任何模型都**关得掉**，故这里必然走「关掉思考」分支，
+         * 不需要抬预算（抬预算是「花钱买通」，思考本身要计费）。
+         */
+        const titlePlan = planSessionTitleThinking({
+            purpose: options.purpose,
+            requestedEffort: options.reasoningEffort === undefined ? undefined : String(options.reasoningEffort),
+            // ⚠️ 与 `resolveModel` 声明的档位**同源**（`CODEARTS_REASONING_EFFORTS`）——
+            // 各写一份必然漂移，而漂移的症状是「标题请求挑的关闭档不在声明里」。
+            // ⚠️ `thinkingOffEffortOf` 按 **rank** 找关闭档（不按位置），故顺序调整不影响它。
+            declaredEfforts: CODEARTS_REASONING_EFFORTS.map((effort) => String(effort.id)),
+            maxTokens: options.maxTokens,
+        });
         const body = JSON.stringify({
             model: options.model,
             messages,
@@ -1096,7 +1203,13 @@ export class CodeArtsAdapter extends LlmAdapter {
             // （两者是不同网关的方言，混用会静默无效）。
             // 实测判据：`disabled` → reasoning_tokens 3/3 全为 0、正文仍正确；
             // `enabled` 与不传等价（服务端默认就开着），故「开启」档**不发**该字段。
-            ...options.reasoningEffort === 'off' ? { thinking: { type: 'disabled' } } : {},
+            //
+            // ⚠️ 标题请求走 `titlePlan`（上方），它会把档位定成 `'off'`，
+            // 于是这里同样发 `disabled` —— 两条判据**合并写**在一个表达式里，
+            // 避免「标题请求绕开了关闭」这类静默失效。
+            ...titlePlan.thinkingOff || options.reasoningEffort === 'off'
+                ? { thinking: { type: 'disabled' } }
+                : {},
             // 对齐 CodeArts Agent IDE 请求体（deveco-code 内核日志实证）：
             // tool_stream=true 让后端将超大工具调用参数（如大文件 file_write）
             // 分段流式传输，避免单次 SSE 事件过大导致连接被掐断
@@ -1117,7 +1230,10 @@ export class CodeArtsAdapter extends LlmAdapter {
             // 走网关的路径由 `openai-gateway/messages.ts` 的 `normalizeMaxTokens`
             // 预先收敛，但**不经过网关的直连路径完全绕过那道判据**。
             // ⇒ 这里是最后一道防线，必须自己收敛，不能依赖上游调用方守规矩。
-            max_tokens: clampCodeArtsMaxTokens(options.maxTokens) ?? CODEARTS_MAX_OUTPUT_TOKENS,
+            // ⚠️ 抬预算（`titlePlan.maxTokens`，关不掉思考时才有值）必须走**同一个**
+            // 钳制函数，否则会被钳回原值、兜底静默失效。标题请求的 512 远小于上限，
+            // 故实际不会被钳；这里统一走一遍是为了「预算只有一个出口」。
+            max_tokens: clampCodeArtsMaxTokens(titlePlan.maxTokens) ?? CODEARTS_MAX_OUTPUT_TOKENS,
             ...wireTools !== undefined && wireTools.length > 0 ? { tools: wireTools } : {},
         });
         const url = `${CHAT_API_BASE}/chat/completions`;
@@ -1132,6 +1248,9 @@ export class CodeArtsAdapter extends LlmAdapter {
         // 鉴权失败（APIG.0602 / 401 / 403）后已刷新过凭据：避免死循环，
         // 同一次 stream() 调用最多 refresh 一次。
         let authRefreshed = false;
+        // 上游网关瞬时签名故障（正文哈希对不上）已重发的次数：
+        // 与 `authRefreshed` 分开计，它**不是**鉴权失败，不该消耗续期名额。
+        let signatureRetries = 0;
         // 该账号不带 benefit 包时去掉 `maas_type: benefit` 头重试一次：
         // 只试一次，避免与真实失败互相掩盖。
         let benefitHeaderDropped = false;
@@ -1213,7 +1332,7 @@ export class CodeArtsAdapter extends LlmAdapter {
                             }
                         }
                         // ③ 没有可用账号（或没有账号池）：如实抛出，带上解禁时间。
-                        throw new LlmError(message, QUOTA_EXCEEDED_CODE, { status: 200 });
+                        throw new LlmError(message, CODEARTS_QUOTA_EXHAUSTED_CODE, { status: 200 });
                     }
                     if (error instanceof SseQueueRetryError) {
                         // 落入下方排队重试
@@ -1233,6 +1352,28 @@ export class CodeArtsAdapter extends LlmAdapter {
             }
             else {
                 const errorText = await response.text().catch(() => '');
+                // 上游网关瞬时签名故障（`APIG.0301 … body hash mismatch`）：直接重发。
+                //
+                // 为什么值得自动重发：这是用户可见的一次性失败 —— 2026-10-03 用户报障
+                // 「华为的还是用不了」，会话日志里两次 401（13:55、15:23）都带着
+                // `APIG.0301 … body hash mismatch`，而此前同一会话的 135 轮调用全部正常、
+                // 事后同一凭据重放也立刻成功。也就是说这一次失败**本来重发就能过去**，
+                // 原实现却把它当凭据问题（先白刷一次凭据、再报「API 密钥无效」）。
+                if (isTransientSignatureFailure(response.status, errorText) && signatureRetries < SIGNATURE_RETRY_MAX) {
+                    // ⚠️ **abort 后必须立刻停手**（2026-10-19 审计 I1）。`delay()` 在信号
+                    // 中止时是**静默 resolve**（不是 reject），若不判就直接 `continue`，
+                    // 循环会回到顶部**再发一次完整请求** —— 用户已经按了「停止」，网关
+                    // 却还在收请求（实测：基线 abort 后恒 2 次，加了这条重发后涨到 3 次）。
+                    //
+                    // ⚠️ 与下方排队路径 L1571 的 `if (options.signal?.aborted) throw` 是
+                    // **同一处置**，不是两份判据：排队与签名重发都要在退避后复检信号。
+                    if (options.signal?.aborted) {
+                        throw new LlmError('codearts: request aborted while retrying after a transient gateway signature failure', 'ABORTED');
+                    }
+                    signatureRetries += 1;
+                    await delay(SIGNATURE_RETRY_DELAY_MS * signatureRetries, options.signal);
+                    continue;
+                }
                 // 鉴权失败（SecurityToken 过期/被吊销/APIG.0602）：刷新一次凭据后
                 // 重试整个 chat 请求。入口的 expires_at 预判无法覆盖后端提前吊销
                 // 或时钟偏差场景，这里做兜底，避免把可自愈的鉴权失败抛给用户。
@@ -1255,7 +1396,9 @@ export class CodeArtsAdapter extends LlmAdapter {
                 //
                 // ⚠️ 判据用整个错误体（`errorDetail` 会拼出 `error_code` + `error_msg`）：
                 // 4xx 的报文形态与 SSE 不同，不能指望顶层 `error_code` 字段名一致。
-                if (isSseQuotaExhaustedErrorCode(errorDetail(errorText), errorText)) {
+                // ⚠️ **分类必须走 `errorDetailForClassify`**（不含 detail 腿）—— 理由同上，
+                // 用展示出口会让 detail 里的额度措辞翻转这条判据。
+                if (isSseQuotaExhaustedErrorCode(errorDetailForClassify(errorText), errorText)) {
                     const message = codeartsQuotaExhaustedMessage(options.model, nextUtc8DayStartMs());
                     if (this.options.accountPool) {
                         if (currentAccountId) {
@@ -1271,7 +1414,33 @@ export class CodeArtsAdapter extends LlmAdapter {
                             continue;
                         }
                     }
-                    throw new LlmError(message, QUOTA_EXCEEDED_CODE, { status: response.status });
+                    throw new LlmError(message, CODEARTS_QUOTA_EXHAUSTED_CODE, { status: response.status });
+                }
+                // ── benefit 去头重试的 **4xx 通道**（Gitee issue IKLBSH A6）──
+                //
+                // 同一个上游条件（该账号没有 benefit 免费额度包）会走**两条**通道下发：
+                // SSE 200（`consumeSse` 已接，见 `CODEARTS_BENEFIT_NOT_FOUND_ERROR_CODE`）
+                // 与 HTTP 4xx。此前**只有 200 那条接上了** —— 4xx 形态会径直落到
+                // `httpErrorCode` 归成 `INVALID_REQUEST` 抛出，**去头重试一次也不试**，
+                // 于是「同一条件下 SSE 能自愈、4xx 却硬报错」。
+                //
+                // ⚠️ 这不是推断：`origin/issue/IKJOF7-benefit-diagnostics` 分支
+                //（2026-10-05 取证提交）用 `it.fails` **显式锁定**了该缺陷
+                //（「HTTP 4xx + 正文含 InferHub.4004.200 时也应当去头重试」），
+                // 当时的结论是「已确认，但本分支不修」——本处即补上那一半。
+                //
+                // 判据复用既有的 `benefitHeaderDropped` 门禁（**只试一次**）——它与
+                // SSE 通道**共享同一个标记**，故两条通道叠加也只会去头一次，不会
+                // 「各试一次」把请求放大成两轮。
+                //
+                // ⚠️ 不采纳 issue 建议的「1s / 2s / 3s 递增退避重试最多 3 次」：
+                // 去头重试是**一次**（`benefitHeaderDropped` 的既有语义，注释写明
+                // 「只试一次，避免与真实失败互相掩盖」），且 issue 自己给的证据是
+                // 「去掉请求头后密集取样 9 次全部 200」——那说明的正是**去头即通**，
+                // 而非「需要多次退避」。按证据改，不按建议改。
+                if (isBenefitModel && !benefitHeaderDropped && isBenefitNotFoundBody(errorText)) {
+                    benefitHeaderDropped = true;
+                    continue;
                 }
                 // 限流处理：记录当前账号在该模型上的重置时间，然后切换账号重试
                 // （外层 for(;;) 会在拿到新凭据后重新签名发请求）。用 tried 集合
@@ -1292,8 +1461,30 @@ export class CodeArtsAdapter extends LlmAdapter {
                     if (parsed) {
                         if (currentAccountId) {
                             await this.options.accountPool.updateModelRateLimit(currentAccountId, parsed.modelId, parsed.resetTimeMs);
+                            /**
+                             * ⚠️⚠️ **必须把首号加进 `rateLimitTried`**（2026-10-18 审计补齐）。
+                             *
+                             * 这一格原先**既没加首号、也没把 `rateLimitTried` 传给池** —— 两处都漏。
+                             * 加首号是**承重**的：它是「本轮已试过」的记账，
+                             * 漏了它 ⇒ 首次 429 换号时排除集为空 ⇒ 池按手动顺序**把刚失败的
+                             * 首号再返回一次** ⇒ `rateLimitTried.has` 命中 → **换号立即终止**
+                             * ⇒ 报「所有账号均受限」而池里其实有可用账号。
+                             *
+                             * ⚠️ 与同文件 `:1323`（SSE 额度格）、`:1393`（HTTP 额度格）**同型** ——
+                             * 那两格一直都有这一行，只有本格漏了。
+                             */
+                            rateLimitTried.add(currentAccountId);
                         }
-                        const next = await this.options.accountPool.getAvailableAccount('codearts', options.model);
+                        // ⚠️ 必须传 `rateLimitTried`（⚠️⚠️ **2026-10-18 修复：这一行原先漏传**）
+                        // —— 池按用户手动顺序返回候选，**刚被标记的账号可能仍排第一**
+                        // （模型级过滤命中时不会，但 `parsed.resetTimeMs` 若落在
+                        // `modelIds` 之外、或标记与本模型键不一致时就挡不住）⇒ 拿回同一个
+                        // ⇒ 命中下面的 `rateLimitTried.has` 而立即放弃换号，报
+                        // 「所有账号均受限」而池里其实有可用账号。
+                        // 与同文件 `:1331`（额度耗尽换号）、`:1395` 两处**同型同修**。
+                        // 该缺陷与 2026-09-17 的 `81706da`（`excludeAccountIds` 的引入
+                        // 动机）逐字同构，只是那一次漏在了这一格。
+                        const next = await this.options.accountPool.getAvailableAccount('codearts', options.model, rateLimitTried);
                         if (next && !rateLimitTried.has(next.entry.id)) {
                             rateLimitTried.add(next.entry.id);
                             credential = next.credential;
@@ -1425,6 +1616,11 @@ export class CodeArtsAdapter extends LlmAdapter {
          * 把整段思考**复制回正文**，等于归位失效并放大问题。故此处只加守卫。
          */
         const proseLoopGuard = isReasoningLoopGuardEnabled() ? createReasoningLoopDetector() : undefined;
+        /**
+         * DSML 标记归一化器（见 sse.ts `createDsmlMarkerNormalizer`）。
+         * ⚠️ **每个 `stream()` 调用一个实例**：待定缓冲是跨帧状态，共用会串流。
+         */
+        const dsmlFix = createDsmlMarkerNormalizer();
         let proseLoopDetected = false;
         /**
          * 纯空白思考抑制器（见 `createBlankReasoningSuppressor`）。与 `blocks` /
@@ -1472,8 +1668,16 @@ export class CodeArtsAdapter extends LlmAdapter {
                         proseLoopDetected = true;
                 }
                 if (!proseLoopDetected) {
-                    block.text += text;
-                    yield { type: 'text-delta', index: block.index, text };
+                    // ⚠️ **先归一化再累积**（2026-10-13）：本文件是 codearts 等多家渠道的
+                    //    基础正文出口，此前**漏接**归一化 —— 实测重启后会话仍有 270 处
+                    //    `<｜｜DSML｜｜` 坏标记，正是走这条路径（首批只覆盖了
+                    //    openai-compat 与 buddy）。push() 流式安全，
+                    //    见 sse.ts `createDsmlMarkerNormalizer`。
+                    const fixedText = dsmlFix.push(text);
+                    block.text += fixedText;
+                    if (fixedText.length > 0) {
+                        yield { type: 'text-delta', index: block.index, text: fixedText };
+                    }
                 }
             }
             if (reasoning.length > 0) {
@@ -1859,6 +2063,18 @@ export class CodeArtsAdapter extends LlmAdapter {
         //
         // ⚠️ 截断必须在 `visible` 回退**之前**应用：否则「正文命中循环 → 截断后为空
         // → 回退又把推理文本复制进正文」会把病态循环原样搬到可见区。
+        // ── DSML 归一化收尾：下发待定缓冲 ──（与 openai-compat.ts / buddy 同款）
+        // 扣住的尾部在流结束时必须放行，否则最后几个字符永远不到达宿主。
+        {
+            const tail = dsmlFix.flush();
+            if (tail.length > 0 && !proseLoopDetected) {
+                const tailBlock = blocks.find(candidate => candidate.kind === 'text');
+                if (tailBlock !== undefined) {
+                    tailBlock.text += tail;
+                    yield { type: 'text-delta', index: tailBlock.index, text: tail };
+                }
+            }
+        }
         const truncatedText = proseLoopDetected && proseLoopGuard?.cutAt !== undefined
             ? (textBlock?.text ?? '').slice(0, proseLoopGuard.cutAt)
             : undefined;
@@ -2035,7 +2251,12 @@ export class CodeArtsAdapter extends LlmAdapter {
 }
 /** 在 ctx.llm 上注册 codearts 提供商路由和适配器。 */
 export function registerCodeArtsLlm(ctx, options) {
-    const adapter = new CodeArtsAdapter(options);
+    const adapter = new CodeArtsAdapter({
+        ...options,
+        // ⚠️ 注入**唯一**的广播实现（`src/catalog-broadcast.ts`），不要在这里
+        // 另写一份 emit —— 两份实现必然漂移（issue IKJVTF 的缺陷① 就是「十处全漏」）。
+        onCatalogLoaded: () => broadcastCatalogChanged(ctx),
+    });
     registerAdapterIdempotent(ctx.llm, [PROVIDER], adapter);
     // 返回实例：Jet Hub「显示列表」需要 `listAllModels()`（不受黑名单影响、
     // 带最终展示名）。`ctx.llm` 不透传自定义方法，须由调用方持有引用。
@@ -2148,6 +2369,28 @@ export function isModelSaturationError(status, body) {
         if (code === MODEL_SATURATION_BUSINESS_CODE
             || code === String(MODEL_SATURATION_BUSINESS_CODE))
             return true;
+        // ⚠️⚠️ **结构化降级：报文自带「额度限流」业务码时，一律不判模型饱和**
+        // （2026-10-17 对抗审计实测的真缺陷）。
+        //
+        // 本函数的**码值腿是权威的**，文案腿只是「上游可能改用别的码值」的兜底；
+        // 因此当报文**明确给出了另一个已知业务码**时，那才是权威信号。
+        //
+        // 实测（buddy 额度限流）：`{"code":6004,"msg":"请求量饱和，请稍后再试"}`
+        // → `MODEL_SATURATION_PATTERN` 的「请求量饱和」命中 ⇒ 判成**模型级**饱和。
+        // 后果不是措辞问题，而是**行为分叉**（见上表）：
+        // | | 额度限流 6004 | 误判成模型饱和 |
+        // |---|---|---|
+        // | 换号 | 有效 | 退化成「原账号退避重试」 |
+        // | 写限流标记 | 必须 | **绝对不许** |
+        // ⇒ 一个**额度已耗尽**的账号会被判成「换账号无效、换模型吧」，
+        // 而池里其它账号的额度是独立的、可用。
+        //
+        // ⚠️ 为什么要**降级而不是直接 return false**：6004 之外的码还可能是别的语义
+        // （上游新码 / 未知码），此时文案兜底仍有价值。故只在**已知对立法**（额度限流）
+        // 成立时降级，未知码仍走文案腿。
+        if (code === RATE_LIMIT_BUSINESS_CODE || code === String(RATE_LIMIT_BUSINESS_CODE)) {
+            return false;
+        }
     }
     catch {
         // 非 JSON：交给文案兜底。

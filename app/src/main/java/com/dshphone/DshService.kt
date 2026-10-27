@@ -268,7 +268,7 @@ class DshService : Service() {
         com.dshphone.control.ControlRuntime.stop("DSH 服务重新启动")
         val ctx = applicationContext
         killNode()
-        val p = runCatching { NodeRunner.start(ctx) }
+        val p = runCatching { NodeRunner.start(ctx) { stopping || maintenance } }
         process = p.getOrNull()
         if (p.isFailure) {
             handler.post { scheduleDeadRestart("node 启动失败: ${p.exceptionOrNull()?.message}") }

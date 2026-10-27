@@ -1,14 +1,83 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import http from 'node:http'
 import { spawn, execFileSync } from 'node:child_process'
 import { once } from 'node:events'
 import { createRequire } from 'node:module'
-import { buildStandalonePackage, repositoryRoot } from './pack-standalone.mjs'
+import { pathToFileURL } from 'node:url'
+import { buildStandalonePackage, repositoryRoot, standaloneSourceFiles } from './pack-standalone.mjs'
 
 const args = process.argv.slice(2)
+if (args.length === 1 && args[0] === '--sources-only') {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm package sources with spaces '))
+  try {
+    const files = standaloneSourceFiles()
+    assert.equal(new Set(files).size, files.length)
+    assert.ok(!files.includes('src/updater.js'))
+    assert.ok(files.every(file => !/(^|\/)(?:node_modules|\.git|settings\.json|channel-credentials\.json|service\.lock|\.env)(\/|$)/.test(file)))
+    for (const file of files) {
+      const source = path.join(repositoryRoot, file)
+      assert.ok(fs.lstatSync(source).isFile(), file)
+      const target = path.join(scratch, file)
+      fs.mkdirSync(path.dirname(target), { recursive: true })
+      fs.copyFileSync(source, target)
+    }
+    fs.writeFileSync(path.join(scratch, 'package.json'), '{"private":true,"type":"module"}\n')
+    const env = { ...process.env, PATH: '', NODE_OPTIONS: '', NODE_PATH: '' }
+    const cli = path.join(scratch, 'packages/standalone/cli.mjs')
+    assert.match(execFileSync(process.execPath, [cli, '--help'], {
+      cwd: os.tmpdir(), env, encoding: 'utf8', timeout: 15000,
+    }), /--data-dir/)
+    console.log('ok 1 isolated CLI loads the complete package source graph')
+    const serviceUrl = pathToFileURL(path.join(scratch, 'packages/standalone/service.mjs')).href
+    const dataDir = path.join(scratch, 'isolated-data')
+    const result = execFileSync(process.execPath, ['--input-type=module', '-e', `
+      import assert from 'node:assert/strict'
+      import fs from 'node:fs'
+      import { startStandalone } from ${JSON.stringify(serviceUrl)}
+      const original = globalThis.fetch
+      globalThis.fetch = (input, init) => {
+        const url = new URL(input instanceof Request ? input.url : String(input))
+        return url.hostname === '127.0.0.1' || url.hostname === 'localhost'
+          ? original(input, init) : Promise.resolve(Response.json({ data: [] }))
+      }
+      const dataDir = ${JSON.stringify(dataDir)}
+      const options = { dataDir, port: 0, refresh: false }
+      let service
+      try {
+        service = await startStandalone(options)
+        const health = await (await fetch(service.url + '/health')).json()
+        assert.equal(health.product, 'standalone')
+        const key = JSON.parse(fs.readFileSync(service.keyFile, 'utf8')).forwardKey
+        const assets = JSON.parse(fs.readFileSync(new URL('./web/assets.json', ${JSON.stringify(serviceUrl)}), 'utf8'))
+        for (const endpoint of ['/', ...assets.map(name => '/assets/' + name)]) {
+          const response = await fetch(service.url + endpoint)
+          assert.equal(response.status, 200, endpoint)
+          assert.ok((await response.text()).length > 0, endpoint)
+        }
+        assert.equal((await fetch(service.url + '/api/management/summary')).status, 401)
+        const response = await fetch(service.url + '/api/management/summary', { headers: { authorization: 'Bearer ' + key } })
+        assert.equal(response.status, 200)
+        assert.equal((await response.json()).channels.state, 'ready')
+        await service.close()
+        service = undefined
+        assert.ok(!fs.existsSync(dataDir + '/service.lock'))
+        service = await startStandalone(options)
+        assert.equal(JSON.parse(fs.readFileSync(service.keyFile, 'utf8')).forwardKey, key)
+        console.log('ok 2 isolated service starts, serves every UI chunk, enforces auth and restarts with its key')
+      } finally { await service?.close() }
+    `], { cwd: os.tmpdir(), env, encoding: 'utf8', timeout: 30000 })
+    process.stdout.write(result)
+    console.log(`Source package verification passed: ${files.length} files; ZIP/runtime/permissions require macOS --package verification`)
+  } finally {
+    assert.equal(path.dirname(scratch), path.resolve(os.tmpdir()))
+    fs.rmSync(scratch, { recursive: true, force: true })
+  }
+  process.exit(0)
+}
 assert.equal(args.length, 2, 'usage: node scripts/standalone-package-test.mjs --package dist/<directory>')
 assert.equal(args[0], '--package')
 const source = path.resolve(args[1])
@@ -34,7 +103,7 @@ let generations = 0
 const fixture = http.createServer((req, res) => {
   req.resume()
   req.on('end', () => {
-    if (req.url === '/zen/v1/models') {
+    if (req.url === '/inference/v1/models') {
       res.setHeader('content-type', 'application/json')
       res.end(JSON.stringify({ data: [{ id: model }] }))
     } else if (req.url.endsWith('/chat/completions')) {
@@ -69,7 +138,7 @@ fs.writeFileSync(path.join(dshDir, 'sentinel.txt'), 'unchanged')
 const env = {
   ...process.env,
   PATH: '/usr/bin:/bin',
-  NODE_OPTIONS: `--import "${preload}"`,
+  NODE_OPTIONS: `--import "${pathToFileURL(preload).href}"`,
   OFM_TEST_UPSTREAM: upstream,
   OUR_FREE_MODEL_BASE: upstream,
   OUR_FREE_MODEL_KILO_BASE: upstream,
@@ -173,7 +242,8 @@ try {
   const key = JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).forwardKey
   const authorization = { authorization: `Bearer ${key}` }
   await check('all page assets load locally; unauthenticated model and management access fails', async () => {
-    for (const file of ['/', '/assets/app.js', '/assets/app.css', '/assets/channels.js', '/assets/channels.css']) {
+    const assets = JSON.parse(fs.readFileSync(path.join(root, 'packages/standalone/web/assets.json'), 'utf8'))
+    for (const file of ['/', ...assets.map(name => `/assets/${name}`)]) {
       const response = await request(service.url, file)
       assert.equal(response.status, 200, file)
       assert.ok(!(await response.text()).includes(key))
@@ -211,9 +281,9 @@ try {
       const errors = []
       page.on('pageerror', error => errors.push(error.message))
       await page.goto(service.managementUrl)
-      await page.locator('#app').waitFor({ state: 'visible' })
-      await page.locator('[data-page="channels"]').click()
-      await page.locator('#page-channel').waitFor({ state: 'visible' })
+      await page.getByTestId('overview-ready').waitFor()
+      await page.locator('.console-nav-item').filter({ hasText: '免费账号渠道' }).click()
+      await page.getByLabel('搜索渠道').waitFor()
       await page.getByText('CodeArts', { exact: false }).first().waitFor()
       await page.screenshot({ path: `${source}.smoke.png`, fullPage: true })
       assert.deepEqual(errors, [])

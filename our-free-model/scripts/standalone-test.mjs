@@ -24,6 +24,7 @@ let holdListing
 let signalListingStarted
 let listingStarted
 let turns = []
+const anonymousRequests = []
 let throttleTurns = false
 let kiloListing = { data: [{ id: kiloModel, name: 'Test free model', isFree: true }] }
 const frames = text => [
@@ -35,7 +36,18 @@ const upstream = http.createServer((req, res) => {
   const chunks = []
   req.on('data', chunk => chunks.push(chunk))
   req.on('end', () => {
-    if (req.method === 'GET' && req.url === '/zen/v1/models') {
+    if (req.url.startsWith('/inference/v1/')) {
+      anonymousRequests.push({ method: req.method, headers: req.headers })
+      // v2 指纹：上游只认 `opencode/<channel>/<version>/<client>` 这一整串。
+      // 旧实现模拟的是「按名字拒掉独立服务的归属 UA」，那条规则属于 v1；
+      // v2 反过来 —— 拼接了归属的串不再是 v2 客户端，同样被拒。
+      if (req.method === 'POST' && !/^opencode\/[a-z0-9-]+\/\d+\.\d+\.\d+\/[a-z0-9-]+$/i.test(req.headers['user-agent'] ?? '')) {
+        res.writeHead(403, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ error: { name: 'FreeTierError', message: 'OpenCode free tier client rejected' } }))
+        return
+      }
+    }
+    if (req.method === 'GET' && req.url === '/inference/v1/models') {
       listingCalls++
       signalListingStarted?.()
       const respond = () => {
@@ -122,6 +134,41 @@ try {
     await assert.rejects(startStandalone({ dataDir: invalidDir, port: 65536 }), /port/)
     assert.equal(fs.existsSync(invalidDir), false)
   })
+  await check('退出时保留已被替换的其他锁，不清理无法确认归属的文件', async () => {
+    const directory = path.join(scratch, 'replaced-lock')
+    const isolated = await startStandalone({ dataDir: directory, port: 0, refresh: false, logger: { warn() {} } })
+    const lockFile = path.join(directory, 'service.lock')
+    const replacement = JSON.stringify({ pid: process.pid, product: 'our-free-model-standalone', token: 'another-owner' })
+    fs.unlinkSync(lockFile)
+    fs.writeFileSync(lockFile, replacement)
+    await isolated.close()
+    assert.equal(fs.readFileSync(lockFile, 'utf8'), replacement)
+  })
+  await check('启动中途失败会同时释放文件锁与进程互斥端点，修复配置后可重启', async () => {
+    const directory = path.join(scratch, 'failed-boot')
+    const settingsFile = path.join(directory, 'settings.json')
+    fs.mkdirSync(settingsFile, { recursive: true })
+    await assert.rejects(startStandalone({ dataDir: directory, port: 0, refresh: false, logger: { warn() {} } }), /persist/)
+    assert.equal(fs.existsSync(path.join(directory, 'service.lock')), false)
+    fs.rmdirSync(settingsFile)
+    const recovered = await startStandalone({ dataDir: directory, port: 0, refresh: false, logger: { warn() {} } })
+    await recovered.close()
+  })
+  if (process.platform === 'win32' || process.platform === 'linux') {
+    await check('没有权限检查进程时保留锁，不把 EPERM 当成进程退出', async () => {
+      const directory = path.join(scratch, 'permission-lock')
+      const lockFile = path.join(directory, 'service.lock')
+      fs.mkdirSync(directory)
+      const original = JSON.stringify({ pid: process.pid, product: 'our-free-model-standalone' })
+      fs.writeFileSync(lockFile, original)
+      const nativeKill = process.kill
+      process.kill = () => { throw Object.assign(new Error('permission denied'), { code: 'EPERM' }) }
+      try {
+        await assert.rejects(startStandalone({ dataDir: directory, port: 0, refresh: false }), { code: 'EEXIST' })
+        assert.equal(fs.readFileSync(lockFile, 'utf8'), original)
+      } finally { process.kill = nativeKill }
+    })
+  }
   await check('the listener starts while its upstream listing is held', async () => {
     holdListing = new Promise(resolve => { unhold = resolve })
     listingStarted = new Promise(resolve => { signalListingStarted = resolve })
@@ -209,6 +256,13 @@ try {
     }, key)
     assert.equal(kilo.status, 200)
     assert.equal((await kilo.json()).choices[0].message.content, 'kilo-ok')
+  })
+  await check('独立服务的目录、探测和推理都带 v2 客户端指纹', () => {
+    assert.ok(anonymousRequests.some(req => req.method === 'GET'))
+    assert.ok(anonymousRequests.filter(req => req.method === 'POST').length >= 4)
+    for (const req of anonymousRequests) {
+      assert.equal(req.headers['user-agent'], 'opencode/latest/2.0.26/cli')
+    }
   })
   await check('unknown models are refused before spending an upstream call', async () => {
     const before = turns.length

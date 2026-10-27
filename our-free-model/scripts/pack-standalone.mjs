@@ -23,20 +23,40 @@ const sourceFiles = [
   'packages/standalone/service.mjs',
   'packages/standalone/management.mjs',
   'packages/standalone/login-terminal.mjs',
+  'packages/standalone/open-external.mjs',
   'packages/standalone/eac.mjs',
   ...['business', 'contracts', 'credentials', 'images', 'runtime', 'worker']
     .map(name => `packages/standalone/channels/${name}.mjs`),
-  ...['index.html', 'app.js', 'app.css', 'channels.js', 'channels.css']
-    .map(name => `packages/standalone/web/${name}`),
-  ...['adapter', 'catalog', 'channel', 'eac', 'eac-login', 'eac-user', 'effort',
-    'egress', 'forward', 'http', 'kilo', 'messages', 'probe', 'recovery',
+  'packages/standalone/web/index.html',
+  'packages/standalone/web/assets.json',
+  ...['adapter', 'aggregate', 'anthropic', 'catalog', 'channel', 'combos', 'deferred-response', 'eac', 'eac-login', 'eac-user', 'effort',
+    'egress', 'failure', 'forward', 'http', 'image-pricing', 'kilo', 'local-optimize', 'messages', 'model-test', 'probe', 'recovery',
     'store', 'stream', 'trust', 'upstream', 'vault', 'vault-data', 'vault-anchor']
     .map(name => `src/${name}.js`),
   ...['completion', 'runtime', 'stats'].map(name => `src/core/${name}.js`),
+  'src/providers/index.js',
+  'src/providers/registry.json',
+  'src/route/classify.js',
+  ...['index', 'inject', 'prompts'].map(name => `src/token-saver/${name}.js`),
+  ...['index', 'constants', 'autodetect', 'applyFilter', 'hitLine', 'registry']
+    .map(name => `src/token-saver/rtk/${name}.js`),
+  ...['buildOutput', 'dedupLog', 'find', 'gitDiff', 'gitLog', 'gitStatus', 'grep', 'ls',
+    'readNumbered', 'searchList', 'smartTruncate', 'tree']
+    .map(name => `src/token-saver/rtk/filters/${name}.js`),
   'vendor/channel-pack/qoder-auth-wasm.wasm',
   'vendor/channel-pack/LICENSE',
   'vendor/channel-pack/NOTICE.md',
 ].sort()
+
+export function standaloneSourceFiles() {
+  const assets = JSON.parse(regularBytes(path.join(repositoryRoot, 'packages/standalone/web/assets.json')))
+  if (!Array.isArray(assets) || assets.length === 0
+    || assets.some(name => typeof name !== 'string' || !/^[A-Za-z0-9_-]+\.(?:js|css)$/.test(name))
+    || new Set(assets).size !== assets.length) {
+    throw new Error('The standalone web asset manifest must list unique JS/CSS filenames')
+  }
+  return [...sourceFiles, ...assets.map(name => `packages/standalone/web/${name}`)].sort()
+}
 
 function regularBytes(file) {
   if (!fs.lstatSync(file).isFile()) throw new Error(`Only regular files can be packaged: ${file}`)
@@ -73,7 +93,7 @@ export function buildStandalonePackage({ nodeExecutable = process.execPath, node
   if (linked.length === 0 || linked.some(file => !file.startsWith('/usr/lib/') && !file.startsWith('/System/Library/'))) {
     throw new Error('Node depends on non-system libraries; use a self-contained Node distribution')
   }
-  const sources = sourceFiles.map(file => ({ file, bytes: regularBytes(path.join(repositoryRoot, file)) }))
+  const sources = standaloneSourceFiles().map(file => ({ file, bytes: regularBytes(path.join(repositoryRoot, file)) }))
   const product = JSON.parse(sources.find(item => item.file === 'packages/standalone/package.json').bytes)
   const sourceDigest = hash(Buffer.concat(sources.flatMap(({ file, bytes }) => [Buffer.from(`${file}\0${bytes.length}\0`), bytes])))
   const nodeDigest = hash(binary)

@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
+    <!-- Manual, verified same-signer update; Android still requires user installation consent. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <queries>
         <intent><action android:name="android.intent.action.TTS_SERVICE" /></intent>
         <package android:name="com.termux" />
@@ -43,6 +45,18 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="dsh-phone" android:host="peer" android:path="/connect" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${dshRemoteHost}" android:path="/connect" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -81,6 +95,14 @@
             android:enabled="true" android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
         <activity android:name=".control.ControlActivity" android:exported="false" android:label="手机操作" />
+        <activity android:name=".terminal.TerminalActivity" android:exported="false" android:label="独立终端" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".update.UpdateActivity" android:exported="false" android:label="增强版更新" />
+        <activity android:name=".startup.StartupSettingsActivity" android:exported="false" android:label="启动页管理" />
+        <activity android:name=".virtualscreen.VirtualScreenActivity" android:exported="false" android:label="虚拟屏工作台" />
+        <provider android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.phone.updates" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/phone_update_paths" />
+        </provider>
         <service android:name=".browser.BrowserService" android:process=":browser" android:exported="false" />
         <activity android:name=".browser.BrowserActivity" android:process=":browser" android:exported="false" android:label="DSH 内置浏览器" />
         <receiver android:name=".control.TermuxResultReceiver" android:exported="false" />

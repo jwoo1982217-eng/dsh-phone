@@ -108,10 +108,119 @@ export declare class AutoAdapter extends LlmAdapter {
      * ⚠️ 旧实现在 `expiryOf` 里每次新建 ⇒ 缓存永不命中 ⇒ 每次请求都重打上游。
      */
     private expiryProbeInstance;
+    /**
+     * 「目标收下请求却零输出」的目标级冷却表（issue IKJW31 的 B 方案）。
+     *
+     * ⚠️ **纯内存、进程内、不落盘**：它优化的是「本次运行内别再三连撞同一堵墙」，
+     * 重启后重新试探是**正确**行为 —— 用户可能已升级插件、上游可能已扩容，
+     * 落盘只会让一次误判跨重启生效。
+     * ⚠️ 语义与账号池的 `modelRateLimits` **不同**：那些记在**账号**上，本表记在
+     * **目标**（provider + model）上 —— 越墙换账号无用（账号无关），换目标才有用。
+     */
+    private zeroOutputCooldowns;
     constructor(ctx: Context, options: AutoAdapterOptions);
     providerInfo(provider: string): LlmProviderInfo;
+    /**
+     * 最近一次**实际发出**的目标（含带图改道）；未发过任何请求时为 `undefined`。
+     *
+     * ⚠️ 上游 `ba10f4f` 重写 aggregate 时把本字段与 {@link lastExpiryAt} 一并删掉了，
+     * 于是 `usage.badge` 对 `jet-hub-auto` 的改写逻辑（宿主端）失去数据来源、
+     * 整块被删 ⇒ **旧 auto 的用量徽标彻底消失**（用户报障 2026-10-08：「也没胶囊了？」）。
+     * 这里补回来。消费方是 `jet-hub-rpc.ts` 的 `usage.badge`（经 `autoAdapter` 注入）。
+     */
+    private lastDispatch;
+    /** 最近一次选型胜者的失效时刻（毫秒）—— 徽标的临期倒计时用。 */
+    private lastExpiryAt;
+    /**
+     * 「渠道 + 模型 → 倍率」的临时表 —— 由 {@link firstModelOf} 在**已经算过**倍率的
+     * 那一轮目录循环里顺带写入（零额外请求）。
+     *
+     * ## ⚠️ 为什么要有它（用户报障 2026-10-08「没倍率显示？」）
+     *
+     * auto 是**跨渠道**的单一模型名，它自己没有倍率：倍率取决于**本次选中谁**。
+     * 而模型选择器显示的是 `listModels` 的**静态**名字（对所有请求都一样），
+     * 往那里写死一个倍率就是**编造**（`buddy.ts:494` 的既有判据：编造倍率比不显示更糟）。
+     * ⇒ 倍率只能显示在**胶囊**里（那里显示的正是「这次实际用了谁」），
+     *   而胶囊的数据来自 `lastDispatch`，故倍率必须在分发时可得。
+     *
+     * ## 为什么用表而不是在分发时重查目录
+     *
+     * `firstModelOf` 已经为了「挑最便宜的模型」把整个目录读了一遍并算出了倍率
+     *（`priceFactorFromName`）；重查一次等于**再打一轮上游目录接口**，纯粹浪费。
+     *
+     * ⚠️ 只做缓存用途，**不参与任何选型判据**（选型只看 `price` 的排序结果，
+     *   见 `firstModelOf` 的 `best`）。表项无上限问题：键是「渠道 + 模型」，
+     *   而渠道数与模型数都是目录级的小常量。
+     */
+    private readonly priceByModel;
+    /** 记下某渠道某模型的倍率（键含渠道，避免同名模型跨渠道串价）。 */
+    private rememberPrice;
+    /**
+     * 查已记下的倍率；查不到回 `undefined`（**不猜、不重查**）。
+     *
+     * ⚠️ 查不到是**正常**情形：宿主刚重启、还没走过选型时表是空的。
+     *    调用方（`usage.badge`）必须能接受「没有倍率」而不是显示一个编造的值。
+     */
+    priceOf(provider: string, model: string): number | undefined;
+    /**
+     * 交给 RPC 层的**自包含状态入口**（`usage.badge` 对 `jet-hub-auto` 的改写用）。
+     *
+     * ## ⚠️ 为什么是一个聚合方法，而不是把三个成员直接暴露出去
+     *
+     * `jet-hub-rpc.ts` 只需经 `modelAdapters['jet-hub-auto']` 拿到一个**结构化**接口
+     * （它不该 import 具体适配器类，见 `ModelCatalogSource` 的注释）。这里把
+     * 「真实历史 / 预测 / 倍率」三件事收成一个方法，好处是：
+     *
+     * 1. **位置参数不动**：`registerJetHubRpc` 是位置传参且有一条派生式不变量
+     *    （「客户端 `PROVIDERS` 条数 + 1 == 形参个数」）—— 加第 17 个位置参数会打破它
+     *    （实测 10 条接线断言同时变红）。走 `modelAdapters` 表则只加一个键。
+     * 2. **不会误用新建实例**：`selectProvider` 是**绑定在 this 上**的箭头闭包，
+     *    调用方拿不到「new 一个适配器」的机会 —— 而那正是本仓库记录过的真实缺陷
+     *    （两份探针缓存 ⇒ 同一渠道被折算两次）。
+     *
+     * ⚠️ `selectProvider` 刻意**不接受参数**：`modelOf` 必须固定为 `firstModelOf`
+     *   （那才是「该 provider 能否实际被调用」的判据，见 `selectProvider` 的注释），
+     *   暴露给调用方只会让它传错。
+     */
+    autoState(): {
+        lastDecision: {
+            provider: string;
+            model: string;
+            viaImageFallback: boolean;
+            expiryAt?: number;
+        } | null;
+        readonly lastWinnerExpiryAt?: number;
+        selectProvider(): Promise<{
+            provider: string;
+            model: string;
+        } | undefined>;
+        priceOf(provider: string, model: string): number | undefined;
+    };
+    /** 最近一次真实发出的目标（未发过任何请求时为 `undefined`）。 */
+    get lastDecision(): {
+        provider: string;
+        model: string;
+        at: number;
+        viaImageFallback: boolean;
+        expiryAt?: number;
+    } | undefined;
+    /** 最近一次选型胜者的失效时刻（徽标倒计时用；未选过型时为 `undefined`）。 */
+    get lastWinnerExpiryAt(): number | undefined;
     /** 目录里永远只有一个 auto（真实模型由选型决定，不在此暴露）。 */
     listModels(): Promise<readonly LlmModelInfo[]>;
+    /**
+     * **不套黑名单**的全量目录 —— 与其余适配器的同名方法同约定。
+     *
+     * ⚠️ auto 只有**一个**模型且它不参与用户黑名单（黑名单针对的是各渠道的真实
+     * 模型，auto 的目标由选型决定），故两个方法的返回值**相同**。
+     * 存在的理由是**契约**：`jet-hub-rpc.ts` 的 `ModelCatalogSource` 要求本方法，
+     * 而 auto 现在要经 `modelAdapters` 表把 `autoState()` 交给 RPC 层
+     * （见 `ModelCatalogSource.autoState` 的注释：不能加位置参数）。
+     */
+    listAllModels(): readonly {
+        id: string;
+        name: string;
+    }[];
     /**
      * 解析 `auto` 的能力元数据。
      *
@@ -119,6 +228,40 @@ export declare class AutoAdapter extends LlmAdapter {
      * 但**身份必须改回 auto**：DSH 的 `normalizeModelInfo` 会拒掉 provider/id 与请求
      * 路由不符的元数据。选型不可用时退回到一份保守的通用元数据（不声明档位，任何
      * reasoningEffort 都会被 harness 判为不支持 —— 故这里连 reasoning 字段都不带）。
+     *
+     * ## ⚠️ 已知代价（**产品取舍，不是缺陷修复**，本轮刻意不改行为）
+     *
+     * ### 代价 #1：选择器首次不显示档位与积分倒计时
+     *
+     * 冷缓存时本方法只回保守元数据，而真实 context / 档位要等 `prepareCall` 把缓存
+     * 写好后才有 —— 那是用**实测 70 秒**的目录加载换来的两个小号信息，用户明确
+     * 选择放弃（报障「模型选择列表加载了 1 分多钟」）。
+     *
+     * ### ⚠️⚠️ 代价 #2：OpenAI 网关冷缓存**首轮**会静默丢弃 `reasoning_effort`
+     *
+     * 链路（逐跳已核实，**不改** `messages.ts` 也不改网关行为 —— 那超出本次范围）：
+     *
+     * 1. `src/openai-gateway/server.ts:372`（`/v1/chat/completions`）与 `:411`
+     *    （`/v1/responses`）先 `resolveModelInfo` → `adapter.resolveModel()`；
+     * 2. 冷缓存 ⇒ 走本方法下面的**降级元数据**，它**不带 `reasoning`**；
+     * 3. `src/openai-gateway/messages.ts:221`：`if (declared.length === 0) return null`
+     *    ⇒ **明确不下发**该字段；
+     * 4. 于是 `withTranslatedEffort`（见本文件约 `:745`）拿到 `requested === undefined`
+     *    ⇒ 原样返回 ⇒ **档位彻底丢失**。
+     *
+     * 触发面：进程启动后 **第一个** `jet-hub-auto` 网关请求（之后 `prepareCall` 已写好
+     * 缓存，后续请求带真实档位）。**无报错、无日志** —— 这正是「静默降级」那一类，
+     * 故在此**如实登记**：用户若发现网关首轮档位不生效，先看这里。
+     *
+     * ## 为什么是**零参**签名
+     *
+     * 基类 `LlmAdapter.resolveModel(provider, model, signal?)`（`llm-adapter.ts:1127`）
+     * 与其余适配器都是三参，宿主也**实际按三参调用**；本类**刻意**把它们全忽略 ——
+     * auto 只有一个对外模型 `auto`，真实目标由内部选型决定，入参里的 provider/model
+     * 恒是 `jet-hub-auto` / `auto`，没有任何可用的信息。TS 允许覆写时少声明参数
+     * （函数形参「少了可以、多了不行」），所以这既是事实（方法体一个参数都不用），
+     * 也让**调用方**多传参数变成编译错误。⚠️ 单测必须按零参调用 —— 传 3 参是
+     * `TS2554: Expected 0 arguments, but got 3`。
      */
     resolveModel(): Promise<LlmResolvedModelInfo>;
     /**
@@ -151,9 +294,10 @@ export declare class AutoAdapter extends LlmAdapter {
      */
     private dispatchTargetOf;
     /**
-     * 按目标 provider 转发一次请求，**先翻译思考档位**。
+     * 按目标 provider 转发一次请求，**先翻译思考档位**；并观测「收下请求却零输出」
+     * 的失败形态，命中时**顺位改道下一个 provider 重发一次**（issue IKJW31 的 B 方案）。
      *
-     * ## 为什么要翻译（真实缺陷，用户报障 2026-10-05）
+     * ## 为什么要翻译档位（真实缺陷，用户报障 2026-10-05）
      *
      * auto 借用的 `reasoning.efforts` 来自**本次选中的目标模型**（如 zcode 的
      * `low` / `high` / `max`），但请求里的 `reasoningEffort` 是 harness 依据
@@ -176,8 +320,39 @@ export declare class AutoAdapter extends LlmAdapter {
      *   下发**该字段（让上游走它自己的默认），而不是硬塞一个错的；
      * - `unknown` → 请求值是未登记的怪名字，**删掉该字段**并 warn：让上游按默认
      *   走，比抛错打断整轮对话更可取（用户改个档位不该让整个任务失败）。
+     *
+     * ## ★ 零输出撞墙的改道（B 方案）
+     *
+     * 判据在 `zero-output-guard.ts`（**唯一权威**）：`max-tokens` **且零输出**。
+     * ⚠️ 必须同时要求零输出 —— 有输出的 `max-tokens` 是「正常答到半截撞了输出
+     * 上限」，那时换目标会**丢掉已产出的正文**（与 `aggregate-adapter.ts` 的
+     * 「已吐内容就不许切换」是同一个安全方向）。
+     *
+     * ⚠️ **已透出帧的处理**：零输出意味着 `textDelta` 从未出现，而
+     * `block-start` 只在有内容时才发（`openai-compat.ts`）⇒ 这一轮唯一
+     * 可能已透出的只有 `usage` 帧，而它对 `BlockAssembler` 是**覆盖式**赋值
+     * ⇒ 重发安全。故这里**不必缓冲整个流**（那会把透传改成带前瞻的缓冲，属更大的
+     * 改动面，与 `aggregate-adapter.ts` 里「延迟 block-start」那条已知代价同类）。
+     * 一旦某天有适配器在零内容时也发 `block-start`，本条注释的前提即失效 ——
+     * 那时必须先缓冲再改道。
      */
     private dispatch;
+    /**
+     * 零输出撞墙后顺位选下一个目标；无候选时返回 `undefined`。
+     *
+     * ⚠️ 复用 {@link selectProvider}（**同一套临期/可用性/冷却判据**）而不是在这里
+     * 另写一份「挑下一个」—— 那会是同一语义两套实现（本仓库红线），且必然漂移。
+     */
+    private replaceAfterZeroOutput;
+    /**
+     * 按目标档位表翻译 `reasoningEffort`，返回可交给 `ctx.llm.stream` 的选项。
+     *
+     * ⚠️ 抽成独立方法是为了让 `dispatch` 的观测/改道逻辑与档位翻译**分开**：
+     * 后者是纯函数式的选项改写（既有行为，逐字节不变），前者是新增的失败恢复。
+     */
+    private withTranslatedEffort;
+    /** 注入的当前时刻（与选型缓存共用同一时钟，便于单测控制冷却边界）。 */
+    private now;
     /**
      * 该 provider 的目录里是否存在**未被彻底关闭**且支持图片的模型。
      *
@@ -187,6 +362,34 @@ export declare class AutoAdapter extends LlmAdapter {
     private providerSupportsImages;
     /** auto 从不直接被 stream（总是先经 prepareCall）；兜底抛错而非静默。 */
     stream(): AsyncIterable<StreamChunk>;
+    /**
+     * 同步读「新鲜的选型缓存」，**绝不触发任何网络**。
+     *
+     * ## 与 `ensureChoice` 的差别是决定性的
+     *
+     * `ensureChoice` 在缓存未命中时会**同步探测全池**（实测 70 秒：每个渠道一次
+     * 余额查询），而本方法在未命中时一律返回 `undefined` —— 让调用方走
+     * 「保守元数据」，把选型留给真正需要它的 `prepareCall`。
+     *
+     * ## ⚠️ 冷却中的缓存项视为过期（复用同款判据）
+     *
+     * 判据与 `ensureChoice` 的缓存分支**逐格同构**：「缓存时长」+「目标是否在冷却中」
+     * 两个条件，任一条不满足即视为过期。缓存时长是 `AUTO_CHOICE_TTL_MS`（默认 60 秒；
+     * **数字随常量变化，改常量时同改本注释**），而目标级冷却 10 分钟 —— 不复核则冷却
+     * 形同虚设（`resolveModel` 会把一个**已确认撞墙**的目标当成正常目标播报给宿主）。
+     *
+     * ⚠️⚠️ **改本处的 TTL 语义必须同步改 `ensureChoice` 的缓存分支**（以及本注释），
+     *    两处是「同一份新鲜度判据」的**两份实现**：只改一处 ⇒ `resolveModel` 与
+     *    `prepareCall` 对「同一份缓存是否新鲜」给出相反结论（选择器播报目标 A、
+     *    实际派发 B）。单测第 5 条（TTL 半零守卫）守的正是这条同步要求。
+     *
+     * ⚠️ 判据复用 `isTargetCoolingDown`（**唯一权威**在 `zero-output-guard.ts`），
+     *    不在这里另写一份时刻比较（本仓库红线：同一语义不得两套实现）。
+     *
+     * ⚠️ 时刻取 `this.options.now?.()`（与 `ensureChoice` / `dispatch` 同一注入时钟），
+     *    否则单测无法精确控制 TTL 与冷却的边界。
+     */
+    private cachedChoiceFresh;
     /**
      * 取选型（命中缓存直接回；否则重新探测全池）。
      *
@@ -202,8 +405,61 @@ export declare class AutoAdapter extends LlmAdapter {
      * 一个 provider 余额充足、但目录为空或模型被用户全关时，仍**不能**当选 ——
      * 初版会让它拿到请求再发出一个必然 404 的模型 id。故排序时就把这类 provider
      * 当作 `UNUSABLE` 剔除，顺位让给下一个候选（而不是整体放弃 auto）。
+     *
+     * ## ⚠️⚠️ 还必须按 `modelOf` 返回的**真实模型**复核账号可用性（真实缺陷，2026-10-07）
+     *
+     * 「额度耗尽」在账号池里是**按 modelId 记账**的
+     *（`entry.modelRateLimits[modelId]`；codearts 的 benefit 免费额度耗尽就写在那里，
+     * `llm-adapter.ts`），而折算取号用的模型键**未必等于**这里要派发的模型：
+     *
+     * | 消费者 | 折算取号用的键 | 实际派发 |
+     * |---|---|---|
+     * | `AutoAdapter` 自建探针（单测/未注入时） | `firstModelOf`（按倍率挑最便宜） | 同一个 ✓ |
+     * | **生产装配**（`index.ts` 注入 `sharedExpiryProbe`） | **`models[0]?.id`** | **`firstModelOf`** ✗ |
+     *
+     * ⚠️ 生产装配下两者**不同**：共享探针的 `firstModelIdOf` 是「取目录第一个」
+     *（见 `index.ts` 那段「共享带来的语义松弛」注释），而 `firstModelOf` 是
+     * 「按倍率挑最便宜」。实测（探针，2026-10-07）：目录为
+     * `[glm-5.3-flash, Deepseek-V4.1-Flash · x0.1]`、账号在 `deepseek-v4.1-flash`
+     * 上额度已尽时，auto 仍选中 `codearts/deepseek-v4.1-flash` —— 因为折算问的是
+     * `glm-5.3-flash`（未被标记），按 modelId 的过滤**整体失效**。
+     *
+     * ⚠️ 这**推翻**了 `index.ts` 那句「共享的松弛已核实无害」：该注释
+     * 假设「`probeModel` 不参与折算结果、故与派发无关」，但它**参与账号池的
+     * 限流过滤** —— 而那正是「这个模型还能不能用」的判据。故这里必须显式复核。
      */
-    selectProvider(signal?: AbortSignal, modelOf?: (provider: string) => Promise<string | undefined>): Promise<AutoChoice | undefined>;
+    selectProvider(signal?: AbortSignal, modelOf?: (provider: string) => Promise<string | undefined>, 
+    /**
+     * 已尝试过、本次请求内**不得再选**的目标（`` `${provider}\u0000${model}` ``）。
+     *
+     * ⚠️ B 方案的改道（`stream` 闭包里的零输出重试）用它顺位换下一个 provider。
+     * 默认空集 ⇒ 既有调用方行为**逐字节不变**。
+     */
+    exclude?: ReadonlySet<string>): Promise<AutoChoice | undefined>;
+    /**
+     * 该 provider 在**指定模型**上是否还有可用账号（额度未耗尽 / 未在限流中）。
+     *
+     * ⚠️ 判据交给账号池（`getAvailableAccount` 按 `modelRateLimits[modelId]` 过滤）
+     * —— 不在这里另写一份「额度是否耗尽」的判据（那会是同一语义两套实现，
+     * 本仓库对此有明确红线）。
+     *
+     * ⚠️ 三条边界（与 `aggregate-adapter.ts` 的 `filterByModelAvailability` **逐格同构**）：
+     * - 池未实现该方法 ⇒ **视为可用**（跳过过滤）：大量既有单测桩只实现
+     *   `disabledModelsFor`，判成不可用会让所有桩用例「零候选」。宁可少筛一层，
+     *   不可把整池误剔除。
+     * - 查询抛错 ⇒ **视为可用**：一次池查询异常不该让渠道整体消失。
+     * - ⚠️ **中止必须原样逃逸**：判据取**四条**（与 `aggregate-adapter.ts` 的
+     *   `isAbortLike` 同构）—— `signal.aborted` / `name === 'AbortError'` /
+     *   `code === 'ABORTED'` / 🔴 `message` 含 `aborted request|HTTP_?499`（上游
+     *   网关 499 口径，2026-10-11 与 aggregate 侧同步补——同族判据必须逐格同构）。
+     *
+     *   ⚠️⚠️ **不要只判 `name`**（我上一版正是这么写的，注释还声称「同口径」，
+     *   被对抗审计实测证伪）：`aggregate-adapter.ts` 的 `abortError()` 会**同时**
+     *   设 `name` 与 `code`，但别的调用方可能只设 `code` —— 那时只判 `name` 会把
+     *   中止**吞成「视为可用」并继续发请求**，正是本仓库反复记录的那类缺陷。
+     *   （当前生产装配下该形态不可达，但「同族判据必须逐格同构」是硬要求。）
+     */
+    private hasUsableAccountFor;
     /**
      * 某 provider「一个代表账号」的最早失效时刻（毫秒）。
      *
@@ -217,9 +473,9 @@ export declare class AutoAdapter extends LlmAdapter {
      *
      * ⚠️⚠️ **必须带真实 modelId 取号，不能传空串**（真实缺陷，PR !69 审计实测）：
      * `getAvailableAccount` 对空 modelId 直接 `return true` 跳过限流过滤
-     * （`account-pool.ts:1049-1055`），而候选顺序就是**用户的手动顺序**
-     * （`:1057`）⇒ 空串取回的是「手动序第一个启用账号」，**哪怕它此刻正在限流**。
-     * 本仓库在 `index.ts:598-600` 已为同一坑留下过成文警告，这里是同一个缺陷的第二实例。
+     * （`account-pool.ts`），而候选顺序就是**用户的手动顺序**
+     * （手动序即候选数组的返回序）⇒ 空串取回的是「手动序第一个启用账号」，**哪怕它此刻正在限流**。
+     * 本仓库在 `index.ts` 已为同一坑留下过成文警告，这里是同一个缺陷的第二实例。
      *
      * 后果是多账号池的真实场景：手动序第一个号额度已烧完（折算 `NEVER`）、第二个号还有
      * 9 天后作废的额度 ⇒ auto 只看到第一个号 ⇒ 该 provider 被判成「无临期」而排到最后，
@@ -259,6 +515,13 @@ export declare class AutoAdapter extends LlmAdapter {
 }
 /** 在 ctx.llm 上注册 auto 路由（幂等，见 `llm-register-compat.ts`）。 */
 export declare function registerAutoLlm(ctx: Context, options: AutoAdapterOptions): AutoAdapter;
+/** 「auto 现在会选谁」的预测结果（供用量徽标在**尚无真实历史**时兜底显示）。 */
+export interface CurrentAutoWinner {
+    provider: string;
+    model: string;
+    /** 胜者额度的失效时刻（`Infinity` = 只有长期积分）。 */
+    expiryAt: number;
+}
 /**
  * 「auto 现在会选谁」——按临期判据算出当前胜者（供用量徽标等外部消费）。
  *
@@ -267,17 +530,21 @@ export declare function registerAutoLlm(ctx: Context, options: AutoAdapterOption
  * **独立实例**：徽标轮询不该与选型缓存互相踩（选型有 60 秒缓存且随请求刷新，
  * 徽标是 60 秒轮询、隐藏页跳过 —— 两者的节奏本来就该解耦）。
  *
+ * ## ⚠️ 用途：**只在「还没有真实历史」时**兜底
+ *
+ * 本函数是**预测**语义，且**有自己的网络成本**（会对每个候选渠道打一次余额接口）。
+ * ⇒ `usage.badge` 的调用序必须是：**先**读 `AutoAdapter.lastDecision`（真实历史，
+ * 零成本、零误差），只有它 `undefined`（插件刚重启、还没发过任何请求）时才回退到这里。
+ *
+ * ⚠️ 绝不可以在有历史时也用它：预测的胜者可能因上游失败/带图改道而被换掉，
+ * 于是「预测的渠道」与「实际用的渠道」不同 —— 徽标是止损工具，显示错人比
+ * 不显示更危险（用户原话「以为在用 A，实际在烧 B」）。
+ *
  * ## ⚠️⚠️ 聚合 provider 的用量徽标**不用本函数**（2026-10-07 定，规格 §6.5）
  *
- * 本函数是**预测**语义（预检余额、算临期胜者），且**有自己的网络成本**。
- * 而聚合徽标取的是**真实历史** —— `AggregateAdapter` 在**实际转发成功时**记下的
- * 渠道（`activeProvider()`，纯内存读）。两者在以下情况会**不一致**：
- * 预测的胜者可能因上游失败而被切换掉，于是「预测的渠道」与「实际用的渠道」不同。
- * 用户明确选择了真实历史（显示一个错的渠道比不显示更误导）。
- *
- * ⇒ 全仓**零调用方**是本函数的现状，**保留它是有意的**（不删，避免越界改动
- * PR !69 的成果）。若要给聚合徽标接线，用 `aggregate.activeProvider`，
- * **不要**改成调本函数。
+ * 聚合徽标取的是**真实历史** —— `AggregateAdapter` 在**实际转发成功时**记下的
+ * 渠道（`activeProvider()`，纯内存读）。若要给聚合徽标接线，用
+ * `aggregate.activeProvider`，**不要**改成调本函数。
  */
-export declare function pickCurrentAutoProvider(ctx: Context, options: AutoAdapterOptions): Promise<string | undefined>;
+export declare function pickCurrentAutoProvider(ctx: Context, options: AutoAdapterOptions): Promise<CurrentAutoWinner | undefined>;
 //# sourceMappingURL=auto-adapter.d.ts.map

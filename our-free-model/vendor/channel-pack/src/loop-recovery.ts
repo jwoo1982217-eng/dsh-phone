@@ -40,6 +40,7 @@
  * 1. **只在 idle 投递**。错误发生的那一刻驱动器还在跑，此时 `followup()` 排进
  *    `next-turn` 后**不会**被唤醒（`wakeDriver()` 对 running 相位不latch），
  *    消息会**烂在收件箱里**。故像目标驱动器一样等 `agent/status === 'idle'`。
+ *    投递决策延后到状态派发结束，避免同步重入 running 后被外层旧 idle 覆盖。
  * 2. **连续次数上限**（默认 2，见 `LOOP_RESUME_DEFAULT_MAX`）。这是**连续**
  *    计数：任何**别人**投进收件箱的消息（用户手打的、目标驱动器的、子代理的）
  *    都把它清零 —— 语义与「用户自己补一句『继续』之后我们又有预算」一致。
@@ -157,8 +158,14 @@ export interface LoopResumeAgent {
   readonly id: string
   /** 当前生命周期状态；只有 `'idle'` 允许投递。 */
   readonly status: string
-  /** 收件箱只读面；`hasPending` 为真说明已经有人在排队，不抢。 */
-  readonly inbox: { readonly hasPending: boolean }
+  /** Optional live session identity, used to reject events from a replaced lifecycle. */
+  readonly session?: object
+  /** Current hosts expose pending lists; older hosts expose a summary flag. */
+  readonly inbox: {
+    readonly hasPending?: boolean
+    readonly nextTurn?: readonly unknown[]
+    readonly nextStep?: readonly unknown[]
+  }
   /** 排队一条下一个轮次的 user 消息。 */
   followup(message: UserMessage): void
 }
@@ -192,6 +199,8 @@ export interface LoopResumeController {
   observeIdle(agent: LoopResumeAgent): boolean
   /** 记录一条进入收件箱的消息（用于区分「我们投的」与「别人投的」）。 */
   observeInput(agent: LoopResumeAgent, message: { readonly id: string }): void
+  /** Invalidate an idle decision without resetting the consecutive recovery budget. */
+  cancelPending(agent: LoopResumeAgent): void
   /** 丢弃某个 agent 的状态（`agent/disposed`）。 */
   forget(agent: LoopResumeAgent): void
   /** 当前**连续**续跑计数（诊断/单测用）。 */
@@ -262,7 +271,9 @@ export function createLoopResumeController(
       if (agent.status !== 'idle') return false
       // 已经有人排了活（用户手打了、目标驱动器排了下一轮）→ 让它跑，
       // 我们插一脚只会多烧一轮。
-      if (agent.inbox.hasPending) return false
+      if (agent.inbox.hasPending === true
+        || (agent.inbox.nextTurn?.length ?? 0) > 0
+        || (agent.inbox.nextStep?.length ?? 0) > 0) return false
 
       // ⚠️ 构造 + 投递整体兜住：本函数跑在宿主的 `agent/status` 派发里，让异常
       // 冒到派发方会污染宿主的事件链，而我们只是「额外帮忙」，失败必须是降级。
@@ -299,6 +310,11 @@ export function createLoopResumeController(
       state.pending = false
     },
 
+    cancelPending(agent) {
+      const state = states.get(agent.id)
+      if (state !== undefined) state.pending = false
+    },
+
     forget(agent) {
       states.delete(agent.id)
     },
@@ -328,6 +344,10 @@ export function installLoopResume(ctx: Context): void {
     return
   }
   ctx.inject(['agents'], (scope) => {
+    let active = true
+    const scheduled = new Map<LoopResumeAgent, symbol>()
+    const live = new Map<string, LoopResumeAgent>()
+    const disposed = new WeakSet<LoopResumeAgent>()
     const controller = createLoopResumeController({
       policy,
       log: ctx.logger,
@@ -336,11 +356,68 @@ export function installLoopResume(ctx: Context): void {
       // 运行」的发起者归属 —— 与 harness 自己的 `goal-round-driver` 同一手法。
       deliver: (agent, message) => { scope.agents.withoutInitiator(() => { agent.followup(message) }) },
     })
-    scope.on('agent/error', ({ agent, error }) => { controller.observeFailure(agent, error) })
-    scope.on('agent/status', ({ agent, status }) => {
-      if (status === 'idle') controller.observeIdle(agent)
+    const cancelPending = (agent: LoopResumeAgent): void => {
+      scheduled.delete(agent)
+      if (live.get(agent.id) === agent) controller.cancelPending(agent)
+    }
+    scope.effect(() => () => {
+      active = false
+      scheduled.clear()
+      for (const agent of live.values()) controller.forget(agent)
+      live.clear()
     })
-    scope.on('agent/inbox/inserted', ({ agent, message }) => { controller.observeInput(agent, message) })
-    scope.on('agent/disposed', ({ agent }) => { controller.forget(agent) })
+    scope.on('agent/error', ({ agent, error }) => {
+      if (!active || disposed.has(agent)) return
+      const previous = live.get(agent.id)
+      if (previous !== undefined && previous !== agent) {
+        cancelPending(previous)
+        controller.forget(previous)
+      }
+      live.set(agent.id, agent)
+      scheduled.delete(agent)
+      controller.observeFailure(agent, error)
+    })
+    scope.on('agent/status', ({ agent, status }) => {
+      if (!active || disposed.has(agent)) return
+      if (status !== 'idle') {
+        cancelPending(agent)
+        return
+      }
+      if (live.get(agent.id) !== agent || scheduled.has(agent)) return
+      const token = Symbol()
+      scheduled.set(agent, token)
+      // Let every subscriber observe this idle transition before followup can emit running.
+      queueMicrotask(() => {
+        if (!active || ctx.fiber?.uid === null || scope.fiber?.uid === null
+          || disposed.has(agent) || scheduled.get(agent) !== token) return
+        scheduled.delete(agent)
+        if (live.get(agent.id) !== agent) return
+        controller.observeIdle(agent)
+      })
+    })
+    scope.on('agent/inbox/inserted', ({ agent, message }) => {
+      if (!active || disposed.has(agent) || live.get(agent.id) !== agent) return
+      scheduled.delete(agent)
+      controller.observeInput(agent, message)
+    })
+    scope.on('agent/inbox/discarded', ({ agent }) => { cancelPending(agent) })
+    scope.on('session/event', (session, event) => {
+      const agent = live.get(session.id)
+      if (agent === undefined || (agent.session !== undefined && agent.session !== session)) return
+      if (event.type === 'turn/start'
+        || (event.type === 'agent/inbox/spliced' && event.data.outcome === 'canceled')
+        || (event.type === 'turn/end'
+          && !(event.data.reason.kind === 'error' && event.data.reason.error.code === REASONING_LOOP_CODE))) {
+        cancelPending(agent)
+      }
+    })
+    scope.on('agent/disposed', ({ agent }) => {
+      disposed.add(agent)
+      cancelPending(agent)
+      if (live.get(agent.id) === agent) {
+        live.delete(agent.id)
+        controller.forget(agent)
+      }
+    })
   })
 }

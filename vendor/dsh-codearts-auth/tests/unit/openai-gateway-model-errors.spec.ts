@@ -248,7 +248,7 @@ describe('findCaseInsensitiveSuggestion', () => {
 })
 
 
-describe('通用适配器错误码兼容', () => {
+describe('alpha.4 通用适配器错误码兼容', () => {
   it.each(['QUOTA', 'ACCOUNT_QUOTA', 'QUOTA_EXCEEDED'])('额度错误 %s 不得包装成网关故障', (code) => {
     expect(normalizeUpstreamFailure({ status: 502, type: 'server_error', code, message: '额度不足' }))
       .toEqual({ status: 429, type: 'insufficient_quota', code })

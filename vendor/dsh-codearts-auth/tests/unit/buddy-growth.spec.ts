@@ -10,6 +10,7 @@ import {
   claimGrowthTaskReward,
   fetchGrowthTaskCodes,
   fetchMarketExpertList,
+  keepStreakActive,
   runGrowthTaskCompletions,
 } from '../../src/buddy-growth.js'
 /**
@@ -388,6 +389,138 @@ function levelTaskList(code: string): unknown {
   }
 }
 
+/**
+ * ⚠️ `X-Conversation-*` 三头在**两条旁路**上也必须齐全（2026-10-16）。
+ *
+ * ## 为什么这两条路径原先**零守卫**
+ * 主链路（`buddy-adapter.ts` 的 `send()`）2026-10-16 补了三头，但本文件另有两条
+ * 直打**同一个** `/v2/chat/completions` 的旁路，它们长期与之不一致：
+ * - `chatRealSession`（`skill_1` / `Expert_lighthouse` 的真实会话环节，经
+ *   「一键领取积分」触发）：原先**只带一枚** `X-Conversation-ID`；
+ * - `keepStreakActive`（保连胜）：原先**一枚不带**（走 `growthHeaders`）。
+ * ⚠️ 两条都**零守卫** —— 任何形态漂移都不会让测试变红。
+ *
+ * ## 这组用例锁的是「形态一致」，**不是**「三头必需」
+ * 🔴 「三头缺一即 400/11128」这条外部事实**已被真机复测推翻**（逐枚消融 14 枚头
+ * 全部仍 200）。保留三头的理由是**三条出站路径形态统一**，理由变了、行为没变。
+ * 若将来有人认为不必统一，**删实现即可，但请连本组用例一起删**，别留半套。
+ */
+describe('/v2/chat/completions 旁路的 X-Conversation-* 三头', () => {
+  const CONV = ['x-conversation-id', 'x-conversation-request-id', 'x-conversation-message-id']
+
+  /** 从 recordingFetcher 的调用里挑出打 chat 端点那次的请求头。 */
+  function chatHeaders(calls: { url: string; init?: RequestInit }[]): Headers {
+    // ⚠️ 用 `endsWith` 而**不是** `includes`：`includes` 会让
+    // `/v2/chat/completions/probe` 这类**别的** URL 也落进同一分支 ⇒
+    // 取到错误的请求头而**假绿**（第二轮对抗审计实测构造出了这个假绿）。
+    const hits = calls.filter((c) => c.url.endsWith('/v2/chat/completions'))
+    expect(hits.length, '本轮应恰好打一次 /v2/chat/completions').toBe(1)
+    return new Headers(hits[0]!.init?.headers as HeadersInit)
+  }
+
+  /** 判三枚头齐全、同值、且形态为 32 位无横线十六进制。 */
+  function expectThreeConvHeaders(h: Headers, where: string): void {
+    const id = h.get('X-Conversation-ID')
+    expect(id, `${where}: X-Conversation-ID 缺失`).toMatch(/^[0-9a-f]{32}$/)
+    expect(h.get('X-Conversation-Request-ID'), `${where}: Request-ID 缺失或不同值`).toBe(id)
+    expect(h.get('X-Conversation-Message-ID'), `${where}: Message-ID 缺失或不同值`).toBe(id)
+    expect(CONV.every((n) => h.get(n))).toBe(true)
+  }
+
+  it('chatRealSession：真实会话请求带齐三头', async () => {
+    vi.useFakeTimers()
+    try {
+      const calls: { url: string; init?: RequestInit }[] = []
+      const fetcher = (async (url: string, init?: RequestInit) => {
+        calls.push({ url: String(url), init })
+        const u = String(url)
+        // ⚠️ **必须按 URL 分派**，不能沿用 `recordingFetcher` 的「按调用序轮换」：
+        // 任务列表走**两个**端点（`/v2/activity/growth/tasks` +
+        // `/activity/growth/tasks`），chat 请求排在它们之后 —— 按序轮换会把
+        // 任务列表报文喂给 chat（或反过来），于是摸不到 chat 请求。
+        // 这是本轮实测踩到的真坑。⚠️ 刻意**不写死序号**：调用序列会随实现演进，
+        // 而写死的序号正是本文件早期版本里一处失实的来源（曾写「第 5 位」，
+        // 实测是第 3 位）。此处只陈述**相对顺序**这个不变量。
+        const body = u.includes('/v2/chat/completions')
+          ? 'data: {"id":"cmb-0123456789abcdef0123456789abcdef","choices":[{"delta":{}}]}\n\ndata: [DONE]\n\n'
+          : u.includes('/accept')
+            ? { code: 0 }
+            : { code: 0, data: { tasks: [{ task_code: 'skill_1', accept_status: 'in_progress', progress: { current: 0, target: 1 } }] } }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => body,
+          text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
+        } as unknown as Response
+      }) as unknown as typeof fetch
+
+      const work = runGrowthTaskCompletions(CRED, PRODUCT, fetcher, { budgetMs: 600_000 })
+      for (let i = 0; i < 2_000; i += 1) await vi.advanceTimersByTimeAsync(100)
+      await work
+      expectThreeConvHeaders(chatHeaders(calls), 'chatRealSession')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keepStreakActive：保连胜请求带齐三头', async () => {
+    const { fetcher, calls } = recordingFetcher([{ body: {} }])
+    await keepStreakActive(CRED, PRODUCT, fetcher)
+    expectThreeConvHeaders(chatHeaders(calls), 'keepStreakActive')
+  })
+
+  /**
+   * 🔴 回归：补三头**不得**弄丢 `growthHeaders` 原有的头。
+   *
+   * ## 这个用例为什么存在（第二轮审计实测的假绿）
+   * 本 PR 的初版把 `keepStreakActive` 的头写成
+   * `{ ...growthHeaders(...), ...conversationHeaders(...) }` —— 而
+   * `growthHeaders` 返回的是 **`Headers` 实例**，JS 的 `Headers`
+   * **没有自有可枚举属性**，`{...headers}` **恒为 `{}`**：
+   * ```
+   * new Headers([['a','1'],['b','2']]) 展开 → {}
+   * ```
+   * ⇒ 实际出站的请求头只剩三枚 `X-Conversation-*`，`Authorization` /
+   * `X-Domain` / `X-Product` / `X-Product-Code` / `X-User-Id` / `User-Agent`
+   * 等**全部消失**，请求必然 401。
+   *
+   * ⚠️ 而当时的两条守卫**只断言三枚 Conv 头齐全** ⇒ 对「其余头还在不在」
+   * **零判据** ⇒ 全体**假绿**。本仓库明令禁止的「只断言新加的那几行」盲区。
+   *
+   * ## 判据
+   * 逐项断言 `growthHeaders` 原本会设的那些键**一个都不少**，且
+   * `Authorization` 的值真的是 `Bearer <token>`。
+   */
+  it('🔴 keepStreakActive：补三头后原有头一个都不能丢（Headers 展开假绿回归）', async () => {
+    const { fetcher, calls } = recordingFetcher([{ body: {} }])
+    await keepStreakActive(CRED, PRODUCT, fetcher)
+    const h = chatHeaders(calls)
+    // 鉴权头（丢掉就必然 401）。
+    expect(h.get('Authorization')).toBe(`Bearer ${CRED.access_token}`)
+    expect(h.get('User-Agent')).toBeTruthy()
+    expect(h.get('Content-Type')).toBe('application/json')
+    // 身份 / 归因头族。
+    expect(h.get('X-Client-Platform')).toBe('web')
+    expect(h.get('X-Domain')).toBe(PRODUCT.apiDomain)
+    expect(h.get('X-Product-Code')).toBeTruthy()
+    expect(h.get('X-Product')).toBeTruthy()
+    expect(h.get('X-User-Id')).toBe(CRED.user_id)
+    // ⚠️ 头总数下界：三枚 Conv + 上面这 8 枚 = 11。
+    //    写成「计数」而非逐项，是因为 `Headers.keys()` 的顺序不保证。
+    expect([...h.keys()].length).toBeGreaterThanOrEqual(11)
+  })
+
+  it('两条旁路各自生成独立的 id（不复用同一个值）', async () => {
+    const a = recordingFetcher([{ body: {} }])
+    await keepStreakActive(CRED, PRODUCT, a.fetcher)
+    const b = recordingFetcher([{ body: {} }])
+    await keepStreakActive(CRED, PRODUCT, b.fetcher)
+    const idA = chatHeaders(a.calls).get('X-Conversation-ID')
+    const idB = chatHeaders(b.calls).get('X-Conversation-ID')
+    expect(idA).not.toBe(idB)
+  })
+})
+
 
 describe('平台指纹的自洽性', () => {
   // 该用例必须用 fake timers：真实时钟下每个任务要付 4000ms 的结算等待，
@@ -712,7 +845,7 @@ describe('写入端点 code 400 的 msg 分流', () => {
 /**
  * 列表查询阶段的失败原因必须**带进 `results`**（复审补）。
  *
- * 下游 `collectBuddyGrowth`（`jet-hub-rpc.ts`）判僵尸账号的依据是**逐项**
+ * 下游 `collectBuddyGrowth`（`src/buddy-growth.ts`）判僵尸账号的依据是**逐项**
  * `results.some(r => /凭据已失效/.test(r.message))`。原实现在列表查询失败时
  * 返回空 `results`，凭据失效就判不出来 ⇒ 前端把「请重新登录」显示成
  * 「本轮无 API 可达的任务」。

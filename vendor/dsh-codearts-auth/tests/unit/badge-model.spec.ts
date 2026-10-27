@@ -616,6 +616,25 @@ describe('describeBadgeError：把「宿主没重启」翻译成可行动的一�
     expect(describeBadgeError({ message: 'unknown method: usage.badge' })).toBe(HOST_STALE_HINT)
   })
 
+  /**
+   * ★ 第二种「宿主跑旧代码」的形态（2026-10-11 PR !84 复审**实测取证**）。
+   *
+   * `jet-hub-auto` 的徽标分支是客户端新增的：客户端会去请求这个 provider 的余额，
+   * 而**旧宿主不认它**。在 master（旧宿主）上真跑 `usage.badge` 端点，拿到的回包是：
+   *
+   * ```
+   * {"ok":false,"error":{"code":"bad-request","message":"unsupported provider: jet-hub-auto"}}
+   * ```
+   *
+   * 原判据只认 `unknown method` ⇒ 用户看到的就是这句裸技术文案，而实际动作同样
+   * 只有「重启 DSH」。⇒ 不翻译等于让新客户端在旧宿主上变成一个看不懂的错误。
+   */
+  it('★ 宿主不认 auto 这个 provider（旧宿主）→ 同样提示重启', () => {
+    // 逐字使用实测取证到的文案。
+    expect(describeBadgeError(new Error('unsupported provider: jet-hub-auto'))).toBe(HOST_STALE_HINT)
+    expect(describeBadgeError({ message: 'unsupported provider: jet-hub-auto' })).toBe(HOST_STALE_HINT)
+  })
+
   it('其它错误原样透出（凭据/网络类文案本身就有指向性，不能被吞掉）', () => {
     expect(describeBadgeError(new Error('凭据已过期'))).toBe('凭据已过期')
     expect(describeBadgeError({ message: 'bad-request: provider 不能为空' })).toBe('bad-request: provider 不能为空')
@@ -631,6 +650,11 @@ describe('describeBadgeError：把「宿主没重启」翻译成可行动的一�
     // 「未知模型」是真实业务错误，不能被当成「宿主缺方法」
     expect(describeBadgeError(new Error('未知模型 id'))).toBe('未知模型 id')
     expect(describeBadgeError(new Error('该渠道不支持此操作'))).toBe('该渠道不支持此操作')
+    // ⚠️ 中文「不支持」同样不得命中（两种宿主的英文短语才是指纹）。
+    expect(describeBadgeError(new Error('该账号不支持此功能'))).toBe('该账号不支持此功能')
+    // ⚠️ 反向：`unsupported provider` 是**指纹**，但泛化的 `unsupported` 不是 ——
+    //    断言本函数**不会**因为别处的 `unsupported` 就误报「请重启」。
+    expect(describeBadgeError(new Error('unsupported reasoning effort'))).toBe('unsupported reasoning effort')
   })
 })
 

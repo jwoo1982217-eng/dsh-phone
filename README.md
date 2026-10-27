@@ -10,7 +10,7 @@
 
 0.2.0 同步子代理总开关、按供应商折叠的完整模型目录，以及对话页底部模型选择器中的“ZCode 重置额度”。ZCode 机构流量与编程套餐使用对应模型目录及实际来源，重置须选择账号/套餐并确认，不能增加机构充值余额。
 
-当前应用版本为 **0.2.12 / versionCode 117**，包名 `com.dshphone`，支持 **Android 9 及以上、arm64**。
+当前维护源码版本为 **0.2.13 / versionCode 118**，包名 `com.dshphone`，支持 **Android 9 及以上、arm64**。
 
 默认发行框架包：保留账号、聊天、技能导入、主题及离线知识检索功能，不预装技能库、人设卡或技能导入 ZIP。覆盖升级保留用户已导入的内容。同一份运行资源在 APK 内仅存储一次，首次准备时校验并还原模块副本后再启用。构建资源用 `python3 scripts/build-assets.py`；确需包含可选预装技能时显式加 `--with-skills`。
 
@@ -412,3 +412,7 @@ python3 scripts/build-assets.test.py
 ## GitHub 公开版的账号客户端配置
 
 公开源码不内置 Google OAuth 客户端或 Loomy 账号签名密钥。Gemini 使用前需在本地配置 `CMDC_PAK_GOOGLE_CLIENT_ID` / `CMDC_PAK_GOOGLE_CLIENT_SECRET`；Loomy 账号接入需配置 `CMDC_PAK_LOOMY_ACCESS_KEY_ID` / `CMDC_PAK_LOOMY_ACCESS_KEY_SECRET`。未配置相应服务时给出明确错误，其他供应商仍可使用。真实值只保存在使用者本机，不提交到仓库。详见 [公开版配置说明](docs/github-public-config.md)。
+
+## 2026-10-27 源码同步
+
+本次同步包含手机端维护源码中的官方能力适配、远程连接维护与浏览器保留等更新。源码同步不代表本轮另行构建或发布了 APK；设备安装与实际功能验收以各次交付记录为准。公开版的账号客户端配置仍由使用者在本机设置，见 [公开版配置说明](docs/github-public-config.md)。

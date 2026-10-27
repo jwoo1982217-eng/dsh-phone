@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm, cp, lstat } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, cp, lstat } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { installDesktopUpstream, restoreDesktopUpstream } from './install-desktop-upstream.mjs';
@@ -38,4 +38,15 @@ test('desktop upgrade restores core, plugins and launcher after successful insta
 });
 test('failed core swap also restores both account and paired-peer bundles', async t => {
   const f = await fixture(t, true); await assert.rejects(installDesktopUpstream(f.desktop, f.profile)); await restored(f);
+});
+test('a change outside the reviewed CodeArts transport digest is refused before profile mutation', async t => {
+  const f = await fixture(t);
+  const file = path.join(f.profile, 'node_modules/dsh-codearts-auth/lib/llm-adapter.js');
+  const modified = (await readFile(file, 'utf8')) + '\n// unreviewed local change\n';
+  await writeFile(file, modified);
+  await assert.rejects(installDesktopUpstream(f.desktop, f.profile), /lib\/llm-adapter\.js.*其他修改/);
+  assert.equal(await readFile(file, 'utf8'), modified);
+  assert.equal((await readdir(f.profile)).some(name => name.startsWith('.upstream-rollback-')), false);
+  await restored(f);
+  assert.equal(await readFile(path.join(f.desktop, 'node_modules/@deepseek-ai/dsh/marker'), 'utf8'), 'old core');
 });

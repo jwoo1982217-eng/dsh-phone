@@ -194,7 +194,11 @@ export interface ZcodeAdapterOptions {
     /**
      * 时钟（注入以便单测推进 TTL；缺省 `Date.now`）。
      *
-     * ⚠ 只给「先探后取」的需求记忆用。别拿它去做别的计时 —— 计时与超时仍走
+     * ⚠ **原为「只给『先探后取』的需求记忆用」**；2026-10-18 起**目录 TTL 也用它**
+     *   （`loadModels()` 的 `isCatalogFresh`）。⚠️ 本家是 A 类四家里**唯一已有 `now` 字段**
+     *   的一家，故**复用**它而**不新加第二个** —— 同一语义两个字段就是
+     *   「一文件两套同义判据」（本仓库红线）。
+     * ⚠ 下半句依然成立、**未改动**：别拿它去做**超时/退避**计时 —— 那些仍走
      * 真实时钟，否则超时行为会随测试注入漂移。
      */
     now?: () => number;
@@ -210,6 +214,17 @@ export interface ZcodeAdapterOptions {
      *   「尚未接线」，也别照着那样的说法再「补」一次注入。
      */
     log?: (message: string) => void;
+    /**
+     * 远端目录**落地后**的通知回调（issue IKJVTF）。
+     *
+     * 由 `registerZcodeLlm` 注入为 `broadcastCatalogChanged(ctx)`。适配器本身
+     * 拿不到 `ctx`，故必须由接线层桥接（与 `log` / `readImage` 等回调同一模式）。
+     *
+     * ⚠️ 必要性：客户端 `ModelCatalogDirectory` 在 `status === 'ready'` 时**短路
+     * 返回缓存**，只在宿主事件上 `refresh()`。没有本回调时，冷启动首拉失败
+     * 缓存的**兜底表**会永久留在对话框里，远端目录真的落地也不重读。
+     */
+    onCatalogLoaded?: () => void;
 }
 /** ZCode 模型适配器。 */
 export declare class ZcodeAdapter extends LlmAdapter {
@@ -219,8 +234,24 @@ export declare class ZcodeAdapter extends LlmAdapter {
     /** 兜底模型索引（id → 条目）。 */
     private readonly fallbackIndex;
     private remoteModels;
+    /**
+     * ⚠️ 上次**成功**读到远端目录的时刻（0 = 从未成功过）。
+     *
+     * ⚠️ 与 `remoteModels` **并存**、不是替代：`remoteModels` 存「有哪些模型」，
+     *    本字段存「何时读到的」。两者缺一都会坏：只有 `remoteModels` 则目录永不更新
+     *    （现状）；只有 `catalogAt` 则无内容可展示。
+     */
+    private catalogAt;
     /** 目录加载闸门：并发去重 + 失败/空结果冷却（见 `remote-catalog-gate.ts`）。 */
     private readonly catalogGate;
+    /**
+     * ⚠️ **2026-10-08 Task 7d：三个方法收敛到共享骨架** `createModelCatalog`。
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架，
+     * 现在只剩 `toCatalogEntry`（本家私有形状 + 档位小写 id/大写名）。
+     * ⚠️ `ready()` 门控**留在本家**（`listModels` 里，在骨架门控之前）——
+     * 它是本家特有判据（磁盘上有没有可用凭据）。
+     */
+    private readonly catalog;
     /** 自建的常驻浏览器（仅当调用方没注入 `mintCaptcha` 时用）。 */
     private captchaBrowser;
     /** captcha 配置缓存（配置很少变，但与凭据一样**不长期缓存**）。 */
@@ -252,11 +283,58 @@ export declare class ZcodeAdapter extends LlmAdapter {
      * 设置页需要它渲染被关闭的模型 —— 否则那些条目只能凭 `disabledMap` 的 key
      * 补回，而那条路径拿不到展示名，会退化成裸 id
      * （`AGENTS.md` 记过 Raccoon 的同款用户报障）。
+     *
+     * ⚠️ **2026-10-08 Task 7d**：骨架（含上面这条理由）已上移到共享实现
+     * `src/model-catalog.ts`，此处只剩委托。
      */
+    /**
+     * ★ **后台目录刷新器入口**（`src/index.ts` 的 `refreshOf` 调 `adapter.refresh?.()`）。
+     *
+     * ⚠️⚠️ 必须由适配器**显式转发** `catalog.refresh`：`ModelCatalog`（`model-catalog.ts`）
+     *    上的这个成员**不会**自动变成适配器的成员 —— `pruned()` 的 Proxy 只透传
+     *    **适配器自己的**成员（`dead-model-store.ts:748-749`）。
+     *    漏转发 ⇒ 刷新器「已武装」却对这家**空转**，且**零日志**（`refreshOf` 返回
+     *    `undefined` 时静默跳过 —— `index.ts` 的装配注释写着这件事）。
+     *    ⚠️ 与 `options.refresh`（HTTP 401 后的**凭据**重取）**不是同一件事**，
+     *    两者同名纯属巧合，**不得合并**。
+     */
+    refresh(): Promise<void>;
     listAllModels(): readonly {
         id: string;
         name: string;
     }[];
+    /**
+     * 把本家条目转成共享骨架的中间结构。
+     *
+     * ⚠️ 本家四处**真实差异**：
+     * 1. `contextWindow` / `maxTokens` 都走「远端 → 兜底表」二级查找；
+     * 2. `reasoning` 的档位来自上游 `client/configs` 的
+     *    `builtinModels[].reasoning.{levels, defaultLevel}`，且
+     *    **`id` 必须保持小写**（它是要发给上游的协议值 `output_config.effort`）、
+     *    **展示名用大写**（用户要求，DSH 直接渲染 `efforts[].name`）；
+     * 3. `inputModalities` 读远端 `supportsImage`（未声明时**保守报 `['text']`**）。
+     */
+    private toCatalogEntry;
+    private loadCatalogEntries;
+    /**
+     * 同步视图（`listAllModels` 用）。
+     *
+     * ⚠️ **不能** `await loadModels()`（同步契约）—— 读 `remoteModels` 缓存，
+     * 未落地时回退兜底表（这正是原实现的语义）。
+     */
+    private syncCatalogEntries;
+    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
+    /**
+     * 解析模型元信息。
+     *
+     * ⚠️ **`reasoning` 必须声明** —— 否则 DSH 的选择器根本不出现。
+     * **真实缺陷**（用户报障）：「使用 zcode 的 glm-5.3-flash 没法选中思考档位，
+     * 而 ZCode 自己可以设置」。根因与本仓库 qoder 那次**完全同型**：
+     * DSH 的档位选择器**只**从 `resolveModel().reasoning` 渲染
+     * （`dsh-client-ui-model-selection`：`reasoning === undefined ? [] : …efforts`），
+     * 只声明 `context` 是不够的。该判据现已收敛到 `toCatalogEntry`。
+     */
+    resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /**
      * 取远端模型目录；**失败时不把兜底表写进缓存**。
      *
@@ -267,12 +345,9 @@ export declare class ZcodeAdapter extends LlmAdapter {
      * 并用 {@link RemoteCatalogGate} 的冷却挡住「每模型重试一次」的放大。
      */
     private loadModels;
-    private inputModalitiesFor;
     /** 就绪判据：默认看磁盘上有没有可用凭据。 */
     private ready;
     private modelsForSources;
-    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
-    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /**
      * 兼容 0.1.1-rc.2：新版 `LlmRuntime.prepareCall()` 会调用
      * `registration.adapter.prepareCall(...)`，而本仓库链接的 dsh-llm 副本

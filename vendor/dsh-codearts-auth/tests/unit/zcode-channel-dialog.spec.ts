@@ -67,7 +67,12 @@ describe('★ 渠道选择在「新建账号弹窗」里，不在按钮旁', () 
     // ⚠ 2026-10-03：jet-hub.js 侧的载荷构造搬进了 `new-account.js` 的
     //   `buildCreateAccountPayload`（同一份模块被 `tests/unit/new-account-dialog.spec.ts`
     //   真跑覆盖）。故这里断言**调用点**传了渠道，而不是文件里有那个字面量。
-    expect(panel).toMatch(/buildCreateAccountPayload\(provider, zcodeProvider\)/)
+    // ⚠ 2026-10-13（终审 I2）：调用点**多传了第三个实参** `accioRegion`
+    //   （accio 的登录区域，与 zcode 的渠道共用同一个弹窗与同一个载荷构造器）。
+    //   故这里**不得**把整串写死 —— 写成「前两个实参仍是 provider / zcodeProvider」
+    //   即可，第三个实参由 `new-account-dialog.spec.ts` 的 F 组守。
+    //   （本仓库教训：接线类断言写死整串会让每加一个参数都假失败。）
+    expect(panel).toMatch(/buildCreateAccountPayload\(\s*provider\s*,\s*zcodeProvider/)
     // ⚠ 断言的是 `account.create` 的**载荷里真的带它**，不是「文件里出现过这个词」——
     //   后者会在载荷被删、而弹窗里还留着同名 state 时误判为通过（反向验证抓到过）。
     expect(panel).toMatch(/rpcCall\('account\.create',[\s\S]{0,200}?zcodeProvider/)

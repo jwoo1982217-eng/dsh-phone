@@ -53,11 +53,27 @@
  * 4. **失败绝不抛到调用方**：拿不到就保持「未知」（退回本地兜底表），
  *    绝不能让一次目录抖动把**所有**模型的图片能力打回原形。
  */
-import { TtlCache } from './ttl-cache.js';
-/** 社区模型目录（公开、无需认证）。与参考实现的 `MODELS_DEV_URL` 同源。 */
+import { readProviderModelsSync, refreshModelsDevAsync } from './models-dev-cache.js';
+/**
+ * 社区模型目录（公开、无需认证）。与参考实现的 `MODELS_DEV_URL` 同源。
+ *
+ * ⚠️ **保留字面量只为文档可读性**（用户 2026-10-17）：真正的直连点已收敛到
+ * `src/models-dev-cache.ts`，本模块不再发起请求。要改地址**改那一个模块**。
+ */
 export const CLINE_MODELS_DEV_URL = 'https://models.dev/api.json';
-/** 单次目录请求超时（毫秒）。 */
-export const CLINE_MODELS_DEV_TIMEOUT_MS = 20_000;
+/** 单次目录请求超时（毫秒）。同 `models-dev-cache.ts` 的口径（那里才是真源）。 */
+export const CLINE_MODELS_DEV_TIMEOUT_MS = 60_000;
+/**
+ * ⚠️ 20s → 60s（issue IKKZUG，2026-10-12）。
+ *
+ * 实测（本机 Windows 直连 models.dev 三次）：`20010ms 超时` / `20010ms 超时` /
+ * `1908ms 成功`。**成功只用 1.9 秒，失败的都是整段卡死** —— 说明这不是「慢」，
+ * 而是「要么很快、要么整段挂住」，20 秒在 5.39 MB 的目标上偏紧。
+ *
+ * 方向是安全的：本模块**失败只记日志、返回空表**（见 `ensureModelsDev`），
+ * 超时放宽只影响「多等一会儿」，不会让任何一次失败变成阻塞 —— 而收益是慢链路
+ * 从「必然失败」变成「大概率成功」。
+ */
 /**
  * 缓存有效期。
  *
@@ -155,7 +171,19 @@ export function applyModelsDevCatalog(models, dev) {
             name: entry.name ?? id,
             isFree: false,
             ...entry.contextWindow === undefined ? {} : { contextWindow: entry.contextWindow },
-            ...entry.supportsImage ? { supportsImage: true } : {},
+            // ⚠️⚠️ **必须原样落 `supportsImage`（含 `false`），不能只写 true**
+            // （issue IKKZUG）。原写法是
+            //   `...entry.supportsImage ? { supportsImage: true } : {}`
+            // ⇒ models.dev **明确说 false**（实测 `cline-pass/glm-5.3` 就是不带图的）
+            // 时字段**缺席**，在三态语义下被读成「**未知**」，而它其实是
+            // 「**确认不支持**」。两个方向都真实有害：宿主会按「未知」**放行**图片
+            // （发到不支持图的服务端），门禁文案也会说「能力尚未加载完成」——
+            // 与事实相反。
+            //
+            // ⚠️ 这条在**两态**下无害（两边都归 `['text']`），是三态改造**暴露**的。
+            // ⚠️ `ClineModelsDevEntry.supportsImage` 是**必填** boolean（不是可选），
+            // 所以这里不存在「dev 没给」的情形，无需再判 undefined。
+            supportsImage: entry.supportsImage,
         });
         pending.set(prefix, bucket);
     }
@@ -174,8 +202,14 @@ export function applyModelsDevCatalog(models, dev) {
                 ...model.contextWindow === undefined && entry.contextWindow !== undefined
                     ? { contextWindow: entry.contextWindow }
                     : {},
-                // ⚠️ `supportsImage` 只在**缺失**时补：本地兜底表显式 `false` 也照样赢。
-                ...model.supportsImage === undefined && entry.supportsImage ? { supportsImage: true } : {},
+                // ⚠️ `supportsImage` 只在**本地缺失**时采用 models.dev 的值：本地兜底表
+                // 显式 `false` 也照样赢（策展数据优先于社区目录，见模块头口径 2）。
+                //
+                // ⚠️⚠️ 但**必须原样采用，含 `false`**（issue IKKZUG）：原写法是
+                // `&& entry.supportsImage`，于是 dev 说 false 时字段仍**缺席**
+                // ⇒ 被读成「未知」。这与上面「补缺」分支是同一个缺陷的两个入口，
+                // 只修一个就会从另一个入口漏回去。
+                ...model.supportsImage === undefined ? { supportsImage: entry.supportsImage } : {},
             });
         const prefix = prefixOf(model.id);
         if (lastIndexOfPrefix.get(prefix) === index) {
@@ -192,28 +226,66 @@ export function applyModelsDevCatalog(models, dev) {
     return out;
 }
 /**
- * 造一个「取 models.dev 目录」的加载器：**带 TTL 与在飞去重**，失败**向上抛**。
+ * 造一个「取 models.dev 目录」的加载器：**读共享本地缓存**，失败**向上抛**。
  *
- * ⚠️ 失败必须抛（而不是返回空表）：`TtlCache` 只在成功时写入缓存，
- * 抛错才能让下一次调用**重试**，也才能让调用方区分「没读到」与
- * 「读到了且不支持」—— 把失败记成空表会把所有模型的图片能力永久打回纯文本。
+ * ## ⚠️⚠️ 改前本模块**自己直连** models.dev（用户 2026-10-17）
+ *
+ * 改前它持有一套完整的直连实现（`TtlCache` + ETag 条件请求 + 独立超时），
+ * 而 `opencode-capability.ts` 另有一套 —— **两处各连同一个 5 MB 的外部站点**，
+ * 既是本仓库明令禁止的「一文件两套同义判据」，也让「拉 models.dev」这件事
+ * 在插件里发生两次。
+ *
+ * ⇒ 现在直连收敛到 `src/models-dev-cache.ts`（全仓唯一直读点）：本加载器
+ * 只做两件事 —— ① **同步**读共享缓存；② 缓存为空时**触发一次刷新并等它**。
+ *
+ * ## 为什么仍要「等一次刷新」而不是纯同步读（issue IKKZUG 的自愈闸门）
+ *
+ * `cline-pass/*` 的模型条目与图片能力**只有 models.dev 提供**，而
+ * `ClineAdapter.remoteComplete` 用「本次是否读到」来判目录完整性与是否重试。
+ * 纯同步读会让「首次运行」永远读到空表 ⇒ 该闸门**永久**认为残缺 ⇒ 每轮都重试，
+ * 而重试本身又成了等待网络 —— 正好回到 2026-10-02「模型选择一直卡着」那条事故。
+ *
+ * ⇒ 折中：**先同步读**（有缓存就立刻返回，不付任何代价），**只在读不到时**
+ * 才 await 一次刷新。冷启动命中缓存的用户与完全不受影响。
+ *
+ * ⚠️ 失败必须抛（而不是返回空表）：调用方据此区分「没读到」与「读到了且
+ * 不支持」—— 把失败记成空表会把所有模型的图片能力永久打回纯文本。
  */
 export function makeClineModelsDevLoader(options = {}) {
-    const fetcher = options.fetcher ?? fetch;
-    const cache = new TtlCache({
-        ttlMs: options.ttlMs ?? CLINE_MODELS_DEV_TTL_MS,
-        ...options.now === undefined ? {} : { now: options.now },
-        load: async () => {
-            const response = await fetcher(CLINE_MODELS_DEV_URL, {
-                method: 'GET',
-                headers: { Accept: 'application/json' },
-                signal: AbortSignal.timeout(CLINE_MODELS_DEV_TIMEOUT_MS),
-            });
-            if (!response.ok)
-                throw new Error(`models.dev HTTP ${response.status}`);
-            return parseClineModelsDev(await response.json());
-        },
-    });
-    return async () => await cache.get();
+    return async () => {
+        // ① 同步读共享缓存：命中就直接返回，**零 await、零网络**。
+        const cached = readProviderModelsSync('cline-pass');
+        if (Object.keys(cached).length > 0)
+            return parseClineModelsDev(envelopeOf(cached));
+        // ② 没有缓存才触发一次刷新并等它（共享同一个在途槽，不会重复下载）。
+        const ok = await refreshModelsDevAsync({
+            ...options.fetcher === undefined ? {} : { fetcher: options.fetcher },
+            // ⚠️ **必须透传退避 sleep**：否则失败路径真等 2s+4s，本模块的失败用例
+            //   会直接撞上 vitest 的 5s 超时（实测踩过：5022ms 超时失败）。
+            ...options.sleep === undefined ? {} : { sleep: options.sleep },
+        });
+        const after = readProviderModelsSync('cline-pass');
+        if (Object.keys(after).length === 0) {
+            // ⚠️ 刷新失败或上游确实没有 `cline-pass` 块：**向上抛**，让调用方的
+            //   「未就绪」闸门照旧工作（它靠这个区分残缺与完整，issue IKKZUG）。
+            throw new Error(ok ? 'models.dev 未提供 cline-pass 块' : 'models.dev 缓存不可用');
+        }
+        return parseClineModelsDev(envelopeOf(after));
+    };
+}
+/**
+ * 把共享缓存里**已投影**的条目包成 {@link parseClineModelsDev} 认识的信封。
+ *
+ * ## ⚠️ 为什么绕这一下，而不是给解析器加第二种入参形态
+ *
+ * 直接写一个「从投影条目解析」的函数，等于让本模块有**两套**字段归一逻辑
+ * （`name` / `limit.context` / `modalities.input` 各读一遍）—— 那是本仓库
+ * 明令禁止的「一文件两套同义判据」，且必然随字段演进而漂移。
+ *
+ * ⇒ 合成出与原始响应**同形**的信封，交给唯一那���解析器。
+ * 成本是构造一个小对象（18 条量级），换来「字段归一只有一处」。
+ */
+function envelopeOf(models) {
+    return { 'cline-pass': { models } };
 }
 //# sourceMappingURL=cline-models-dev.js.map

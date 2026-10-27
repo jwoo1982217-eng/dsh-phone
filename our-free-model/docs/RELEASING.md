@@ -38,7 +38,8 @@
 改完代码后——
 
 ```bash
-# 1. 修改 package.json 的 version 与 feed/announcements.json（版本说明）
+# 1. 修改 package.json 的 version、两份 README 的本地 tarball 安装版本号
+#    （catalog 套件校验文件名版本）与 feed/announcements.json（版本说明）
 # 2. 重新生成清单（把每个发布文件的字节数与 SHA-256 写进 feed/manifest.json；
 #    同一份文件清单也会写进 catalog/integrity.json，供生态目录审计用）
 node scripts/build-manifest.mjs --key /安全目录/既有发布私钥.pem
@@ -108,8 +109,8 @@ revision 再提交，HEAD 又前移——逻辑上无解。改比"最近一次�
 
 ## 固定提交取件与旧客户端过渡（issue #120）
 
-新版升级器将默认更新 URL 用于发现版本；实际下载前通过 GitHub 官方
-`/repos/Ebony-Vinyl/dsh-our-free-model/commits/<ref>` 解析完整 40 位 commit SHA，
+新版升级器将默认更新 URL 用于发现版本；实际下载前依次通过 GitHub 官方
+commits API、git upload-pack refs 和 commits Atom feed 解析完整 40 位 commit SHA，
 再从 `raw.githubusercontent.com/<repo>/<sha>/feed/manifest.json` 或
 `cdn.jsdelivr.net/gh/<repo>@<sha>/feed/manifest.json` 下载签名清单。
 清单的相对 `base` 从这个固定 URL 解析，全部文件因此来自同一提交。
@@ -117,8 +118,8 @@ raw 取件失败转 CDN 时复用本次已解析的 SHA；点击升级会重新�
 
 现有公钥、清单字段和签名格式保持兼容；解析接口仅提供下载位置，不授权代码。
 清单验签、文件大小与 SHA-256、暂存回读及回滚照常执行。解析失败、限流或超时会报错，
-不退回可变分支取件。每个镜像的一次解析及清单读取共用 15 秒预算；每次检查、应用升级
-需要 GitHub API 可达且有公开接口配额。固定 SHA 的 `--source` 和本地测试源无需该接口。
+不退回可变分支取件。每个镜像的一次解析及清单读取共用 15 秒预算；单个解析端点最多
+占用 3 秒，API 限流时仍可尝试 refs 和 Atom。固定 SHA 的 `--source` 和本地测试源无需解析。
 
 固定 SHA 的主 jsDelivr 文件取件遇到连接失败、重定向、404、429 或 5xx 时，
 可切换至 `gcore.jsdelivr.net` 的同一 SHA 和路径，两次取件共用单次超时预算。
@@ -136,7 +137,7 @@ raw 取件失败转 CDN 时复用本次已解析的 SHA；点击升级会重新�
 
 ## 关于源顺序与网络现实
 
-发现源的顺序是 `raw.githubusercontent(main) → jsDelivr(@main) → raw(master)`。
+发现源的顺序是 `raw.githubusercontent(main) → jsDelivr(@main) → gcore jsDelivr(@main) → gh-proxy(main)`。
 新版升级器先固定提交再取件，全部失败时报错并保留现有安装；公告仍使用原有缓存回退。
 以 `src/feed.js` 与 `src/updater.js` 的 `DEFAULT_*_SOURCES` 数组及下载实现为准。
 
@@ -316,17 +317,18 @@ artifact bytes — but HEAD sits at all-green there).
 
 ## Immutable downloads and migration from old clients (issue #120)
 
-The updater resolves each official discovery ref through GitHub's commits API
+The updater resolves each official discovery ref through GitHub's commits API,
+git upload-pack refs, then the commits Atom feed
 before downloading its signed manifest. It returns the SHA-based manifest URL;
 all file URLs resolve relative to that snapshot. A raw-to-CDN fallback reuses
 the same SHA within a check. Apply performs a fresh check. The resolver only
 selects a location: the existing Ed25519 signature and every file's size/hash
 remain mandatory. The manifest format and pinned public key do not change.
 
-Resolution and manifest reading share a 15-second budget per source. If GitHub
-API resolution fails, is rate limited or times out, the update fails without
-falling back to mutable refs. Updates now require public GitHub API access and
-quota; explicit full-SHA URLs and custom/local test sources need no resolver.
+Resolution and manifest reading share a 15-second budget per source. Each resolver
+has at most three seconds, so an API rate limit or timeout can fall back to refs
+and Atom. If all resolvers fail, the update fails without using mutable refs.
+Explicit full-SHA URLs and custom/local test sources need no resolver.
 
 Installed old clients still fetch mutable refs. Purge the current publication
 and verify all files with an old updater before relying on that migration.
@@ -342,7 +344,7 @@ not trigger this fallback. Mutable and custom file sources are not remapped.
 
 ## Source order and network reality
 
-Discovery order is `raw.githubusercontent(main) → jsDelivr(@main) → raw(master)`.
+Discovery order is `raw.githubusercontent(main) → jsDelivr(@main) → gcore jsDelivr(@main) → gh-proxy(main)`.
 The new updater pins a commit before downloading; on failure it reports the
 error and retains the installation. Announcements retain their existing cache
 fallback. Consult the source arrays and download implementation in `src/feed.js`

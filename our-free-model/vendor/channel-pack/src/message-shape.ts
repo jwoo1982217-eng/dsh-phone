@@ -144,3 +144,25 @@ export function normalizeHarnessMessages<T extends HarnessMessageLike>(
   }
   return normalized
 }
+
+/** Collect message-carried system text without turning it into conversation turns. */
+export function collectHarnessSystem(messages: readonly Pick<HarnessMessageLike, 'role' | 'content'>[]): string {
+  const parts: string[] = []
+  for (const message of messages) {
+    if (message === null || typeof message !== 'object' || message.role !== 'system') continue
+    const content = message.content
+    const text = typeof content === 'string'
+      ? content
+      : Array.isArray(content)
+        ? content
+          .filter((block): block is { type: 'text'; text: string } => (
+            typeof block === 'object' && block !== null
+            && block.type === 'text' && typeof block.text === 'string'
+          ))
+          .map(block => block.text)
+          .join('\n')
+        : ''
+    if (text !== '') parts.push(text)
+  }
+  return parts.join('\n\n')
+}

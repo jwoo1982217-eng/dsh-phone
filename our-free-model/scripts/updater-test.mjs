@@ -15,7 +15,7 @@ import os from 'node:os'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import assert from 'node:assert/strict'
-import { parseVersion, compareVersions, parseManifest, fileUrlOf, downloadManifest, PluginUpdater, stageRelease, verifyStaged, backupPackage, restoreBackup, installStaged, verifyInstalled, signManifest, verifyManifestSignature, stableStringify, PINNED_MANIFEST_PUBLIC_KEY } from '../src/updater.js'
+import { parseVersion, compareVersions, parseManifest, fileUrlOf, downloadManifest, parseUploadPackRefs, PluginUpdater, stageRelease, verifyStaged, backupPackage, restoreBackup, installStaged, verifyInstalled, signManifest, verifyManifestSignature, stableStringify, DEFAULT_MANIFEST_SOURCES, PINNED_MANIFEST_PUBLIC_KEY } from '../src/updater.js'
 import { selfReload } from '../src/reload.js'
 const CONTROLLED_DEFAULTS = ['http://127.0.0.1:1/never.json']
 
@@ -44,6 +44,10 @@ check('compareVersions ordering', () => {
   assert.equal(compareVersions('1.0.0-rc.2', '1.0.0-rc.1'), 1)
   assert.equal(compareVersions('1.0.0-rc.2', '1.0.0-rc.10'), -1, 'numeric pre parts compare numerically')
   assert.equal(compareVersions('2.0.0', '1.9.9'), 1)
+})
+check('default update sources do not probe the removed master ref', () => {
+  assert.equal(DEFAULT_MANIFEST_SOURCES.some(source => source.includes('/master/')), false)
+  assert.ok(DEFAULT_MANIFEST_SOURCES.some(source => source.includes('/main/')))
 })
 
 // ── manifest validation ──────────────────────────────────────────────────────
@@ -121,9 +125,16 @@ const NEXT_SNAPSHOT = 'b'.repeat(40)
 const REPOSITORY = 'Ebony-Vinyl/dsh-our-free-model'
 const rawSource = `https://raw.githubusercontent.com/${REPOSITORY}/main/feed/manifest.json`
 const cdnSource = `https://cdn.jsdelivr.net/gh/${REPOSITORY}@main/feed/manifest.json`
+const gcoreSource = `https://gcore.jsdelivr.net/gh/${REPOSITORY}@main/feed/manifest.json`
+// A raw.githubusercontent.com proxy, added for networks where both origins above
+// are slow or intermittently unreachable. It must be pinned to the same commit
+// as the direct origin — never left as a mutable-branch install source.
+const proxySource = `https://gh-proxy.com/https://raw.githubusercontent.com/${REPOSITORY}/main/feed/manifest.json`
 const resolverUrl = `https://api.github.com/repos/${REPOSITORY}/commits/main`
 const rawSnapshot = rawSource.replace('/main/', `/${SNAPSHOT}/`)
 const cdnSnapshot = cdnSource.replace('@main/', `@${SNAPSHOT}/`)
+const gcoreSnapshot = gcoreSource.replace('@main/', `@${SNAPSHOT}/`)
+const proxySnapshot = proxySource.replace('/main/', `/${SNAPSHOT}/`)
 
 function snapshotFetch({ source = rawSnapshot, resolver = { sha: SNAPSHOT }, resolverStatus = 200, manifest = newManifest } = {}) {
   const calls = []
@@ -144,7 +155,7 @@ function snapshotFetch({ source = rawSnapshot, resolver = { sha: SNAPSHOT }, res
   return { fetchImpl, calls }
 }
 
-for (const [name, source, snapshot] of [['raw', rawSource, rawSnapshot], ['CDN', cdnSource, cdnSnapshot]]) {
+for (const [name, source, snapshot] of [['raw', rawSource, rawSnapshot], ['CDN', cdnSource, cdnSnapshot], ['gcore', gcoreSource, gcoreSnapshot], ['raw proxy', proxySource, proxySnapshot]]) {
   await checkAsync(`${name} stages every file from the manifest's fixed commit, even when main moves`, async () => {
     const data = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-snapshot-'))
     const fixture = snapshotFetch({ source: snapshot })
@@ -211,7 +222,7 @@ for (const resolver of [{}, { sha: 'main' }, { sha: 'a'.repeat(7) }, { sha: '../
   await checkAsync(`an invalid snapshot fails closed (${JSON.stringify(resolver)})`, async () => {
     const fixture = snapshotFetch({ resolver })
     await assert.rejects(() => downloadManifest([cdnSource], { fetchImpl: fixture.fetchImpl, verifyKey: TEST_PUBLIC_KEY }), /full commit SHA/)
-    assert.equal(fixture.calls.length, 1, 'no mutable manifest or file is fetched')
+    assert.equal(fixture.calls.length, 3, 'all resolvers fail without fetching mutable files')
   })
 }
 
@@ -219,9 +230,136 @@ for (const status of [403, 429, 503]) {
   await checkAsync(`resolver HTTP ${status} refuses a mutable download`, async () => {
     const fixture = snapshotFetch({ resolverStatus: status })
     await assert.rejects(() => downloadManifest([cdnSource], { fetchImpl: fixture.fetchImpl, verifyKey: TEST_PUBLIC_KEY }), new RegExp(`snapshot resolution failed.*HTTP ${status}`))
-    assert.equal(fixture.calls.length, status === 403 || status === 429 ? 2 : 1)
+    assert.equal(fixture.calls.length, 3)
   })
 }
+
+await checkAsync('GitHub rate limiting is diagnosed and not repeated for mirrors of the same ref (issue #384)', async () => {
+  const calls = []
+  const fetchImpl = async url => {
+    calls.push(String(url))
+    return new Response(null, { status: 403, headers: {
+      'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1792238400', 'retry-after': '60',
+    } })
+  }
+  await assert.rejects(() => downloadManifest([rawSource, cdnSource, proxySource], { fetchImpl, verifyKey: TEST_PUBLIC_KEY }), error => {
+    assert.match(error.message, /HTTP 403/)
+    assert.match(error.message, /GitHub API rate limit exceeded/)
+    assert.match(error.message, /x-ratelimit-remaining=0/)
+    assert.match(error.message, /x-ratelimit-reset=1792238400/)
+    assert.match(error.message, /retry-after=60/)
+    return true
+  })
+  assert.deepEqual(calls, [resolverUrl, `https://github.com/${REPOSITORY}/info/refs?service=git-upload-pack`,
+    `https://github.com/${REPOSITORY}/commits/main.atom`], 'resolver failures are shared across mirrors')
+})
+
+const pkt = payload => {
+  const body = Buffer.from(payload)
+  return Buffer.concat([Buffer.from((body.length + 4).toString(16).padStart(4, '0')), body])
+}
+const refAdvertisement = (rows = [[SNAPSHOT, 'refs/heads/main']]) => Buffer.concat([
+  pkt('# service=git-upload-pack\n'), Buffer.from('0000'),
+  ...rows.map(([sha, ref], index) => pkt(`${sha} ${ref}${index === 0 ? '\0multi_ack symref=HEAD:refs/heads/main' : ''}\n`)),
+  Buffer.from('0000'),
+])
+check('git refs use byte lengths, preserve Unicode refs, and read later refs', () => {
+  const refs = parseUploadPackRefs(refAdvertisement([[NEXT_SNAPSHOT, 'refs/heads/中文'], [SNAPSHOT, 'refs/heads/main']]))
+  assert.equal(refs.get('refs/heads/中文'), NEXT_SNAPSHOT)
+  assert.equal(refs.get('refs/heads/main'), SNAPSHOT)
+  for (const body of ['zzzz', '0003', '0010short', '000']) assert.throws(() => parseUploadPackRefs(body), /packet/)
+  const malformed = Buffer.from(refAdvertisement())
+  for (let index = 0; index < 4; index++) malformed[index] |= 0x80
+  assert.throws(() => parseUploadPackRefs(malformed), /packet/, 'high-bit header bytes cannot become ASCII digits')
+  assert.throws(() => parseUploadPackRefs(refAdvertisement().subarray(0, -4)), /incomplete/, 'a truncated advertisement cannot select a commit')
+})
+
+for (const stalled of ['api', 'refs']) {
+  await checkAsync(`a stalled ${stalled} resolver leaves time for a healthy fallback and manifest`, async () => {
+    const calls = []
+    const fixture = snapshotFetch({ source: cdnSnapshot })
+    const fetchImpl = async (url, options) => {
+      const target = String(url)
+      calls.push(target)
+      const isApi = target === resolverUrl
+      const isRefs = target.includes('/info/refs?')
+      if ((stalled === 'api' && isApi) || (stalled === 'refs' && isRefs)) {
+        return new Promise((_, reject) => {
+          if (options.signal.aborted) reject(options.signal.reason)
+          else options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true })
+        })
+      }
+      if (isApi) return new Response(null, { status: 403, headers: { 'x-ratelimit-remaining': '0' } })
+      if (isRefs) return new Response(refAdvertisement())
+      if (target.endsWith('.atom')) return new Response(`<feed><entry><id>tag:github.com,2008:Grit::Commit/${SNAPSHOT}</id></entry></feed>`)
+      return fixture.fetchImpl(url, options)
+    }
+    const keepAlive = setInterval(() => {}, 1000)
+    try {
+      const result = await downloadManifest([rawSource, cdnSource], { fetchImpl, timeoutMs: 240, verifyKey: TEST_PUBLIC_KEY })
+      assert.equal(result.source, cdnSnapshot)
+      assert.equal(calls.filter(url => url === resolverUrl).length, 1, 'completed API failures are not retried per mirror')
+      assert.equal(calls.filter(url => url.includes('/info/refs?')).length, 1)
+      assert.equal(calls.some(url => url.endsWith('.atom')), stalled === 'refs')
+    } finally { clearInterval(keepAlive) }
+  })
+}
+
+for (const route of ['refs', 'feed']) {
+  await checkAsync(`API rate limiting falls back to ${route} and stages one immutable signed release`, async () => {
+    const calls = []
+    const fixture = snapshotFetch({ source: cdnSnapshot })
+    const fetchImpl = async (url, options) => {
+      calls.push({ url: String(url), options })
+      if (String(url) === resolverUrl) return new Response(null, { status: 403, headers: { 'x-ratelimit-remaining': '0' } })
+      if (String(url).includes('/info/refs?')) return route === 'refs'
+        ? new Response(refAdvertisement()) : new Response('0010short')
+      if (String(url).endsWith('.atom')) return new Response(`<feed><entry><id>tag:github.com,2008:Grit::Commit/${SNAPSHOT}</id></entry></feed>`)
+      return fixture.fetchImpl(url, options)
+    }
+    const data = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-ref-fallback-'))
+    try {
+      const result = await downloadManifest([rawSource, cdnSource], { fetchImpl, verifyKey: TEST_PUBLIC_KEY })
+      assert.equal(result.source, cdnSnapshot)
+      await stageRelease({ manifest: result.manifest, manifestUrl: result.source, stageDir: data, fetchImpl })
+      verifyStaged(data, result.manifest)
+      assert.equal(calls.filter(call => call.url === resolverUrl).length, 1)
+      assert.equal(calls.filter(call => call.url.includes('/info/refs?')).length, 1)
+      assert.ok(calls.every(call => call.options.redirect === 'error'))
+      assert.ok(calls.every(call => call.url !== rawSource && !call.url.startsWith(cdnSource)))
+    } finally { fs.rmSync(data, { recursive: true, force: true }) }
+  })
+}
+
+await checkAsync('ref fallback uses a peeled annotated tag before its tag object', async () => {
+  const source = rawSource.replace('/main/', '/v1.1.0/')
+  const fixture = snapshotFetch()
+  const fetchImpl = (url, options) => String(url).includes('api.github.com')
+    ? Promise.resolve(new Response(null, { status: 429 }))
+    : String(url).includes('/info/refs?')
+      ? Promise.resolve(new Response(refAdvertisement([[NEXT_SNAPSHOT, 'refs/tags/v1.1.0'], [SNAPSHOT, 'refs/tags/v1.1.0^{}']])))
+      : fixture.fetchImpl(url, options)
+  assert.equal((await downloadManifest([source], { fetchImpl, verifyKey: TEST_PUBLIC_KEY })).source, rawSnapshot)
+})
+
+await checkAsync('a fallback-resolved manifest still rejects a forged signature', async () => {
+  const fixture = snapshotFetch({ manifest: { ...newManifest, version: '9.9.9' } })
+  const fetchImpl = (url, options) => String(url).includes('api.github.com')
+    ? Promise.resolve(new Response(null, { status: 429 }))
+    : String(url).includes('/info/refs?')
+      ? Promise.resolve(new Response(refAdvertisement()))
+      : fixture.fetchImpl(url, options)
+  await assert.rejects(() => downloadManifest([rawSource], { fetchImpl, verifyKey: TEST_PUBLIC_KEY }), /signature/)
+})
+
+await checkAsync('a generic resolver 403 is not misreported as rate limiting', async () => {
+  const fixture = snapshotFetch({ resolverStatus: 403 })
+  await assert.rejects(() => downloadManifest([rawSource], { fetchImpl: fixture.fetchImpl, verifyKey: TEST_PUBLIC_KEY }), error => {
+    assert.match(error.message, /HTTP 403/)
+    assert.doesNotMatch(error.message, /rate limit exceeded/)
+    return true
+  })
+})
 
 await checkAsync('resolver timeout remains bounded and does not fall back to mutable files', async () => {
   let calls = 0
@@ -235,7 +373,7 @@ await checkAsync('resolver timeout remains bounded and does not fall back to mut
   const timer = setInterval(() => {}, 1000)
   try {
     await assert.rejects(() => downloadManifest([cdnSource], { fetchImpl, timeoutMs: 20 }), /timed out|timeout/i)
-    assert.equal(calls, 1)
+    assert.ok(calls >= 1 && calls <= 3, 'the source deadline stops resolution within its three bounded attempts')
   } finally { clearInterval(timer) }
 })
 
@@ -535,6 +673,7 @@ await checkAsync('apply() upgrades the package in place and records history', as
 await checkAsync('apply() drops files the new release removed', async () => {
   const pkg = makePackage(OLD)
   fs.writeFileSync(path.join(pkg, 'obsolete.js'), 'gone soon\n')
+  fs.writeFileSync(path.join(pkg, 'tsconfig.json'), '{"compilerOptions":{"strict":true}}\n')
   // A development install *is* the git working tree, so the repository's own
   // scaffolding sits beside the shipped files: it is not part of any release,
   // and the sweep that drops obsolete files must not eat the test suite or the
@@ -563,11 +702,87 @@ await checkAsync('apply() drops files the new release removed', async () => {
   assert.equal(fs.existsSync(path.join(pkg, 'catalog', 'dsh-plugin.json')), true, 'the ecosystem pack records survive an upgrade')
   assert.equal(fs.existsSync(path.join(pkg, 'worker', 'worker.js')), true, 'the self-hosted gateway sources survive')
   assert.equal(fs.existsSync(path.join(pkg, 'vendor', 'lib.js')), true, 'vendored sources survive')
+  assert.equal(fs.readFileSync(path.join(pkg, 'tsconfig.json'), 'utf8'), '{"compilerOptions":{"strict":true}}\n', 'TypeScript configuration survives an update')
+  assert.equal(fs.existsSync(path.join(updater.backupDir, 'tsconfig.json')), false, 'development configuration is not a runtime rollback file')
   assert.equal(fs.existsSync(path.join(pkg, '.git', 'HEAD')), true, 'and the git history')
   assert.equal(fs.existsSync(path.join(updater.backupDir, '.git', 'HEAD')), false, 'the rollback copy holds the package, not the repository')
   fs.rmSync(pkg, { recursive: true, force: true })
   fs.rmSync(data, { recursive: true, force: true })
 })
+for (const rollback of [false, true]) {
+  await checkAsync(`linked development installs never traverse, back up or delete desktop caches (rollback=${rollback})`, async () => {
+    const pkg = makePackage(OLD)
+    const data = makeDataDir()
+    const cache = path.join(pkg, 'packages')
+    const sentinels = {
+      'packages/desktop/src-tauri/target/debug/build/example/build_script_build.pdb': 'rust-cache-must-stay-on-original-drive',
+      'packages/desktop/src-tauri/target/release/ofm-desktop.exe': 'desktop-program',
+      'packages/standalone/service.mjs': 'independent-product-source',
+    }
+    const originalReadDir = fs.readdirSync
+    try {
+      for (const [rel, value] of Object.entries(sentinels)) {
+        const file = path.join(pkg, ...rel.split('/'))
+        fs.mkdirSync(path.dirname(file), { recursive: true })
+        fs.writeFileSync(file, value)
+      }
+      fs.readdirSync = (directory, ...args) => {
+        if (path.resolve(String(directory)) === cache || path.resolve(String(directory)).startsWith(cache + path.sep)) {
+          throw new Error('the updater must not even enumerate separate products or Rust cache')
+        }
+        return originalReadDir(directory, ...args)
+      }
+      const updater = fixtureUpdater(pkg, data)
+      if (rollback) {
+        await assert.rejects(() => updater.apply({ activate: async () => ({
+          ok: false, restored: true, error: 'controlled activation refusal',
+        }) }), /controlled activation refusal/)
+        assert.equal(updater.currentVersion(), OLD)
+      } else {
+        await updater.apply({})
+        assert.equal(updater.currentVersion(), NEW)
+      }
+      assert.equal(fs.existsSync(path.join(updater.backupDir, 'packages')), false)
+      for (const [rel, value] of Object.entries(sentinels)) {
+        assert.equal(fs.readFileSync(path.join(pkg, ...rel.split('/')), 'utf8'), value)
+      }
+    } finally {
+      fs.readdirSync = originalReadDir
+      fs.rmSync(pkg, { recursive: true, force: true })
+      fs.rmSync(data, { recursive: true, force: true })
+    }
+  })
+}
+
+await checkAsync('legacy rollback receipts containing Rust caches restore only plugin runtime files', async () => {
+  const pkg = makePackage(OLD)
+  const data = makeDataDir()
+  const backup = path.join(data, 'rollback')
+  const rel = 'packages/desktop/src-tauri/target/debug/legacy-cache.pdb'
+  try {
+    backupPackage(pkg, backup)
+    const cached = Buffer.from('retained historical cache')
+    const backupFile = path.join(backup, ...rel.split('/'))
+    fs.mkdirSync(path.dirname(backupFile), { recursive: true })
+    fs.writeFileSync(backupFile, cached)
+    const receiptFile = path.join(backup, '.ofm-backup.json')
+    const receipt = JSON.parse(fs.readFileSync(receiptFile, 'utf8'))
+    receipt.files.push({ path: rel, size: cached.length, sha256: crypto.createHash('sha256').update(cached).digest('hex') })
+    fs.writeFileSync(receiptFile, JSON.stringify(receipt))
+    const currentCache = path.join(pkg, ...rel.split('/'))
+    fs.mkdirSync(path.dirname(currentCache), { recursive: true })
+    fs.writeFileSync(currentCache, 'current Rust cache must stay untouched')
+    fs.writeFileSync(path.join(pkg, 'index.js'), 'broken candidate')
+    restoreBackup(backup, pkg)
+    assert.equal(fs.readFileSync(path.join(pkg, 'index.js'), 'utf8'), oldFiles['index.js'])
+    assert.equal(fs.readFileSync(currentCache, 'utf8'), 'current Rust cache must stay untouched')
+    assert.deepEqual(fs.readFileSync(backupFile), cached, 'historical cache is retained without deletion or restoration')
+  } finally {
+    fs.rmSync(pkg, { recursive: true, force: true })
+    fs.rmSync(data, { recursive: true, force: true })
+  }
+})
+
 await checkAsync('a failed apply leaves the installed package and history consistent', async () => {
   const pkg = makePackage(OLD)
   const data = makeDataDir()
@@ -686,6 +901,58 @@ await checkAsync('restoreBackup reports copy failures and still restores the res
   fs.rmSync(pkg, { recursive: true, force: true })
   fs.rmSync(data, { recursive: true, force: true })
 })
+await checkAsync('rollback restores a read-only file without deleting the remaining installed copy', async () => {
+  if (process.getuid?.() === 0) return
+  const pkg = makePackage(OLD)
+  const data = makeDataDir()
+  const backupDir = path.join(data, 'rollback')
+  const target = path.join(pkg, 'index.js')
+  try {
+    backupPackage(pkg, backupDir)
+    fs.writeFileSync(target, newFiles['index.js'])
+    fs.chmodSync(target, 0o444)
+    const mode = fs.statSync(target).mode
+    restoreBackup(backupDir, pkg)
+    assert.equal(fs.readFileSync(target, 'utf8'), oldFiles['index.js'])
+    assert.equal(fs.readFileSync(path.join(pkg, 'client.js'), 'utf8'), oldFiles['client.js'])
+    assert.equal(fs.statSync(target).mode, mode, 'successful recovery must restore the original file permissions')
+  } finally {
+    fs.chmodSync(target, 0o644)
+    fs.rmSync(pkg, { recursive: true, force: true })
+    fs.rmSync(data, { recursive: true, force: true })
+  }
+})
+await checkAsync('failed permission retry restores the original file mode and keeps installed bytes', async () => {
+  const pkg = makePackage(OLD)
+  const data = makeDataDir()
+  const backupDir = path.join(data, 'rollback')
+  const target = path.join(pkg, 'index.js')
+  const copy = fs.copyFileSync
+  try {
+    backupPackage(pkg, backupDir)
+    fs.writeFileSync(target, newFiles['index.js'])
+    fs.chmodSync(target, 0o555)
+    const mode = fs.statSync(target).mode
+    let attempts = 0
+    fs.copyFileSync = (source, destination, ...args) => {
+      if (destination === target) {
+        const code = ++attempts === 1 ? 'EACCES' : 'EBUSY'
+        throw Object.assign(new Error(code), { code })
+      }
+      return copy(source, destination, ...args)
+    }
+    assert.throws(() => restoreBackup(backupDir, pkg), /rollback incomplete.*EBUSY/)
+    assert.equal(attempts, 2)
+    assert.equal(fs.statSync(target).mode, mode, 'unsuccessful recovery must not leave new permission bits')
+    assert.equal(fs.readFileSync(target, 'utf8'), newFiles['index.js'])
+    assert.equal(fs.readFileSync(path.join(pkg, 'client.js'), 'utf8'), oldFiles['client.js'])
+  } finally {
+    fs.copyFileSync = copy
+    fs.chmodSync(target, 0o644)
+    fs.rmSync(pkg, { recursive: true, force: true })
+    fs.rmSync(data, { recursive: true, force: true })
+  }
+})
 await checkAsync('installStaged + verifyInstalled accept a good stage', async () => {
   const pkg = makePackage(OLD)
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-stage-'))
@@ -707,6 +974,33 @@ function fixtureUpdater(pkg, data, runningVersion = OLD) {
     defaultSources: [`${base}/repo/feed/manifest.json`], manifestPublicKey: TEST_PUBLIC_KEY,
   })
 }
+
+await checkAsync('a failed recheck retains the known target and a successful retry clears the error (issue #148)', async () => {
+  const pkg = makePackage(OLD)
+  const data = makeDataDir()
+  let unavailable = false
+  const updater = new PluginUpdater({
+    pkgDir: pkg, dataDir: data, runningVersion: OLD, settings: () => ({}),
+    defaultSources: [`${base}/repo/feed/manifest.json`], manifestPublicKey: TEST_PUBLIC_KEY,
+    fetchImpl: (url, options) => unavailable
+      ? Promise.resolve(new Response(null, { status: 503 })) : fetch(url, options),
+  })
+  try {
+    await updater.check()
+    unavailable = true
+    await assert.rejects(() => updater.apply(), /HTTP 503/)
+    assert.equal(updater.status().lastApplied.to, NEW)
+    assert.equal(updater.status().lastApplied.ok, false)
+    assert.equal(updaterVersion(pkg), OLD)
+    unavailable = false
+    await updater.apply({ activate: async () => ({ ok: true, version: NEW }) })
+    assert.equal(updater.status().lastApplied.ok, true)
+    assert.equal(updater.status().error, '')
+  } finally {
+    fs.rmSync(pkg, { recursive: true, force: true })
+    fs.rmSync(data, { recursive: true, force: true })
+  }
+})
 
 /** Host loader stand-in; the real selfReload still performs every transition. */
 function reloadHost(mode) {

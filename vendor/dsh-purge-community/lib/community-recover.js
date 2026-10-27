@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as core from './core.js';
+import { assertNativeRecipeBase, assertCurrentNativeRecipe } from "./core-version-guard.js";
 import { restorePrivateOverlay } from './community-overlay.js';
 
 const OWNER = 'dsh-purge-community-private-runtime-v1';
@@ -44,8 +45,11 @@ export async function recoverCommunityProfile(args = process.argv.slice(2)) {
   const state = JSON.parse(fs.readFileSync(regularFile(stateFile), 'utf8'));
   if (state.owner !== OWNER || state.profileDir !== dir) throw new Error('Recovery state belongs to another profile');
   if (state.phase === 'reverted') return { ok: true, restored: false, note: 'This profile has no active community overlay.' };
+  if (!/^[0-9a-f-]{36}$/.test(state.token || '') || state.aiBase !== path.join(ownerDir, state.token, 'node_modules', '@deepseek-ai')) throw new Error('Recovery state escapes its private package root');
+  assertNativeRecipeBase(state.aiBase, 'Recover');
   const installAnchor = regularFile(state.profileInstallAnchor);
   const profile = { name, home, dir, installAnchor, patchPath: path.join(dir, 'cordis.patch.yml') };
+  assertCurrentNativeRecipe(profile, 'Recover');
   const ctx = { profileContext: profile, get: key => key === 'profileContext' ? profile : undefined };
   process.env.DSH_HOME = home;
   const result = await restorePrivateOverlay(ctx, { revert: async aiBase => {

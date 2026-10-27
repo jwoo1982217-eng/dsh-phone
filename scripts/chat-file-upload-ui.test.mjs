@@ -1,3 +1,4 @@
+import {frontendShared} from './fixtures/frontend-shared.mjs';
 import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -7,37 +8,28 @@ import { createRequire } from 'node:module';
 
 // 从实际覆盖产物取出编辑器和输入栏，仅在测试副本暴露内部符号。
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const dist=path.join(root,'runtime/node_modules/@deepseek-ai/dsh-web-frontend/dist');const {shared:sharedFrontend}=await frontendShared(dist);
 const report = process.argv[2] ?? path.join(os.tmpdir(), 'dsh-composer-newline');
 await mkdir(report, { recursive: true });
 const require = createRequire(path.join(root, 'vendor/dsh-codearts-auth/package.json'));
 const { build } = require('esbuild');
 const playwright = process.env.DSH_PLAYWRIGHT_MODULE ?? path.join(os.homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs');
 const { chromium } = await import(pathToFileURL(playwright));
-const source = await readFile(path.join(root, 'runtime/overlays/@deepseek-ai/dsh-client-ui-conversation/lib/client.js'), 'utf8');
+const source = await readFile(process.env.DSH_TEST_CONVERSATION_CLIENT ?? path.join(root, 'runtime/overlays/@deepseek-ai/dsh-client-ui-conversation/lib/client.js'), 'utf8');
 assert.equal(source.split('return module.exports;').length, 2);
 const tested = source.replace('return module.exports;', 'module.exports.test = { InputBar, DraftEditorRuntime, registerComposerKeymap, enterCommand: cn$1 }; return module.exports;');
 const referenceSource = await readFile(path.join(root,'runtime/overlays/@deepseek-ai/dsh-client-ui-reference/lib/client.js'),'utf8');
 const bundled = await build({ stdin: { resolveDir: path.join(root, 'vendor/dsh-codearts-auth'), loader: 'js', contents: `
-import React from 'react'; import * as jsx from 'react/jsx-runtime';
-import * as ReactDOM from 'react-dom'; import { createRoot } from 'react-dom/client';
+const shared=window.__TEST_SHARED__,React=shared.react,jsx=shared['react/jsx-runtime'],ReactDOM=shared['react-dom'],createRoot=shared['react-dom/client'].createRoot;
 window.__ModuleLoader__ = { load({id:moduleId,factory}) {
   const result = factory(id => {
-    if (id === 'react') return React;
-    if (id === 'react/jsx-runtime') return jsx;
-    if (id === 'react-dom') return ReactDOM;
-    if (id === '@deepseek-ai/cordis') return { Service: class Service {} };
-    if (id === '@deepseek-ai/dsh-client-ui-primitives') return {
-      Tooltip: ({children}) => children, Toast: ({text}) => React.createElement('div', {role:'alert'}, text),
-      IconPlusOutlineMedium: () => React.createElement('span', {}, '+'), ReferenceIconRegular: () => React.createElement('span', {}, 'file'),
-      useAnchoredPosition: () => ({}), useDismissOnOutsidePointer: () => {}
-    };
-    return {};
+    if(!(id in shared))throw Error('missing shipped builtin '+id);return shared[id];
   });
   if(moduleId==='@deepseek-ai/dsh-client-ui-conversation')window.conversation=result;else window.referencePlugin=result;
 }};
 ${tested}
 ${referenceSource}
-window.referencePlugin.apply({effect:fn=>fn(),locale:{register(){},bind:()=>key=>key},get:name=>name==='sessions'?{list:{getSnapshot:()=>({byId:{}})}}:{registerSource:source=>{window.referenceSource=source;}},sidebarRight:{openResource:path=>{window.openedFile=path;}}});
+window.referencePlugin.apply({uiConversation:{userText:{register:()=>()=>{}}},slots:{inject:(name,fn)=>{const g=fn();if(g&&typeof g.next==='function')for(const ignored of g){};},register:()=>()=>{}},effect:fn=>fn(),locale:{register(){},bind:()=>key=>key},get:name=>name==='sessions'?{list:{getSnapshot:()=>({byId:{}})}}:{registerSource:source=>{window.referenceSource=source;}},sidebarRight:{openResource:path=>{window.openedFile=path;}}});
 const { InputBar, DraftEditorRuntime } = window.conversation.test;
 window.sends = []; window.stopCount = 0; window.popup = false; window.picks = 0;
 window.fixture = { running:false, phase:'plain', locked:false, attachment:false, upload:'ready', busyEnter:'queue' };
@@ -73,13 +65,15 @@ try{for(const width of [393,692,1000]){
  const filePath='/data/user/0/com.dshphone/files/dsh-home/uploads/chat-files/0123456789abcdef0123456789abcdef/content/书源.json';
  const original=JSON.stringify({page:'{{page}}',known:'{{provider}}',code:'{{ invalid }}',body:'不得展开的完整附件原文😀'});
  await context.route('http://127.0.0.1:32181/**',async route=>{const req=route.request(),url=new URL(req.url());
+  if(url.pathname==='/assets/shared.js')return route.fulfill({contentType:'text/javascript',body:sharedFrontend});
+  if(url.pathname.startsWith('/assets/'))return route.fulfill({contentType:'text/javascript',body:await readFile(path.join(dist,url.pathname),'utf8')});
   if(url.pathname==='/phone-skill-import.js'){await route.fulfill({contentType:'text/javascript',body:helper});return;}
   if(url.pathname==='/phone-chat-files/upload'){
    received=req.postDataBuffer();await new Promise(r=>setTimeout(r,60));
    if(failure)await route.fulfill({status:500,contentType:'application/json',body:JSON.stringify({ok:false,error:'测试上传中断'})});
    else await route.fulfill({contentType:'application/json',body:JSON.stringify({ok:true,file:{path:filePath,size:received.length,preview:{path:filePath,text:original,nextOffset:received.length,eof:true},downloadUrl:'http://192.168.1.23:45678/file/'+'a'.repeat(64)+'/book.json',downloadExpiresAt:'2026-10-17T00:00:00Z'}})});return;
   }
-  await route.fulfill({contentType:'text/html',body:'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><div id="app"></div><script>'+bundled.outputFiles[0].text+'</script>'});
+  await route.fulfill({contentType:'text/html',body:'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><div id="app"></div><script type="module">import "/assets/shared.js";'+bundled.outputFiles[0].text+'</script>'});
  });
  await page.goto('http://127.0.0.1:32181/');const input=page.locator('[data-composer-input]'),send=page.locator('[data-composer-send]');await input.waitFor();await page.addScriptTag({content:presentation});const picker=page.locator('.dsh-phone-upload-picker');await picker.waitFor({state:'attached'});
  await input.click();await page.keyboard.insertText('请分析附件');

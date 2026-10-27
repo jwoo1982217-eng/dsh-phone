@@ -46,6 +46,17 @@ export function supportsEffort(model) {
   return model?.reasoning === true
 }
 
+const LEVEL_ALIASES = new Map(Object.entries({
+  light: 'light', minimal: 'light', low: 'light', none: 'light', off: 'light', disabled: 'light',
+  balanced: 'balanced', medium: 'balanced',
+  deep: 'deep', high: 'deep', xhigh: 'deep', max: 'deep',
+}))
+
+/** Aliases for the legacy budget ladder, never for a model's declared menu. */
+export function normalizeLevel(level) {
+  return typeof level === 'string' ? LEVEL_ALIASES.get(level.trim().toLowerCase()) : undefined
+}
+
 /**
  * The rung in force for one call, resolved the same way for the budget sent
  * upstream and the effort recorded against it.
@@ -71,7 +82,8 @@ export function resolveLevel(level, model) {
     return { id: chosen }
   }
   if (!supportsEffort(model)) return undefined
-  return LEVELS.find(candidate => candidate.id === level)
+  const wanted = normalizeLevel(level)
+  return LEVELS.find(candidate => candidate.id === wanted)
     ?? LEVELS.find(candidate => candidate.id === DEFAULT_LEVEL)
 }
 

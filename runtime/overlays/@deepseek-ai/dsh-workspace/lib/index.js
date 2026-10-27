@@ -100,7 +100,7 @@ var WorkspaceEntity = class {
 		return this.record.updatedAt;
 	}
 	get sessionIds() {
-		return this.record.sessionIds.filter((id) => this.host.sessionPath(id) === this.record.path);
+		return this.record.sessionIds.filter((id) => this.host.candidateMatches(id, this.record.path));
 	}
 	async setTitle(title) {
 		await this.mutate((record) => ({
@@ -161,7 +161,7 @@ var WorkspaceEntity = class {
 	/**
 	* The single write path: run `fn` on the domain write chain via
 	* `table.update`, stamping `updatedAt` and pruning candidates that no
-	* longer pass the id-plus-canonical-cwd membership check, then swap the
+	* longer pass the candidate membership check, then swap the
 	* snapshot.
 	*
 	* `fn` sees the value current at its chain slot, so membership decisions
@@ -175,7 +175,7 @@ var WorkspaceEntity = class {
 		try {
 			next = await this.host.table().update(this.id, (current) => {
 				const changed = fn(current);
-				const sessionIds = changed.sessionIds.filter((id) => this.host.sessionPath(id) === changed.path);
+				const sessionIds = changed.sessionIds.filter((id) => this.host.candidateMatches(id, changed.path));
 				if (changed === current && sessionIds.length === current.sessionIds.length) throw unchangedSentinel;
 				return {
 					...changed,
@@ -359,14 +359,16 @@ var WorkspaceRegistry = class extends Service {
 	entities = /* @__PURE__ */ new Map();
 	headers = /* @__PURE__ */ new Map();
 	sessionPaths = /* @__PURE__ */ new Map();
+	missingSessionPaths = /* @__PURE__ */ new Set();
 	invalidSessionPaths = /* @__PURE__ */ new Map();
 	operationTail = Promise.resolve();
 	host = {
 		table: () => this.requireTable(),
-		sessionPath: (id) => this.sessionPaths.get(id),
+		candidateMatches: (id, path) => this.sessionPaths.get(id) === path || this.missingSessionPaths.has(id),
 		readSessionHeader: (id) => this.readSessionHeader(id),
 		rememberSessionPath: (id, path) => {
 			this.sessionPaths.set(id, path);
+			this.missingSessionPaths.delete(id);
 			this.invalidSessionPaths.delete(id);
 		}
 	};
@@ -868,6 +870,7 @@ var WorkspaceRegistry = class extends Service {
 	async replaceHeaderIndex(headers) {
 		this.headers.clear();
 		this.sessionPaths.clear();
+		this.missingSessionPaths.clear();
 		this.invalidSessionPaths.clear();
 		await this.indexHeaders(headers);
 	}
@@ -877,6 +880,7 @@ var WorkspaceRegistry = class extends Service {
 	async indexHeader(header) {
 		this.headers.set(header.id, header);
 		this.sessionPaths.delete(header.id);
+		this.missingSessionPaths.delete(header.id);
 		if (header.cwd === void 0) {
 			this.invalidSessionPaths.set(header.id, "header has no cwd");
 			return;
@@ -889,7 +893,8 @@ var WorkspaceRegistry = class extends Service {
 			}
 			this.sessionPaths.set(header.id, path);
 			this.invalidSessionPaths.delete(header.id);
-		} catch {
+		} catch (error) {
+			if (fullyQualifiedWorkspacePath(header.cwd) && error instanceof Error && "code" in error && error.code === "ENOENT") this.missingSessionPaths.add(header.id);
 			this.invalidSessionPaths.set(header.id, `cwd '${header.cwd}' does not resolve`);
 		}
 	}
@@ -906,8 +911,8 @@ var WorkspaceRegistry = class extends Service {
 		for (const entity of this.entities.values()) {
 			const record = this.requireTable().get(entity.id);
 			for (const sessionId of record.sessionIds) {
+				if (this.host.candidateMatches(sessionId, record.path)) continue;
 				const path = this.sessionPaths.get(sessionId);
-				if (path === record.path) continue;
 				const reason = this.invalidSessionPaths.get(sessionId) ?? (this.headers.has(sessionId) ? `canonical cwd '${path}' differs from workspace path '${record.path}'` : "session header is missing");
 				this.ctx.logger.warn(`workspace '${entity.id}' filtered session '${sessionId}' from membership: ${reason}`);
 			}

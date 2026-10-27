@@ -1,16 +1,19 @@
 /**
- * OpenCode Zen 凭据结构、指纹派生与代理地址归一。
+ * OpenCode 凭据结构、指纹派生与代理地址归一。
  *
- * ## 指纹依据（设计文档 §0，逐行核对 opencode 官方 1.18.22 源码）
+ * ## 指纹依据（v2 客户端形状，2026-10-14 起）
  *
- * `packages/opencode/src/session/llm/request.ts` 是唯一的头注入点，
- * 对 opencode provider 只发五项：
- * `x-opencode-project` / `x-opencode-session` / `x-opencode-request` /
- * `x-opencode-client` / `User-Agent`。
+ * 免费车道自 2026-10-14 起按 **v2 客户端**校验，本文件与
+ * `src/upstream.js`（插件自己的免费车道）保持同一套形状：
  *
- * ⚠️ **不发** `x-session-affinity` / `X-Session-Id` —— 那是同一函数里
- * 「非 opencode provider」分支的头。opencode2dsh 误发了这两个，属可检测差异，
- * 我们跟真实 CLI。
+ * - `User-Agent` 必须是 `opencode/<channel>/<version>/<client>`，major ≥ 2；
+ *   旧的 `opencode/1.18.x` 被按名字拒掉（403 FreeTierError）。
+ * - 头集是 `x-opencode-session` + `x-opencode-session-id` + `x-session-affinity`
+ *   + `x-session-id`（四个同值）+ `x-opencode-project` + `x-opencode-client`。
+ * - **不发 `x-opencode-request`**：那是 v1 专用头，v2 收到即 403。
+ *
+ * ⚠️ 本文件旧注释（1.18.22 源码逐行核对）说「不发 x-session-affinity /
+ * x-session-id」—— 那条结论属于 v1 客户端，v2 已反过来要求它们，故删除。
  *
  * ## 为什么 project id 用 40 hex
  *
@@ -21,10 +24,10 @@
  *
  * ## session id 的形状不是随意选的
  *
- * Zen 的 FreeTier 门禁（2026-09-16 起）对 session id 做了正则校验：
- * `ses_` + 12 位小写 hex + 26 位 base62（opencode2dsh ids.ts 的
- * `CANONICAL_SESSION_PATTERN`，其「12 hex = 6 字节时间戳」与官方
- * `id/index.ts` 的 `timeBytes` 同构）。形状不对就是 403 FreeTierError。
+ * Zen 的 FreeTier 门禁对 session id 做了正则校验：
+ * `ses_` + 12 位小写 hex + 14 位 base62（见 `deriveSessionId`）。形状不对就是
+ * 403 FreeTierError；12 位 hex 还必须是**铸造形状**（`~(ms·0x1000+seq)`），
+ * 且 seq 必须很小（上游实测 0–16 通过、≥100 拒绝）。
  */
 
 import { createHash, randomBytes } from 'node:crypto'
@@ -93,49 +96,75 @@ export function deriveProjectId(identity: string, generation: number): string {
  * 官方 `id/index.ts` 里写的是 `const LENGTH = 26`，但那是**整段尾部长度**
  * （`randomBase62(LENGTH - 12)`），不是随机段长度。我第一版误读成「随机 26 位」，
  * 产出 `ses_` + 38 字符，形状不对 ⇒ 匿名通道一律 403 `FreeTierError`
- * （"free tier can only be used from within OpenCode"）。
- *
- * 证据（本机官方 CLI 1.18.22 真实 session id，日志实证）：
- *   ses_f078262d9ffeFwtz1QB7VnN4kM   ← 12 hex + 14 base62 = 26
- * 与 opencode2dsh 记录的门禁正则 `ses_[0-9a-f]{12}[0-9A-Za-z]{14}` 一致。
+ * （"free tier can only be used from within OpenCode"）。此外，前 12 位也不能
+ * 只是任意随机 hex，网关会校验它是否来自官方的时间铸造算法。
  *
  * ⚠️ **每次调用都是新值**：调用方负责在**一次 DSH 会话内**缓存复用
  * （见 `opencode-adapter.ts` 的 `sessionIds`）。每次都随机会让同一会话
  * 在服务端被看成多个独立会话，反而破坏亲和。
  */
 export function deriveSessionId(): string {
-  const time = Buffer.alloc(6)
-  let now = BigInt(Date.now())
-  for (let i = 0; i < 6; i++) {
-    time[i] = Number(now & 0xffn)
-    now >>= 8n
+  const timestamp = Date.now()
+  if (timestamp !== lastSessionStamp) {
+    lastSessionStamp = timestamp
+    sessionSequence = 0
+  }
+  sessionSequence += 1
+  const value = ~(BigInt(timestamp) * 0x1000n + BigInt(sessionSequence))
+  let hex = ''
+  for (let i = 0; i < 6; i += 1) {
+    hex += Number((value >> BigInt(40 - 8 * i)) & 0xffn).toString(16).padStart(2, '0')
   }
   // ⚠️ 随机段固定 14 位（26 - 12）；写成 26 会让总长变成 38 而被门禁拒绝。
-  return `ses_${time.toString('hex')}${randomBase62(SESSION_RANDOM_LENGTH)}`
+  return `ses_${hex}${randomBase62(SESSION_RANDOM_LENGTH)}`
 }
 
-/** 派生 request id（每请求一个，官方形态 `msg_` 前缀改 `req_`）。 */
-export function deriveRequestId(): string {
-  return `req_${randomBytes(16).toString('hex')}`
-}
+let lastSessionStamp = 0
+let sessionSequence = 0
 
-/** UA：缺省用产品常量（`opencode/<version>`），接线层用真机安装版本覆盖。 */
+/**
+ * v2 客户端 UA 的形状：`opencode/<channel>/<version>/<client>`。
+ *
+ * 与 9router 的 `hasValidOpencodeVersion` 同一判据（整串匹配、major ≥ 2）：
+ * 只有真长这样的串才允许透传，其余一律回落到产品常量。
+ */
+const OPENCODE_V2_UA = /^opencode\/[a-z0-9-]+\/(\d+)\.\d+\.\d+\/[a-z0-9-]+$/i
+
+/** UA：本机版本探测值（若已是 v2 形状）或产品常量。 */
 export function opencodeUserAgent(override?: string): string {
   const value = override?.trim()
-  return value !== undefined && value.length > 0 ? value : OPENCODE.defaultUserAgent
+  if (value !== undefined && value.length > 0 && OPENCODE_V2_UA.test(value)) return value
+  return OPENCODE.defaultUserAgent
 }
 
-/** 构造发往 Zen 的完整指纹头集。 */
+/**
+ * 本机 `opencode --version` 的输出（形如 `2.0.26`）→ v2 UA。
+ *
+ * ⚠️ 旧实现直接拼 `opencode/${version}`，那是 v1 形状，v2 门禁一律 403。
+ * 探测不到版本（本机没装 opencode 是**正常情况**）时返回 undefined，由
+ * {@link opencodeUserAgent} 回落到产品常量。
+ */
+export function opencodeUserAgentForVersion(version?: string): string | undefined {
+  const value = version?.trim()
+  if (value === undefined || !/^\d+\.\d+\.\d+$/.test(value)) return undefined
+  const [major] = value.split('.')
+  if (Number(major) < 2) return undefined
+  return `opencode/latest/${value}/cli`
+}
+
+/** 构造发往 Zen 的完整指纹头集（v2 形状）。 */
 export function opencodeHeaders(
   fingerprint: OpencodeFingerprint,
   sessionId: string,
-  requestId: string,
   userAgent: string,
 ): Record<string, string> {
   return {
     'x-opencode-project': fingerprint.projectId,
     'x-opencode-session': sessionId,
-    'x-opencode-request': requestId,
+    // v2：这四个头同值，缺一即 403。
+    'x-opencode-session-id': sessionId,
+    'x-session-affinity': sessionId,
+    'x-session-id': sessionId,
     'x-opencode-client': 'cli',
     'user-agent': userAgent,
   }

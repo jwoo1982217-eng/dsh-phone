@@ -74,8 +74,14 @@ export interface UsageBadgeDeps {
     /**
      * 取某渠道的余额行 —— **必须复用 `credits.balances` 的实现**（装配层直接调
      * 内部 `handleMethod`），不要在调用方另写一套 provider 分派。
+     *
+     * @param accountIds - **只查这些账号**（2026-10-15 加，规格 §7-8）。
+     *   徽标只需要启用账号的读数（停用账号既不进合计、也不渲染明细）⇒ 传启用账号
+     *   的 id 能少查几个号。⚠️ 它**不影响自愈**：端点入口的 `healExpiredAccounts`
+     *   仍对全部账号跑（本仓库铁律「续期不得按 `enabled` 过滤」）。
+     *   ⚠️ 省略 ⇒ 查全部（那是积分面板的语义）。
      */
-    collectBalances(provider: string): Promise<BadgeRpcResult<RpcCreditsBalancesResponse>>;
+    collectBalances(provider: string, accountIds?: readonly string[]): Promise<BadgeRpcResult<RpcCreditsBalancesResponse>>;
     /**
      * 取某渠道的**订阅窗口**读数；返回 `undefined` 表示「该渠道没有窗口式订阅」
      * （目前只有 Cline 有，由装配层判渠道，本模块不认识任何具体渠道）。

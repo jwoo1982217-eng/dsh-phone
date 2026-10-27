@@ -27,7 +27,7 @@ export declare const GEMINI_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth
 export declare const GEMINI_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 export declare const GEMINI_USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v2/userinfo";
 export declare const GEMINI_REVOKE_ENDPOINT = "https://oauth2.googleapis.com/revoke";
-/** 上游 Cloud Code 客户端的公开 client（env 可覆盖，用于自建凭据的场景）。 */
+/** 公开发布不内置 OAuth 客户端配置；使用本地环境中的自有配置。 */
 export declare const GEMINI_DEFAULT_CLIENT_ID = "";
 export declare const GEMINI_DEFAULT_CLIENT_SECRET = "";
 /** 回调路径（与 client 注册值逐字一致，改了就 redirect_uri_mismatch）。 */

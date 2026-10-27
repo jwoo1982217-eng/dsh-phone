@@ -227,6 +227,32 @@ describe('令牌交换与续期', () => {
     await expect(exchangeGeminiCode('C', 'http://localhost:1/x', { fetcher: html }))
       .rejects.toThrowError(/无法解析（HTTP 502）/)
   })
+
+  /**
+   * ⚠️ **超时透传**（真实缺陷，对抗审计实测）：`postGeminiForm` 只在
+   * `signal !== undefined` 时才设置 `init.signal` —— 不传就**完全没有超时**，
+   * 卡住时只能等 undici 默认 `headersTimeout`（实测 **305 秒**）。
+   * 这两条锁住「调用方给的 signal 真的被送到了 fetch」。
+   */
+  it('★ 续期把调用方的 `signal` 透传给 fetch（无 signal 时不得凭空造一个）', async () => {
+    const withSignal = captureFetch(json({ access_token: 'AT2', expires_in: 3600 }))
+    const controller = new AbortController()
+    await refreshGeminiCredential('RT', { fetcher: withSignal.fetcher, signal: controller.signal })
+    expect(withSignal.calls[0]?.init.signal).toBe(controller.signal)
+
+    // ⚠️ 不传 signal 时 `init.signal` 必须**缺席**（而不是被填成 undefined）——
+    // 本函数刻意用 `if (signal !== undefined)` 而不是无条件赋值。
+    const without = captureFetch(json({ access_token: 'AT2', expires_in: 3600 }))
+    await refreshGeminiCredential('RT', { fetcher: without.fetcher })
+    expect(without.calls[0]?.init.signal).toBeUndefined()
+  })
+
+  it('★ userinfo 同样透传 `signal`（启动期昵称修复循环不得被一个挂住的账号拖死）', async () => {
+    const { calls, fetcher } = captureFetch(json({ id: 'sub-1' }))
+    const controller = new AbortController()
+    await fetchGeminiUserInfo('AT', { fetcher, signal: controller.signal })
+    expect(calls[0]?.init.signal).toBe(controller.signal)
+  })
 })
 
 describe('userinfo 与撤销', () => {

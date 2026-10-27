@@ -1,4 +1,4 @@
-import type { GenerateOptions, Message, ToolSchema } from '@deepseek-ai/dsh-llm';
+import type { ContentBlock, GenerateOptions, Message, ToolSchema } from '@deepseek-ai/dsh-llm';
 import { type AttachmentBridge, type ImageLimits } from './images.js';
 export declare class OpenAiGatewayError extends Error {
     readonly status: number;
@@ -14,6 +14,47 @@ export interface OpenAiToolCall {
         arguments?: unknown;
     };
 }
+/**
+ * 网关自有的消息来源标识。
+ *
+ * ⚠️ 0.2.0 的 `MessageSourceMap` **删除了共享的 `plugin` 包装**，改为由每个
+ * 生产者自己声明 kind（见 `packages/llm/llm/src/message.ts` 的注释：
+ * 「no shared catch-all `plugin` kind」）。网关正是一个生产者，故如实署名。
+ *
+ * ⚠️ 网关造出的消息**只进 `llm.stream()`**（`server.ts`），**不落盘**
+ * （没有 `session.append` 调用），故这个 kind 不会出现在会话日志里。
+ */
+export declare const GATEWAY_SOURCE_KIND = "openai-gateway";
+declare module '@deepseek-ai/dsh-llm' {
+    interface MessageSourceMap {
+        /** 由 OpenAI 兼容网关（`/v1/chat/completions`、`/v1/responses`）合成的入站消息。 */
+        'openai-gateway': {
+            readonly kind: 'openai-gateway';
+        };
+    }
+}
+/**
+ * 造一个网关自用的**工具结果包裹块**。
+ *
+ * ⚠️⚠️ `'tool-result'` 是 ≤0.1.6 的历史块形状，**0.2.0 的 `ContentBlockMap`
+ * 已把它删除**（工具结果改为一等 `role:'tool'` 消息）。但网关**刻意继续产出
+ * 这个包裹形状**，因为它正是本插件内部的规范形状：`message-shape.ts` 的
+ * `normalizeHarnessMessages` 会把一等 `tool` 消息**降级**成它，五个适配器
+ * （`llm-adapter` / `openai-compat` / `buddy` / `lobsterai` / `trae`）都按
+ * `type === 'tool-result'` 识别工具结果。网关按同一形状产出，归一化因此是
+ * **零成本透传**；而包裹块的 `content` 正是工具结果内嵌图片的挂载点
+ * （`collectImages` / `userContentParts`）。
+ *
+ * ⇒ 升级前后**行为完全一致**，变的只是类型可见性（该块不再在全局块表里）。
+ * 故把断言集中在**这一处**并写明理由，而不是把全局 `ContentBlockMap` 改回去
+ * —— 那会让所有生产者（含 `stream()` 的 chunk）都能产出它，并顺手掩盖
+ * `gemini-messages.ts` / `minimax-messages.ts` 里真实的类型收窄。
+ *
+ * @param toolCallId - 该结果回答的工具调用 id。
+ * @param content - 结果的内层块（可含图片）。
+ * @returns 可按 `ContentBlock` 使用的包裹块。
+ */
+export declare function gatewayToolResultBlock(toolCallId: string, content: readonly ContentBlock[]): ContentBlock;
 export interface OpenAiChatMessage {
     role?: unknown;
     content?: unknown;
@@ -116,7 +157,7 @@ export declare function normalizeReasoningEffort(requested: unknown, modelInfo: 
  * 转成 Chat 形状后调它）—— **图片入站只有这一份实现**，两套协议各写一份必然
  * 漂移成「Chat 端能收图、Responses 端报错」。
  */
-export declare function partsFromContent(content: unknown, bridge: AttachmentBridge | undefined, limits: ImageLimits): Promise<Message['content']>;
+export declare function partsFromContent(content: unknown, bridge: AttachmentBridge | undefined, limits: ImageLimits): Promise<readonly ContentBlock[]>;
 /**
  * 提取纯文本（仅用于需要字符串的场景；带图的 content 走 partsFromContent）。
  *
@@ -129,8 +170,13 @@ export declare function textFromContent(content: unknown): string;
  *
  * ⚠️ **导出**给 `responses.ts` 用：两个端点造出来的消息必须同形（同样的 id/source
  * 构造），否则同一份历史在两个端点上的来源标记不同，排查时会误导。
+ *
+ * ⚠️ 0.2.0 起 `Message.content` 是 **`readonly ContentBlock[]`**，故调用方**不得**
+ * 在事后 `push`（`responses.ts` 的 assistant 合并改为先累积再一次性构造）。
  */
-export declare function createGatewayMessage(role: Message['role'], content: Message['content'], source: Message['source']): Message;
+export declare function createGatewayMessage(role: Message['role'], content: readonly ContentBlock[], source: Message['source']): Message;
+/** 工具调用id的不透明字节判据。 */
+export declare function isUsableToolCallId(value: unknown): value is string;
 /**
  * Chat 形状的 tools → DSH 的 ToolSchema。
  *

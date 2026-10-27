@@ -312,11 +312,21 @@ describe('BuddyBalanceSelector.balanceOf（带 TTL 的余额查询）', () => {
 })
 
 describe('BuddyBalanceSelector.select（分档选号）', () => {
-  it('空候选返回 ok:false（exhausted，不是查询失败）', async () => {
+  /**
+   * ⚠️ **空候选的原因必须与「查到了、确实是 0」分开**（真实报障 2026-10-13）。
+   *
+   * 候选为空 = **余额分档一次都没跑**，我们对任何账号的余额一无所知；
+   * 报 `exhausted` 是在替服务端断言一件从没查过的事。真实场景：全部账号被
+   * 目标模型限流 → `candidatesOf` 把它们全滤掉 → 报「积分都已用尽」，
+   * 用户据此去解锁永久积分（而解禁时刻就在 `modelRateLimits` 里）。
+   *
+   * 变异：把 `select()` 空候选那一支改回 `{ kind: 'exhausted' }` ⇒ 红。
+   */
+  it('空候选返回 ok:false 且原因是 no-candidates（**不是**查询失败、也不是「已用尽」）', async () => {
     const { selector } = makeSelector({})
     const result = await selector.select([], {})
     expect(result.ok).toBe(false)
-    if (!result.ok) expect(result.reason).toEqual({ kind: 'exhausted' })
+    if (!result.ok) expect(result.reason).toEqual({ kind: 'no-candidates' })
   })
 
   it('优先选「有 15 天内到期积分」的号，即使它排在后面', async () => {
@@ -506,13 +516,92 @@ describe('pickBuddyAccount（选号 + 取凭据的编排）', () => {
     expect(result.tried).toEqual(new Set(['a1']))
   })
 
-  it('空候选不查余额（未锁定也直接返回 exhausted）', async () => {
+  /**
+   * ⚠️ 空候选**不查余额**（一次网络都不发），且原因与「查到了、确实是 0」分开。
+   *
+   * 变异：去掉 `pickBuddyAccount` 开头对 `candidates.length === 0` 的定因
+   * （让 `reason` 保持 `undefined`）⇒ 本条红（`reason` 变 undefined）。
+   */
+  it('空候选不查余额，且带上 no-candidates 原因（未锁定也如此）', async () => {
     const { selector, calls } = makeSelector({ a1: balance() })
     const result = await pickBuddyAccount(selector, [], {
       allowPermanent: true,
       resolveCredential: resolver(),
     })
     expect(result.kind).toBe('exhausted')
+    expect(result.reason).toEqual({ kind: 'no-candidates' })
     expect(calls).toEqual([])
+  })
+
+  /**
+   * ★ **2026-10-14 审计实测打穿的漏网路径**：候选**非空**、余额分档也**真的跑过
+   * 且每次都选出了「可用档」的号** —— 只是那些号的**凭据读不出来**。
+   *
+   * 修复前 `reason` 会保持 `undefined`（循环里只在 `!picked.ok` 时赋值），
+   * 调用方的 `?? { kind: 'exhausted' }` 于是报「所有账号的 N 天内到期积分都已用尽」。
+   * 而 `ok:true` **本身就证明**该号落在可用档（锁定时只有 `expiring` 为真）——
+   * 我们刚刚查到它有钱，那句文案是**自相矛盾**的，且会把用户推向
+   * 「解锁永久积分」（不可撤回地烧钱）。
+   *
+   * ⚠️ 可达性（三条路径都真实，不是构造）：
+   * ① 余额缓存 60s TTL 命中（上一轮查过「该号有临期积分」），凭据在这 60 秒内失效；
+   * ② 多候选时 `select()` 逐个排除「档位最优但凭据坏」的号，耗尽后 `reason` 缺席；
+   * ③ 单候选最直接：一次 `select()` 就选出了那个有临期积分的号。
+   *
+   * 变异：把结尾的 `if (reason === undefined) reason = { kind: 'credential-only' }`
+   * 删掉 ⇒ 本条红（`reason` 变 `undefined`）。
+   */
+  it('★ 分档选出了有临期积分的号、但凭据全读不出来 ⇒ credential-only（**不是**「已用尽」）', async () => {
+    const { selector, calls } = makeSelector({
+      a1: balance(pkg({ remaining: 250, deductionEndTime: NOW + 9 * DAY })),
+      a2: balance(pkg({ remaining: 240, deductionEndTime: NOW + 8 * DAY })),
+    })
+    const result = await pickBuddyAccount(selector, [account('a1'), account('a2')], {
+      allowPermanent: false,
+      // 凭据一律解析不出来 —— 但余额**确实查到了**（下面的 `calls` 自证）。
+      resolveCredential: resolver(['a1', 'a2']),
+    })
+    expect(result.kind).toBe('locked')
+    expect(
+      result.reason,
+      '分档已证明这些号有临期积分 ⇒ 不得报「已用尽」，必须如实报凭据问题',
+    ).toEqual({ kind: 'credential-only' })
+    // ⚠️ **前提自证**：余额真的查过（否则本条会退化成「没查就报凭据」的假覆盖）。
+    expect(calls, '余额必须真的查过，本条才是在测「查到了但凭据坏」').toEqual(['a1', 'a2'])
+    expect(result.tried, '两个号都被凭据挡下').toEqual(new Set(['a1', 'a2']))
+  })
+
+  it('★ 单候选版本：一次 select 就选出有临期积分的号，凭据坏 ⇒ credential-only', async () => {
+    const { selector, calls } = makeSelector({
+      a1: balance(pkg({ remaining: 250, deductionEndTime: NOW + 9 * DAY })),
+    })
+    const result = await pickBuddyAccount(selector, [account('a1')], {
+      allowPermanent: false,
+      resolveCredential: resolver(['a1']),
+    })
+    expect(result.kind).toBe('locked')
+    expect(result.reason).toEqual({ kind: 'credential-only' })
+    expect(calls).toEqual(['a1'])
+  })
+
+  /**
+   * ⚠️ **阳性对照：真的用尽时必须仍是 `exhausted`**（不得被上一条的修复吞掉）。
+   *
+   * 全部候选的临期积分**确实都是 0**（`select()` 返回 `ok:false`）时，
+   * 那句「积分都已用尽」有事实依据 —— 必须原样保留。
+   *
+   * 变异：把 `select()` 的 `noAccountReason` 改成恒返回 `credential-only` ⇒ 本条红。
+   */
+  it('⚠️ 阳性对照：分档报 ok:false（真的没积分）⇒ 仍是 exhausted，不得被 credential-only 吞掉', async () => {
+    const { selector } = makeSelector({
+      // 只有永久积分 + 锁定 ⇒ `select()` 判 none 档，返回 ok:false
+      a1: balance(pkg({ remaining: 100, deductionEndTime: NOW + 3008 * DAY })),
+    })
+    const result = await pickBuddyAccount(selector, [account('a1')], {
+      allowPermanent: false,
+      resolveCredential: resolver(),
+    })
+    expect(result.kind).toBe('locked')
+    expect(result.reason).toEqual({ kind: 'exhausted' })
   })
 })

@@ -65,12 +65,14 @@ process.env.OUR_FREE_MODEL_BASE = `http://127.0.0.1:${server.address().port}`
 
 const { FreeModelAdapter, ROUTE_MAIN } = await import('../src/adapter.js')
 const { buildCatalog } = await import('../src/catalog.js')
-const { buildComboCatalog, normalizeCombos } = await import('../src/combos.js')
+const { buildComboCatalog, normalizeCombos, comboId, comboChain } = await import('../src/combos.js')
 
 const MODELS = ['deepseek-v4-flash-free', 'mimo-v2.5-free', 'mimo-v2.6-flash-free']
 const COMBO_ID = 'combo:failover'
+const CHINESE_NAME = '\u514d\u8d39\u4f18\u5148'
 const COMBOS = normalizeCombos([
   { name: 'failover', models: ['deepseek-v4-flash-free', 'mimo-v2.5-free'], strategy: 'fallback', stickyLimit: 1 },
+  { name: CHINESE_NAME, models: ['deepseek-v4-flash-free', 'mimo-v2.5-free'] },
 ])
 const FREE_CATALOG = buildCatalog(MODELS)
 const CATALOG = [...FREE_CATALOG, ...buildComboCatalog(COMBOS, FREE_CATALOG)]
@@ -81,7 +83,7 @@ const check = async (name, fn) => {
   catch (error) { failures += 1; console.error(`FAIL  ${name} — ${error.message}`) }
 }
 
-function setup(answers) {
+function setup(answers, model = COMBO_ID) {
   const scenario = { answers, requests: [] }
   activeCase = scenario
   const turns = []
@@ -99,7 +101,7 @@ function setup(answers) {
   })
   const stream = adapter.stream({
     provider: ROUTE_MAIN,
-    model: COMBO_ID,
+    model,
     maxTokens: 4096,
     sessionId: 'combo-advance-test',
     messages: [{ role: 'user', content: [{ type: 'text', text: TASK }] }],
@@ -108,8 +110,8 @@ function setup(answers) {
   return { scenario, turns, controller, stream }
 }
 
-async function drive(answers) {
-  const run = setup(answers)
+async function drive(answers, model) {
+  const run = setup(answers, model)
   const chunks = []
   try {
     for await (const chunk of run.stream) chunks.push(chunk)
@@ -126,6 +128,58 @@ async function drive(answers) {
 
 const noThinking = chunks => chunks.every(chunk => chunk.type !== 'reasoning-delta'
   && !(chunk.type === 'block-end' && chunk.block?.type === 'reasoning'))
+
+await check('non-Latin chain names survive normalization and a JSON settings round trip (#379)', () => {
+  const names = [CHINESE_NAME, '\u5148\u514d\u8d39\u540e\u534f\u4ed8', '\u65e5\u672c\u8a9e', '\ud83d\ude80']
+  const rows = normalizeCombos(names.map(name => ({ name, models: MODELS.slice(0, 2) })))
+  assert.equal(rows.length, names.length)
+  assert.equal(new Set(rows.map(row => row.id)).size, names.length)
+  for (const [i, row] of rows.entries()) {
+    assert.equal(row.name, names[i])
+    assert.match(row.id, /^combo:[a-z0-9-]+$/)
+    assert.equal(comboId(` ${names[i]} `), row.id, 'whitespace does not change identity')
+  }
+  assert.deepEqual(normalizeCombos(JSON.parse(JSON.stringify(rows))), rows)
+  assert.equal(comboId('My Fast Chain'), 'combo:my-fast-chain', 'existing ASCII ids stay stable')
+  assert.equal(comboId('  '), '', 'an empty name still has no identity')
+})
+
+await check('mixed-lane chains retain composite member ids and advertise the capability intersection (#372)', () => {
+  const members = [
+    { id: 'free-model', channel: 'free', vision: true, contextWindow: 131072, maxOutput: 16384 },
+    { id: 'open_router/google/gemma:free', channel: 'aggregate', vision: false, contextWindow: 1000000, maxOutput: 32768 },
+  ]
+  const normalized = normalizeCombos([{ name: CHINESE_NAME, models: members.map(row => row.id) }])
+  const [entry] = buildComboCatalog(normalized, members)
+  assert.equal(entry.contextWindow, 131072)
+  assert.equal(entry.maxOutput, 16384)
+  assert.equal(entry.vision, false)
+  assert.deepEqual(entry.combo, members.map(row => row.id))
+  assert.deepEqual(comboChain(entry, members).map(row => row.id), entry.combo)
+})
+
+await check('mixed Unicode chain names keep distinct identities after reload (#385)', () => {
+  const rows = normalizeCombos(['\u514d\u8d39 Pro', '\u4ed8\u8d39 Pro']
+    .map(name => ({ name, models: MODELS })))
+  assert.equal(rows.length, 2)
+  assert.deepEqual(normalizeCombos(JSON.parse(JSON.stringify(rows))), rows)
+  const saved = { id: 'combo:pro', name: '\u514d\u8d39 Pro', models: MODELS }
+  assert.equal(normalizeCombos([saved])[0].id, saved.id, 'existing persisted ids remain stable')
+})
+
+await check('a Chinese-named chain routes through the Adapter and records its own id (#379)', async () => {
+  const id = comboId(CHINESE_NAME)
+  assert.ok(CATALOG.some(row => row.id === id), 'the saved chain is advertised')
+  const run = await drive([
+    { body: sse({ choices: [{ index: 0, delta: { content: ANSWER } }] }) + sse({ choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] }) + 'data: [DONE]\n\n' },
+  ], id)
+  assert.equal(run.scenario.requests.length, 1)
+  assert.equal(run.scenario.requests[0].body.model, MODELS[0], 'the virtual id never reaches the provider')
+  assert.equal(run.text, ANSWER)
+  assert.equal(run.finish?.kind, 'stop')
+  assert.equal(run.turns[0].model, id)
+  assert.equal(run.turns[0].ok, true)
+})
 
 await check('thinking then an in-stream quota wall advances to the next candidate', async () => {
   const run = await drive([
@@ -180,6 +234,22 @@ await check('a refusal before any output still advances (the plain case)', async
   assert.equal(run.finish?.kind, 'stop')
   assert.ok(run.text.includes(ANSWER))
   assert.equal(run.turns[0].attempts, 2)
+})
+
+for (const [status, type, message, attempts] of [
+  [400, '', 'bad request', 2],
+  [400, '', 'maximum context length exceeded', 2],
+  [403, 'RegionError', 'not available in your country', 2],
+  [403, 'AuthorizationRequired', 'login required', 1],
+  [403, 'FreeTierError', 'free tier can only be used from within OpenCode', 1],
+]) await check(`chain refusal: ${type || message}`, async () => {
+  const run = await drive([
+    { status, body: JSON.stringify({ error: { type, message } }) },
+    { body: chatFrames(ANSWER) },
+  ])
+  assert.equal(run.scenario.requests.length, attempts)
+  assert.equal(run.finish?.kind, attempts === 2 ? 'stop' : 'error')
+  if (attempts === 2) assert.equal(run.text, ANSWER)
 })
 
 server.close()

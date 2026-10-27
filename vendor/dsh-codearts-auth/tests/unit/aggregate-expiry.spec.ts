@@ -18,7 +18,7 @@
  * 3. **abort ⇒ 抛 `AbortError`**，绝不折算成 `UNUSABLE` —— 用户取消请求时看到
  *    「请先登录」是误导（PR !69 审计实测过的真实缺陷）。
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   WIRED_EXPIRY_PROVIDERS,
   codeArtsExpiry,
@@ -29,6 +29,34 @@ import {
 import { NEVER, UNUSABLE } from '../../src/aggregate-core.js'
 import { LOBSTERAI } from '../../src/lobsterai-product.js'
 import { TRAE } from '../../src/trae-product.js'
+import { createProviderExpiry } from '../../src/provider-expiry.js'
+import { clearProviderRuntimes, registerProviderRuntime } from '../../src/provider-runtime.js'
+import { descriptorOf } from '../../src/provider-registry.js'
+
+/**
+ * 把**真实的**临期折算实现挂进 runtime（本文件多处用例要验折算**值**）。
+ *
+ * ⚠️ 为什么用 `createProviderExpiry()`（生产那张表）而**不是**本文件自己写一份
+ * 映射：后者会变成「同一语义两套判据」—— 本仓库首条红线
+ *（`buddy-growth.ts` 因两处对同一字段给出相反判据而静默失效：不报错、不崩溃、
+ * 单测能过，只是把「没做到」说成「做到了」）。这里挂的就是 `src/index.ts`
+ * 注册的**同一份**表 ⇒ 单测验的是真实分派路径。
+ *
+ * ⚠️ 必须 `clearProviderRuntimes()`：注册表是**模块级** Map，且
+ * `registerProviderRuntime` 对重复 id「保留先注册者」⇒ 不清空会让上一个用例的
+ * 残留条目生效（尤其是别的 spec 留下的哨兵实现）。
+ */
+function registerRealExpiryRuntimes(): void {
+  clearProviderRuntimes()
+  const table = createProviderExpiry()
+  for (const [id, expiry] of Object.entries(table)) {
+    registerProviderRuntime({ descriptor: descriptorOf(id)!, expiry })
+  }
+}
+
+/** 本文件所有用例都需要真实折算实现（分派已改为查 runtime 表）。 */
+beforeEach(() => { registerRealExpiryRuntimes() })
+afterEach(() => { clearProviderRuntimes() })
 
 describe('真实临期探针：未接入的渠道必须返回 UNUSABLE（否则会被误当选）', () => {
   /** 取号时用的模型 id 桩（真实实现从渠道目录取第一个）。 */
@@ -107,35 +135,34 @@ describe('真实临期探针：未接入的渠道必须返回 UNUSABLE（否则�
   })
 })
 
-describe('★ WIRED_EXPIRY_PROVIDERS 必须与 createExpiryProbe 的 switch 一致', () => {
+describe('★ WIRED_EXPIRY_PROVIDERS：未接入渠道必须被剔除、已接入渠道必须真的走进折算', () => {
   // ⚠️ 该清单被聚合层用来决定「哪些虚拟模型可以播报」（未接入的渠道其模型会被
   //    过滤掉，否则用户选中后拿到的是误导性的「没有任何可用候选」）。
-  //    ⇒ 清单若与 switch 漂移，会出现两种真实缺陷：
+  //    ⇒ 清单若与实现漂移，会出现两种真实缺陷：
   //    ① 清单**多**了某渠道 ⇒ 它的模型被播报，但折算恒 UNUSABLE ⇒ 误导性报错；
   //    ② 清单**少**了某渠道 ⇒ 它的模型被隐藏，而其实可以正常参与轮换。
-  //    故这里用**源码级**断言锁住两者相等（与 auto-adapter 的源码守卫同一手法）。
-  it('清单与 switch 分支逐项相等', async () => {
-    const { WIRED_EXPIRY_PROVIDERS } = await import('../../src/aggregate-expiry.js')
-    const source = await import('node:fs/promises').then((fs) => fs.readFile(
-      new URL('../../src/aggregate-expiry.ts', import.meta.url), 'utf8',
-    ))
-    // 取 createExpiryProbe 里 `case 'xxx':` 的全部捕获。
-    // ⚠️ 字符类必须含 `-` 与 `_`：本仓库的 provider id 可能带连字符（如 `qoder-cn`
-    //    这类形态），只写 `[a-z]+` 会让**带连字符的渠道静默漏匹配** —— 那时守卫
-    //    两侧都不含它、断言仍绿，正是「守卫静默失效」的形态（第 4 轮审计加固）。
-    const cases = [...source.matchAll(/case '([a-z0-9_-]+)':/g)].map((m) => m[1])
-    expect(cases.length).toBeGreaterThan(0)
-    expect([...cases].sort()).toEqual([...WIRED_EXPIRY_PROVIDERS].sort())
-  })
+  //
+  // ⚠️⚠️ **原先这里有一条「清单与 switch 分支逐项相等」的源码文本断言，已删除**
+  //    （2026-10-08，Task 5）：它靠正则扫 `src/aggregate-expiry.ts` 里
+  //    `case 'xxx':` 的捕获来锁「手抄清单 == 手写 switch 分支」。
+  //    本次重构把「选哪个原语」改成了查 runtime 的 `expiry` 域 ⇒
+  //    **源码里已经没有 `case` 了**，正则捕获恒为空数组，那条断言**无法**继续
+  //    （保留它只能退化成「断言空数组 == 清单」—— 必然假红）。
+  //
+  // ⚠️ **它守的不变式并没有消失，而是搬了家且换了判据**：
+  //    清单（编译期常量）与 runtime 的 `expiry` 域（`apply()` 时注册）**不是
+  //    同一件事**，两者的一致性只能靠断言锁 —— 现由
+  //    `tests/unit/expiry-runtime-parity.spec.ts` 的
+  //    「清单 == runtime 里挂了 `expiry` 域的渠道集合」**真跑 `apply()`** 守住，
+  //    且是**行为**判据（读真实的 runtime 表）而不是源码文本。
+  //    ⚠️ 故本文件不再重复那条不变式（重复会变成「同一语义两套判据」）。
 
-  it('★ 未知渠道必 UNUSABLE（方向对照；清单正确性由上一条的源码级断言守）', async () => {
+  it('★ 未知渠道必 UNUSABLE（方向对照；清单与 runtime 的一致性由对拍文件守）', async () => {
     // ⚠️ **本条原标题是「清单里的每个渠道都真的能折算（不返回「未接入」的兜底值）」——
     //    那是误导**（独立审计 M4 指出）：函数体只断言 `raccoon` / `not-a-channel`，
     //    而那两个**都不在清单里** ⇒ 它**从未遍历** `WIRED_EXPIRY_PROVIDERS`，
     //    任何实现都能过（本仓库「同义反复用例比没有更危险」的形态）。
     //
-    // ⚠️ 「清单里的渠道都真的能折算」这个意图**已由上一条的源码级断言守住**
-    //   （「清单与 switch 分支逐项相等」：清单列了但 switch 没有 ⇒ 那条会红）。
     //    本条的**真实价值**只是方向对照：**未知渠道必须被剔除**（不能返回 NEVER）。
     //    ⇒ 如实命名，不再声称它测了清单。
     const { createExpiryProbe } = await import('../../src/aggregate-expiry.js')
@@ -151,12 +178,15 @@ describe('★ WIRED_EXPIRY_PROVIDERS 必须与 createExpiryProbe 的 switch 一�
     expect(await probe('not-a-channel')).toBe(-1)
   })
 
-  it('★ 清单里的每个渠道都**真的走过了折算路径**（逐条遍历，不再同义反复）', async () => {
+  it('★ 清单里的每个渠道都**真的走过了折算入口**（读了目录、未在短路处返回；**不测折算本身**）', async () => {
     // ⚠️ 补上「清单里的每个渠道都能折算」这个意图的**真实覆盖**（原用例只是
     //    标题那么写、实际没遍历）。判据：用一个「有可用账号」的池喂进去，
     //    每个清单渠道都必须**产生一次目录读取**（`firstModelIdOf` 被调用）——
     //    这证明它**没有**在「未接入」的短路处提前返回（那是 `UNUSABLE` 的另一条路径）。
     //    ⚠️ 不要求折算成功（各家凭据形状不同），只要求**真的走进去**。
+    //    ⚠️ 本用例**刻意不跑 `apply()`**：它守的是「清单里的渠道不被短路」，
+    //       那是**清单**这一侧的行为，与 runtime 是否注册无关（这正是清单必须
+    //       是编译期常量的理由 —— 见 `aggregate-expiry.ts` 的长注释）。
     const { createExpiryProbe, WIRED_EXPIRY_PROVIDERS: wired } =
       await import('../../src/aggregate-expiry.js')
     expect(wired.length, '清单不能为空（否则本用例恒真）').toBeGreaterThan(0)
@@ -165,21 +195,108 @@ describe('★ WIRED_EXPIRY_PROVIDERS 必须与 createExpiryProbe 的 switch 一�
       const probed: string[] = []
       const probe = createExpiryProbe({
         disabledModelsFor: () => new Set<string>(),
-        // ⚠️ 凭据形状故意不匹配 ⇒ 折算会失败，但**取号与读目录必须发生**。
-        listAvailableCredentials: async () => [
-          { entry: { id: 'a1' }, credential: { access_token: 'x' } },
-        ],
+        // 目录读取后返回空账号池，避免单测继续触发各 provider 的真实额度接口。
+        // 本用例只验证每个接入渠道都会读取目录，不测试额度折算本身。
+        // ⚠️ 这是**规避而非修复**（2026-10-12 审计登记）：出网根因**仍在** ——
+        //    任何人再把「形状正确的凭据」喂进来（历史上就是
+        //    `credential: { access_token: 'x' }`），各 provider 就会去**真实额度接口**。
+        //    彻底修法是在本用例里给全局 `fetch` 打桩并**断言调用 0 次**，
+        //    那样「未来某家新增取额度调用」也会立刻变红。用例名已随之修正
+        //    （原先是「真的走过了折算路径」，与断言不符）。
+        listAvailableCredentials: async () => [],
       } as never, async (p: string) => { probed.push(p); return 'm1' })
       await probe(provider).catch(() => undefined)
       expect(probed, `${provider} 必须走过折算路径（读目录），不能在短路处提前返回`)
         .toEqual([provider])
     }
+    // ⚠️⚠️ **显式放宽 timeout**（2026-10-08 实测的既有 flake，不是本次改动引入）：
+    //    本用例**串行**遍历清单里的 7 个渠道，每个都真跑一次折算（含读目录）。
+    //    实测耗时 832/839ms，但**全量并行**时偶发超过 vitest 的 5000ms 默认上限
+    //    ⇒ 假失败（单文件跑 6 次中 1 次红、全量 8 次中 2 次红，已独立复现）。
+    //    这是**测试基础设施**问题（默认上限不适合「串行 N 渠道」的集成用例），
+    //    不是逻辑缺陷 ⇒ 放宽到 30s 即消除（实测该上限下零失败）。
+  }, 30_000)
+})
+
+describe('★ accioExpiry：命名池折算（与 loomy 同形，2026-10-13 合并审计补）', () => {
+  /**
+   * ⚠️ **为什么必须有这一组**：把 accio 加进 `WIRED_EXPIRY_PROVIDERS` 只是
+   * 「允许它出现在聚合候选表里」；**折算值本身对不对**要单独锁。
+   *
+   * 三条判据（逐格，缺一格就是将来的事故）：
+   *  - 有每日额度 ⇒ **当日 24:00**（24h 作废且不累积 ⇒ 临期优先里排最前）；
+   *  - 只剩每月/推荐 ⇒ `NEVER`（上游**没有**下发它们的到期时间 ⇒ 不猜）；
+   *  - 三类桶全 0 / 查询失败 ⇒ `UNUSABLE`（**不是 NEVER**：把它当「长期可用」
+   *    会让请求被发到一个没额度的渠道）。
+   */
+  const makeDetail = (rows: Array<{ label: string; remaining: number }>) => ({
+    balance: {
+      total: rows.reduce((s, r) => s + r.remaining, 0),
+      packages: rows.map((r) => ({
+        name: r.label,
+        unit: 'credit',
+        remaining: r.remaining,
+        total: r.remaining,
+        used: 0,
+        active: true,
+        cycleStartTime: '',
+        cycleEndTime: '',
+        expiredTime: '',
+      })),
+    },
+  })
+
+  it('★ 有每日额度 ⇒ 当日 24:00（不是 NEVER）', async () => {
+    const { accioExpiry } = await import('../../src/aggregate-expiry.js')
+    const { fetchAccioBalanceDetailed } = await import('../../src/accio-credits.js')
+    const spy = vi.spyOn(
+      await import('../../src/accio-credits.js'),
+      'fetchAccioBalanceDetailed',
+    ).mockResolvedValue(makeDetail([{ label: '每日积分', remaining: 199 }]) as never)
+    void fetchAccioBalanceDetailed
+    const v = await accioExpiry({ access_token: 'x', refresh_token: 'y', expires_at: Date.now() + 1e6 } as never)
+    expect(v).toBeGreaterThan(Date.now())
+    expect(v).toBeLessThan(Date.now() + 48 * 3600_000)
+    spy.mockRestore()
+  })
+
+  it('★ 只剩每月/推荐（无每日）⇒ NEVER（长期，不剔除）', async () => {
+    const { accioExpiry } = await import('../../src/aggregate-expiry.js')
+    const spy = vi.spyOn(
+      await import('../../src/accio-credits.js'),
+      'fetchAccioBalanceDetailed',
+    ).mockResolvedValue(makeDetail([{ label: '每月积分', remaining: 500 }]) as never)
+    expect(await accioExpiry({} as never)).toBe(NEVER)
+    spy.mockRestore()
+  })
+
+  it('★ 三类桶全为 0 ⇒ UNUSABLE（**不是** NEVER）', async () => {
+    const { accioExpiry } = await import('../../src/aggregate-expiry.js')
+    const spy = vi.spyOn(
+      await import('../../src/accio-credits.js'),
+      'fetchAccioBalanceDetailed',
+    ).mockResolvedValue(makeDetail([
+      { label: '每日积分', remaining: 0 },
+      { label: '每月积分', remaining: 0 },
+    ]) as never)
+    expect(await accioExpiry({} as never)).toBe(UNUSABLE)
+    spy.mockRestore()
+  })
+
+  it('★ 查询失败 / 未登录（balance 为 null）⇒ UNUSABLE', async () => {
+    const { accioExpiry } = await import('../../src/aggregate-expiry.js')
+    const spy = vi.spyOn(
+      await import('../../src/accio-credits.js'),
+      'fetchAccioBalanceDetailed',
+    ).mockResolvedValue({ balance: null, error: '未登录' } as never)
+    expect(await accioExpiry({} as never)).toBe(UNUSABLE)
+    spy.mockRestore()
   })
 })
 
 describe('★ 第 3 轮审计：未接入渠道必须短路（不取号、不读目录）', () => {
   it('未接入渠道：不得调用 firstModelIdOf，也不得取号', async () => {
-    // ⚠️ 实测缺陷：初版对未接入渠道**先取号、后**才走 switch 的 default 返回 UNUSABLE
+    // ⚠️ 实测缺陷：初版对未接入渠道**先取号、后**才走到分派的兜底返回 UNUSABLE
     //    ⇒ 每次 auto 请求都为每个未接入渠道白做一次目录读取 + 账号池查询
     //    （探针：getAvailableAccount 被以 `cline/m1` 调用）。
     //    两者都**不是网络请求**（账号池是纯本地内存过滤），故属性能浪费而非功能缺陷，
@@ -276,6 +393,24 @@ describe('★ codeArtsExpiry：读不到到期时间就不猜（一律 NEVER）'
     expect(await codeArtsExpiry(cred)).toBe(NEVER)
   })
 
+  it('★★ 积分余额为 0 ⇒ NEVER（**不是** UNUSABLE —— 「余额 0」不等于「渠道不可用」）', async () => {
+    // ⚠️ 本条的**真实价值**是挡住一个具体提议（PR #81 审计，2026-10-07）：
+    //    把折算改成 `credit.total > 0 ? 当日 : UNUSABLE`，理由是「额度已尽仍被
+    //    auto 选中」。该推理对本渠道不成立 —— codearts 有 benefit（免费额度）模型
+    //    （`isCodeArtsBenefitModel`），积分余额 0 的账号**仍能推理**；且账号可用性
+    //    的权威判据是**探测是否成功**（`!result.ok`），不是余额数值。
+    //    写成 UNUSABLE 会把一个可用账号从 auto 候选里**永久剔除**。
+    stubFetch({
+      package: { is_credit_package: true, is_token_package: false, spec_code: 'x', package_name: '体验版', status: 'normal' },
+      metrics: [
+        { name: 'usageTotalPackageCredit', package_credit_amount: 24000, package_credit_used: 24000, package_credit_remain: 0 },
+      ],
+    })
+    const value = await codeArtsExpiry(cred)
+    expect(value).toBe(NEVER)
+    expect(value).not.toBe(UNUSABLE)
+  })
+
   it('★ 查询失败 ⇒ UNUSABLE（剔除），与「没有到期概念」严格区分', async () => {
     vi.stubGlobal('fetch', (async () => new Response('boom', { status: 500 })) as unknown as typeof fetch)
     expect(await codeArtsExpiry(cred)).toBe(UNUSABLE)
@@ -350,10 +485,46 @@ describe('★ lobsterai / trae：与 buddy 同形的「有效包最早到期」�
     expect(value, '应取最早到期那个包（2 小时后）').toBe(Math.floor(soonMs / 1000) * 1000)
   })
 
-  it('★ lobsterai：无有效包 ⇒ NEVER（不剔除）', async () => {
+  it('★★ lobsterai：有效包但**余额为 0** ⇒ UNUSABLE（退出 auto 候选）', async () => {
+    // ⚠️⚠️ 本条原为「★ lobsterai：无有效包 ⇒ NEVER（不剔除）」—— **名字与 fixture
+    //    不符**（fixture 是 `creditsRemaining: 0`，即**有效包、余额为 0**，不是「无有效包」），
+    //    而那个期望值本身就是缺陷（真实缺陷，对抗审计实测证伪，2026-10-07）：
+    //    `creditsRemaining` 是**剩余额度**（`lobsterai-credits.ts:328` 读它填
+    //    `CreditPackage.remaining`）⇒ 余额 0 表示**这个渠道现在没有可烧的额度**，
+    //    返回 `NEVER`（= 可当选）会让 auto 选中它、请求随即 `QUOTA_EXCEEDED` 失败 ——
+    //    **与 PR #81 报障完全同型**。
+    //
+    //    ⚠️ 与 `buddy-balance-rank.ts` 的判据对齐：`buddyBalanceTier`（:195-203）
+    //    在余额全为 0 时返回 `none`，而 `buddyTierUsable`（:210-212）明写
+    //    **`none` 档不可用**。折算层现在与选号器**同构**。
     vi.stubGlobal('fetch', (async () => new Response(JSON.stringify({
       code: 0,
       data: { creditItems: [{ label: 'x', type: 'gift', creditsRemaining: 0, expiresAt: '' }] },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch)
+    const value = await lobsteraiExpiry(cred, LOBSTERAI)
+    expect(value).toBe(UNUSABLE)
+    // 方向对照：`NEVER` 是「可用、只是不临期」，它**参与排序且可当选** ——
+    // 正是本缺陷的成因，故绝不能用它表示「余额已尽」。
+    expect(value).not.toBe(NEVER)
+  })
+
+  it('★★ lobsterai：**只有失效包** ⇒ UNUSABLE（不是 NEVER）', async () => {
+    // 失效包（`active: false`）不计入任何桶 —— 若账号只有失效包，同样「没有可烧的额度」。
+    const past = new Date(Date.now() - 86_400_000).toISOString().slice(0, 19) + '+08:00'
+    vi.stubGlobal('fetch', (async () => new Response(JSON.stringify({
+      code: 0,
+      data: { creditItems: [{ label: 'x', type: 'gift', creditsRemaining: 100, expiresAt: past }] },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch)
+    expect(await lobsteraiExpiry(cred, LOBSTERAI)).toBe(UNUSABLE)
+  })
+
+  it('★ 对照：lobsterai 有效包**有余额但无到期时间** ⇒ NEVER（不得误剔除可用渠道）', async () => {
+    // ⚠️ 这一格是**防误伤**：`expiresAt` 为空串是实测形态，此时账号**确实有额度**，
+    //    剔除它会丢掉一个可用渠道。判据必须是「有没有 `active && remaining > 0` 的包」，
+    //    而不是「有没有带到期时间的包」。
+    vi.stubGlobal('fetch', (async () => new Response(JSON.stringify({
+      code: 0,
+      data: { creditItems: [{ label: 'x', type: 'gift', creditsRemaining: 500, expiresAt: '' }] },
     }), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch)
     expect(await lobsteraiExpiry(cred, LOBSTERAI)).toBe(NEVER)
   })

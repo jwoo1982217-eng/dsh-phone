@@ -33,6 +33,10 @@ import { ZcodeAuth } from '../../src/zcode-auth.js'
 import { ZCODE } from '../../src/zcode-product.js'
 import { AccountPool } from '../../src/account-pool.js'
 import { CREDITS_CAPABILITIES } from '../../plugin-src/client/credits-capabilities.js'
+import { PROVIDER_ICONS } from '../../plugin-src/client/provider-icons.js'
+import { PROVIDER_REGISTRY, descriptorOf } from '../../src/provider-registry.js'
+import { jetHubAuthsCallKeys, jetHubAuthsInterfaceKeys } from '../helpers/jet-hub-auths.js'
+import { accountEntry, refreshHarness } from '../helpers/rpc-refresh.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const readClient = (name: string): string =>
@@ -392,31 +396,39 @@ describe('ZCode 无实例依赖（核心架构声明）', () => {
 
 describe('ZCode 客户端接入（缺口 3 / 4 / 5）', () => {
   it('★ PROVIDERS 里已登记 zcode（否则 Jet Hub 根本没这个面板）', () => {
-    const source = readClient('jet-hub.js')
-    const block = /const PROVIDERS = Object\.freeze\(\[([\s\S]*?)\n\]\);/.exec(source)
-    const ids = [...(block?.[1] ?? '').matchAll(/id: '([^']+)'/g)].map((m) => m[1])
+    // ⚠️ 2026-10-08 改：原先从**客户端源码文本**正则
+    // `/const PROVIDERS = Object\.freeze\(\[([\s\S]*?)\n\]\);/` +
+    // `/id: '([^']+)'/g` 派生 id。客户端 `PROVIDERS` 现由
+    // `src/provider-registry.ts` 派生，故这里直接读 registry —— 不再解析源码文本。
+    const ids = PROVIDER_REGISTRY.map((d) => d.id)
     expect(ids).toContain('zcode')
     // 也确认没把既有的挤掉。
     expect(ids).toContain('codearts')
     expect(ids).toContain('raccoon')
     // ⚠️ 计数会随 provider 增删变化（2026-09-30 加 minimax：11 → 12；
     // 2026-10-01 加 opencode：12 → 13；2026-10-03 加 gemini：13 → 14；
-    // 2026-10-07 加 aggregate：14 → 15）。
+    // 2026-10-07 加 aggregate：14 → 15；2026-10-12 加 officeace：15 → 16；
+    // 2026-10-13 加 accio：16 → 17；2026-10-15 加 minimaxintl：17 → 18；
+    // 2026-10-16 加 astudio：18 → 19；
+    // 2026-10-17 加 autoclaw：19 → 20；
+    // 2026-10-16 **本 fork** 加 modelscope（魔搭）：20 → 21；
+    // 2026-10-20 加 autoclawintl（AutoClaw 国际版）：21 → 22）。
     // ⚠️ 这个断言的价值是「**别把既有 provider 挤掉**」，所以它同时断言
     // 上面的具体 id；若将来再加 provider，记得同步这里。
-    expect(ids).toContain('autoclaw')
-    expect(ids).toContain('chatgpt-plan')
-    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toHaveLength(23)
   })
 
   it('展示名与产品配置一致（避免两处漂移）', () => {
-    const source = readClient('jet-hub.js')
-    const entry = /id: 'zcode', label: '([^']+)'/.exec(source)
-    expect(entry?.[1]).toBe(ZCODE.displayName)
+    // ⚠️ 2026-10-08 改：原先正则扫 `jet-hub.js` 的 `id: 'zcode', label: '...'`。
+    // 现在 label 由 registry 派生，故直接读 registry（**行为断言**）。
+    expect(descriptorOf('zcode')?.label).toBe(ZCODE.displayName)
   })
 
   it('zcode 有内联图标且已注册 CSS 类', () => {
-    expect(readClient('jet-hub.js')).toMatch(/const ZCODE_ICON = 'data:image\/png;base64,/)
+    // ⚠️ 2026-10-08 改：图标常量已从 `jet-hub.js` 抽到纯数据模块
+    // `provider-icons.js`（因为 `jet-hub.js` import 不了 react，见
+    // `provider-icons.js` 文件头）。断言改为读该模块的实际值。
+    expect(PROVIDER_ICONS.zcode).toMatch(/^data:image\/png;base64,/)
     expect(readClient('jet-hub-styles.js')).toMatch(/\.dim-jh-providerIcon\.zcode/)
   })
 
@@ -439,8 +451,13 @@ describe('ZCode 客户端接入（缺口 3 / 4 / 5）', () => {
     // 提交流程里不应有 zcode 专属分支。
     expect(source).not.toMatch(/else if \(provider === 'zcode'\)/)
     // 通用路径仍在：拿到 loginUrl 就弹窗。
-    expect(source).toMatch(/const loginWindow = await openAccountLoginWindow\(\{ provider, loginUrl/)
-    expect(readClient('account-login-window.js')).toMatch(/browserWindow\.open\(loginUrl/)
+    // ⚠️ 判据**刻意不锚定 `const`、也不锚定「声明与赋值同一行」**
+    //    （2026-10-13 改造）：OfficeAce 的换账号登录需要「宿主已开无痕窗时就不再弹」
+    //    的分支，于是该变量变成 `let loginWindow = null;` 提前声明、
+    //    `window.open(...)` 移到分支内（两种打开方式都要持有它，供轮询结束时关窗）。
+    //    本用例要守的是「**通用弹窗路径仍在**」，与声明位置无关 —— 写死形态会让
+    //    一次纯结构重构假失败（仓库既有教训：接线类断言须容忍重构）。
+    expect(source, '通用 window.open 弹窗路径不见了').toMatch(/openAccountLoginWindow\(\{ provider, loginUrl/)
     // 空 loginUrl 的通用错误分支也要保留（它是所有 provider 的兜底）。
     expect(source).toMatch(/后端未返回登录地址/)
   })
@@ -455,52 +472,134 @@ describe('ZCode 客户端接入（缺口 3 / 4 / 5）', () => {
 describe('ZCode RPC 分派（缺口 2：接线）', () => {
   const readRpc = (): string =>
     readFileSync(resolve(HERE, '../../src/jet-hub-rpc.ts'), 'utf8')
+  const readIndex = (): string =>
+    readFileSync(resolve(HERE, '../../src/index.ts'), 'utf8')
 
-  /** `registerJetHubRpc` 签名里的形参名，按声明顺序（去掉注释与 `?`）。 */
-  const registerJetHubRpcParams = (): string[] => {
-    const signature = /export function registerJetHubRpc\(([\s\S]*?)\n\): void/.exec(readRpc())
-    expect(signature?.[1], '应能取到 registerJetHubRpc 的签名').toBeDefined()
-    return (signature?.[1] ?? '')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => /^\w+\??:/.test(line))
-      .map((line) => line.replace(/[?:].*$/, ''))
-  }
+  /**
+   * `JetHubAuths` 的**键集合** —— 取自 `src/index.ts` 的**调用点**
+   * （`registerJetHubRpc(ctx, pool, { … })` 第三个实参），按 AST 读属性名。
+   *
+   * ## ⚠️⚠️ 2026-10-08 复审 Finding 2 的「两难」判定
+   *
+   * 原实现正则解析 `src/jet-hub-rpc.ts` 里 `JetHubAuths` **接口**的成员行。
+   * 复审指出这是个两难：**接口在运行时没有表示**（类型被擦除），所以只能读源码
+   * 文本。判定如下 —— **接口那条断言保留，但不再由它单独承担不变式**：
+   *
+   * 1. 不变式（「客户端每个 provider 要么有同名键、要么是被验证的豁免」）改由
+   *    **调用点**承担：调用点是运行时真正传进去的那个对象，**键名即语义**，
+   *    而且用 AST 读（`tests/helpers/jet-hub-auths.ts`）⇒ 重排 / 插键 / 换行 /
+   *    注释都不可能让它假失败，**键真的漏了必然变红**。
+   * 2. 接口那条断言**不能删**：它守的是另一件事 ——「13 个键都真的声明在接口上」。
+   *    若把它改成「从 `PROVIDER_REGISTRY` 派生键集合」，就变成拿 registry 与
+   *    自己比（客户端 id 集合**本身**已由 registry 派生）——**同义反复**。
+   * 3. 两者由下面「接口键 === 调用点键」那条用例**交叉锁死**：接口声明了却
+   *    没接线、或接线了却没声明，都会红。这就是「接口没有运行时表示」这个
+   *    两难的出路 —— 接口不能单独成为权威，但它可以且必须与运行时权威一致。
+   */
+  const jetHubAuthKeys = (): string[] =>
+    Object.keys(jetHubAuthsCallKeys(readIndex()))
 
-  /** 客户端 `PROVIDERS` 表里的 provider id，按声明顺序。 */
-  const clientProviderIds = (): string[] => {
-    const block = /const PROVIDERS = Object\.freeze\(\[([\s\S]*?)\n\]\);/.exec(readClient('jet-hub.js'))
-    return [...(block?.[1] ?? '').matchAll(/id: '([^']+)'/g)].map((m) => m[1])
-  }
+  /** `JetHubAuths` **接口**声明的成员键（类型层权威，按声明顺序）。 */
+  const jetHubAuthInterfaceKeys = (): string[] =>
+    jetHubAuthsInterfaceKeys(readRpc())
+
+  /** 客户端 `PROVIDERS` 表里的 provider id，按声明顺序。
+   *  ⚠️ 2026-10-08：改为直接读 `PROVIDER_REGISTRY`（客户端 `PROVIDERS`
+   *  已由它派生），不再用正则解析 `jet-hub.js` 的源码文本。 */
+  const clientProviderIds = (): string[] => PROVIDER_REGISTRY.map((d) => d.id)
+
+  it('★ `JetHubAuths` 接口声明的键 === index.ts 调用点实际传的键（两难：接口无运行时表示，故与运行时权威交叉锁死）', () => {
+    const declared = jetHubAuthInterfaceKeys()
+    const wired = jetHubAuthKeys()
+    // 接口多声明而没接线 ⇒ `authOf(auths, id)` 运行时拿不到实例。
+    // 接线而接口没声明 ⇒ `pnpm typecheck` 会先失败（TS2561），但这里也点名。
+    expect(
+      [...wired].sort(),
+      '接口声明了却没接线（或反之）—— 逐个点名见下面的差异',
+    ).toEqual([...declared].sort())
+  })
 
   it('★ account.create 有 zcode 分支（否则报 unknown provider）', () => {
     const source = readRpc()
     expect(source).toMatch(/else if \(provider === ZCODE\.id\) \{/)
   })
 
-  it('★ account.refresh 的 switch 有 zcode case（否则该端点报 Unknown provider）', () => {
+  /**
+   * ⚠️ 2026-10-08 改（Task 2）：原先这条断言 `expect(readRpc()).toMatch(/case ZCODE\.id:/)`
+   * —— 扫的是 `account.refresh` 那 13 个同构 `case` 里的 zcode 那一个。
+   * Task 2 把它们收敛成一处查表（`authOf(auths, entry.provider)`）
+   * ⇒ 该文本形态**不存在了**，而它守的意图（zcode 的续期接上了、不再报
+   * `Unknown provider`）**与文本无关**。
+   *
+   * ⇒ 改为断言**结构**（真的走查表分派）+ **行为**（zcode 的续期落到 zcode 桩上）。
+   *    行为那一半用 `refreshHarness` 直接驱动端点，比文本断言强：文本只能证明
+   *    源码里有那串字符，行为能证明实参真的落到了 zcode 上。
+   */
+  it('★ account.refresh 走查表分派，且 zcode 账号的续期落到 zcode 桩上', async () => {
     // ⚠️ 该端点**没有面板入口**（issue IKJOZA 取证），别在测试名里写「刷新按钮」。
-    expect(readRpc()).toMatch(/case ZCODE\.id:/)
+    const source = readRpc()
+    const refreshStart = source.indexOf("case 'account.refresh':")
+    expect(refreshStart, '找不到 account.refresh 分支').toBeGreaterThan(-1)
+    expect(source.slice(refreshStart, refreshStart + 4000))
+      .toMatch(/authOf\(auths, entry\.provider\)/)
+
+    const target = accountEntry(ZCODE.id, 'ZCODE_ACCOUNT_WIRE')
+    const harness = refreshHarness([target])
+    const result = await harness.call(target.id)
+    expect(result.ok, `zcode 续期应成功，实际 error=${result.error?.message}`).toBe(true)
+    expect(harness.calls.map((c) => c.provider)).toEqual([ZCODE.id])
   })
 
-  it('★ credits.balances 与 credits.claimAll 都接了 zcode', () => {
-    const source = readRpc()
-    // 两处都应有 zcode 分派。
-    const matches = [...source.matchAll(/req\.provider === ZCODE\.id/g)]
-    expect(matches.length).toBeGreaterThanOrEqual(2)
+  /**
+   * ⚠️ 2026-10-08（Task 11-B）：本组两条原先都是**源码文本断言**
+   * （`expect(readRpc()).toMatch(/req\.provider === ZCODE\.id/)` 与
+   * `toMatch(/claimDailyFor/)`），现已删除。理由：
+   *
+   * 1. 第五行那种正则**只要源码里出现该字符串就通过** —— 它证明不了
+   *    「claimAll 真的为 zcode 走特例分支、真的逐 plan 现产 captcha」；
+   * 2. 它依赖 `ZCODE.id` 仍以字面量出现在 `jet-hub-rpc.ts` 里，Task 3 就动过这类形态。
+   *
+   * ⚠️ 它们守的意图**已由一条强得多的行为用例覆盖**：
+   * `tests/unit/claim-runtime-parity.spec.ts` 的
+   * 「★ 豁免者 zcode 真的能签到（真跑端点，证明特例分支没断）」——
+   * 它真跑 `credits.claimAll`（provider=zcode），并断言：
+   * - `result.ok === true`（特例分支没断，不是 `unsupported provider`）；
+   * - **逐 plan 展开** `results` 为 2 条、金额 111/222（证明走的是「自己遍历账号与
+   *   plan」那条形状，而不是共享骨架那条「一账号一条 outcome」）；
+   * - `perPlan.length === 2`（**captcha 真的现产了两次**，复用会得上游 3007）。
+   *
+   * 下面保留的这两条断言的是**能力登记**（registry 派生），与实现写法无关 ——
+   * 它们仍能在「有人把 zcode 从能力表里摘掉」时点名报警。
+   */
+  it('★ zcode 的余额能力（registry 判据）：声明 balance', () => {
+    // ⚠️ zcode 的量纲是 **token 而非积分** —— 能力矩阵回答的是「有没有这项能力」，
+    //    不是「量纲是否一致」（量纲差异在面板与 RPC 层如实标注，见 registry 注释）。
+    // ⚠️ 行为侧由 `credits-runtime-parity.spec.ts` 的
+    //    「★★ 逐家余额都走自己的上游端点」守（核对 zcode 的
+    //    `/api/v1/zcode-plan/billing/balance` 真的被请求到）。
+    expect(descriptorOf(ZCODE.id)?.credits?.balance, 'zcode 应声明余额能力').toBe(true)
   })
 
-  it('★ 签到路径为**每个 plan 单独 mint** captcha（captcha 一次性）', () => {
-    const source = readRpc()
-    // claimAll 的 zcode 分支应在循环内调用 claimDailyFor（它内部每个 plan 都调 mint）。
-    expect(source).toMatch(/claimDailyFor/)
+  it('★ zcode 的签到能力（registry 判据）：可签到、且登记为「自动签到有代价」', () => {
+    const zcode = descriptorOf(ZCODE.id)
+    expect(zcode?.credits?.dailyCheckin, 'zcode 应声明可签到').toBe(true)
+    expect(zcode?.autoCheckinExcluded, 'zcode 必须被排除出自动签到').toBe(true)
+    // ⚠️ claimAll 侧的行为由 `claim-runtime-parity.spec.ts`
+    //    的「豁免者 zcode 真的能签到（真跑端点）」守 —— 见上方说明。
   })
 
   it('index.ts 把 zcode 接进 registerJetHubRpc 与 modelAdapters', () => {
     const source = readFileSync(resolve(HERE, '../../src/index.ts'), 'utf8')
-    // ⚠️ 2026-09-30 合并后 minimax 排在 zcode 之前；2026-10-03 加 gemini 时
-    // 按「新 provider 追加在末尾」的惯例排在 zcode 之后 —— 用 .* 容忍中间插队者。
-    expect(source).toMatch(/registerJetHubRpc\(ctx, pool, service, .*raccoon,.*zcode,.*gemini, modelAdapters\)/)
+    // ⚠️ 2026-10-08 改：原先这里断言
+    //    `/registerJetHubRpc\(ctx, pool, service, .*raccoon,.*zcode,.*gemini, modelAdapters\)/`
+    //    —— 那是**位置参数**时代的源码文本断言，13 个形参改成**命名对象**后
+    //    必然变红，而它守的意图（zcode 没接错实例）**与位置无关**。
+    //    ⇒ 行为断言搬到了唯一一处（避免同一套 RPC 夹具在多文件重复）：
+    //    `tests/unit/jet-hub-rpc-auth-wiring.spec.ts` 的
+    //    「★★ 每个 provider id 的续期都分派到自己的 auth 实例」—— 它真跑
+    //    `apply()` + `account.refresh`，逐个 provider 核对**哪个实例**被调用。
+    //    **比原断言更强**：文本断言只能证明源码里有那串字符，它能证明端到端
+    //    分派真的落到 zcode 自己的实例上。
     // ⚠️ 2026-10-06 复审 !66：登记项经 `pruned(...)` 包装（致命缺陷修复之一）。
     expect(source).toMatch(/zcode: pruned\([^)]*,\s*zcodeAdapter\)/)
   })
@@ -512,69 +611,76 @@ describe('ZCode RPC 分派（缺口 2：接线）', () => {
     expect(disposals.length).toBeGreaterThanOrEqual(2)
   })
 
-  it('index.ts 把 llm-zcode 加入 registerProviderSettings（老契约需要）', () => {
-    const source = readFileSync(resolve(HERE, '../../src/index.ts'), 'utf8')
-    expect(source).toMatch(/'llm-zcode'/)
+  it('zcode 声明了老契约需要的 settings namespace（行为断言，2026-10-08 改）', () => {
+    // ⚠️ 2026-10-08 改：原先这里扫 `src/index.ts` 的源码文本找 `'llm-zcode'`。
+    //    本次重构把 13 个字面量收敛成从 `PROVIDER_REGISTRY` 派生，字面量**搬了家**
+    //    —— 文本断言于是变红，而行为完全没变。这正是本仓库红线说的「源码文本
+    //    断言是错的工具」：它守不住行为，却会被无关重构打红。
+    //    ⇒ 改为断言**声明值**；「index.ts 真的按它注册了」由
+    //    `provider-registry-consumers.spec.ts` 的 `apply()` 行为用例守。
+    expect(descriptorOf('zcode')?.settingsNamespace).toBe('llm-zcode')
   })
 
   /**
-   * ★ 派生式不变量：**客户端 PROVIDERS 的条数 == RPC 签名里的 provider 形参数**。
+   * ★ **不变式**：客户端 `PROVIDERS` 里的每个 provider，要么在 `JetHubAuths`
+   * 里有同名键，要么属于**两个被验证过的豁免**。
    *
-   * ## 为什么要这条（已有的三处断言都不够）
+   * ## ⚠️ 2026-10-08 改：原先两条用例断言的是「位置参数的**个数**」
    *
-   * `zcode-rpc-login.spec.ts:521` 锁的是 `args.length === 16`、
-   * `minimax-rpc.spec.ts` / `gemini-rpc.spec.ts` 锁的是**末尾几个位置的名字** ——
-   * 全是**硬编码**。硬编码与硬编码会**一起漂移**：将来加了第 15 个 provider，
-   * 有人同步把 `16` 改成 `17`、把 `gemini` 后面补上名字，断言照样全绿，
-   * 但**中间**某个 provider 的位置已经错位（位置传参下错位 = 拿 A 的实例当 B 用）。
+   * 旧形态用正则解析 `registerJetHubRpc` 的签名，断言
+   * `params.length === clientIds.length + 1` 且「不占形参位的是 opencode 与
+   * aggregate」。13 个形参改成**命名对象**后，签名只剩 4 个形参
+   *（`ctx, pool, auths, modelAdapters`）⇒ 那两条必然变红。
    *
-   * 而本条把数字**从客户端 PROVIDERS 表派生**，于是「客户端多了一个面板、
-   * 服务端却没接线」这种真实故障无处可藏。
+   * 而它们守的意图**仍然成立且更重要**：「客户端多了一个面板、服务端却没接线」
+   * 必须被发现。命名对象下判据从「数形参」变成**读键名** —— 键名即语义，
+   * 于是这条不变式**比原来更强**：原断言只能发现「个数不对」，本条能逐个点名
+   * 是**哪个** provider 漏了（`withoutKey` 会列出它）。
    *
    * ## 唯一的豁免：`opencode` 与 `aggregate`（两者理由**不同**）
    *
-   * - `opencode`：RPC 由 `handleMethod` 统一分派到 `handleOpencodeRpc`，**不占形参位**
-   *   （见 `src/index.ts` 的注册注释）；
+   * - `opencode`：RPC 由 `handleMethod` 统一分派到 `handleOpencodeRpc`，**不占键位**；
    * - `aggregate`：**没有 auth 服务**（无账号 / 无凭据 / 无续期）⇒ 它不该占一个
-   *   `XxxAuth` 形参位，否则会逼 15 个调用点补 `undefined` 占位（而
-   *   `registerJetHubRpc` 是位置传参，其形参列表有成文警告「历史上已因少传/插队
-   *   错位复发 6 次」）。它的 RPC 走 `modelAdapters['aggregate']`（P2）。
+   *   `XxxAuth` 键，否则会逼每个调用点补一个占位。它的 RPC 走
+   *   `modelAdapters['aggregate']`（P2）。
    *
-   * 所以个数是 `N - 2`。
-   * ⚠️ 豁免本身必须被**验证**（见下面第二条断言），否则「少接了一个」与
+   * ⚠️ 豁免本身必须被**验证**（下面第二条断言），否则「少接了一个」与
    * 「本来就该少一个」就分不开了。
    */
-  it('★ RPC 形参个数由客户端 PROVIDERS 表派生（别用硬编码数字）', () => {
-    const params = registerJetHubRpcParams()
+  it('★ 客户端每个 provider 都在 JetHubAuths 里有同名键（除两个被验证的豁免）', () => {
+    const keys = jetHubAuthKeys()
     const clientIds = clientProviderIds()
-    const rpcClientIds = clientIds.filter(id => !['autoclaw', 'chatgpt-plan'].includes(id))
-    expect(rpcClientIds.length).toBe(15)
-    // 实测（探针）：params = [ctx, pool, codearts…gemini(13 个), modelAdapters] ⇒ 16。
-    // 15 个客户端 id 里 **opencode 与 aggregate 两个不占形参位** ⇒ 13 个 provider 形参。
-    // ⇒ 形参个数 = clientIds.length - 2 + 3 = clientIds.length + 1
-    //   （3 = ctx + pool + modelAdapters）。
-    // ⚠️ 刻意写成**派生式**而非硬编码 16：写死就退化成「和硬编码数字比」，
-    //    而这正是本用例要防的（见用例标题）。
-    expect(params.length).toBe(rpcClientIds.length + 1)
-    // 末两位必须是 gemini 与 modelAdapters（gemini 排在 provider 末尾位）。
-    expect(params.at(-1)).toBe('modelAdapters')
-    expect(params.at(-2)).toBe('gemini')
+    // ⚠️ 2026-10-12 加 officeace、2026-10-13 加 accio：15 → 17。
+    // ⚠️ 2026-10-15 加 minimaxintl（MiniMax Code 国际版）：17 → 18。
+    // ⚠️ 2026-10-16 加 astudio（goal 302 接线）：18 → 19。
+    // ⚠️ 2026-10-17 加 autoclaw（AutoClaw/智谱）：19 → 20；
+    //    同日 **本 fork** 加 modelscope（魔搭）：20 → 21；
+    //    2026-10-20 加 autoclawintl（AutoClaw 国际版）：21 → 22。
+    //    ⚠️ clientProviderIds() 是**客户端图标表**的 id 数，与 registry 口径不同 ——
+    //    权威值以断言实测为准，注释里的加减号只是**历史沿革**，不要拿来推当前数字。
+    expect(clientIds.length).toBe(23)
+    // ⚠️ 20 个 auth 键（22 个客户端 id − opencode − aggregate）。
+    expect(keys).toHaveLength(20)
+    const withoutKey = clientIds.filter((id) => !keys.includes(id))
+    expect([...withoutKey].sort()).toEqual(['aggregate', 'opencode', 'orcaterm'])
   })
 
-  it('★ 不占形参位的是 opencode 与 aggregate（豁免被验证，不是被假设）', () => {
-    const params = registerJetHubRpcParams()
+  it('★ 不占键位的是 opencode 与 aggregate（豁免被验证，不是被假设）', () => {
+    const keys = jetHubAuthKeys()
     const clientIds = clientProviderIds()
     // 客户端有它们
     expect(clientIds).toContain('opencode')
     expect(clientIds).toContain('aggregate')
-    // 但 RPC 签名里没有它们 —— 且**只有**它们没有。
-    // ⚠️ 形参名 `qoderCn`（驼峰）对应客户端表里的 `qodercn`，故先过一遍别名表。
-    const alias: Readonly<Record<string, string>> = { qodercn: 'qoderCn' }
-    const withoutSlot = clientIds.filter((id) => !params.includes(alias[id] ?? id))
+    // 但 `JetHubAuths` 里没有它们 —— 且**只有**它们没有。
+    // ⚠️ **不再需要别名表**：键是 provider id（`qodercn` 全小写），
+    //    与客户端 `PROVIDERS` 的 id **逐字相同**。旧形态要维护
+    //    `{ qodercn: 'qoderCn' }` 别名，正是因为那时形参名是变量名 ——
+    //    那层别名本身就是「键与 id 不同名」这个缺陷的化石。
+    const withoutKey = clientIds.filter((id) => !keys.includes(id))
     // ⚠️ 两者豁免理由**不同**（见上一条用例的注释）：opencode 是「RPC 走
     //    handleOpencodeRpc」、aggregate 是「没有 auth 服务」。断言写成数组
     //    （而非 `toHaveLength(2)`）是为了在**将来多出第三个豁免**时立刻可见是哪两个。
-    expect([...withoutSlot].sort()).toEqual(['aggregate', 'autoclaw', 'chatgpt-plan', 'opencode'])
+    expect([...withoutKey].sort()).toEqual(['aggregate', 'opencode', 'orcaterm'])
   })
 })
 

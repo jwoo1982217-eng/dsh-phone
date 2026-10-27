@@ -43,7 +43,7 @@
 /** 续期调度器的依赖（全部可注入，便于用假定时器做行为测试）。 */
 export interface RefreshSchedulerOptions {
     /**
-     * 一轮续期（通常是 `index.ts` 里遍历 `refreshTargets` 的那个函数）。
+     * 一轮续期（通常是 `index.ts` 里遍历 `wiredRefreshTargets()` 的那个函数）。
      *
      * ⚠️ 它**不得抛错**才算合规（调用方内部逐 provider try）；若它抛了，
      * 本类只记一条 warn 并继续下一轮 —— 一次异常绝不能让调度器停摆。

@@ -56,7 +56,42 @@ describe('账号池读写方法', () => {
     }
   })
   it('读方法对缺失字段返回安全默认值（空串 / 0）', () => {
-    expect(pool).toMatch(/opencodeProxy \?\? ''/)
-    expect(pool).toMatch(/typeof value === 'number' && Number\.isFinite\(value\) && value > 0 \? value : 0/)
+    /**
+     * ⚠️ 2026-10-18（IKLTZ2 修复期间）：原先断言 `opencodeProxy ?? ''`，
+     * 而读方法已改为 `asProxyText(entry?.opencodeProxy)` —— 因为该字段来自
+     * **用户可编辑的备份文件**，`sanitizeAccounts` 只做 `{...candidate}`
+     * 原样透传、不校验形状 ⇒ 池里可能存在 `"opencodeProxy": 12345`，
+     * 而下游 `normalizeProxy` 第一句就是 `input.trim()` ⇒ 非字符串会抛
+     * `TypeError`，该账号**永久不可用且无自愈**（实测确认）。
+     *
+     * ⚠️ 判据相应改为「过 `asProxyText`」—— 它才是**降级为直连**的那一格。
+     */
+    const proxyAt = pool.indexOf('opencodeProxyFor(')
+    expect(proxyAt, 'opencodeProxyFor 应存在').toBeGreaterThan(-1)
+    const proxyBody = pool.slice(proxyAt, proxyAt + 300)
+    expect(proxyBody, '代理读方法必须过 asProxyText（备份脏值会崩在 input.trim()）')
+      .toMatch(/asProxyText\(/)
+    expect(proxyBody, "不得退回 ?? ''（那对数字脏值同样会崩）").not.toMatch(/\?\? ''/)
+    /**
+     * ⚠️ **必须切片到方法体内，不能在整份源码上匹配表达式**。
+     *
+     * 这条断言原先是在整个 `account-pool.ts` 上找
+     * `typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0`
+     * —— 当时 opencode 的读方法里确实是这段，能命中。
+     * 2026-10-08 把归一化抽进 `normalizeOpencodeGeneration`（唯一实现）后，
+     * 这段表达式**仍然存在**，但在 **`traeCheckinDeviceGenerationFor`** 里 ——
+     * 于是断言继续变绿，而它本该守的 opencode 读方法**已经无人看守**。
+     *
+     * 这是「全文匹配的源码断言会被同形的别处满足」的典型形状：
+     * 抽取/搬移代码时守卫会**静默失效**，不报错、不变红。
+     * ⇒ 凡是「守某个具体实现」的源码断言，一律先 `indexOf` 到符号再切片。
+     */
+    const at = pool.indexOf('opencodeFingerprintGenerationFor(')
+    expect(at, 'opencodeFingerprintGenerationFor 应存在').toBeGreaterThan(-1)
+    const body = pool.slice(at, at + 600)
+    // 归一化不得在这里再写第二份判据，必须调唯一实现。
+    expect(body).toMatch(/normalizeOpencodeGeneration\(/)
+    expect(body, '不得再内联一份归一化判据（那会与 opencode-auth.ts 分叉）')
+      .not.toMatch(/Number\.isFinite/)
   })
 })

@@ -1,6 +1,7 @@
 import { request, createServer } from 'node:http'
 import { describe, expect, it } from 'vitest'
-import { createOpenAiGateway } from '../../src/openai-gateway/server.js'
+import { BODY_LIMIT, createOpenAiGateway } from '../../src/openai-gateway/server.js'
+import { DEFAULT_IMAGE_LIMITS } from '../../src/openai-gateway/images.js'
 
 async function freePort(): Promise<number> {
   const server = createServer()
@@ -669,5 +670,146 @@ describe('JetHub 导出目录与图片入口', () => {
       expect(JSON.parse(result.body).data[0]).toMatchObject({ id: 'fixture/vision/with-slash', input: ['text', 'image'], context_window: 65536, max_tokens: 4096 })
       expect(inferenceCalls).toBe(0)
     } finally { await gateway.close() }
+  })
+})
+
+/**
+ * Issue IKKUBJ：请求体超限时网关曾销毁 socket，那条 413 永远发不出去 ——
+ * 客户端只看到连接重置，把「请求过大」伪装成「网络故障」。
+ *
+ * ⚠️ 这些用例**必须走真实 HTTP 往返**：缺陷本身就在「响应能否写回 socket」这一层，
+ * 直接单测 `readJson` 的 reject 是恒绿的（那条 reject 一直是对的，错的是它之后的
+ * 那行销毁）。
+ */
+describe('请求体上限与超限行为（Issue IKKUBJ）', () => {
+  /** 恰好 totalBytes 字节、且是合法 JSON 的请求体。 */
+  function paddedBody(totalBytes: number): Buffer {
+    const prefix = '{"model":"qoder/qfmodel","messages":[{"role":"user","content":"hi"}],"pad":"'
+    const suffix = '"}'
+    const pad = totalBytes - Buffer.byteLength(prefix) - Buffer.byteLength(suffix)
+    if (pad < 0) throw new Error('totalBytes 太小，装不下 JSON 外壳')
+    return Buffer.from(prefix + 'A'.repeat(pad) + suffix)
+  }
+
+  /**
+   * 发原始字节。⚠️ 网关若在写出 413 之前销毁 socket，客户端这里收到的是
+   * `ECONNRESET` 并 **reject** —— 用例因此变红，而不是悄悄拿到一个别的状态码。
+   */
+  function postBytes(port: number, path: string, payload: Buffer): Promise<{ status: number; body: string }> {
+    return new Promise((resolve, reject) => {
+      const req = request({
+        host: '127.0.0.1',
+        port,
+        path,
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer test-key',
+          'content-type': 'application/json',
+          'content-length': payload.length,
+          connection: 'close',
+        },
+      }, (res) => {
+        const chunks: Buffer[] = []
+        res.on('data', chunk => chunks.push(Buffer.from(chunk)))
+        res.on('end', () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString('utf8') }))
+      })
+      req.on('error', reject)
+      req.end(payload)
+    })
+  }
+
+  const LIMIT = 4096
+
+  it('★ 超限时回 413 + request_too_large，而不是把连接重置掉', async () => {
+    const port = await freePort()
+    const gateway = createOpenAiGateway({ llm, env: ENV(port), maxBodyBytes: LIMIT })
+    await gateway.start()
+    try {
+      const response = await postBytes(port, '/v1/chat/completions', paddedBody(LIMIT + 1))
+      expect(response.status).toBe(413)
+      const error = JSON.parse(response.body).error
+      expect(error.code).toBe('request_too_large')
+      expect(error.type).toBe('invalid_request_error')
+      // 排障时不必翻源码：上限值就在错误里。
+      expect(error.message).toContain(String(LIMIT))
+    } finally {
+      await gateway.close()
+    }
+  })
+
+  it('★ 超出上限很多倍（跨多个 TCP 分片）时同样拿得到 413', async () => {
+    const port = await freePort()
+    const gateway = createOpenAiGateway({ llm, env: ENV(port), maxBodyBytes: LIMIT })
+    await gateway.start()
+    try {
+      // 128 倍：`size` 要跨多个 `data` 事件累加才判得出超限（单分片就超限是另一条路径）。
+      //
+      // ⚠️ 本用例**不**锁「超限后是否排空」：把排空换成 `request.pause()` 实测仍然通过
+      // —— 413 已经写进发送缓冲区，客户端收到后就停止发送了。排空省的是服务端在响应
+      // 之后继续读走垃圾数据的开销，不是可观测行为，故不为它编一条恒绿的守卫。
+      const response = await postBytes(port, '/v1/chat/completions', paddedBody(LIMIT * 128))
+      expect(response.status).toBe(413)
+      expect(JSON.parse(response.body).error.code).toBe('request_too_large')
+    } finally {
+      await gateway.close()
+    }
+  })
+
+  it('恰好等于上限时放行（判据是 > 而不是 >=）', async () => {
+    const port = await freePort()
+    const gateway = createOpenAiGateway({ llm, env: ENV(port), maxBodyBytes: LIMIT })
+    await gateway.start()
+    try {
+      const response = await postBytes(port, '/v1/chat/completions', paddedBody(LIMIT))
+      expect(response.status).toBe(200)
+      expect(JSON.parse(response.body).choices[0].message.content).toBe('hello')
+    } finally {
+      await gateway.close()
+    }
+  })
+
+  it('⚠️ /v1/responses 共用同一上限（只给一个端点接上限是同类缺陷）', async () => {
+    const port = await freePort()
+    const gateway = createOpenAiGateway({ llm, env: ENV(port), maxBodyBytes: LIMIT })
+    await gateway.start()
+    try {
+      const response = await postBytes(port, '/v1/responses', paddedBody(LIMIT + 1))
+      expect(response.status).toBe(413)
+      expect(JSON.parse(response.body).error.code).toBe('request_too_large')
+    } finally {
+      await gateway.close()
+    }
+  })
+
+  it('★ keep-alive 窗口覆盖「人读着回复、隔几分钟再追问」（不能是 Node 默认的 5 秒）', async () => {
+    const port = await freePort()
+    const gateway = createOpenAiGateway({ llm, env: ENV(port) })
+    await gateway.start()
+    try {
+      const header = await new Promise<string>((resolve, reject) => {
+        const req = request({
+          host: '127.0.0.1', port, path: '/v1/models', method: 'GET',
+          headers: { authorization: 'Bearer test-key' },
+        }, (res) => {
+          res.resume()
+          res.on('end', () => resolve(String(res.headers['keep-alive'] ?? '')))
+        })
+        req.on('error', reject)
+        req.end()
+      })
+      // Node 会把 `server.keepAliveTimeout` 如实写进响应头 —— 外部可观测，
+      // 且不设就是 `timeout=5`。
+      expect(header).toContain('timeout=120')
+    } finally {
+      await gateway.close()
+    }
+  })
+
+  it('★ 上限容得下自家图片声明所能产生的请求体（否则那条声明永不可达）', () => {
+    // JSON 里的图片是 base64：每 3 字节原始数据占 4 字节。
+    const base64Bytes = (raw: number) => Math.ceil(raw / 3) * 4
+    expect(BODY_LIMIT).toBeGreaterThanOrEqual(base64Bytes(DEFAULT_IMAGE_LIMITS.maxMessageImageBytes))
+    // 单张声明也必须在门内：图片从来不独占请求体，还要与文本、tools 共处。
+    expect(BODY_LIMIT).toBeGreaterThan(base64Bytes(DEFAULT_IMAGE_LIMITS.maxImageBytes))
   })
 })

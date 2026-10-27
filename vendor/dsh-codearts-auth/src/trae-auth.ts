@@ -655,8 +655,8 @@ export class TraeAuth extends Service {
   private async fetchModelsUncached(pool?: AccountPool): Promise<TraeRemoteModel[]> {
     let credential: TraeCredential | undefined
     if (pool) {
-      const available = await pool.getAvailableAccount(this.product.id, '').catch(() => undefined)
-      if (available) credential = available.credential as TraeCredential
+      const available = await pool.getAvailableAccount<TraeCredential>(this.product.id, '').catch(() => undefined)
+      if (available) credential = available.credential
     }
     if (credential === undefined) {
       const resolved = await this.ctx.credentials.resolve(credentialRef(this.credentialRefName))

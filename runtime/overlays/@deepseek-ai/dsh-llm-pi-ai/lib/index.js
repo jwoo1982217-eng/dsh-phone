@@ -6,7 +6,7 @@ import { brandString } from "@deepseek-ai/dsh-brand";
 import { requestImageDimensions } from "@deepseek-ai/dsh-attachment";
 import z from "@deepseek-ai/schemastery";
 import { credentialKey, credentialKeyId, credentialKeyScope, credentialRef, isCredentialKeySegment, isCredentialRefName } from "@deepseek-ai/dsh-credentials";
-import { builtinModels, builtinProviders, getBuiltinModels, getBuiltinProviders } from "@earendil-works/pi-ai/providers/all";
+import { builtinModels, builtinProviders, getAllBuiltinModels, getBuiltinModels } from "@earendil-works/pi-ai/providers/all";
 import { anthropicMessagesApi } from "@earendil-works/pi-ai/api/anthropic-messages.lazy";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
@@ -84,7 +84,8 @@ function toPiReplayState(message, requestedModel = message.model) {
 				};
 				case "toolCall": return {
 					type: "tool-call",
-					...block.thoughtSignature === void 0 ? {} : { thoughtSignature: block.thoughtSignature }
+					...block.thoughtSignature === void 0 ? {} : { thoughtSignature: block.thoughtSignature },
+					...block.namespace === void 0 ? {} : { namespace: block.namespace }
 				};
 			}
 		})
@@ -130,7 +131,8 @@ function readReplayState(value) {
 		for (const signature of [
 			"textSignature",
 			"thinkingSignature",
-			"thoughtSignature"
+			"thoughtSignature",
+			"namespace"
 		]) if (block[signature] !== void 0 && typeof block[signature] !== "string") return invalidReplay(`block ${index} ${signature} must be a string`);
 		if (block["redacted"] !== void 0 && typeof block["redacted"] !== "boolean") return invalidReplay(`block ${index} redacted must be boolean`);
 	}
@@ -206,7 +208,8 @@ function replayedAssistant(message, source, rawState) {
 					id: block.id,
 					name: block.name,
 					arguments: parseArguments(block.arguments),
-					...replay.type === "tool-call" && replay.thoughtSignature !== void 0 ? { thoughtSignature: replay.thoughtSignature } : {}
+					...replay.type === "tool-call" && replay.thoughtSignature !== void 0 ? { thoughtSignature: replay.thoughtSignature } : {},
+					...replay.type === "tool-call" && replay.namespace !== void 0 ? { namespace: replay.namespace } : {}
 				};
 				/* v8 ignore next -- readReplayState rejects unknown replay tags, so an equal plugin-added Harness tag cannot reach this switch */
 				default: return invalidReplay(`block ${index} has an unsupported Harness type`);
@@ -337,34 +340,49 @@ const CHAT_TEMPLATE_VARS = Object.keys({
 });
 let providerIndex;
 /**
-* Installed catalog providers by id, constructed once. Each entry owns the API
-* implementations for its own models, which is why a catalog route reuses this
-* provider instead of being rebuilt from parts.
-* @returns the catalog provider index.
+* Whether this adapter serves one installed catalog provider. It dispatches
+* chat requests only, so a provider whose catalog lists models but no chat
+* model (image-generation or classifier models alone) is not a catalog route;
+* a provider whose catalog lists no models at all stays one.
+* @param provider - the installed provider.
+* @returns whether the provider ships a chat model or lists no models.
+*/
+function servesChat(provider) {
+	const id = provider.id;
+	return getBuiltinModels(id).length > 0 || getAllBuiltinModels(id).length === 0;
+}
+/**
+* Installed catalog providers this adapter serves, by id, constructed once.
+* Each entry owns the API implementations for its own models, which is why a
+* catalog route reuses this provider instead of being rebuilt from parts.
+* @returns the catalog provider index, in catalog order.
 */
 function catalogProviders() {
-	providerIndex ??= new Map(builtinProviders().map((provider) => [provider.id, provider]));
+	providerIndex ??= new Map(builtinProviders().filter(servesChat).map((provider) => [provider.id, provider]));
 	return providerIndex;
 }
 /**
-* The installed catalog provider for one route, when pi-ai ships one.
+* The installed catalog provider for one route, when pi-ai ships one this
+* adapter serves.
 * @param provider - provider route key.
-* @returns the catalog provider, or `undefined` for a route pi-ai does not ship.
+* @returns the catalog provider, or `undefined` for a route pi-ai does not ship
+*   or ships without a chat model.
 */
 function catalogProvider(provider) {
 	return catalogProviders().get(provider);
 }
 /**
-* Every provider route the installed pi-ai catalog ships.
-* @returns the catalog provider ids.
+* Every provider route the installed pi-ai catalog ships and this adapter
+* serves: a provider whose catalog lists models but no chat model is left out.
+* @returns the catalog provider ids, in catalog order.
 */
 function catalogProviderIds() {
-	return getBuiltinProviders();
+	return [...catalogProviders().keys()];
 }
 /**
 * The installed catalog models for one route, indexed by model id.
 * @param provider - provider route key.
-* @returns catalog models by id; empty for a route pi-ai does not ship.
+* @returns catalog models by id; empty for a route {@link catalogProvider} does not return.
 */
 function catalogModels(provider) {
 	if (!catalogProviders().has(provider)) return /* @__PURE__ */ new Map();
@@ -758,6 +776,20 @@ function getSupportedThinkingLevels(model) {
 		if (level === "xhigh" || level === "max") return mapped !== void 0;
 		return true;
 	});
+}
+/**
+* Resolve transcript update modes from the exact model's protocol capabilities.
+* @param model - Materialized pi-ai model, including catalog compatibility flags.
+* @returns Update modes consumed by prompt admission and tool-history projection.
+*/
+function conversationUpdates(model) {
+	const compat = model.compat;
+	if (compat === void 0 || !("supportsMidConvoSystemMessages" in compat) || !compat.supportsMidConvoSystemMessages) return {};
+	const updates = { systemPromptUpdate: "in-history" };
+	if (model.api === "anthropic-messages" && "supportsMidConvoToolChanges" in compat && compat.supportsMidConvoToolChanges) updates.toolUpdate = "in-history";
+	else if (model.api === "openai-completions" && "supportsMidConvoToolAdditions" in compat && compat.supportsMidConvoToolAdditions) updates.toolUpdate = "addition-only";
+	else if ((model.api === "openai-responses" || model.api === "azure-openai-responses" || model.api === "openai-codex-responses") && ("supportsAdditionalTools" in compat && compat.supportsAdditionalTools || "supportsToolSearch" in compat && compat.supportsToolSearch)) updates.toolUpdate = "addition-only";
+	return updates;
 }
 //#endregion
 //#region lib/types/provider.js
@@ -1177,12 +1209,12 @@ function toolResultOf(message, toolNames, content) {
 		timestamp: 0
 	};
 }
-/** Reject unsupported roles, tool-change blocks, and image roles before replay or image offloading. */
+/** Reject misplaced tool-change blocks and unsupported image roles before replay or image offloading. */
 function assertSupportedHistory(messages) {
 	for (const message of messages) {
-		if (message.role === "developer") throw new LlmError("Developer messages are not supported yet", "UNSUPPORTED_CONTENT");
-		if (message.content.some((block) => block.type === "tool-addition" || block.type === "tool-removal")) throw new LlmError("Tool-change blocks require developer role", "UNSUPPORTED_CONTENT");
+		if (message.role !== "developer" && message.content.some((block) => block.type === "tool-addition" || block.type === "tool-removal")) throw new LlmError("Tool-change blocks require developer role", "UNSUPPORTED_CONTENT");
 		if (message.role !== "user" && message.role !== "tool" && contentHasImage(message.content)) throw new LlmError(`pi-ai cannot represent an image in an in-history ${message.role} message`, "UNSUPPORTED_CONTENT");
+		if (message.role === "system" && message.content.some((block) => block.type !== "text")) throw new LlmError("pi-ai cannot represent non-text system messages", "UNSUPPORTED_CONTENT");
 	}
 }
 function userContent(blocks, requestImages, resolveImageAccess) {
@@ -1226,35 +1258,29 @@ async function prepareRequestImages(messages, attachments, budget, signal) {
 	for (const [index, ref] of orderedRefs.entries()) versions.set(ref.attachmentId, prepared[index]);
 	return versions;
 }
-function toolsOf(options) {
-	if (options.tools?.some((tool) => tool.deferLoading === true)) throw new LlmError("Deferred tool loading is not supported yet", "UNSUPPORTED_CONTENT");
-	return options.tools?.map((tool) => ({
+/** Convert a projected declaration without its harness-owned activation marker. */
+function piTool(tool) {
+	return {
 		name: tool.name,
 		description: tool.description,
 		parameters: tool.parameters
-	}));
+	};
 }
-/**
-* Select the pi-ai `systemPrompt` source shared by both conversion paths.
-* `options.system` wins when defined and every history message converts,
-* including a leading `system` message, which then folds into a `user`
-* message. Otherwise a leading `system` history message supplies the prompt
-* and leaves the converted history; empty leading text sends no prompt.
-*/
+function toolsOf(options) {
+	return options.tools?.filter((tool) => !tool.deferLoading).map(piTool);
+}
+/** Combine request-level text and leading system history into the initial prompt. */
 function splitSystemPrompt(options) {
-	if (options.system !== void 0) return {
-		systemPrompt: options.system,
-		messages: options.messages
-	};
-	const [first, ...rest] = options.messages;
-	if (first?.role !== "system") return {
-		systemPrompt: void 0,
-		messages: options.messages
-	};
-	const text = flattenText(first);
+	const text = [options.system];
+	let end = 0;
+	for (const message of options.messages) {
+		if (message.role !== "system") break;
+		text.push(flattenText(message));
+		end++;
+	}
 	return {
-		systemPrompt: text.length > 0 ? text : void 0,
-		messages: rest
+		systemPrompt: text.filter(Boolean).join("\n\n") || void 0,
+		messages: options.messages.slice(end)
 	};
 }
 /** Assemble the request-level pi-ai context envelope shared by both conversion paths. */
@@ -1266,17 +1292,54 @@ function piContext(systemPrompt, options, messages) {
 		...tools !== void 0 && tools.length > 0 ? { tools } : {}
 	};
 }
+/** Keep one developer event in one system update, resolving its projected tool declarations. */
+function appendDeveloper(message, options, messages) {
+	const content = [];
+	const toolsAdded = [];
+	const toolsRemoved = [];
+	for (const block of message.content) switch (block.type) {
+		case "text":
+			if (block.text.length > 0) content.push({
+				type: "text",
+				text: block.text
+			});
+			break;
+		case "tool-addition": {
+			const tool = options.tools?.find((tool) => tool.name === block.toolName);
+			if (tool === void 0) throw new LlmError(`pi-ai tool update references undeclared tool "${block.toolName}"`, "INVALID_REQUEST");
+			toolsAdded.push(piTool(tool));
+			break;
+		}
+		case "tool-removal":
+			toolsRemoved.push({ name: block.toolName });
+			break;
+		default: throw new LlmError(`pi-ai cannot represent developer content ${block.type}`, "UNSUPPORTED_CONTENT");
+	}
+	if (content.length === 0 && toolsAdded.length === 0 && toolsRemoved.length === 0) return;
+	messages.push({
+		role: "system",
+		content,
+		timestamp: 0,
+		...toolsAdded.length === 0 ? {} : { toolsAdded },
+		...toolsRemoved.length === 0 ? {} : { toolsRemoved }
+	});
+}
 function appendAssistant(message, messages, toolNames, onReplayDegrade) {
 	const assistant = toPiAssistant(message, onReplayDegrade);
 	for (const block of assistant.content) if (block.type === "toolCall") toolNames.set(brandString(block.id), block.name);
 	messages.push(assistant);
 }
-/** Append the system and assistant roles both context builders treat identically; true when consumed. */
-function appendSystemOrAssistant(message, messages, toolNames, onReplayDegrade) {
+/** Append shared system, developer, and assistant roles; true when consumed. */
+function appendSharedHistory(message, options, messages, toolNames, onReplayDegrade) {
+	if (message.role === "developer") {
+		appendDeveloper(message, options, messages);
+		return true;
+	}
 	if (message.role === "system") {
-		messages.push({
-			role: "user",
-			content: flattenText(message),
+		const content = flattenText(message);
+		if (content.length > 0) messages.push({
+			role: "system",
+			content,
 			timestamp: 0
 		});
 		return true;
@@ -1294,7 +1357,7 @@ function textOnlyContext(options, onReplayDegrade) {
 	const messages = [];
 	for (const message of split.messages) {
 		if (contentHasImage(message.content)) throw new LlmError("pi-ai image conversion requires the durable attachment service", "UNSUPPORTED_CONTENT");
-		if (appendSystemOrAssistant(message, messages, toolNames, onReplayDegrade)) continue;
+		if (appendSharedHistory(message, options, messages, toolNames, onReplayDegrade)) continue;
 		if (message.role === "tool") {
 			messages.push(toolResultOf(message, toolNames, flattenText(message)));
 			continue;
@@ -1307,7 +1370,12 @@ function textOnlyContext(options, onReplayDegrade) {
 	}
 	return piContext(split.systemPrompt, options, messages);
 }
-/** Deterministic request target for one source under the route budgets. */
+/**
+* Resolve the request target for one source under the route budgets.
+* @param ref - normalized source image.
+* @param budget - resolved route pixel and byte limits.
+* @returns dimensions and byte target shared by serialization and screenshot coordinate mapping.
+*/
 function requestImageTarget(ref, budget) {
 	return {
 		...requestImageDimensions(ref.width, ref.height, budget.maxPixels),
@@ -1337,7 +1405,7 @@ async function toPiContextWithImages(options, images, onReplayDegrade) {
 	const toolNames = /* @__PURE__ */ new Map();
 	const messages = [];
 	for (const message of exactMessages) {
-		if (appendSystemOrAssistant(message, messages, toolNames, onReplayDegrade)) continue;
+		if (appendSharedHistory(message, options, messages, toolNames, onReplayDegrade)) continue;
 		if (message.role === "tool") {
 			messages.push(toolResultOf(message, toolNames, userContent(message.content, requestImages, resolveImageAccess)));
 			continue;
@@ -1691,6 +1759,18 @@ var __disposeResources = (function(SuppressedError) {
 	var e = new Error(message);
 	return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
 });
+/**
+* Initially active declaration added to an Anthropic request whose projected
+* tools are all deferred, because Anthropic rejects a tool list without one.
+*/
+const ANTHROPIC_TOOL_UPDATE_PLACEHOLDER = {
+	name: "DeferredToolPlaceholder",
+	description: "Reserved placeholder that keeps deferred tool loading active; never call this tool.",
+	parameters: {
+		type: "object",
+		properties: {}
+	}
+};
 /** Copy profile stream knobs into pi-ai's common option vocabulary. */
 function profileOptions(profile, reasoning, apiKey) {
 	const enabledReasoning = reasoning === "off" ? void 0 : reasoning;
@@ -1775,6 +1855,15 @@ var PiAiAdapter = class extends LlmAdapter {
 		super();
 		this.config = config;
 	}
+	imageRequestTarget(provider, model, image) {
+		const snapshot = this.current();
+		this.modelOf(snapshot, provider, model);
+		const profile = this.profileOf(snapshot, provider);
+		return requestImageTarget(image, {
+			maxPixels: profile.requestImagePixelBudget,
+			maxBytes: profile.requestImageMaxBytes
+		});
+	}
 	/**
 	* The snapshot for the current profiles. Resolution memoizes its result, so
 	* an unchanged configuration is recognized by identity; a changed one gets a
@@ -1817,9 +1906,15 @@ var PiAiAdapter = class extends LlmAdapter {
 		return this.current().profiles.get(provider)?.retryPolicy;
 	}
 	listModels(provider) {
-		return Promise.resolve().then(() => {
+		return Promise.resolve().then(async () => {
 			const snapshot = this.current();
-			this.profileOf(snapshot, provider);
+			const profile = this.profileOf(snapshot, provider);
+			try {
+				await this.config.resolveApiKey(provider, profile);
+			} catch (error) {
+				if (error instanceof LlmError && error.code === "MISSING_CREDENTIAL") return [];
+				throw error;
+			}
 			return snapshot.models.getModels(provider).map((model) => ({
 				provider,
 				id: model.id,
@@ -1846,7 +1941,8 @@ var PiAiAdapter = class extends LlmAdapter {
 			inputModalities: [...resolvedModel.input],
 			context: { contextWindow: resolvedModel.contextWindow },
 			...configuredMaxTokens === void 0 ? {} : { defaultMaxTokens: configuredMaxTokens },
-			...reasoningInfo(resolvedModel, defaultLevel)
+			...reasoningInfo(resolvedModel, defaultLevel),
+			...conversationUpdates(resolvedModel)
 		};
 	}
 	prepareCall(provider, model, _signal) {
@@ -1869,6 +1965,12 @@ var PiAiAdapter = class extends LlmAdapter {
 			if (options.stop !== void 0) throw new LlmError("llm-pi-ai does not support GenerateOptions.stop", "UNSUPPORTED_OPTION");
 			const profile = this.profileOf(snapshot, options.provider);
 			const model = this.modelOf(snapshot, options.provider, options.model);
+			const updates = conversationUpdates(model);
+			const tools = options.tools ?? [];
+			const request = model.api === "anthropic-messages" && updates.toolUpdate === "in-history" && tools.every((tool) => tool.deferLoading === true) && options.messages.some((message) => message.role === "developer" && message.content.some((block) => block.type === "tool-addition" || block.type === "tool-removal")) ? {
+				...options,
+				tools: [ANTHROPIC_TOOL_UPDATE_PLACEHOLDER, ...tools]
+			} : options;
 			const reasoning = resolveReasoningLevel(model, options.reasoningEffort ?? profile.reasoning);
 			const apiKey = await this.config.resolveApiKey(options.provider, profile);
 			const consumer = new AbortController();
@@ -1887,8 +1989,8 @@ var PiAiAdapter = class extends LlmAdapter {
 						reason
 					});
 				};
-				const context = attachments === void 0 ? toPiContext(options, void 0, onReplayDegrade) : await toPiContext({
-					...options,
+				const context = attachments === void 0 ? toPiContext(request, void 0, onReplayDegrade) : await toPiContext({
+					...request,
 					signal: watchdog.signal
 				}, {
 					attachments,
@@ -1911,8 +2013,6 @@ var PiAiAdapter = class extends LlmAdapter {
 				try {
 					while (true) {
 						const result = await watchdog.next(iterator);
-						const timeout = timeoutOf(watchdog.signal, "LLM_STREAM_IDLE_TIMEOUT");
-						if (timeout !== void 0) throw timeout;
 						if (result.done) {
 							exhausted = true;
 							return;
@@ -1922,9 +2022,8 @@ var PiAiAdapter = class extends LlmAdapter {
 				} finally {
 					if (!exhausted) {
 						consumer.abort("pi-ai stream consumer stopped");
-						try {
-							await iterator.return(void 0);
-						} catch (_abortedSdkTeardown) {}
+						/* v8 ignore next -- the detached drain only rejects while unwinding an abandoned stream. */
+						iterator.return(void 0).catch(() => {});
 					}
 				}
 			} catch (error) {
@@ -2367,18 +2466,28 @@ async function discoverModels(request, storedProfile) {
 * @module dsh-llm-pi-ai/login
 */
 /**
+* Catalog providers whose OAuth login this adapter does not offer. pi-ai's Sign
+* in with ChatGPT (`openai`) identifies the installation to OpenAI with a
+* stable UUID that the app supplies through `LoginOptions.getDeviceId`, and it
+* refuses to start without one. The harness keeps no installation ID meant for
+* a third-party account sign-in, so the route signs in with an API key.
+*/
+const UNSERVED_OAUTH = new Set(["openai"]);
+/**
 * The login methods one catalog provider offers.
 *
-* A method appears only when pi-ai can actually run it: `oauth` always carries
-* a `login`, while an api-key method has one only when the provider collects
-* its key interactively — which every installed one currently does, so a key is
-* typed into pi-ai's own prompt rather than into the settings form.
+* A method appears only when pi-ai can actually run it: `oauth` carries a
+* `login` that runs without app-supplied login options except for the
+* providers in {@link UNSERVED_OAUTH}, while an api-key method has one only
+* when the provider collects its key interactively — which every installed one
+* currently does, so a key is typed into pi-ai's own prompt rather than into
+* the settings form.
 * @param provider - the installed catalog provider, if pi-ai ships one.
 * @returns its methods, most preferred first; empty when it offers no login.
 */
 function loginMethods(provider) {
 	const methods = [];
-	const oauth = provider?.auth.oauth;
+	const oauth = provider === void 0 || UNSERVED_OAUTH.has(provider.id) ? void 0 : provider.auth.oauth;
 	if (oauth !== void 0) methods.push({
 		id: "oauth",
 		label: oauth.loginLabel ?? oauth.name
@@ -2507,6 +2616,222 @@ function registerPiAiFlows(ctx, auth) {
 	}
 }
 //#endregion
+//#region lib/types/provider-data.generated.js
+/** Generated from the installed pi-ai catalog. Run pnpm gen-provider-data; do not edit. */
+/** Catalog endpoints and environment names; no credentials are evaluated at runtime. */
+const PROVIDER_DATA = {
+	"amazon-bedrock": {
+		env: [
+			"AWS_BEARER_TOKEN_BEDROCK",
+			"AWS_PROFILE",
+			"AWS_ACCESS_KEY_ID",
+			"AWS_SECRET_ACCESS_KEY",
+			"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI",
+			"AWS_CONTAINER_CREDENTIALS_FULL_URI",
+			"AWS_WEB_IDENTITY_TOKEN_FILE"
+		],
+		baseURLEnv: ["AWS_REGION", "AWS_DEFAULT_REGION"]
+	},
+	"ant-ling": {
+		env: ["ANT_LING_API_KEY"],
+		defaultBaseURL: "https://api.ant-ling.com/v1"
+	},
+	"anthropic": {
+		env: [
+			"ANTHROPIC_AUTH_TOKEN",
+			"ANTHROPIC_OAUTH_TOKEN",
+			"ANTHROPIC_API_KEY",
+			"ANTHROPIC_FEDERATION_RULE_ID",
+			"ANTHROPIC_ORGANIZATION_ID",
+			"ANTHROPIC_IDENTITY_TOKEN_FILE",
+			"ANTHROPIC_SERVICE_ACCOUNT_ID",
+			"ANTHROPIC_WORKSPACE_ID"
+		],
+		defaultBaseURL: "https://api.anthropic.com"
+	},
+	"azure": {
+		env: ["AZURE_OPENAI_API_KEY"],
+		baseURLEnv: ["AZURE_OPENAI_BASE_URL", "AZURE_OPENAI_RESOURCE_NAME"]
+	},
+	"baseten": {
+		env: ["BASETEN_API_KEY"],
+		defaultBaseURL: "https://inference.baseten.co/v1"
+	},
+	"cerebras": {
+		env: ["CEREBRAS_API_KEY"],
+		defaultBaseURL: "https://api.cerebras.ai/v1"
+	},
+	"cloudflare-ai-gateway": {
+		env: [
+			"CLOUDFLARE_API_KEY",
+			"CLOUDFLARE_ACCOUNT_ID",
+			"CLOUDFLARE_GATEWAY_ID"
+		],
+		baseURLEnv: ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_GATEWAY_ID"]
+	},
+	"cloudflare-workers-ai": {
+		env: ["CLOUDFLARE_API_KEY", "CLOUDFLARE_ACCOUNT_ID"],
+		baseURLEnv: ["CLOUDFLARE_ACCOUNT_ID"]
+	},
+	"deepseek": {
+		env: ["DEEPSEEK_API_KEY"],
+		defaultBaseURL: "https://api.deepseek.com"
+	},
+	"fireworks": {
+		env: ["FIREWORKS_API_KEY"],
+		defaultBaseURL: "https://api.fireworks.ai/inference"
+	},
+	"github-copilot": {
+		env: ["COPILOT_GITHUB_TOKEN"],
+		defaultBaseURL: "https://api.individual.githubcopilot.com"
+	},
+	"google": {
+		env: ["GEMINI_API_KEY"],
+		defaultBaseURL: "https://generativelanguage.googleapis.com/v1beta"
+	},
+	"google-vertex": {
+		env: [
+			"GOOGLE_CLOUD_API_KEY",
+			"GOOGLE_APPLICATION_CREDENTIALS",
+			"GOOGLE_CLOUD_PROJECT",
+			"GCLOUD_PROJECT",
+			"GOOGLE_CLOUD_LOCATION"
+		],
+		baseURLEnv: [
+			"GOOGLE_CLOUD_PROJECT",
+			"GCLOUD_PROJECT",
+			"GOOGLE_CLOUD_LOCATION"
+		]
+	},
+	"groq": {
+		env: ["GROQ_API_KEY"],
+		defaultBaseURL: "https://api.groq.com/openai/v1"
+	},
+	"huggingface": {
+		env: ["HF_TOKEN"],
+		defaultBaseURL: "https://router.huggingface.co/v1"
+	},
+	"kimi-coding": {
+		env: ["KIMI_API_KEY"],
+		defaultBaseURL: "https://api.kimi.com/coding"
+	},
+	"meta": {
+		env: ["META_API_KEY"],
+		defaultBaseURL: "https://api.meta.ai/v1"
+	},
+	"minimax": {
+		env: ["MINIMAX_API_KEY"],
+		defaultBaseURL: "https://api.minimax.io/anthropic"
+	},
+	"minimax-cn": {
+		env: ["MINIMAX_CN_API_KEY"],
+		defaultBaseURL: "https://api.minimaxi.com/anthropic"
+	},
+	"mistral": {
+		env: ["MISTRAL_API_KEY"],
+		defaultBaseURL: "https://api.mistral.ai"
+	},
+	"moonshotai": {
+		env: ["MOONSHOT_API_KEY"],
+		defaultBaseURL: "https://api.moonshot.ai/v1"
+	},
+	"moonshotai-cn": {
+		env: ["MOONSHOT_API_KEY"],
+		defaultBaseURL: "https://api.moonshot.cn/v1"
+	},
+	"nvidia": {
+		env: ["NVIDIA_API_KEY"],
+		defaultBaseURL: "https://integrate.api.nvidia.com/v1"
+	},
+	"openai": {
+		env: ["OPENAI_API_KEY"],
+		defaultBaseURL: "https://api.openai.com/v1"
+	},
+	"openai-codex": {
+		env: [],
+		defaultBaseURL: "https://chatgpt.com/backend-api"
+	},
+	"opencode": { env: ["OPENCODE_API_KEY"] },
+	"opencode-go": { env: ["OPENCODE_API_KEY"] },
+	"openrouter": {
+		env: ["OPENROUTER_API_KEY"],
+		defaultBaseURL: "https://openrouter.ai/api/v1"
+	},
+	"qwen-token-plan": {
+		env: ["QWEN_TOKEN_PLAN_API_KEY"],
+		defaultBaseURL: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+	},
+	"qwen-token-plan-cn": {
+		env: ["QWEN_TOKEN_PLAN_CN_API_KEY"],
+		defaultBaseURL: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+	},
+	"qwen-token-plan-individual": {
+		env: ["QWEN_TOKEN_PLAN_API_KEY"],
+		defaultBaseURL: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+	},
+	"radius": {
+		env: ["RADIUS_API_KEY"],
+		defaultBaseURL: "https://radius.pi.dev/v1"
+	},
+	"together": {
+		env: ["TOGETHER_API_KEY"],
+		defaultBaseURL: "https://api.together.ai/v1"
+	},
+	"typesafe": { env: ["TYPESAFE_API_KEY"] },
+	"vercel-ai-gateway": {
+		env: ["AI_GATEWAY_API_KEY"],
+		defaultBaseURL: "https://ai-gateway.vercel.sh"
+	},
+	"xai": {
+		env: ["XAI_API_KEY"],
+		defaultBaseURL: "https://api.x.ai/v1"
+	},
+	"xiaomi": {
+		env: ["XIAOMI_API_KEY"],
+		defaultBaseURL: "https://api.xiaomimimo.com/v1"
+	},
+	"xiaomi-token-plan-ams": {
+		env: ["XIAOMI_TOKEN_PLAN_AMS_API_KEY"],
+		defaultBaseURL: "https://token-plan-ams.xiaomimimo.com/v1"
+	},
+	"xiaomi-token-plan-cn": {
+		env: ["XIAOMI_TOKEN_PLAN_CN_API_KEY"],
+		defaultBaseURL: "https://token-plan-cn.xiaomimimo.com/v1"
+	},
+	"xiaomi-token-plan-sgp": {
+		env: ["XIAOMI_TOKEN_PLAN_SGP_API_KEY"],
+		defaultBaseURL: "https://token-plan-sgp.xiaomimimo.com/v1"
+	},
+	"zai": {
+		env: ["ZAI_API_KEY"],
+		defaultBaseURL: "https://api.z.ai/api/coding/paas/v4"
+	},
+	"zai-coding-cn": {
+		env: ["ZAI_CODING_CN_API_KEY"],
+		defaultBaseURL: "https://open.bigmodel.cn/api/coding/paas/v4"
+	}
+};
+//#endregion
+//#region lib/types/provider-data.js
+/** Installed provider defaults for configuration surfaces. */
+/**
+* Return generated display metadata without executing authentication.
+* @param provider - Installed catalog provider, possibly from a newer consumer dependency.
+* @returns Known metadata, or only a fixed public endpoint for an unrecorded provider.
+*/
+function providerDefaultsOf(provider) {
+	const data = PROVIDER_DATA[provider.id];
+	if (data === void 0) return provider.baseUrl && !provider.baseUrl.includes("{") ? { defaultBaseURL: provider.baseUrl } : {};
+	const { env, ...endpoint } = data;
+	return {
+		...endpoint,
+		nativeAuth: {
+			env,
+			oauth: provider.auth.oauth !== void 0
+		}
+	};
+}
+//#endregion
 //#region lib/types/index.js
 const name = "llm-pi-ai";
 const inject = ["llm"];
@@ -2527,24 +2852,28 @@ function registrationFacts(profiles) {
 * The configurable-provider directory: every installed catalog route, plus
 * every route the current profiles declare. A hand-declared route has no
 * catalog entry, so without this union it would have no settings address and
-* configuration surfaces could neither show nor edit it.
+* configuration surfaces could neither show nor edit it. A catalog route also
+* carries its catalog endpoint and native authentication, which a settings
+* editor shows while the profile leaves the endpoint or the credential
+* reference unset.
 * @param profiles - the currently resolved provider profiles.
 * @returns the directory entries in catalog order, declared routes last.
 */
 function directoryEntries(profiles, settingsNs) {
-	const catalog = new Set(catalogProviderIds());
 	const entries = /* @__PURE__ */ new Map();
 	const declare = (provider, displayName, error) => {
+		const installed = catalogProvider(provider);
 		entries.set(provider, {
 			provider,
 			displayName,
 			settingsNs,
 			settingsPath: ["providers", provider],
-			declared: !catalog.has(provider),
+			declared: installed === void 0,
+			...installed === void 0 ? {} : providerDefaultsOf(installed),
 			...error === void 0 ? {} : { error }
 		});
 	};
-	for (const provider of catalog) declare(provider, provider);
+	for (const provider of catalogProviderIds()) declare(provider, provider);
 	for (const [provider, profile] of profiles) declare(provider, profile.displayName, profile.catalogError);
 	return [...entries.values()];
 }

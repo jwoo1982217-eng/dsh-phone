@@ -29,8 +29,20 @@ import { dirname, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { sourceScope } from '../helpers/source-scope.js'
 
+/**
+ * ⚠ **扫描目标必须是「代码真正所在」的那个文件**（2026-10-08 抽共享模块时改）。
+ *
+ * 原来读 `src/zcode-captcha.ts`。进程树清理、空闲端口探测、端口应答校验
+ * 这些**浏览器会话**的职责已整体搬到 `src/chromium-session.ts`（由 zcode
+ * captcha 与库库AI 登录**共用一份实现**）。
+ *
+ * 若这里仍指着旧文件，`sourceScope().fn('killProcessTree')` 会直接抛
+ * 「找不到 function/method」；而 `SRC.toContain(...)` 这类**整文件**断言
+ * 会在一个已不含该代码的文件上求值 —— 那正是本仓库反复出现的**假绿**形态
+ * （断言看起来在守，其实守的是空气）。**改了实现文件就必须同时改这里。**
+ */
 const SRC = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), '../../src/zcode-captcha.ts'),
+  resolve(dirname(fileURLToPath(import.meta.url)), '../../src/chromium-session.ts'),
   'utf8',
 )
 
@@ -40,7 +52,7 @@ const SRC = readFileSync(
  * **文件尾部**：断言看似通过，实际检查的是整个文件，分不清命中的是不是这个方法。
  * 缘由见 `tests/helpers/source-scope.ts` 的文件头（Gitee issue IKJMG1）。
  */
-const scope = sourceScope(SRC, 'zcode-captcha.ts')
+const scope = sourceScope(SRC, 'chromium-session.ts')
 
 describe('浏览器进程树清理（防泄漏）', () => {
   it('★ 必须用 spawnSync（同步）而非 spawn —— 异步会让调用方以为已清理', () => {
@@ -115,6 +127,20 @@ describe('临时 profile 清理', () => {
 
   it('dispose 会先杀进程树再删目录', () => {
     const body = scope.fn('dispose')
-    expect(body.indexOf('this.kill()')).toBeLessThan(body.indexOf('tryRemove(0)'))
+    /**
+     * ⚠⚠ 两个下标都必须**先证存在**再比大小。
+     *
+     * 原实现只写 `expect(body.indexOf('this.kill()')).toBeLessThan(body.indexOf('tryRemove(0)'))`
+     * —— 而 `indexOf` 找不到时返回 **-1**，`-1 < 任何非负下标` 恒成立
+     * ⇒ **删掉 `this.kill()` 这行，用例照样绿**（变异实测：把 `dispose()` 里的
+     * `this.kill()` 整行删掉，本用例仍然通过）。这正是「扫描类断言缺护栏」
+     * 的又一实例：断言看起来在守「先杀进程再删目录」，其实守不住「杀进程」
+     * 这一步**是否存在**。
+     */
+    const killAt = body.indexOf('this.kill()')
+    const removeAt = body.indexOf('tryRemove(0)')
+    expect(killAt, 'dispose 里必须真的调用 this.kill()（找不到时 indexOf 返回 -1）').toBeGreaterThan(-1)
+    expect(removeAt, 'dispose 里必须真的调用 tryRemove(0)').toBeGreaterThan(-1)
+    expect(killAt, '必须先杀进程树再删目录（句柄未释放时删不掉）').toBeLessThan(removeAt)
   })
 })

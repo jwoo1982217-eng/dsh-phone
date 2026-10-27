@@ -112,8 +112,7 @@ describe('translateGeminiRequest', () => {
     })
   })
 
-  it('工具结果标记错误时带 error:true；孤儿 tool-result 不下发', () => {
-    const errored = translate([
+  it('工具结果标记错误时带 error:true；孤儿 tool-result 不下发', () => {    const errored = translate([
       msg('user', [{ type: 'text', text: '读文件' }]),
       msg('assistant', [{ type: 'tool-call', id: 't1', name: 'read_file', arguments: '{}' }]),
       msg('user', [{
@@ -147,6 +146,119 @@ describe('translateGeminiRequest', () => {
       images: new Map([['img-1', { mediaType: 'image/png', data: 'AAAA' }]]),
     }).request.contents[0]?.parts?.[1]).toEqual({
       inlineData: { mimeType: 'image/png', data: 'AAAA' },
+    })
+  })
+
+  /**
+   * ⚠️⚠️ Issue IKLSB8（同族落点，2026-10-14 受控实测）：**工具结果内层的图片被
+   * 静默丢弃**。
+   *
+   * `functionResponse.response.content` 只吃字符串（Gemini 协议在工具结果里没有
+   * 承载图的位置），而 `toolResultText()` 只收 text/reasoning 块 ⇒ 原实现下内层图
+   * 连 `inlineData` 都不出现。而 `gemini-adapter.ts` 收集侧用的是**递归**的
+   * `collectImages` ⇒ 字节被读出、却在翻译阶段丢掉。
+   *
+   * 实测对照（同一张图、同一请求）：顶层图 ✅ `inlineData` 出现；
+   * `tool-result` **内层**图 ❌ **完全不出现**。
+   *
+   * 守的形态（与 `0dd27ca` / IKLIFH 同一口径）：
+   * ① 内层图必须提升成 `inlineData` 并**与后续提问同在一条 user content**；
+   * ② 纯图工具结果的正文**不得是空串**（否则模型以为「工具什么都没返回」）；
+   * ③ 无图时逐字节不变（不凭空引入 `inlineData`）。
+   */
+  describe('Issue IKLSB8：工具结果内层图片（同族落点）', () => {
+    const IMG = new Map([['att-1', { mediaType: 'image/png', data: 'AQID' }]])
+
+    /** 构造：assistant tool_call → 工具结果（内容由调用方给）→ 后续提问。 */
+    function withToolResult(innerBlocks: unknown[], ask: string | undefined) {
+      return [
+        msg('user', [{ type: 'text', text: '看图' }]),
+        msg('assistant', [{ type: 'tool-call', id: 't1', name: 'Read', arguments: '{}' }]),
+        msg('user', [{ type: 'tool-result', toolCallId: 't1', isError: false, content: innerBlocks }]),
+        ...ask === undefined ? [] : [msg('user', [{ type: 'text', text: ask }])],
+      ]
+    }
+
+    it('①（判别）内层图片必须提升为 inlineData，且与提问**同在一条** user content', () => {
+      const envelope = translate(
+        withToolResult([{ type: 'image', attachment: { attachmentId: 'att-1' } }], '图里是什么？'),
+        { images: IMG },
+      )
+      const contents = envelope.request.contents
+      // 找到带 inlineData 的那条 user content。
+      const imageIndex = contents.findIndex((c) => c.parts.some((p) => p.inlineData !== undefined))
+      expect(imageIndex, '内层图片没有上 wire ⇒ 静默丢图（原始缺陷复现）').toBeGreaterThan(-1)
+      // ⚠️ 核心：图与提问**同一条**（分开会让模型看不见图，见 IKLIFH）。
+      const askIndex = contents.findIndex((c) => c.parts.some((p) => p.text === '图里是什么？'))
+      expect(askIndex, '提问不得被丢弃').toBeGreaterThan(-1)
+      expect(imageIndex, '图与提问分处两条 content ⇒ 上游/模型会忽略图片（IKLIFH 同型）').toBe(askIndex)
+      // 图必须排在正文之前（与 buddy / openai-compat 的顺序一致）。
+      const parts = contents[imageIndex]!.parts
+      expect(parts[0], '图片应排在正文之前').toHaveProperty('inlineData')
+    })
+
+    it('②（判别）纯图片工具结果的正文不得是空串（否则模型以为「工具没有输出」）', () => {
+      const envelope = translate(
+        withToolResult([{ type: 'image', attachment: { attachmentId: 'att-1' } }], '图里是什么？'),
+        { images: IMG },
+      )
+      const fnResponse = envelope.request.contents
+        .flatMap((c) => c.parts)
+        .find((p) => p.functionResponse !== undefined)?.functionResponse
+      expect(fnResponse, '工具结果必须下发').toBeDefined()
+      const content = String((fnResponse!.response as { content?: unknown }).content ?? '')
+      expect(
+        content,
+        '正文为空 ⇒ 模型会说「Read 没有返回内容」，用户误判成模型没有视觉能力',
+      ).not.toBe('')
+      expect(content, '至少要说明「输出在这里、只是它是图片」').toMatch(/image/i)
+    })
+
+    it('③（对照）文字+图时正文照旧保留（有图不得吞掉同一结果里的文字）', () => {
+      const envelope = translate(
+        withToolResult([
+          { type: 'text', text: '截图如下' },
+          { type: 'image', attachment: { attachmentId: 'att-1' } },
+        ], '图里是什么？'),
+        { images: IMG },
+      )
+      const fnResponse = envelope.request.contents
+        .flatMap((c) => c.parts)
+        .find((p) => p.functionResponse !== undefined)?.functionResponse
+      expect((fnResponse!.response as { content?: unknown }).content).toBe('截图如下')
+      expect(JSON.stringify(envelope), '图不得因为改了正文兜底而丢失').toContain('inlineData')
+    })
+
+    it('④（对照）无图工具结果逐字节不变（不凭空引入 inlineData）', () => {
+      const envelope = translate(READ_TOOL)
+      expect(JSON.stringify(envelope)).not.toContain('inlineData')
+      expect(envelope.request.contents[2]?.parts?.[0]).toEqual({
+        functionResponse: { name: 'read_file', response: { content: '内容' } },
+      })
+    })
+
+    it('⑤（判别）工具结果内层图读不到字节时**抛错**，不静默丢图', () => {
+      expect(() => translate(
+        withToolResult([{ type: 'image', attachment: { attachmentId: 'att-missing' } }], '看图'),
+        { images: new Map() },
+      )).toThrowError(/工具结果里的图片未能内联/)
+    })
+
+    /**
+     * ⑥ 历史**以工具结果结尾**（后面没有提问可搭车）时，挂起的图仍必须发出去。
+     *
+     * 这是挂图队列的**尾部兜底**分支：写漏了它，图会在队列里被静默丢掉 ——
+     * 而这条路径在真实会话里是常见的（工具跑完、用户还没发下一句）。
+     */
+    it('⑥（判别）历史以工具结果结尾时，挂起的图仍必须发出（不得留在队列里丢掉）', () => {
+      const envelope = translate(
+        withToolResult([{ type: 'image', attachment: { attachmentId: 'att-1' } }], undefined),
+        { images: IMG },
+      )
+      expect(
+        JSON.stringify(envelope),
+        '尾部兜底缺失 ⇒ 工具结果是最后一条时图片被静默丢弃',
+      ).toContain('inlineData')
     })
   })
 

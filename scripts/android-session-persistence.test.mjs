@@ -4,20 +4,31 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, link, open, stat } fr
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { zstdDecompressSync } from 'node:zlib';
-const { default: JsonlSessionPersistence } = await import(process.env.DSH_PERSISTENCE_MODULE ?? new URL('../runtime/overlays/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js', import.meta.url).href);
+import { Context } from '@deepseek-ai/cordis';
+import Sessions from '@deepseek-ai/dsh-session';
+const Persistence = await import(process.env.DSH_PERSISTENCE_MODULE ?? new URL('../runtime/overlays/@deepseek-ai/dsh-session-persistence-jsonl/lib/index.js', import.meta.url).href);
 const { tryLockExclusive } = await import(process.env.DSH_FLOCK_MODULE ?? new URL('../runtime/overlays/@deepseek-ai/node-addon-system/lib/flock.js', import.meta.url).href);
 import { SESSION_FORMAT_VERSION } from '@deepseek-ai/dsh-session';
+
+async function backendFixture(t, root, compression) {
+  // rc2 keeps the backend class private; exercise its real plugin registration.
+  const ctx = new Context();
+  t.after(() => ctx.fiber.dispose());
+  await ctx.plugin(Sessions);
+  await ctx.plugin(Persistence, { root, compression });
+  const backend = ctx.sessionPersistence;
+  assert.ok(backend, 'the actual JSONL plugin must register its backend');
+  if (process.platform !== 'android') backend.publishNewFileAndroid = async (source, target) => {
+    // A host-only no-replace surrogate; the Android suite exercises the native publisher.
+    await link(source, target); await rm(source);
+  };
+  return backend;
+}
 
 async function fixture(t, compression = 'none') {
   const parent = await mkdtemp(join(tmpdir(), 'dsh-android-persistence-'));
   t.after(() => rm(parent, { recursive: true, force: true }));
-  const backend = Object.assign(Object.create(JsonlSessionPersistence.prototype), {
-    root: join(parent, 'sessions'), compression, packChunks: false,
-  });
-  if (process.platform !== 'android') backend.publishNewFileAndroid = async (source, target) => {
-    // Host-only filesystem surrogate; the actual Android run uses renameat2.
-    await link(source, target); await rm(source);
-  };
+  const backend = await backendFixture(t, join(parent, 'sessions'), compression);
   const meta = { version: SESSION_FORMAT_VERSION, id: 'session-test', createdAt: 1, delegationDepth: 0, isSeeded: false };
   const path = backend.locate(meta).path;
   return { backend, meta, parent, path };
@@ -46,10 +57,7 @@ test('Android publishes the existing Zstandard frame format without hard links',
 
 test('two creators racing for one session publish one whole log without overwriting it', async t => {
   const f = await fixture(t);
-  const second = Object.assign(Object.create(JsonlSessionPersistence.prototype), {
-    root: f.backend.root, compression: 'none', packChunks: false,
-  });
-  if (process.platform !== 'android') second.publishNewFileAndroid = f.backend.publishNewFileAndroid;
+  const second = await backendFixture(t, f.backend.root, 'none');
   let arrivals = 0, release;
   const barrier = new Promise(resolve => { release = resolve; });
   for (const backend of [f.backend, second]) {

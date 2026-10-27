@@ -3323,56 +3323,6 @@
     ]
   },
   {
-    "id": "opencode",
-    "name": "OpenCode Free",
-    "category": "free",
-    "auth": {
-      "kind": "none",
-      "env": null,
-      "url": null
-    },
-    "baseUrl": "https://opencode.ai/zen/v1",
-    "format": "openai-chat",
-    "models": [
-      {
-        "id": "muse-spark-1.2-contributor-free",
-        "name": "Muse Spark 1.2 Contributor Free",
-        "contextWindow": null,
-        "vision": null,
-        "reasoning": null
-      },
-      {
-        "id": "muse-spark-1.3-contributor-free",
-        "name": "Muse Spark 1.3 Contributor Free",
-        "contextWindow": null,
-        "vision": null,
-        "reasoning": null
-      },
-      {
-        "id": "union-alpha",
-        "name": "Union Alpha Free",
-        "contextWindow": null,
-        "vision": null,
-        "reasoning": null
-      },
-      {
-        "id": "jev-1.13-free",
-        "name": "Jev 1.13 Free",
-        "contextWindow": null,
-        "vision": null,
-        "reasoning": null
-      }
-    ],
-    "notes": "Keyless free pool (noAuth) — the plugin’s own free lane speaks to the same /zen/v1 host and sends the same x-opencode-client header. Per-model wires differ: two models answer over /responses and union-alpha over the Anthropic wire (9router registry comments).",
-    "website": "https://opencode.ai",
-    "local": false,
-    "source": "9router",
-    "modelsUrl": "https://opencode.ai/zen/v1/models",
-    "headers": {
-      "x-opencode-client": "desktop"
-    }
-  },
-  {
     "id": "bazaarlink",
     "name": "BazaarLink",
     "category": "free-tier",

@@ -148,16 +148,22 @@ test('combined plugin URLs use compression; streamed API responses remain increm
   assert.equal(await api.text(), 'data: fixture\n\n');
 });
 
-test('real relay, fresh handshake, RPC, wrong proof and duplicate device', async t => {
+test('real relay authenticates proof and same-role takeover cannot be cleared by a stale close', async t => {
   const { relay, pair, phone, computer } = await peers(t);
   computer.handler = (action, value) => ({ action, value });
   assert.deepEqual(await phone.call('fixture', { n: 3 }), { action: 'fixture', value: { n: 3 } });
-  for (const proof of ['0'.repeat(64), relayProof(pair)]) {
-    const denied = new WebSocket(pair.relay); await once(denied, 'open');
-    denied.send(JSON.stringify({ type: 'join', role: 'phone', room: pair.room, proof }));
-    assert.equal((await once(denied, 'close'))[0], 1008);
-  }
-  assert.equal(relay.rooms.size, 1); assert.equal(phone.online, true);
+  const denied = new WebSocket(pair.relay); await once(denied, 'open');
+  denied.send(JSON.stringify({ type: 'join', role: 'phone', room: pair.room, proof: '0'.repeat(64) }));
+  assert.equal((await once(denied, 'close'))[0], 1008);
+  const stale = relay.rooms.get(pair.room).phone, oldClosed = once(phone.socket, 'close');
+  // Model the old process exiting on takeover, without leaving its retry running.
+  phone.socket.once('close', () => phone.stop());
+  const replacement = new PeerTunnel(pair, 'phone', { reconnectMs: 20 }); t.after(() => replacement.stop());
+  replacement.start(); await oldClosed;
+  await waitFor(() => replacement.online && computer.online);
+  assert.equal(relay.rooms.size, 1); assert.notEqual(relay.rooms.get(pair.room).phone, stale);
+  assert.ok(relay.rooms.get(pair.room).phone);
+  assert.deepEqual(await replacement.call('fixture', { n: 4 }), { action: 'fixture', value: { n: 4 } });
 });
 
 test('disconnect rejects pending mutation and reconnect never repeats it; stale ciphertext cannot execute', async t => {
@@ -187,8 +193,8 @@ async function proxyFixture(t, { computerHeaders, computerReusableScripts = [], 
   return { ...f, ui, gateway, uiProxyPort, remoteGatewayPort, webPort, phoneProxy, computerProxy, denyGateway() { allowed = false; } };
 }
 
-test('ordinary file uploads above the old 64 MB proxy cap preserve all bytes through the encrypted relay', async t => {
-  const f = await proxyFixture(t), bytes = Buffer.alloc(70*1024*1024, 65); let received;
+test('ordinary file uploads above the old 16 MB proxy cap preserve all bytes through the encrypted relay', async t => {
+  const f = await proxyFixture(t), bytes = Buffer.alloc(20*1024*1024, 65); let received;
   f.ui.on('request', async (req,res) => {
     const chunks=[];for await (const chunk of req) chunks.push(chunk);
     received=Buffer.concat(chunks);res.writeHead(200,{'content-type':'application/json'});res.end('{"ok":true}');

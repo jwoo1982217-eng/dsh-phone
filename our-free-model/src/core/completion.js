@@ -1,5 +1,7 @@
 import { ROUTE_MAIN, ROUTE_REGION } from '../adapter.js'
 import { toOpenAiUsage } from '../forward.js'
+import { carryFailure } from '../failure.js'
+import { effortsFor, defaultEffortFor } from '../effort.js'
 
 export function routableModelIds(snapshot) {
   const membership = new Set(snapshot.membership[ROUTE_MAIN] ?? [])
@@ -13,11 +15,18 @@ export function publicModelRows(snapshot) {
   const membership = routableModelIds(snapshot)
   return snapshot.catalog
     .filter(entry => membership.has(entry.id))
-    .map(entry => ({
-      id: entry.id, object: 'model',
-      created: Math.floor(Date.now() / 1000), owned_by: 'our-free-model',
-      ...entry.contextWindow === undefined ? {} : { context_window: entry.contextWindow },
-    }))
+    .map(entry => {
+      const efforts = effortsFor(entry, undefined, snapshot.settings.defaultMaxTokens)
+      return {
+        id: entry.id, object: 'model',
+        created: Math.floor(Date.now() / 1000), owned_by: 'our-free-model',
+        ...entry.contextWindow === undefined ? {} : { context_window: entry.contextWindow },
+        ...efforts === undefined ? {} : {
+          x_ofm_efforts: efforts.map(effort => effort.id),
+          x_ofm_effort_default: defaultEffortFor(entry),
+        },
+      }
+    })
 }
 
 /** 固定本次请求的模型和配置快照，两个入口使用同一条推理链路。 */
@@ -171,7 +180,10 @@ export function foldForwardOutcome(outcome, chunk) {
     case 'usage': outcome.usage = toOpenAiUsage(chunk.usage); break
     case 'finish':
       if (chunk.reason?.kind === 'max-tokens') outcome.truncated = true
-      if (chunk.reason?.kind === 'error' || chunk.reason?.kind === 'aborted') outcome.error = chunk.reason.failure?.message
+      if (chunk.reason?.kind === 'error' || chunk.reason?.kind === 'aborted') {
+        outcome.failure = carryFailure(chunk.reason.failure, chunk.reason.kind)
+        outcome.error = outcome.failure.message
+      }
       break
     default: break
   }

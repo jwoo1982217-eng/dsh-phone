@@ -1,0 +1,163 @@
+--- a/app/src/main/java/com/dshphone/MainActivity.kt
++++ b/app/src/main/java/com/dshphone/MainActivity.kt
+@@ -80,10 +80,14 @@
+     private var remotePageReady = false
+     private var remoteLoadFailed = false
+     private var pocketUrl: String? = null
+-    private val pocketConnection by lazy {
++    private val pocketConnection: PocketConnection by lazy {
+         PocketConnection(this, { url -> switchPage(true, url) }, {
+             openLoginWindow("电脑连接").loadUrl("http://127.0.0.1:3080/phone-peer")
+-        })
++        }, { peerConnection.openComputer() })
++    }
++    private val peerConnection: PeerConnection by lazy {
++        PeerConnection(this, { admitted -> switchPage(true, admission = admitted) }, { remoteMode && pocketUrl == null },
++            { bypassVpn() }, { pocketConnection.showConnections() })
+     }
+     private var recoveryDialog: AlertDialog? = null
+     private var recoveryLabel: TextView? = null
+@@ -326,6 +330,7 @@
+         root.requestApplyInsets()
+ 
+         startForegroundService(Intent(this, DshService::class.java))
++        peerConnection.consume(intent)
+         handleChatGptReturn(intent)
+     }
+ 
+@@ -675,10 +680,11 @@
+         }
+     }
+ 
+-    private fun switchPage(computer: Boolean, pocket: String? = null) {
++    private fun switchPage(computer: Boolean, pocket: String? = null, admission: (() -> Boolean)? = null) {
++        if (!computer || pocket != null) peerConnection.leave()
+         // Finish the popup navigation callback before destroying its WebView.
+         handler.post {
+-            if (destroyed) return@post
++            if (destroyed || admission?.invoke() == false) return@post
+             closeLoginWindow()
+             remoteMode = computer
+             pocketUrl = if (computer) pocket else null
+@@ -707,6 +713,7 @@
+         incomingCaptureDone = false
+         captureIncomingIntent(intent)
+         consumeIncomingFilesIfReady()
++        peerConnection.consume(intent)
+         handleChatGptReturn(intent)
+     }
+ 
+@@ -1167,6 +1174,7 @@
+     override fun onResume() {
+         super.onResume()
+         bypassVpn()
++        peerConnection.resume()
+         pageRecovery.resume()
+         recoverMainPage()
+         handler.removeCallbacks(refresher)
+@@ -1181,6 +1189,7 @@
+ 
+     override fun onDestroy() {
+         destroyed = true
++        peerConnection.close()
+         jsonFileExport.destroy()
+         filePicker.destroy()
+         handler.removeCallbacks(refresher)
+--- a/app/src/main/java/com/dshphone/PocketConnection.kt
++++ b/app/src/main/java/com/dshphone/PocketConnection.kt
+@@ -15,11 +15,13 @@
+     private val activity: Activity,
+     private val open: (String) -> Unit,
+     private val legacy: () -> Unit,
++    private val peer: (() -> Unit)? = null,
+ ) {
+     private val preferences = activity.getSharedPreferences("pocket-connection", Activity.MODE_PRIVATE)
+     fun savedUrl(): String? = preferences.getString("url", null)?.let(::normalize)
+ 
+     fun openComputer() {
++        if (ComputerSelection(activity).isPeer() && peer != null) { peer.invoke(); return }
+         val saved = savedUrl()
+         if (saved != null) open(saved) else showConnections()
+     }
+@@ -27,7 +29,8 @@
+     fun showConnections() {
+         val saved = savedUrl()
+         val choices = mutableListOf<Pair<String, () -> Unit>>()
+-        if (saved != null) choices.add("打开已连接电脑 · ${URI(saved).host}" to { open(saved) })
++        if (saved != null) choices.add("打开已连接电脑 · ${URI(saved).host}" to { ComputerSelection(activity).pocket(); open(saved) })
++        if (peer != null) choices.add("打开已配对电脑（加密连接）" to { peer.invoke() })
+         choices.add("扫码连接电脑（Pocket）" to { scan() })
+         choices.add("粘贴电脑访问链接" to { paste() })
+         choices.add("原设备连接方式" to legacy)
+@@ -72,6 +75,7 @@
+         val url = normalize(raw) ?: return false
+         val uri = URI(url)
+         preferences.edit().putString("url", "${uri.scheme}://${uri.rawAuthority}/").apply()
++        ComputerSelection(activity).pocket()
+         open(url)
+         return true
+     }
+--- a/app/src/main/java/com/dshphone/NodeRunner.kt
++++ b/app/src/main/java/com/dshphone/NodeRunner.kt
+@@ -22,7 +22,7 @@
+  */
+ object NodeRunner {
+     private const val TAG = "dsh-phone"
+-        const val ASSET_VERSION = "121"
++        const val ASSET_VERSION = "122"
+     const val GATEWAY_PORT = 8326
+     const val WEB_PORT = 3080
+ 
+@@ -38,6 +38,7 @@
+         RecoveryManager.recoverInterruptedRestore(ctx)
+         PhoneJetHubUpgrade.recover(ctx.filesDir)
+         PhoneCompactionUpgrade.recover(ctx.filesDir)
++        PhonePeerUpgrade.recover(ctx.filesDir)
+         val alreadyOk = runCatching {
+             versionFile(ctx).readText().trim() == ASSET_VERSION
+         }.getOrDefault(false) &&
+@@ -45,6 +46,7 @@
+             File(homeDir(ctx), "profiles/phone/package.json").exists()
+         if (alreadyOk) { PhoneJetHubAlias.prepare(ctx.filesDir); return }
+         PhoneJetHubAlias.preflight(ctx.filesDir)
++        if (PhonePeerUpgrade.applyIfSupported(ctx, ASSET_VERSION)) return
+         if (PhoneCompactionUpgrade.applyIfSupported(ctx, ASSET_VERSION)) return
+         if (PhoneJetHubUpgrade.applyIfSupported(ctx, ASSET_VERSION)) return
+ 
+--- a/app/src/main/AndroidManifest.xml
++++ b/app/src/main/AndroidManifest.xml
+@@ -43,6 +43,18 @@
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+                 <category android:name="android.intent.category.LAUNCHER" />
++            </intent-filter>
++            <intent-filter>
++                <action android:name="android.intent.action.VIEW" />
++                <category android:name="android.intent.category.DEFAULT" />
++                <category android:name="android.intent.category.BROWSABLE" />
++                <data android:scheme="dsh-phone" android:host="peer" android:path="/connect" />
++            </intent-filter>
++            <intent-filter android:autoVerify="true">
++                <action android:name="android.intent.action.VIEW" />
++                <category android:name="android.intent.category.DEFAULT" />
++                <category android:name="android.intent.category.BROWSABLE" />
++                <data android:scheme="https" android:host="${dshRemoteHost}" android:path="/connect" />
+             </intent-filter>
+             <intent-filter>
+                 <action android:name="android.intent.action.VIEW" />
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -8,10 +8,11 @@
+ 
+     defaultConfig {
+         applicationId "com.dshphone"
++        manifestPlaceholders = [dshRemoteHost: providers.gradleProperty("dshRemoteHost").getOrElse("dsh-peer.invalid")]
+         minSdk 28
+         targetSdk 36
+-        versionCode 121
+-        versionName "0.2.16"
++        versionCode 122
++        versionName "0.2.17"
+         ndk { abiFilters "arm64-v8a" }
+     }
+ 

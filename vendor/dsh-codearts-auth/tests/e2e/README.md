@@ -14,6 +14,13 @@
 | `trae-channels-probe.e2e.spec.ts` | `DSH_TRAE_E2E=1` | 拉真实多通道目录，并用**真实适配器**对 `glm-5.1`（agent 通道）与 `glm-5-turbo`（work 通道）各发一条最短消息 —— **验证「模型只在列出它的通道里可调用」**。消耗 2 次极小额度 |
 | `cline-chat-probe.e2e.spec.ts` | `DSH_CLINE_CHAT_E2E=1` + `DSH_CLINE_CHAT_E2E_CONFIRM=yes` | **默认只请求 `cline-free/mimo-v2.6-flash`**（用户指定的日常验证模型）。其余免费模型需 `DSH_CLINE_CHAT_E2E_ALL_FREE=1` 才遍历。**付费模型一律拒绝请求**（见下「Cline 探针的付费保护」） |
 | `image-burst-cross-provider.e2e.spec.ts`（`pnpm test:e2e:image-burst`） | `DSH_IMAGE_BURST_E2E=1` + `DSH_IMAGE_BURST_E2E_CONFIRM=yes` | **issue !IKITT9 的图片压力探测**（跨 provider）。腾讯两站各一组：原图 15 张必须报 `prompt is too long` 且归成 `CONTEXT_WINDOW_EXCEEDED`、缩放后同张数必须过、且**缩到 1011×632 后模型仍读得出截图地址栏**（这条是预算档位的正当性来源）。另含 qoder / cline / lobsterai / raccoon / trae / loomy 各一组。⚠️ 单次请求带十几张图，**消耗明显**（全跑约 8 分钟）；缺 fixture 时整体跳过（见下） |
+| `image-limit-bisect.e2e.spec.ts`（`pnpm test:e2e:image-bisect`） | `DSH_IMAGE_BISECT_E2E=1` + `DSH_IMAGE_BISECT_E2E_CONFIRM=yes` | **loomy / trae 的边界二分复测**（Gitee issue IKKX0T）。⚠️ 比上面那个**贵得多**（二分每步都是一整轮十几张图）。用途是复核两条**已被第三方实测质疑**的既有结论：loomy「24 张全过、无约束」、trae「未探到边界」。**二分出边界后才能定 `imageMaxBytes`**（本仓库规矩：拿不到阈值就不定值）。文件内含一条**离线判据用例**（零额度，不受闸门约束） |
+| `buddy-fingerprint-roles.e2e.spec.ts` | `DSH_BUDDY_FINGERPRINT_E2E=1` + `DSH_BUDDY_FINGERPRINT_E2E_CONFIRM=yes` | **腾讯系内容级风控的「角色矩阵」实测凭据**（每例 `max_tokens=16`，被拒不耗额度）。断言 `system` 与 **`assistant` 正文**含指纹会被 400/11128，而 `user` / `tool` 结果 / `reasoning_content` / `tool_calls.arguments` **放行**。⚠️ **不可省**：那四行结论已被写进 `src/openai-gateway/tencent-fingerprint.ts` 的**实现约束**（决定改写范围），单测只能锁「代码按那个范围做」，**锁不住那个范围本身对不对**。2026-10-12 的翻车正是「`assistant` 那一格从未测过」。⚠️ 另含 **IKLS2L 的 Claude Code 身份句**一节：两站分别实测「被拦 → 改写后放行」，并**两侧都测锚点**（该指纹是**行首锚定**，前接任意字符即放行 —— 与 ZCode 那条「位置无关」**相反**），以及「第三个常量 `af` 实测放行 ⇒ 刻意不登记」的反向断言。⚠️ **第三条指纹（IKLYCT 的 Claude Code 反馈句）**：该句属于 Claude Code system 的**固定段落** ⇒ **每轮必带**（身份句只约 34% 窗口靠漏传前缀）；本节**两站各测一遍**（结清 issue 的「workbuddy 未验证」项），并实测「砍掉前半/后半 ⇒ 放行」以定死 `find` 必须写整句、锚点**位置无关**（与身份句相反）。⚠️⚠️ **探针必须先把账号筛一遍**：`11128` 有两个同码子原因（`unapproved channel` = 内容级 / `request illegal` = **按账号**的渠道门控 IKM7SG），轮换账号会把后者读成内容指纹的匹配语义 ⇒ 实测出「短前缀被拦、长超集放行」的**非单调**假结论。⚠️ 探针**必须带 `stream:true`**：两站对非流式请求都回 `11101 Non-stream chat request is currently not supported`，不带它会把「不支持非流式」**误读成风控拦截** |
+| `buddy-conversation-headers.e2e.spec.ts`（`pnpm test:e2e:buddy-conv`） | `DSH_BUDDY_CONV_E2E=1` + `DSH_BUDDY_CONV_E2E_CONFIRM=yes` | **`X-Conversation-*` 三头准入必要性的真机对照凭据**（IKM73W + **IKM7SG**）。⚠️ **不可省**：三头的必要性是「**按账号**」的 —— 维护者约 90 次复测在**一个账号**上证伪了「缺任一即 400/11128」，而 **IKM7SG 只换 `WB_REF`** 就在**另一个账号**（`66E05E7C`）上复现了「三枚缺一即 400」⇒ **两批都对，差的是账号**。判据 = 「三枚 Conv 头同时存在且非空」，不校验值语义、**逐请求**判定（`200→400→200`）。**单测锁不住这些** —— 它们是「范围本身」⇒ 只能靠本文件固定。两组：① 逐枚消融（含三枚全删）；② 发 `X-Conversation-ID: abc123…` 断言回包 `id` 含该标记。⚠️ 已按 IKM7SG 改为**逐账号**跑 + **按归因分类**：`account-gated`（该账号要求三头 ⇒ 跳过，**不是**上游行为变更）/ `no-verdict`（额度耗尽 / 用错模型 ⇒ 跳过并说「本轮无判据」）/ `other` 才红。⚠️ `DSH_BUDDY_CONV_E2E_FIRST_ONLY=1` 可退回只跑池里第一个账号（省额度）。⚠️ `WB_MODEL` 默认 `fast-model`，**别用 `deep-model`**（实测 11102 `service info not found`，会掩盖判据） |
+| `buddy-first-message-role.e2e.spec.ts` | `DSH_BUDDY_FIRSTMSG_E2E=1` + `DSH_BUDDY_FIRSTMSG_E2E_CONFIRM=yes` | **「wire 首条角色」实测凭据**。断言 `space-bunny` 在「首条是带 tool_calls 的 assistant」时回 400/**11148**（`displayMsg.zh`=「工具记录不完整，请新建任务」），而 `step-5-preview` **容忍同一形状**。⚠️ 「换个模型就好」是假解法。该判据写死在 `buddy-adapter.ts` 的 `stream()` 里，且 2026-10-12 的审计在**判据本身上**抓到一个真缺陷（初版写 `=== 'assistant'`，漏掉 user-first / tool-first） |
+| `accio-chat-probe.e2e.spec.ts` | `DSH_ACCIO_CHAT_E2E=1` + `DSH_ACCIO_CHAT_E2E_CONFIRM=yes` | 发一条极小请求。**默认用全目录最低倍率模型** `1Drift-N8kP2Q7wR5mX`（x0.013，实测最低）。可用 `ACCIO_PROBE_MODEL` 覆盖，⚠️ **未知 id 直接拒绝**、倍率超 x0.2 需 `ACCIO_PROBE_ALLOW_EXPENSIVE=1` |
+| `accio-tools-probe.e2e.spec.ts` | `DSH_ACCIO_TOOLS_E2E=1` + `DSH_ACCIO_TOOLS_E2E_CONFIRM=yes` | 工具调用**往返**（带 tools → 结构化 `tool-call` → 回传结果 → 最终正文）+ **思考链分离逐字对账**。⚠️ 另断言 `accioToolCallMergeTransform` 真的生效：同一个 id **恰好一个块**且参数**非空**（未合并会变成「N 个块 + 首块 `{}`」⇒ harness 把同一工具执行 N 次） |
+| `accio-image-probe.e2e.spec.ts`（`pnpm test:e2e:accio-image`） | `DSH_ACCIO_IMAGE_E2E=1` + `DSH_ACCIO_IMAGE_E2E_CONFIRM=yes` | **图片通路**（issue IKLR7V 的验收与**证据留存**，见下）。经**生产适配器全链路**发一张**现场生成**的 16×16 四象限纯色 PNG（左上红/右上绿/左下蓝/右下白），判据三条同时成立：**没抛错 + 字节桥接真被调用 + 四色全对**。另含纯文本对照，以及 ⚠️⚠️ 「`multimodal:false` 的模型带图必须被**本地拒绝**」——实测上游对它是**静默忽略图片**（GLM 5.1 会据此**幻觉**出四个颜色），这条是本家 `inputModalities` 写 `['text']` 的**唯一依据**，单测锁不住 |
 
 ## ⚠️ 图片探针的 fixture 不入库
 
@@ -56,13 +63,13 @@
 
 | provider | 原图边界 | 缩放后 | 撞的是什么 |
 |---|---|---|---|
-| buddy / workbuddy | **15 张**（两站**同值**，实测均为 `100001 > 100000`） | 通过 | **图片视觉 token 预算** |
+| buddy / workbuddy | ⚠️ **区间 `(8,15]`**（本仓库固定序列首挂于 15；issue IKKX0T 二分到 `(10,12]`，落在本区间**内部**） | 通过 | **图片视觉 token 预算**（⚠️ 报文里的 `100001` 是**常量哨兵** = limit+1，**不能**拿它反推 token 数） |
 | raccoon | **4 张** | **24 张全过** | **请求体字节**（10 MB 硬限） |
 | qoder | 8 过 / **15 张**（≈57 MiB） | **24 张全过** | 请求体体积 |
 | lobsterai | 12 过 / **13 张**（≈50 MiB，`SERVER code=500`） | **24 张全过** | 请求体体积（500 不是准入报文） |
 | cline | 24 全过 / **32 张**（≈122 MiB） | **32 张全过** | 请求体体积 |
-| loomy | **24 张全过** | 未测（无必要） | 本 fixture 下未撞墙 |
-| trae | ⚠️ **未探到边界**（本轮 1 张通过） | 24 张全过（探索性） | ⚠️ **上一轮的「1 张即 4001／仅可见但不可调用」已被推翻** |
+| loomy | ⚠️ **本仓库记「24 张全过」，但该结论已被 issue IKKX0T 质疑** | 未测（无必要？**不再成立**） | **请求体体积** —— 本仓库 24 张 = **91.8 MiB**，恰落在 issue（3.45 MiB/张）的 87.4~96.6 MiB 区间**内** ⇒「全过」很可能是**侥幸通过** |
+| trae | ⚠️ **本仓库记「未探到边界」；issue IKKX0T 实测 (21,24] 张** | 24 张全过（探索性） | **请求体体积**（`code=4006 content is too large`；该码的**归类已修**，见 `docs/agent-notes/providers-trae.md`）|
 
 ⚠️ **trae 那一格是本文件最该记住的教训**：上一轮同一账号对 `deepseek-v4.1-flash`
 与 `glm-5.3-flash` 都回 `4001 param is invalid`（适配器诊断「仅可见但不可调用」），
@@ -105,6 +112,11 @@
 | `cline-probe.e2e.spec.ts` | `DSH_CLINE_E2E=1` | **只读**：凭据结构（含 `account_id` 与 `workos:` 前缀）、**前缀不可剥的现场证据**（带前缀 200 / 剥掉 401）、积分余额（打印原始值供核对单位）、远端 `free` 集合与 `/models` 目录。**不发模型请求、不续期** |
 | `minimax-probe.e2e.spec.ts` | `DSH_MINIMAX_E2E=1` | **只读**：远端模型目录（4 个模型 + 只有 M3.1 有档位）、签到状态、积分余额。**绝不领取**（`claim` 会消耗当天唯一一次机会）。⚠️ 读的是 **MiniMax Code 客户端自己的登录态**（`~/.minimax/auth/prod/cn/mcode-public/auth.json`），**不是**本插件的凭据存储 —— 该 provider 尚未在任何机器上完成过插件登录。⚠️ **token 过期时自动 skip 并打印指引**，**不代客户端续期**（代续期若遇服务端轮换 refresh_token 就会弄坏用户客户端登录态，详见 `minimax-credential.ts` 的长注释） |
 | `minimax-chat-probe.e2e.spec.ts` | `DSH_MINIMAX_CHAT_E2E=1` + `DSH_MINIMAX_CHAT_E2E_CONFIRM=yes` | 发一次 Anthropic Messages 推理请求。⚠️ **本轮该链路未端到端验证**：本机账号 `insufficient_balance_error`（HTTP 402）。保留探针是为了充值后一条命令验证，并把「未验证」留在代码里。⚠️ 该文件头如实标注了 `thinking.type=adaptive` 的**证据强度**（客户端取证支持 adaptive 形态，但「非 adaptive 会 400」目前只有计划文档声称、无服务端证据） |
+| `minimaxintl-probe.e2e.spec.ts` | `DSH_MINIMAXINTL_E2E=1` | **只读**：MiniMax Code **国际版**（`minimaxintl`）的模型目录（`region=en`）、签到状态、积分余额。**绝不领取**。⚠️ 与国内站探针**不同**：它读的是**插件自己的** `MINIMAXINTL_*` 凭据（国际站没有可读的本机客户端）⇒ 前置条件是先在 Jet Hub「MiniMax Code (国际版)」面板登录一个账号。⚠️⚠️ **2026-10-15 真机验证通过**：模型目录（4 条）、签到状态、积分余额、推理（200 + 真实 SSE）**全部可用**，认证只需 `Authorization: Bearer`。⚠️ **本行曾一度写着「国际站端点要求阿里云 ALB 网关签名、不可用」—— 那是把一次上游故障窗口当成了设计，已被证伪**（决定性证据：官方 mcode 客户端自己也连不上，`Code: 50112` = 官方枚举 `LLM_AUTH_ERROR`；故障恢复后同样的请求全部 200）。**仍然成立**的判据只有一条：目录端点**当前是公开的**（无 token 也 200）⇒「目录能读到」**不构成**凭据有效的证据（这是最易误判的一格），凭据证据看签到/积分/推理三处。详见 `src/minimax-product.ts` 文件头。本探针的判据只到「请求发出去了、拿到可解读响应」，实际内容**打印**给人核对 |
+| `minimaxintl-claim-probe.e2e.spec.ts` | `DSH_MINIMAXINTL_E2E=1` + `DSH_MINIMAXINTL_CLAIM_E2E_CONFIRM=yes` | ⚠️ **真实领取** MiniMax 国际站当日积分（消耗账号当天唯一一次机会）。先查状态：`todayCheckedIn` 为真则**跳过 claim**；`claim_result` 是幂等判据（1=真领、2=已领过），**不是** HTTP 状态码。⚠️ 签到状态读到 `null` 时**不执行 claim**（先确认凭据有效、再怀疑上游故障）—— 该端点形态**已实测可用**（2026-10-15），别把一次查询失败读成「端点不可用」而白烧当天机会 |
+| `officeace-abandoned-login.e2e.spec.ts`（`pnpm test:e2e:officeace-abandoned`） | `DSH_OFFICEACE_E2E=1` | **IKM741：新登录账号的完整生命周期**（⚠️ **会真开无痕窗口**）。① `account.create` 后占位条目就位 + **零凭据** + 无痕窗口真拉起（人工确认落在华为云登录页）；② 用户**没完成授权就关窗** ⇒ 刷新账号列表时幽灵占位条目被**收口**；③ 收口**不波及**其它渠道；④ ⚠️ **成功登录后即使 TTL 已过也绝不能被收口**（删除不可逆 —— 这条是安全闸）；⑤ 无痕窗口独立验证；⑥ 落库途中删卡片 ⇒ **孤儿凭据被回收**（B 档）；⑦ ⑥ 的对照组（不删卡片 ⇒ 凭据保留）。②③④ 用 `DSH_OFFICEACE_PENDING_TTL_MS=0` + 假造时钟把「已中止」变成**确定事实**，无需等真实 20 分钟 |
+| `accio-probe.e2e.spec.ts` | `DSH_ACCIO_E2E=1` | **只读**：登录（池里有凭据则直接用，否则现场 PKCE 登录，**人工在浏览器授权**）→ 模型目录（倍率来自 `effectiveMultiple` 且按升序；兜底表**不许腐坏**）→ 账号身份（`userinfo`，token 在 **body**）→ 三类积分桶 + 重置倒计时（`currentSubscription` / `quota`，token 在 **query**）。**不发模型请求、不续期、不写任何存储**（登录产物只进内存凭据提供者） |
+| `accio-refresh-probe.e2e.spec.ts` | `DSH_ACCIO_REFRESH_E2E=1` + `DSH_ACCIO_REFRESH_E2E_CONFIRM=yes` | ⚠️⚠️ **续期端点的轮换语义**（`docs/agent-notes/providers-accio.md` §10 U-A）。回答三问：①是否轮换 `refresh_token`；②旧的轮换后是否**立即失效**；③是否顺带触发当日额度发放。**只读订阅**（不发模型请求），但**真实消费一次 `refresh_token`** |
 
 > CodeArts deepseek-v4 系列使用华为云免费福利额度（每日 1000 万免费 Tokens），
 > 不产生额外费用，因此 `DSH_CODEARTS_E2E=1` 不需要确认变量。
@@ -117,6 +129,9 @@
 ```bash
 # 只做认证（安全）
 pnpm test:e2e:login
+
+# ⚠️ 会真开无痕窗口：OfficeAce 换账号登录 + IKM741 的登录中止收口（人工确认登录页）
+pnpm test:e2e:officeace-abandoned
 
 # 登录流程原始响应探针（安全，不发模型请求）
 pnpm test:e2e:buddy-probe
@@ -163,6 +178,10 @@ pnpm test:e2e:trae-claim
 # ⚠️ 会消耗极小额度：验证多通道目录与「按模型路由通道」
 pnpm test:e2e:trae-channels
 
+# ⚠️ 会消耗明显额度：loomy / trae 的图片边界**二分**复测（Issue IKKX0T）
+#    比 image-burst 贵得多（二分每步一整轮十几张图）。定 imageMaxBytes 前跑它。
+pnpm test:e2e:image-bisect
+
 # 安全：Cline 只读探针（凭据/前缀证据/余额/免费集合，不发模型请求、不续期）
 pnpm test:e2e:cline
 
@@ -174,7 +193,51 @@ pnpm test:e2e:minimax
 
 # ⚠️ 发一次 MiniMax 推理请求（**本轮必然失败：账号无余额 402**；充值后才有意义）
 pnpm test:e2e:minimax-chat
+
+# 安全：Accio 只读探针（登录 + 模型目录 + 账号 + 积分；不发模型请求、不续期、不落盘）
+pnpm test:e2e:accio
+
+# ⚠️ 会消耗 Accio 积分：发一条极小请求（**默认全目录最低倍率 x0.013** 的模型）
+pnpm test:e2e:accio-chat
+
+# ⚠️ 会消耗 Accio 积分：工具调用往返 + 思考链分离（默认同上，最低倍率）
+pnpm test:e2e:accio-tools
+
+# ⚠️⚠️ Accio 续期**轮换语义**（会真实消费一次 refresh_token）
+#    只碰**本插件自己现场登录的**凭据（只进内存）；无法证明归属时**整体 skip**
+pnpm test:e2e:accio-refresh
+
+# ⚠️ 会消耗 Accio 积分：**图片通路**（四象限色块图四色全对 + multimodal:false 必须被拒）
+pnpm test:e2e:accio-image
 ```
+
+## ⚠️ Accio 图片探针：为什么它必须存在，以及两个账号来源
+
+**存在理由**：`docs/agent-notes/providers-accio.md` §10 的 U-D（图片通路）由它给出答案，
+而同一份笔记的 U-F / U-G 记着一条教训 —— **「真机跑过，但证据没留在库里」等于下次没人敢信**
+（结论照用，却没有可复核的产物）。本探针就是**把 U-D 的证据留存下来**。
+
+它的核心判据（⚠️ **不能只看 HTTP 200**，与其余 accio 探针同口径）：
+
+| 判据 | 为什么必须 |
+|---|---|
+| 没抛错 | HTTP 200 也可能是风控 HTML 或流内 `error_code` 非 `'200'` 的业务失败 |
+| **字节桥接真被调用**（`readCalls > 0`） | 否则是「静默丢图」的假成功 —— 模型答「我没看到图」时，**失败原因会被误读成「上游不支持图片」**（本文件末尾有一条源码级守卫钉住这两条断言必须同时存在） |
+| **四色全对** | 这才证明图片**真的被模型读到了**（实测真收图的模型 3/3 全对；忽略图的模型 0/4） |
+
+**账号来源（两个，优先级明确）**：
+
+```
+DSH_ACCIO_IMAGE_E2E_CREDENTIAL_JSON='{"access_token":"…","refresh_token":"…","region":"cn"}'   # 可选，显式指定
+DSH_ACCIO_IMAGE_E2E_ANY_ACCOUNT=1                                                              # 可选，放宽到「任意账号」
+```
+
+⚠️ 与 `accio-chat` / `accio-tools` **刻意不同**：那两家只认**启用**账号
+（`enabledAccountRef`），而本机实测 5 个 accio 账号**全是 `enabled: false`**
+⇒ 只认启用账号会让本探针在本机**永远跑不起来**，U-D 的证据就又留不下来。
+故本探针支持 `DSH_ACCIO_IMAGE_E2E_ANY_ACCOUNT=1` 放宽到任意账号 ——
+**但必须显式 opt-in**，且日志会**点名用了哪个 ref**：放宽是有代价的
+（会消耗一个**用户已停用**账号的额度），默认行为**仍是只认启用账号**。
 
 ## ⚠️ Cline 探针的付费保护（请勿削弱）
 
@@ -214,6 +277,76 @@ DSH_CLINE_CHAT_E2E_ALL_FREE=1       可选：才遍历其余免费模型
 > Qoder 官方客户端用**硬件指纹**派生 `machine_id`，而本插件用**随机 UUID**
 > （见设计文档 §8）。若续期返回 4xx（非 401），说明服务端校验了设备标识，
 > 该假设被推翻 —— 此时必须改用硬件指纹派生，否则用户每天都要重新登录。
+
+## ⚠️ Accio 探针的三条硬规矩（请勿削弱）
+
+### 1. 判「成功」**不能只看 HTTP 200**
+
+实测：把 token 放进 `Authorization` 头而不是 body 的 `token` 字段时，上游**恒**回
+
+```
+HTTP 200
+data: {"turn_complete":true,"error_code":"402","error_message":"unauthorized"}
+```
+
+⇒ 只看状态码会把**认证 / 额度失败**读成「成功但模型没吐字」，而且 harness 也
+不会按额度类重试。四个 Accio 探针因此都**至少两条判据同时成立**才算通过：
+
+| 探针 | 判据 |
+|---|---|
+| `accio-probe`（三个只读端点） | 信封 `success !== false` **且** 拿到了 `data` 对象 |
+| `accio-chat-probe` / `accio-tools-probe` | 原始帧里**有** `content.parts[].text` **且没有**非 `'200'` 的 `error_code`（`'200'` 是成功哨兵，实测正常帧也带） |
+
+⚠️ 两个流式探针**刻意不 catch** `consumeAccioSse` 抛出的 `LlmError`：流内 402 抛的是
+**字面量码 `'QUOTA_EXCEEDED'`**（不是 harness 的 `QUOTA_EXCEEDED_CODE`，其字面值是
+`'QUOTA'`，会被客户端换成固定文案）。吞掉它就等于把「额度/认证失败」降级成
+「模型没返回内容」—— 那正是 `src/accio-messages.ts` 修过的真实缺陷。
+
+### 2. ⚠️⚠️ 续期探针**只碰我们自己的凭据**
+
+参考实现明确记录「**刷新会轮换 `refresh_token`**」。若拿**用户 Accio 桌面端**的
+会话去试，轮换后那份即失效 ⇒ **用户桌面端的登录被弄坏**。
+
+`accio-refresh-probe.e2e.spec.ts` 因此：
+
+- **从不读** Accio 桌面端数据（`credentials.enc` / DPAPI），也**从不读**账号池里的
+  `ACCIO_ACCOUNT_*`（那可能是用户在 Jet Hub 登录的真实账号，轮换掉同样会打断它）；
+- **现场跑一次自己的 PKCE 登录**，凭据只写进**内存**凭据提供者，**一个字节都不落盘**
+  —— 轮换掉它不破坏任何东西；
+- 归属门禁 `ownershipFailureOf()` 有**三条判据，缺一不可**：
+  ① `DSH_ACCIO_REFRESH_E2E_CREDENTIAL_JSON` **未设置**（环境变量里的凭据**结构上
+  无法证明**归属）；② 凭据带 `region`（只有本插件的 `finishLogin` 会写它）；
+  ③ `refresh_token` 非空。
+  任一不成立就 **`ctx.skip()` 并打印原因** —— 宁可什么都不测，也不赌一把。
+
+该文件里还有一条**离线用例**（零网络、零额度）逐条变异验证这三条判据各自能拦住
+（含正例），别把它当噪音删掉。
+
+### 3. 对话 / 工具探针**必须用最低倍率模型**
+
+实测全目录最低倍率是 `1Drift-N8kP2Q7wR5mX`（**x0.013**，即
+`ACCIO.fallbackModels[0]`），最高的是 x2.8 —— **215 倍**价差。两个会花钱的探针因此：
+
+- 默认取 `ACCIO.fallbackModels[0]`（上游 `modelCode`，`1Drift-N8kP2Q7wR5mX`）；
+- 可用 `ACCIO_PROBE_MODEL` 覆盖，**两种写法都接受**（2026-10-13 起）：
+  **对外 id（slug，如 `qwen-3-8-27b`）**或**上游 `modelCode`**。
+  ⚠️ 为什么两种都认：对外 id 已改成 slug（模型选择器里显示的就是它），
+  而探针**自己发裸 fetch**、上行必须用 `modelCode` ⇒ 照选择器写进来的 slug
+  若被拒会让人以为「模型不存在」；
+- **未知 id 直接拒绝**（不是静默回落）：写错会得到一个与账号无关的 404，
+  把「模型名不对」与「账号不可用」混成同一条报错，而两者倍率可能差 200 倍；
+- 倍率高于 **x0.2** 的模型需要**额外显式 opt-in**（`ACCIO_PROBE_ALLOW_EXPENSIVE=1`）
+  —— 沿用 Cline 探针的「付费保护」形态。
+
+⚠️ `accio-probe`（只读）里有一条联动断言钉住这个前提：**最便宜的那个必须仍是
+`ACCIO.fallbackModels[0]`**。上游改了倍率排序，那两个花钱的探针会立刻变红而不是
+悄悄按新价刷额度。
+
+> ⚠️ **`maxOutputTokens` 为什么是 256 而不是 64**：Accio **关不掉思考**
+> （`includeThoughts` / `thinkingBudget` / `thinkingLevel` / `reasoningEffort`
+> 四类字段实测全部无效，见 `src/accio-adapter.ts` 文件头）。实测短回答的思考约
+> 150 token ⇒ 预算 64 会被思考**吃满**、正文零产出，得到的是**假阴性**
+> （`src/session-title.ts` 记录的同型缺陷）。256 是「思考够用 + 正文几个字」的实用下限。
 
 ## Qoder 设备身份为何只能在 e2e 里验证
 

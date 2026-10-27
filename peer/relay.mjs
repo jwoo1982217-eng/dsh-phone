@@ -30,8 +30,11 @@ export function createRelay({ maxRooms = 100, maxConnections = 250 } = {}) {
             if (rooms.size >= maxRooms) throw Error();
             room = { id: j.room, proof: j.proof, phone: null, computer: null }; rooms.set(j.room, room);
           }
-          if (!timingSafeEqual(Buffer.from(room.proof, 'hex'), Buffer.from(j.proof, 'hex')) || room[j.role]) throw Error();
-          role = j.role; room[role] = ws; joined = true; clearTimeout(deadline);
+          if (!timingSafeEqual(Buffer.from(room.proof, 'hex'), Buffer.from(j.proof, 'hex'))) throw Error();
+          role = j.role; const previous = room[role]; room[role] = ws; joined = true; clearTimeout(deadline);
+          // A reconnect proves the same room secret. Retire its stale socket;
+          // the close handler below cannot clear the replacement.
+          if (previous && previous !== ws) previous.terminate();
           ws.send(JSON.stringify({ type: 'joined' }));
           const other = room[role === 'phone' ? 'computer' : 'phone'];
           if (other?.readyState === WebSocket.OPEN) {

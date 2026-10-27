@@ -32,13 +32,17 @@ import type {
   ContentBlock,
   FinishReason,
   RequestMessage as Message,
+  RequestMessage,
   StreamChunk,
   TokenUsage,
   ToolSchema,
 } from '@deepseek-ai/dsh-llm'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { normalizeHarnessMessages, type NormalizedHarnessMessage } from './message-shape.js'
-import { readWithIdleTimeout, resolveToolPairing } from './sse.js'
+import { createDsmlMarkerNormalizer, fixDsmlMarkers, readWithIdleTimeout, resolveToolPairing } from './sse.js'
+// ⚠️ 工具结果「有图无文」时的载体文本**只留一份实现**（`openai-compat.ts`）：
+// 本仓库已有 IKLBSH A1 的教训 —— 同义常量各写一份必然漂移。
+import { TOOL_RESULT_IMAGE_TEXT } from './openai-compat.js'
 import type { GeminiInlineImage, GeminiModelSpec } from './gemini.js'
 import {
   deriveGeminiSessionId,
@@ -138,7 +142,16 @@ export function canonicalArgs(args: unknown): string {
 export interface TranslateGeminiRequestOptions {
   modelId: string
   spec: GeminiModelSpec
-  messages: readonly Message[]
+  /**
+   * 待翻译的历史。
+   *
+   * ⚠️ 类型是 **`RequestMessage`**（= `Message | RequestUserInput`）而不是
+   * `Message`：0.2.0 的 `GenerateOptions.messages` 就是这个联合 —— 一次性
+   * 调用方（标题生成、子请求）可以传**无 id / 无 source** 的用户输入。
+   * 本函数的第 1 步就会把它喂给 `normalizeHarnessMessages`（按结构读取），
+   * 全程不触碰 `id` / `source`，故放宽是**如实**而非绕过。
+   */
+  messages: readonly RequestMessage[]
   system?: string
   tools?: readonly ToolSchema[]
   toolChoice?: unknown
@@ -212,6 +225,15 @@ export function translateGeminiRequest(options: TranslateGeminiRequestOptions): 
   }
 
   const contents: GeminiContent[] = []
+  /**
+   * 挂起的「工具结果内层图片」（Issue IKLSB8 同族）。
+   *
+   * ⚠️ **必须留到下一条 user content 一起发**，不能紧跟在 `functionResponse`
+   * 之后单独成一条 content：`0dd27ca` 的实测结论是「图与提问不同条 ⇒ 模型看不见」
+   * （上游/模型对分离形态直接忽略图片，且**不报错**）。故这里在遇到带正文的 user
+   * content 时把挂起的 `inlineData` 插到正文**之前**。
+   */
+  const pendingToolImages: GeminiPart[] = []
   for (const message of normalized) {
     // system 由 `options.system` 单独承载（DSH 不会把 system 放进 messages，
     // 真出现时按 user 处理会让模型把它当用户指令 —— 故显式跳过）。
@@ -237,16 +259,49 @@ export function translateGeminiRequest(options: TranslateGeminiRequestOptions): 
         continue
       }
 
-      if (block.type === 'tool-result') {
-        if (!keepResultIds.has(String(block.toolCallId))) continue
-        const name = toolNames.get(String(block.toolCallId)) ?? ''
+      // ⚠️ 判据必须走**宽松读取**而不是直接 `block.type === 'tool-result'`：
+      // 0.2.0 的 `ContentBlockMap` 已删除 `'tool-result'`（它只是 ≤0.1.6 的
+      // 历史形状），直接比较会让 TS 把该分支收窄成 `never`（TS2367）并连带
+      // 报出 `toolCallId`/`content`/`isError` 不存在。此处读的是
+      // `normalizeHarnessMessages` 降级产出的**宽松块**，故按结构读取。
+      const legacy = block as { type?: unknown; toolCallId?: unknown; content?: unknown; isError?: unknown }
+      if (legacy.type === 'tool-result') {
+        if (!keepResultIds.has(String(legacy.toolCallId))) continue
+        const name = toolNames.get(String(legacy.toolCallId)) ?? ''
         // ⚠️ name 为空时**整块丢弃**：上游的 functionResponse 以 name 配对，
         // 空 name 会 400。丢了顶多少一轮工具上下文，不会打死整轮。
         if (name === '') continue
+        const inner = Array.isArray(legacy.content) ? legacy.content as readonly ContentBlock[] : []
+        /**
+         * ⚠️⚠️ **工具结果内层的图片必须递归取出并提升**（Issue IKLSB8 同族落点，
+         * 2026-10-14 受控实测）。
+         *
+         * `functionResponse.response.content` **只吃字符串**（Gemini 协议在工具
+         * 结果里没有承载图的位置），而 `toolResultText()` 只收 text/reasoning 块
+         * ⇒ 原实现下内层图片**被静默丢弃**：实测同一张图，顶层形状 `inlineData`
+         * 出现 ✅，`tool-result` 内层形状 `inlineData` **完全不出现** ❌（正文照旧
+         * 保留，所以连一条线索都没有）。
+         *
+         * ⚠️ 这正是 `accio-messages.ts` / `buddy-adapter.ts` 注释里警告过的形态：
+         * **收集侧递归、注入侧不递归** ⇒ 收进 refs、读出字节、注入时丢掉。
+         * 本文件原先就是这一形态（`gemini-adapter.ts` 用递归的 `collectImages`
+         * 收，这里只走一层）。
+         *
+         * 图片提升为**后续 user content 的 `inlineData`**（与 buddy / lobsterai /
+         * openai-compat 的做法同型）：挂起 → 遇到带正文的 user content 时插在
+         * 正文**之前**（`0dd27ca` 的阶段结论：图与提问必须同在一条消息）。
+         */
+        const innerImages = toolResultInlineImages(inner, options.images)
+        if (innerImages.length > 0) pendingToolImages.push(...innerImages)
+        const text = toolResultText(inner)
         const response: Record<string, unknown> = {
-          content: toolResultText(block.content),
+          // ⚠️ 有图无文时**不得**下发空串（Issue IKLSB8 建议 2）：空 content 让
+          // 模型以为「工具什么都没返回」，于是答「Read 没有返回内容」，用户据此
+          // 误判成模型没有视觉能力 —— 真实原因是「有输出，输出是图」。
+          // 判据用 `innerImages.length > 0`（**有内容**）而不是「文本非空」。
+          content: text.length > 0 ? text : (innerImages.length > 0 ? TOOL_RESULT_IMAGE_TEXT : text),
         }
-        if (block.isError === true) response.error = true
+        if (legacy.isError === true) response.error = true
         parts.push({ functionResponse: { name, response } })
         continue
       }
@@ -276,7 +331,37 @@ export function translateGeminiRequest(options: TranslateGeminiRequestOptions): 
     }
 
     if (parts.length === 0) continue
+    /** 本条 content 是否承载工具结果（`functionResponse`）—— 见下方挂图判据。 */
+    const hasFunctionResponse = parts.some((part) => part.functionResponse !== undefined)
+    /**
+     * ⚠️⚠️ 挂起的工具结果图片**只能搭在「不含 functionResponse 的那条 user content」
+     * 上**（Issue IKLSB8 同族 + IKLIFH 的形态约束），两条都要满足：
+     *
+     * 1. 只对 user 角色生效 —— assistant（`model`）内容里插图没有语义，会把图
+     *    归因成模型自己发的；
+     * 2. 本条**不含 `functionResponse`** —— 否则图会与「纯工具结果」那条 content
+     *    绑在一起，而提问在**下一条** content ⇒ 图与问分处两条，正是 IKLIFH
+     *    实测会让模型看不见图的形态。
+     *
+     * 这与 buddy / lobsterai / `openai-compat` 的时序同型：图片一律留到下一条
+     * 「用户发言」搭车，图插在正文**之前**。
+     */
+    if (role === 'user' && !hasFunctionResponse && pendingToolImages.length > 0) {
+      parts.unshift(...pendingToolImages.splice(0, pendingToolImages.length))
+    }
     contents.push({ role, parts })
+  }
+
+  /**
+   * 历史末尾的残留挂图：**必须发出去**，不能静默丢弃。
+   *
+   * ⚠️ 为空时不发（凭空造一条纯图 content 会让上游把图与提问分离 ⇒ IKLIFH 形态）。
+   * 走到这里说明工具结果是**整段历史的最后一条**（后面没有 user 提问可搭车），
+   * 这是「有图总比丢图好」的取舍：至少让模型看到图。
+   */
+  if (pendingToolImages.length > 0) {
+    contents.push({ role: 'user', parts: [...pendingToolImages] })
+    pendingToolImages.length = 0
   }
 
   // ⚠️ 空 contents 必须抛错：发空请求上游会 400，且错误信息与「工具配对失败」
@@ -425,6 +510,60 @@ function toolResultText(blocks: readonly ContentBlock[]): string {
   return out.join('\n')
 }
 
+/**
+ * 取出工具结果内容块里的图片，转成可挂到 user content 的 `inlineData` part。
+ *
+ * ## ⚠️ 为什么需要它（Issue IKLSB8 同族落点，2026-10-14 受控实测）
+ *
+ * `functionResponse.response.content` **只吃字符串** —— Gemini 协议在工具结果里
+ * 没有承载图的位置。而 `toolResultText()` 只收 text/reasoning ⇒ 若不做这一步，
+ * 工具结果内层的图片就**被静默丢弃**。实测（同一张图、同一请求）：
+ *
+ * | 形状 | `inlineData` |
+ * |---|---|
+ * | 顶层图 | ✅ 出现 |
+ * | `tool-result` **内层**图 | ❌ **完全不出现**（正文照旧保留 ⇒ 连线索都没有） |
+ *
+ * 而 `gemini-adapter.ts` 收集侧用的是**递归**的 `collectImages` ⇒ 字节被读出、
+ * 却在翻译阶段丢掉。这正是 `accio-messages.ts` / `buddy-adapter.ts` 注释里
+ * 警告的「收集侧递归、注入侧不递归」形态。
+ *
+ * ⚠️ 与 `minimax-messages.ts` 的 `serializeToolResultContent` 同一取舍：
+ * **本层图片递归**（`tool-result` 内层也要下钻），与 `collectImages` 的深度对称。
+ *
+ * ⚠️ 图片读不到时**抛错而不是跳过**：与 `gemini-adapter.ts` 对 user 消息图片的
+ * 既有口径一致（静默丢弃会让用户以为模型看到了图）。注意这与 minimax 在**工具
+ * 结果**里选择「跳过」的口径不同 —— 本家是**整请求**拒绝缺图的一方。
+ */
+function toolResultInlineImages(
+  blocks: readonly ContentBlock[],
+  images: ReadonlyMap<string, GeminiInlineImage> | undefined,
+): GeminiPart[] {
+  const out: GeminiPart[] = []
+  for (const block of blocks) {
+    if (block.type === 'image') {
+      const ref = block.attachment as { attachmentId?: unknown } | undefined
+      const attachmentId = typeof ref?.attachmentId === 'string' ? ref.attachmentId : undefined
+      const inline = attachmentId === undefined ? undefined : images?.get(attachmentId)
+      if (inline === undefined) {
+        // ⚠️ 与 `gemini-adapter.ts` 的既有口径一致：缺图**抛错**，不静默丢。
+        throw new Error('gemini: 工具结果里的图片未能内联（附件服务不可用或读取失败），拒绝发出缺少图片的请求')
+      }
+      out.push({ inlineData: { mimeType: inline.mediaType, data: inline.data } })
+      continue
+    }
+    // ⚠️ 递归下钻：与 `collectImages`（`openai-compat.ts`）的递归深度对称。
+    // ⚠️ 判据必须走**宽松读取**（同上方 `legacy` 的既有做法）：0.2.0 的
+    // `ContentBlockMap` 已删除 `'tool-result'`，直接比较会触发 TS2367 并连带
+    // 报出 `content` 不存在。
+    const nested = block as { type?: unknown; content?: unknown }
+    if (nested.type === 'tool-result' && Array.isArray(nested.content)) {
+      out.push(...toolResultInlineImages(nested.content as readonly ContentBlock[], images))
+    }
+  }
+  return out
+}
+
 // ---------------------------------------------------------------------------
 // 响应翻译（非流式）
 // ---------------------------------------------------------------------------
@@ -549,7 +688,7 @@ export interface ConsumeGeminiSseOptions {
    *
    * ⚠️ **必须主动掐**：上游在生成大 functionCall 参数期间可能长时间不 flush
    * 任何字节，裸 `reader.read()` 会**无限期挂起** —— 适配器的 generator
-   * 永不返回，harness 当前步骤既不出结果也不报错（见 `src/sse.ts:1-10`）。
+   * 永不返回，harness 当前步骤既不出结果也不报错（见 `src/sse.ts`）。
    */
   idleTimeoutMs?: number
   /** 首 token 单独的超时（缺省同 `idleTimeoutMs`）。 */
@@ -587,6 +726,8 @@ export async function* consumeGeminiSse(
   let nextIndex = 0
   let finishReason: string | undefined
   let sawAnyChunk = false
+  /** DSML 标记归一化器（见 sse.ts）；每个 SSE 消费一个实例。 */
+  const dsmlFix = createDsmlMarkerNormalizer()
   /** 用量：保留「最大 totalTokenCount」的那一份。 */
   let usage: Partial<TokenUsage> = {}
   let usageTotal = -1
@@ -594,9 +735,19 @@ export async function* consumeGeminiSse(
 
   const closeBlock = function* (): Generator<StreamChunk> {
     if (block === undefined) return
+    // ⚠️ 收尾先下发待定缓冲（DSML 归一化，见 sse.ts），否则最后几个字符
+    //    永远不到达。closeBlock 也是权威出口，故这里做**整串兜底**归一化
+    //    （幂等），保证落块文本干净。
+    if (block.kind === 'text') {
+      const tail = dsmlFix.flush()
+      if (tail.length > 0) {
+        block.text += tail
+        yield { type: 'text-delta', index: block.index, text: tail }
+      }
+    }
     let content: ContentBlock
     if (block.kind === 'text') {
-      content = { type: 'text', text: block.text }
+      content = { type: 'text', text: fixDsmlMarkers(block.text) }
     } else if (block.kind === 'reasoning') {
       content = { type: 'reasoning', text: block.text }
     } else {
@@ -696,8 +847,12 @@ export async function* consumeGeminiSse(
       if (block?.kind !== 'text') yield* openBlock('text')
       sawAnyChunk = true
       if (block !== undefined) {
-        block.text += part.text
-        yield { type: 'text-delta', index: block.index, text: part.text }
+        // ⚠️ **先归一化再累积**（2026-10-13，见 sse.ts 注释）。
+        const fixedText = dsmlFix.push(part.text)
+        block.text += fixedText
+        if (fixedText.length > 0) {
+          yield { type: 'text-delta', index: block.index, text: fixedText }
+        }
       }
     }
   }

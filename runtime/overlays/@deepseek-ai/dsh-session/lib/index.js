@@ -39,20 +39,20 @@ function SessionLogOffset(value) {
 * event-body read composes the build-static adjacent chain and publishes only
 * this final generation before constructing a Session.
 *
-* The version is a single monotonic integer with no major/minor split. Whether
-* a bump is needed is decided by what the WRITER emits, never by what a newer
-* reader can accept: bump exactly when an older runtime could no longer handle
-* a new log with full semantic correctness ("parses without error" is not
-* correctness — silently skipping content that shapes reconstruction is a
-* wrong read). Only structural changes reach that bar: the header shape, the
-* {@link SessionEvent} envelope, core event semantics, or the surface
-* mechanism (the {@link SurfaceEventType} set and {@link SurfaceOp} variants).
-* Adding an ordinary event type does not bump — the per-event
-* {@link SessionEvent.ignorable} guard covers vocabulary growth instead. When
-* in doubt, bump: a near-identity upgrade step is almost free, a missed bump
-* makes older runtimes read new logs wrong silently. The released migration,
-* immutable prior-generation, and current fast-path rules are recorded in
-* `.agents/notes/implemented/architecture/2026-08-31-released-session-format-migrations.md`.
+* The version is a single monotonic integer with no major/minor split. Retain
+* it when older readers resume correctly, preserve safely ignorable records,
+* or refuse required features before execution, mutation, or tail repair.
+* New readers must preserve historical meanings, including logs mixing old
+* and new record representations. Bump when an existing discriminator cannot
+* prevent unsafe interpretation; a structural difference alone is insufficient.
+* Unknown fields and values require evidence of the released reader's actual
+* admission behavior. The per-event {@link SessionEvent.ignorable} marker
+* governs unknown event types, not arbitrary nested payload changes.
+* Same-version readers retain earlier representations: the adjacent migration
+* chain does not run when stored and current versions match. A subsequent
+* migration must account for all supported representations of its source.
+* Compatibility review and the retained migration obligations are recorded in
+* `.agents/notes/implemented/process/2026-10-08-session-reader-compatibility-review.md`.
 */
 const SESSION_FORMAT_VERSION = 4;
 //#endregion
@@ -101,6 +101,8 @@ const KNOWN_SESSION_EVENT_TYPES = new Set([
 	"hook/invoked",
 	"hook/result",
 	"image/offload",
+	"job/registered",
+	"job/settled",
 	"llm/retry",
 	"llm/retry-started",
 	"model/selection",
@@ -137,6 +139,7 @@ const KNOWN_SESSION_EVENT_TYPES = new Set([
 	"turn/start",
 	"user/message",
 	"web/deepseek-search-llm-request",
+	"working-directory/change",
 	"workspace/changes"
 ]);
 /** Event types whose model-visible effects require an explicit pure interpreter. */
@@ -424,7 +427,7 @@ function assertSystemHeadRewrite(event, state, startIdx, shadowedSeqs, events, b
 function planSurfaceEvent(state, event, expectedSeq, events, baseSeq, projections) {
 	if (event.seq !== expectedSeq) throw new Error(`session event seq ${event.seq} is not contiguous; expected ${expectedSeq}`);
 	const surfaceOp = validateSurfaceMetadata(event);
-	if (event.type === "conversation/edit") return conversationEditPlan(state, event, events, baseSeq, projections, createFoldState, applySurfaceEvent);
+    if (event.type === "conversation/edit") return conversationEditPlan(state, event, events, baseSeq, projections, createFoldState, applySurfaceEvent);
 	assertDeveloperHeader(event, events, baseSeq);
 	const projection = projections.find((item) => item.type === event.type);
 	if (projection !== void 0) return {
@@ -470,6 +473,7 @@ function applySurfacePlan(state, plan) {
         state.contentGeneration += 1;
         return;
     }
+
 	if (plan?.kind === "append") state.nodes.push(plan.seq);
 	else if (plan?.kind === "replace") {
 		state.nodes.splice(plan.startIdx, plan.endIdx - plan.startIdx + 1, plan.seq);
@@ -1250,6 +1254,79 @@ function invokeContainedSessionObservers(ctx, name, id, args, callbacks) {
 /** Store attachment for the append path; module-private to keep Session store-agnostic publicly. */
 const attachments = /* @__PURE__ */ new WeakMap();
 /**
+* Grammar of a {@link PluginRecordType}: `plugin:` followed by
+* slash-separated segments of lowercase letters, digits, `.`, `_`, and `-`,
+* each segment starting with a letter or digit.
+*/
+const PLUGIN_RECORD_TYPE = /^plugin:[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/u;
+/**
+* Whether one event type name follows the plugin record grammar.
+* @param type - an event type name.
+* @returns whether the name is a {@link PluginRecordType}.
+*/
+function isPluginRecordType(type) {
+	return PLUGIN_RECORD_TYPE.test(type);
+}
+/**
+* Type one constructed plugin record as a log event after checking its type
+* against the plugin record grammar. A restored Session already holds events
+* whose types are outside `SessionEventMap` when they are marked ignorable;
+* a plugin record is such an event.
+* @param value - the frozen record envelope built by {@link Session}.
+* @throws when the record type is outside the plugin record grammar.
+*/
+function assertPluginRecordEvent(value) {
+	const { type } = value;
+	if (!isPluginRecordType(type)) throw new Error(`plugin record type "${type}" must be "plugin:" followed by lowercase slash-separated segments`);
+}
+/** Module-private access to {@link Session}'s record commit, assigned once by its static block. */
+let commitPluginRecord;
+/**
+* Append one experimental plugin record: an event marked `ignorable` whose
+* type is declared in {@link PluginRecordMap}, outside {@link SessionEventMap}.
+* The plugin record catalog lists it separately from released event schemas.
+* A reader that does not recognize the type retains and skips the record, which never
+* enters the model-visible surface, and fork and resume carry it with the rest
+* of the log. A Session format migration retains records on a best-effort
+* basis, so a record holds plugin-owned state that its owner can lose without
+* changing how the rest of the log is interpreted.
+*
+* Only production source under `packages/experimental/` may call this
+* function; the `verify-plugin-record-callers` gate rejects any other
+* production caller in this repository. Read records back with
+* {@link pluginRecordOf}.
+* @param session - the Session whose log receives the record.
+* @param type - declared record name: `plugin:` followed by slash-separated
+*   segments of lowercase letters, digits, `.`, `_`, and `-`, each starting
+*   with a letter or digit.
+* @param data - JSON payload, snapshotted before it enters the log.
+* @returns the sequence number of the committed record.
+* @throws when `type` is outside that grammar, when `data` is not losslessly
+*   JSON-serializable, or when the call reenters another append's publication;
+*   a rejected record does not change the log.
+*/
+function appendPluginRecord(session, type, data) {
+	return commitPluginRecord(session, type, data);
+}
+/**
+* Read one committed event as a plugin record. The V3-to-V4 format edge also
+* renames each unknown ignorable V3 event into the `plugin:` namespace, so an
+* owner names its records under its own package name and validates `data`.
+* @param event - any committed Session event, live or restored.
+* @returns the record, or undefined when the event is not an ignorable event
+*   whose type follows the plugin record grammar.
+*/
+function pluginRecordOf(event) {
+	const type = event.type;
+	if (event.ignorable !== true || !isPluginRecordType(type)) return void 0;
+	return {
+		type,
+		seq: event.seq,
+		time: event.time,
+		data: event.data
+	};
+}
+/**
 * An event-sourced session: an append-only log of {@link SessionEvent}s.
 *
 * Plain class (not a Service) — create live instances via
@@ -1460,8 +1537,7 @@ var Session = class Session {
 		if (dataSnapshot === void 0) throw new Error(`session event "${type}" carries non-JSON-serializable data`);
 		const surfaceMetadataSnapshot = snapshotJsonValue(surfaceMetadata);
 		if (surfaceMetadataSnapshot === void 0) throw new Error(`session event "${type}" carries non-JSON-serializable surface metadata`);
-		const entry = attachments.get(this);
-		if (entry?.appending) throw new Error("session append cannot reenter while another append is being published");
+		const entry = this.publicationEntry();
 		const event = deepFreeze({
 			type,
 			seq: SessionSeq(this.log.length),
@@ -1470,6 +1546,50 @@ var Session = class Session {
 			...surfaceMetadataSnapshot
 		});
 		validateSessionEventData(event, `session event "${type}" at seq ${event.seq}`);
+		this.commit(event, entry);
+		return event;
+	}
+	static {
+		commitPluginRecord = (session, type, data) => session.#appendRecord(type, data);
+	}
+	/**
+	* Commit one plugin record; {@link appendPluginRecord} is the only caller.
+	* @param type - record type, checked against the plugin record grammar.
+	* @param data - JSON payload, snapshotted before it enters the log.
+	* @returns the record's sequence number.
+	*/
+	#appendRecord(type, data) {
+		const dataSnapshot = snapshotJsonValue(data);
+		if (dataSnapshot === void 0) throw new Error(`plugin record "${type}" carries non-JSON-serializable data`);
+		const entry = this.publicationEntry();
+		const record = deepFreeze({
+			type,
+			seq: SessionSeq(this.log.length),
+			time: Date.now(),
+			data: dataSnapshot,
+			ignorable: true
+		});
+		assertPluginRecordEvent(record);
+		this.commit(record, entry);
+		return record.seq;
+	}
+	/**
+	* Read the store attachment for one append, refusing an append that
+	* reenters while another append is being published.
+	* @returns the attachment, or undefined for a detached Session.
+	*/
+	publicationEntry() {
+		const entry = attachments.get(this);
+		if (entry?.appending) throw new Error("session append cannot reenter while another append is being published");
+		return entry;
+	}
+	/**
+	* Accept one frozen candidate at the next sequence number, enter it into the
+	* log, and notify `session/event` observers with per-listener containment.
+	* @param event - the candidate built at the current log length.
+	* @param entry - the attachment read before the candidate was built.
+	*/
+	commit(event, entry) {
 		this.surfaceManager.validateNext(event);
 		if (entry !== void 0) entry.appending = true;
 		try {
@@ -1483,7 +1603,6 @@ var Session = class Session {
 			this.log.push(event);
 			this.eventsSnapshot = void 0;
 			if (callbacks !== void 0 && entry !== void 0) invokeContainedSessionObservers(entry.emitCtx, "session/event", entry.id, callbackArgs, callbacks);
-			return event;
 		} finally {
 			if (entry !== void 0) {
 				entry.appending = false;
@@ -1635,6 +1754,7 @@ var SessionStore = class extends Service {
 			typeCtx.typert.lookups.register("session", {
 				parameter: "session",
 				wire: "sessionId",
+				resource: "session",
 				hostTypeSymbol: "@deepseek-ai/dsh-session#Session",
 				wireTypeSymbol: "@deepseek-ai/dsh-session/types#SessionId",
 				resolve: (sessionId) => this.get(sessionId)
@@ -1942,4 +2062,4 @@ var SessionStore = class extends Service {
 	}
 };
 //#endregion
-export { KNOWN_SESSION_EVENT_TYPES, SESSION_FORMAT_VERSION, Session, SessionForkError, SessionId, SessionLogOffset, SessionPreparation, SessionSeq, SessionStore, SessionStore as default, TOOL_NOT_STARTED, TOOL_OUTCOME_UNKNOWN, ToolCallRecovery, adoptSessionEvent, buildForkSeed, canonicalHeader, decodeSeqRanges, deriveEventMessage, encodeSeqRanges, foldRequestHeader, foldSurface, headerEquals, interruptedTurnClosers, isAppendSurfaceEvent, isReplacementSurfaceEvent, isSurfaceEligibleType, isSurfaceEvent, snapshotSessionEvent };
+export { KNOWN_SESSION_EVENT_TYPES, SESSION_FORMAT_VERSION, Session, SessionForkError, SessionId, SessionLogOffset, SessionPreparation, SessionSeq, SessionStore, SessionStore as default, TOOL_NOT_STARTED, TOOL_OUTCOME_UNKNOWN, ToolCallRecovery, adoptSessionEvent, appendPluginRecord, buildForkSeed, canonicalHeader, decodeSeqRanges, deriveEventMessage, encodeSeqRanges, foldRequestHeader, foldSurface, headerEquals, interruptedTurnClosers, isAppendSurfaceEvent, isReplacementSurfaceEvent, isSurfaceEligibleType, isSurfaceEvent, pluginRecordOf, snapshotSessionEvent };

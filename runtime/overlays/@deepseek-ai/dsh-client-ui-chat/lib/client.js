@@ -52,33 +52,11 @@ DSHConversationActions.installConversationActions();
 /* DSHConversationActions maintained end */
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
-		var __create = Object.create;
-		var __defProp = Object.defineProperty;
-		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-		var __getOwnPropNames = Object.getOwnPropertyNames;
-		var __getProtoOf = Object.getPrototypeOf;
-		var __hasOwnProp = Object.prototype.hasOwnProperty;
-		var __copyProps = (to, from, except, desc) => {
-			if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
-				key = keys[i];
-				if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
-					get: ((k) => from[k]).bind(null, key),
-					enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
-				});
-			}
-			return to;
-		};
-		var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", {
-			value: mod,
-			enumerable: true
-		}) : target, mod));
-		//#endregion
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
-		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+		let _tanstack_react_virtual = require("@tanstack/react-virtual");
 		let react_dom = require("react-dom");
 		//#region ../../util/workspace-path/lib/index.js
 		/**
@@ -174,6 +152,10 @@ DSHConversationActions.installConversationActions();
 			getSnapshot: () => void 0,
 			subscribe: () => () => {}
 		};
+		const EMPTY_BOTTOM_SOURCE = {
+			getSnapshot: () => false,
+			subscribe: () => () => {}
+		};
 		const EMPTY_NODE_PROCESS_SOURCE = {
 			getSnapshot: () => void 0,
 			subscribe: () => () => {}
@@ -188,6 +170,7 @@ DSHConversationActions.installConversationActions();
 			nodes: {
 				get: () => void 0,
 				source: () => EMPTY_NODE_SOURCE,
+				bottomSource: () => EMPTY_BOTTOM_SOURCE,
 				turnDataSource: () => EMPTY_TURN_NODE_SOURCE,
 				processSource: () => EMPTY_NODE_PROCESS_SOURCE,
 				values: () => EMPTY_LIST$1
@@ -236,31 +219,26 @@ DSHConversationActions.installConversationActions();
 			}) ?? null;
 		}
 		//#endregion
-		//#region lib/types/client/markdown-labels.js
-		/** Localized copy adapters for Cordis-free Markdown primitives. */
+		//#region lib/types/client/contract/group-tree.js
+		const DEPTH = {
+			exchange: 0,
+			input: 1,
+			turn: 2,
+			process: 3
+		};
 		/**
-		* Build the complete Markdown chrome copy for one locale revision.
-		* @param t - Chat locale seat.
-		* @returns Labels for code fences and footnotes.
+		* Test whether a Node stands at a group-tree position or outside it.
+		* @param node - Chat Node.
+		* @param position - group-tree position to compare against.
+		* @returns whether the Node's position is `position` or an outer one.
 		*/
-		function markdownLabels(t) {
-			return {
-				code: {
-					copyLabel: t("copy"),
-					copiedLabel: t("copied"),
-					toolbarLabels: {
-						codeLabel: t("codeBlock.title"),
-						wrapLabel: t("codeBlock.wrap"),
-						unwrapLabel: t("codeBlock.unwrap")
-					}
-				},
-				footnotes: t("markdown.footnotes")
-			};
+		function isAtOrOutside(node, position) {
+			return node.groupTree !== void 0 && DEPTH[node.groupTree] <= DEPTH[position];
 		}
 		//#endregion
-		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/MessageItem.module.css.mjs
-		const css$17 = ".Sixlwa_userRow{flex-direction:column;align-items:flex-end;gap:6px;display:flex}.Sixlwa_userStack{min-width:0;max-width:min(calc(var(--dsh-chat-content-width,748px) * .702), 82%);flex-direction:column;align-items:flex-end;gap:8px;display:flex}.Sixlwa_bubble{background:var(--dsw-specific-bubble);border-radius:var(--dsw-radius-xl);max-width:100%;font-size:var(--dsh-content-font-size,14px);line-height:calc(22px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-primary);white-space:pre-wrap;word-break:break-word;padding:10px 16px}.Sixlwa_referenceSummary{color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px))}.Sixlwa_contextRow{padding:2px 0}.Sixlwa_compactionRow{--dsh-compaction-header-height:calc(24px + var(--dsh-content-font-delta,0px));padding:2px 0}.Sixlwa_compactionButton{width:100%;height:var(--dsh-compaction-header-height);border-radius:var(--dsw-radius-sm);min-width:0;color:var(--dsw-alias-label-tertiary);font:inherit;text-align:left;background:0 0;border:none;align-items:center;padding:0;transition:color .1s;display:flex}.Sixlwa_compactionRow:has(.Sixlwa_compactionBody) .Sixlwa_compactionButton{z-index:7;background:var(--dsw-alias-bg-base);border-radius:0;position:sticky;top:0}.Sixlwa_compactionBody :has(>[data-code-block-banner]){top:var(--dsh-compaction-header-height)}.Sixlwa_compactionRow:has(.Sixlwa_compactionBody) .Sixlwa_compactionButton:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}.Sixlwa_compactionButton:not(:disabled){cursor:pointer}.Sixlwa_compactionButton:hover{color:var(--dsw-alias-label-secondary)}.Sixlwa_compactionButton:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover)}.Sixlwa_compactionLeading{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px));color:inherit;flex:none;place-items:center;margin-right:6px;display:inline-grid}.Sixlwa_compactionLeading svg{width:calc(14px + var(--dsh-content-font-delta,0px));height:calc(14px + var(--dsh-content-font-delta,0px))}.Sixlwa_compactionContextIcon,.Sixlwa_compactionDisclosureIcon{grid-area:1/1;justify-content:center;align-items:center;display:inline-flex}.Sixlwa_compactionDisclosureIcon,.Sixlwa_compactionButton:not(:disabled):hover .Sixlwa_compactionContextIcon,.Sixlwa_compactionButton:not(:disabled):focus-visible .Sixlwa_compactionContextIcon{opacity:0}.Sixlwa_compactionButton:not(:disabled):hover .Sixlwa_compactionDisclosureIcon,.Sixlwa_compactionButton:not(:disabled):focus-visible .Sixlwa_compactionDisclosureIcon{opacity:1}.Sixlwa_compactionTitle{font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));color:inherit;flex:none}.Sixlwa_compactionSep{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.Sixlwa_compactionSummary{min-width:0;color:inherit;font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:auto;overflow:hidden}.Sixlwa_compactionBody{padding:4px 0 4px calc(22px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px))}.Sixlwa_retryRow{color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px))}.Sixlwa_retrySummary{border-radius:var(--dsw-radius-sm);width:fit-content;max-width:100%;color:inherit;cursor:pointer;user-select:none;align-items:center;gap:7px;padding:2px 0;list-style:none;display:inline-flex}.Sixlwa_retrySummary::-webkit-details-marker{display:none}.Sixlwa_retrySummary:after{content:\"\";border-bottom:1.5px solid;border-right:1.5px solid;flex:none;width:6px;height:6px;margin-right:2px;transition:transform .12s;transform:rotate(-45deg)}.Sixlwa_retrySummary:hover{color:var(--dsw-alias-label-secondary)}@media (prefers-reduced-motion:reduce){.Sixlwa_compactionButton{transition:none}}.Sixlwa_retrySummary:focus-visible{outline:1.5px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}.Sixlwa_retryText{overflow-wrap:anywhere;min-width:0}.Sixlwa_retryRow[open] .Sixlwa_retrySummary:after{transform:rotate(45deg)}.Sixlwa_retryDetails{overflow-wrap:anywhere;font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px));gap:2px;margin-top:3px;padding-left:14px;display:grid}.Sixlwa_retryDetailLabel{color:var(--dsw-alias-label-secondary)}.Sixlwa_turnErrorRow{font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));grid-template-columns:10px minmax(0,1fr) auto;align-items:start;gap:8px;padding:2px 0;display:grid}.Sixlwa_turnErrorDot{margin-top:5px}.Sixlwa_turnErrorCopy{overflow-wrap:anywhere;min-width:0}.Sixlwa_turnErrorTitle{color:var(--dsw-alias-state-error-primary);margin-right:6px;font-weight:600}.Sixlwa_turnErrorMessage{color:var(--dsw-alias-label-secondary)}.Sixlwa_turnErrorCode{color:var(--dsw-alias-label-tertiary);font:var(--dsw-font-markdown-code-block-small)}.Sixlwa_maxTokensTitle{color:var(--dsw-alias-state-warn-primary);margin-right:6px;font-weight:600}.Sixlwa_attachmentRow{flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:100%;display:flex}.Sixlwa_fileCard{border:.5px solid var(--dsw-alias-border-l2,#0000001f);border-radius:var(--dsw-radius-xl);background:var(--dsw-specific-input-major,transparent);box-sizing:border-box;flex:0 0 240px;align-items:center;gap:10px;width:240px;min-height:64px;padding:8px 12px;display:inline-flex}.Sixlwa_fileIcon{flex:none;width:28px;height:28px}.Sixlwa_fileContent{flex-direction:column;flex:1;min-width:0;display:flex}.Sixlwa_fileName{white-space:nowrap;text-overflow:ellipsis;color:var(--dsw-alias-label-primary);font-size:14px;font-weight:500;line-height:22px;overflow:hidden}.Sixlwa_fileMeta{white-space:nowrap;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary,#00000073);font-size:12px;line-height:15px;overflow:hidden}";
-		const tagId$17 = "@deepseek-ai/dsh-client-ui-chat/MessageItem.module.css";
+		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/TurnNavigator.module.css.mjs
+		const css$17 = ".eGxaPq_slot{z-index:7;height:0;padding-inline:calc(var(--dsh-composer-side-clearance) + 16px);pointer-events:none;position:absolute;top:0;left:0;right:0;container-type:inline-size}[data-conversation-scroll] .eGxaPq_slot{position:sticky}.eGxaPq_frame{--turn-rail-band:calc(var(--dsh-conversation-viewport-height,100dvh) - var(--dsh-composer-height,152px));--turn-preview-height:100px;top:calc(var(--turn-rail-band) / 2);width:28px;max-height:min(max(0px, calc(var(--turn-rail-band) - 64px)), 420px);contain:layout;cursor:pointer;pointer-events:auto;position:absolute;right:12px;transform:translateY(-50%)}.eGxaPq_scroller{max-height:inherit;overscroll-behavior:contain;scrollbar-width:none;position:relative;overflow-y:auto}.eGxaPq_scroller::-webkit-scrollbar{display:none}.eGxaPq_fadeTop{mask-image:linear-gradient(#0000 0,#000 24px 100%)}.eGxaPq_fadeBottom{mask-image:linear-gradient(#000 0 calc(100% - 24px),#0000 100%)}.eGxaPq_fadeTop.eGxaPq_fadeBottom{mask-image:linear-gradient(#0000 0,#000 24px calc(100% - 24px),#0000 100%)}.eGxaPq_marks{position:relative}.eGxaPq_mark{cursor:pointer;background:0 0;border:0;border-radius:8px;height:10px;padding:0;position:absolute;top:0;left:0;right:0}.eGxaPq_mark:before{background:var(--dsw-alias-border-l4);content:\"\";transform-origin:100%;border-radius:2px;width:20px;height:2px;transition:transform .14s,background-color .14s;position:absolute;top:50%;right:0;transform:translateY(-50%)scaleX(.6)}.eGxaPq_markUnloaded:before{opacity:.6;transform:translateY(-50%)scaleX(.4)}.eGxaPq_markPreview:before{background:var(--dsw-alias-label-tertiary);transform:translateY(-50%)scaleX(.9)}.eGxaPq_markBusy:before{animation:1s ease-in-out infinite eGxaPq_dsh-turn-mark-busy}.eGxaPq_markActive:before{background:var(--dsw-alias-label-primary);transform:translateY(-50%)scaleX(1)}.eGxaPq_mark:focus-visible:before{background:var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));transform:translateY(-50%)scaleX(1)}.eGxaPq_mark:focus-visible{outline:none}.eGxaPq_mark:focus-visible:after{border-radius:inherit;outline:1px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-1px;content:\"\";width:20px;position:absolute;inset:0 0 0 auto}.eGxaPq_preview{top:clamp(0px, calc(var(--turn-preview-center) - var(--turn-preview-height) / 2), calc(100% - var(--turn-preview-height)));box-sizing:border-box;width:min(300px,100cqw - 120px);max-height:var(--turn-preview-height);border-radius:var(--dsw-radius-lg);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);box-shadow:var(--dsw-elevation-panel);pointer-events:none;border:0;padding:10px 12px;transition:top .14s cubic-bezier(.2,.8,.2,1);animation:.12s ease-out eGxaPq_dsh-turn-preview-enter;position:absolute;right:calc(100% + 10px);overflow:hidden}.eGxaPq_previewPrompt,.eGxaPq_previewResponse{-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.eGxaPq_previewPrompt{font:var(--dsw-font-xs-strong-13);-webkit-line-clamp:1}.eGxaPq_previewResponse{color:var(--dsw-alias-label-caption);font:var(--dsw-font-xxs-12);-webkit-line-clamp:3;margin-top:4px}@keyframes eGxaPq_dsh-turn-preview-enter{0%{opacity:0;transform:translate(4px)}to{opacity:1;transform:translate(0)}}@keyframes eGxaPq_dsh-turn-mark-busy{0%,to{opacity:1}50%{opacity:.35}}@container (width<=900px){.eGxaPq_frame{display:none}}@media (prefers-reduced-motion:reduce){.eGxaPq_frame,.eGxaPq_scroller,.eGxaPq_mark:before,.eGxaPq_markBusy:before,.eGxaPq_preview{scroll-behavior:auto;transition:none;animation:none}}";
+		const tagId$17 = "@deepseek-ai/dsh-client-ui-chat/TurnNavigator.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$17) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
@@ -268,1383 +246,1068 @@ DSHConversationActions.installConversationActions();
 			tag.textContent = css$17;
 			document.head.appendChild(tag);
 		}
-		var MessageItem_module_css_default = {
-			"attachmentRow": "Sixlwa_attachmentRow",
-			"bubble": "Sixlwa_bubble",
-			"compactionBody": "Sixlwa_compactionBody",
-			"compactionButton": "Sixlwa_compactionButton",
-			"compactionContextIcon": "Sixlwa_compactionContextIcon",
-			"compactionDisclosureIcon": "Sixlwa_compactionDisclosureIcon",
-			"compactionLeading": "Sixlwa_compactionLeading",
-			"compactionRow": "Sixlwa_compactionRow",
-			"compactionSep": "Sixlwa_compactionSep",
-			"compactionSummary": "Sixlwa_compactionSummary",
-			"compactionTitle": "Sixlwa_compactionTitle",
-			"contextRow": "Sixlwa_contextRow",
-			"fileCard": "Sixlwa_fileCard",
-			"fileContent": "Sixlwa_fileContent",
-			"fileIcon": "Sixlwa_fileIcon",
-			"fileMeta": "Sixlwa_fileMeta",
-			"fileName": "Sixlwa_fileName",
-			"maxTokensTitle": "Sixlwa_maxTokensTitle",
-			"referenceSummary": "Sixlwa_referenceSummary",
-			"retryDetailLabel": "Sixlwa_retryDetailLabel",
-			"retryDetails": "Sixlwa_retryDetails",
-			"retryRow": "Sixlwa_retryRow",
-			"retrySummary": "Sixlwa_retrySummary",
-			"retryText": "Sixlwa_retryText",
-			"turnErrorCode": "Sixlwa_turnErrorCode",
-			"turnErrorCopy": "Sixlwa_turnErrorCopy",
-			"turnErrorDot": "Sixlwa_turnErrorDot",
-			"turnErrorMessage": "Sixlwa_turnErrorMessage",
-			"turnErrorRow": "Sixlwa_turnErrorRow",
-			"turnErrorTitle": "Sixlwa_turnErrorTitle",
-			"userRow": "Sixlwa_userRow",
-			"userStack": "Sixlwa_userStack"
+		var TurnNavigator_module_css_default = {
+			"dsh-turn-mark-busy": "eGxaPq_dsh-turn-mark-busy",
+			"dsh-turn-preview-enter": "eGxaPq_dsh-turn-preview-enter",
+			"fadeBottom": "eGxaPq_fadeBottom",
+			"fadeTop": "eGxaPq_fadeTop",
+			"frame": "eGxaPq_frame",
+			"mark": "eGxaPq_mark",
+			"markActive": "eGxaPq_markActive",
+			"markBusy": "eGxaPq_markBusy",
+			"markPreview": "eGxaPq_markPreview",
+			"markUnloaded": "eGxaPq_markUnloaded",
+			"marks": "eGxaPq_marks",
+			"preview": "eGxaPq_preview",
+			"previewPrompt": "eGxaPq_previewPrompt",
+			"previewResponse": "eGxaPq_previewResponse",
+			"scroller": "eGxaPq_scroller",
+			"slot": "eGxaPq_slot"
 		};
 		//#endregion
-		//#region lib/types/client/chat/CompactionItem.js
-		/**
-		* Renders the model-history compaction marker.
-		* @param props - the marker node off the snapshot cache.
-		* @returns the marker row, with the summary disclosure when one is available.
-		*/
-		const CompactionItem = (0, react.memo)(function CompactionItem({ node, title, fallbackSummary, t }) {
-			const [expanded, setExpanded] = (0, react.useState)(false);
-			const labels = (0, react.useMemo)(() => markdownLabels(t), [t]);
-			const expandable = node.summary !== null;
-			const open = expandable && expanded;
-			const summary = node.shadowedItemCount !== null && node.shadowedTokenCount !== null ? t("message.compaction.completed", {
-				items: node.shadowedItemCount,
-				tokens: node.shadowedTokenCount
-			}) : fallbackSummary ?? (expandable ? t("message.compaction.expand") : t("message.compaction.unavailable"));
-			return (0, react_jsx_runtime.jsxs)("div", {
-				className: MessageItem_module_css_default.compactionRow,
-				children: [(0, react_jsx_runtime.jsxs)("button", {
-					type: "button",
-					className: MessageItem_module_css_default.compactionButton,
-					disabled: !expandable,
-					"aria-expanded": expandable ? open : void 0,
-					onClick: () => {
-						setExpanded((value) => !value);
-					},
-					children: [
-						(0, react_jsx_runtime.jsxs)("span", {
-							className: MessageItem_module_css_default.compactionLeading,
-							"aria-hidden": true,
-							children: [(0, react_jsx_runtime.jsx)("span", {
-								className: MessageItem_module_css_default.compactionContextIcon,
-								"data-compaction-icon": "context",
-								children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconApiOutlineRegular, {})
-							}), (0, react_jsx_runtime.jsx)("span", {
-								className: MessageItem_module_css_default.compactionDisclosureIcon,
-								"data-compaction-disclosure": open ? "expanded" : "collapsed",
-								children: open ? (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronDownOutlineRegular, {}) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutlineRegular, {})
-							})]
-						}),
-						(0, react_jsx_runtime.jsx)("span", {
-							className: MessageItem_module_css_default.compactionTitle,
-							children: title ?? t("message.compaction")
-						}),
-						(0, react_jsx_runtime.jsx)("span", {
-							className: MessageItem_module_css_default.compactionSep,
-							"aria-hidden": true
-						}),
-						(0, react_jsx_runtime.jsx)("span", {
-							className: MessageItem_module_css_default.compactionSummary,
-							children: summary
-						})
-					]
-				}), open && node.summary !== null && (0, react_jsx_runtime.jsx)("div", {
-					className: MessageItem_module_css_default.compactionBody,
-					children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
-						text: node.summary,
-						labels
-					})
-				})]
+		//#region lib/types/client/chat/TurnNavigator.js
+		/** Fixed-pitch virtual turn rail with independent activation and scroll controls. */
+		/** Fixed pitch between neighbouring marks; overflow scrolls inside the frame. */
+		const TURN_SPACING_PX = 10;
+		/** Rail padding above the first mark and below the last one, per end. */
+		const RAIL_INSET_PX = 6;
+		/** Fade band the mask reserves at a scrollable end. */
+		const FADE_PX = 24;
+		function preferredScrollBehavior() {
+			return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+		}
+		const TurnMark = (0, react.memo)(function TurnMark({ item, index, active, busy, previewId, registerElement, onNavigate, onPreview, onFocusChange, t }) {
+			const classes = [TurnNavigator_module_css_default.mark];
+			if (item.anchor.kind === "unloaded") classes.push(TurnNavigator_module_css_default.markUnloaded);
+			if (active) classes.push(TurnNavigator_module_css_default.markActive);
+			else if (previewId !== void 0) classes.push(TurnNavigator_module_css_default.markPreview);
+			if (busy) classes.push(TurnNavigator_module_css_default.markBusy);
+			return (0, react_jsx_runtime.jsx)("button", {
+				ref: registerElement,
+				"data-index": index,
+				type: "button",
+				className: classes.join(" "),
+				"aria-label": t(item.anchor.kind === "loaded" ? "chat.turnNavigation.jump" : "chat.turnNavigation.jumpLoad", { turn: item.turn }),
+				"aria-current": active ? "true" : void 0,
+				"aria-busy": busy ? "true" : void 0,
+				"aria-describedby": previewId,
+				onPointerMove: () => {
+					onPreview(item.turn);
+				},
+				onClick: () => {
+					onNavigate(item);
+				},
+				onFocus: () => {
+					onFocusChange(item.turn);
+				},
+				onBlur: () => {
+					onFocusChange(null);
+				}
 			});
 		});
-		//#endregion
-		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/ContextBody.module.css.mjs
-		const css$16 = ".ZkiH0q_text{color:var(--dsw-alias-label-secondary);font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}.ZkiH0q_fields{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;gap:2px;margin:8px 0 0;padding-top:8px;display:flex}.ZkiH0q_field{gap:8px;min-width:0;display:flex}.ZkiH0q_fieldKey{min-width:96px;color:var(--dsw-alias-label-caption);flex:none}.ZkiH0q_fieldValue{min-width:0;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere;flex:auto;margin:0}.ZkiH0q_files{flex-wrap:wrap;gap:4px 12px;margin:0 0 8px;padding:0;list-style:none;display:flex}.ZkiH0q_file{align-items:baseline;gap:6px;min-width:0;display:flex}.ZkiH0q_filePath{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.ZkiH0q_fileAction{color:var(--dsw-alias-label-caption)}.ZkiH0q_catalogNotice{color:var(--dsw-alias-label-caption);margin:0 0 6px}.ZkiH0q_entries{flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;display:flex}.ZkiH0q_entry{gap:8px;min-width:0;display:flex}.ZkiH0q_entryName{color:var(--dsw-alias-label-secondary);flex:none}.ZkiH0q_entryDescription{min-width:0;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;flex:auto;overflow:hidden}.ZkiH0q_sections{flex-direction:column;gap:8px;margin:0;display:flex}.ZkiH0q_section{flex-direction:column;gap:2px;min-width:0;display:flex}.ZkiH0q_sectionName{color:var(--dsw-alias-label-caption)}.ZkiH0q_sectionText{color:var(--dsw-alias-label-secondary);white-space:pre-wrap;overflow-wrap:anywhere;margin:0}.ZkiH0q_relaySender{color:var(--dsw-alias-label-caption);overflow-wrap:anywhere;margin:0 0 6px}.ZkiH0q_recalls{flex-direction:column;gap:2px;margin:0 0 8px;padding:0;list-style:none;display:flex}.ZkiH0q_recall{gap:8px;min-width:0;display:flex}.ZkiH0q_recallLabel{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.ZkiH0q_recallCounts{color:var(--dsw-alias-label-caption);flex:none}";
-		const tagId$16 = "@deepseek-ai/dsh-client-ui-chat/ContextBody.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$16) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
-			tag.dataset.pluginCss = tagId$16;
-			tag.textContent = css$16;
-			document.head.appendChild(tag);
-		}
-		var ContextBody_module_css_default = {
-			"catalogNotice": "ZkiH0q_catalogNotice",
-			"entries": "ZkiH0q_entries",
-			"entry": "ZkiH0q_entry",
-			"entryDescription": "ZkiH0q_entryDescription",
-			"entryName": "ZkiH0q_entryName",
-			"field": "ZkiH0q_field",
-			"fieldKey": "ZkiH0q_fieldKey",
-			"fieldValue": "ZkiH0q_fieldValue",
-			"fields": "ZkiH0q_fields",
-			"file": "ZkiH0q_file",
-			"fileAction": "ZkiH0q_fileAction",
-			"filePath": "ZkiH0q_filePath",
-			"files": "ZkiH0q_files",
-			"recall": "ZkiH0q_recall",
-			"recallCounts": "ZkiH0q_recallCounts",
-			"recallLabel": "ZkiH0q_recallLabel",
-			"recalls": "ZkiH0q_recalls",
-			"relaySender": "ZkiH0q_relaySender",
-			"section": "ZkiH0q_section",
-			"sectionName": "ZkiH0q_sectionName",
-			"sectionText": "ZkiH0q_sectionText",
-			"sections": "ZkiH0q_sections",
-			"text": "ZkiH0q_text"
-		};
-		//#endregion
-		//#region lib/types/client/chat/ContextBody.js
-		/** Model-facing text stays bounded at the disclosure, not at the producer. */
-		const MAX_CHARS = 2e4;
-		/** Rows a list body materializes before summarizing the remainder. */
-		const MAX_ENTRIES = 200;
-		/** One durable source narrowed to the readable-record shape; null for anything else. */
-		function asRecord$1(value) {
-			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
-		}
-		/**
-		* The content blocks as runs, IN THE ORDER the model received them.
-		*
-		* Adjacent text blocks join with no separator, matching how provider adapters
-		* flatten them — inserting a line break would show the reader a line the model
-		* never saw. An unknown block breaks the run and keeps its own fallback rather
-		* than being hoisted past the text around it or vanishing; the block union is
-		* merge-extensible, so a foreign log may interleave shapes this build does not
-		* know.
-		*/
-		function contentRuns(content) {
-			const runs = [];
-			for (const block of content) {
-				if (block.type !== "text") {
-					runs.push({ block });
-					continue;
-				}
-				const last = runs[runs.length - 1];
-				if (last !== void 0 && "text" in last) last.text += block.text;
-				else runs.push({ text: block.text });
-			}
-			return runs;
-		}
-		/** Only the blocks this UI version does not know, for bodies that replace the text. */
-		function unknownBlocks(content) {
-			return contentRuns(content).flatMap((run) => "block" in run ? [run.block] : []);
-		}
-		/** The model-facing text, truncated to the display bound. */
-		function boundedText(text, t) {
-			return text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS)}\n${t("json.truncated", { total: text.length })}` : text;
-		}
-		/**
-		* One source field rendered as a value row; nested shapes stay compact JSON.
-		* Bounded on its own, because source fields are as unbounded as the text: an unknown
-		* producer may record an arbitrarily large string or array.
-		*/
-		function fieldValue(value, t) {
-			return boundedText(typeof value === "string" ? value : typeof value === "number" || typeof value === "boolean" ? String(value) : JSON.stringify(value), t);
-		}
-		/**
-		* Source fields as a key/value list. `kind` is always omitted because the
-		* row header already names the producer. `form` is omitted only when a
-		* dedicated body rendered for it — then the presentation the reader is looking
-		* at IS that value. On the opaque fallback the declaration is kept, because
-		* that is the one place a form this version cannot present would otherwise
-		* disappear from the UI entirely.
-		*/
-		function SourceFields({ source, formRendered, t }) {
-			const record = asRecord$1(source);
-			if (record === null) return null;
-			const hidden = formRendered ? ["kind", "form"] : ["kind"];
-			const rows = Object.entries(record).filter(([key]) => !hidden.includes(key));
-			if (rows.length === 0) return null;
-			return (0, react_jsx_runtime.jsx)("dl", {
-				className: ContextBody_module_css_default.fields,
-				"data-context-fields": true,
-				children: rows.map(([key, value]) => (0, react_jsx_runtime.jsxs)("div", {
-					className: ContextBody_module_css_default.field,
-					children: [(0, react_jsx_runtime.jsx)("dt", {
-						className: ContextBody_module_css_default.fieldKey,
-						children: key
-					}), (0, react_jsx_runtime.jsx)("dd", {
-						className: ContextBody_module_css_default.fieldValue,
-						children: fieldValue(value, t)
-					})]
-				}, key))
+		function TurnNavigatorRail({ items, activeTurn, busyTurn, onNavigate, t }, ref) {
+			const [previewTurn, setPreviewTurn] = (0, react.useState)(null);
+			const [focusedTurn, setFocusedTurn] = (0, react.useState)(null);
+			const scrollerRef = (0, react.useRef)(null);
+			const initialization = (0, react.useRef)({
+				placed: false,
+				index: 0,
+				follow: null,
+				publishOffset: null
 			});
-		}
-		/**
-		* Content blocks this UI version does not know, kept visible rather than
-		* dropped: the block union is merge-extensible, so a newer or foreign log may
-		* carry a shape this build has no presentation for.
-		* @param props - The unrecognized blocks and the locale seat.
-		* @returns One generic JSON block per unknown entry.
-		*/
-		function UnknownBlocks({ blocks, t }) {
-			return (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: blocks.map((block, index) => (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
-				label: t("message.unknownBlock"),
-				payload: block,
-				truncatedLabel: (total) => t("json.truncated", { total })
-			}, index)) });
-		}
-		/**
-		* The model-facing content of one context, shared by every form that shows it:
-		* the text with its real line breaks, then any block this UI version does not
-		* know, which keeps its own fallback rather than vanishing.
-		* @param props - Durable content and the locale seat.
-		* @returns The content blocks as the model received them.
-		*/
-		function ModelFacingContent({ content, t }) {
-			return (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: contentRuns(content).map((run, index) => "text" in run ? run.text !== "" && (0, react_jsx_runtime.jsx)("pre", {
-				className: ContextBody_module_css_default.text,
-				"data-context-text": true,
-				children: boundedText(run.text, t)
-			}, index) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
-				label: t("message.unknownBlock"),
-				payload: run.block,
-				truncatedLabel: (total) => t("json.truncated", { total })
-			}, index)) });
-		}
-		/**
-		* Default presentation: the model-facing text as text, with its real line
-		* breaks, and the remaining source fields beneath it. This is what every form
-		* this UI version does not recognize renders as.
-		* @param props - Durable content, its source, and the locale seat.
-		* @returns The opaque context body.
-		*/
-		function OpaqueBody({ content, source, t }) {
-			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(ModelFacingContent, {
-				content,
-				t
-			}), (0, react_jsx_runtime.jsx)(SourceFields, {
-				source,
-				formRendered: false,
-				t
-			})] });
-		}
-		/**
-		* Instruction changes read off the source, or null when the record is not a
-		* usable instruction list.
-		*
-		* The read is all-or-nothing: silently dropping one unreadable entry would show
-		* a confident, incomplete file list for a log this version cannot fully read.
-		* Paths are deduplicated in first-seen order, matching how the header label is
-		* derived from the same array.
-		*/
-		function instructionChanges(source) {
-			const record = asRecord$1(source);
-			const list = record === null ? void 0 : record["changes"];
-			if (!Array.isArray(list)) return null;
-			const changes = [];
-			const seen = /* @__PURE__ */ new Set();
-			for (const entry of list) {
-				const change = asRecord$1(entry);
-				if (change === null) return null;
-				const path = change["path"];
-				if (typeof path !== "string" || path === "") return null;
-				const action = change["action"];
-				if (action !== "set" && action !== "replace" && action !== "remove") return null;
-				const digest = change["digest"];
-				if (seen.has(path)) continue;
-				seen.add(path);
-				changes.push({
-					action,
-					path,
-					...typeof digest === "string" ? { digest } : {}
+			/** While the pointer works the rail, follow must not move it under the hand. */
+			const pointerInsideRef = (0, react.useRef)(false);
+			const previewId = (0, react.useId)();
+			const turnIndexes = (0, react.useMemo)(() => {
+				const indexes = /* @__PURE__ */ new Map();
+				items.forEach((item, index) => {
+					indexes.set(item.turn, index);
 				});
-			}
-			return changes.length === 0 ? null : changes;
-		}
-		/**
-		* Locale key for one reconciled file. The baseline loads a file; a later delta
-		* distinguishes a newly reconciled path from a rewritten one, which `set` and
-		* `replace` already separate at the producer.
-		* @param action - the durable change action.
-		* @param baseline - whether this context is the startup/resume baseline.
-		* @returns the key naming what happened to that file.
-		*/
-		function instructionAction(action, baseline) {
-			if (action === "remove") return "message.context.instructions.removed";
-			if (baseline) return "message.context.instructions.loaded";
-			return action === "set" ? "message.context.instructions.added" : "message.context.instructions.updated";
-		}
-		/**
-		* `instructions` form: the files this context reconciled, then their text.
-		*
-		* The text keeps its `<system-reminder>` framing verbatim — the framing is part
-		* of what the model read, so hiding it would misreport the request.
-		* @param props - Durable content, its source, and the locale seat.
-		* @returns The instructions context body, or the opaque body when the change
-		* list is unreadable.
-		*/
-		function InstructionsBody({ content, source, t }) {
-			const changes = instructionChanges(source);
-			if (changes === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
-				content,
-				source,
-				t
-			});
-			const baseline = asRecord$1(source)?.["baseline"] === true;
-			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("ul", {
-				className: ContextBody_module_css_default.files,
-				"data-context-files": true,
-				children: changes.map((change) => (0, react_jsx_runtime.jsxs)("li", {
-					className: ContextBody_module_css_default.file,
-					title: change.digest,
-					children: [(0, react_jsx_runtime.jsx)("span", {
-						className: ContextBody_module_css_default.filePath,
-						children: change.path
-					}), (0, react_jsx_runtime.jsx)("span", {
-						className: ContextBody_module_css_default.fileAction,
-						children: t(instructionAction(change.action, baseline))
-					})]
-				}, change.path))
-			}), (0, react_jsx_runtime.jsx)(ModelFacingContent, {
-				content,
-				t
-			})] });
-		}
-		/**
-		* Catalog entries read off the source, or null when the record is not a usable
-		* catalog. All-or-nothing for the same reason as the instruction list: this body
-		* replaces the model-facing text, so a partial list would hide the only complete
-		* account of what the model read.
-		*/
-		function catalogEntries(source) {
-			const record = asRecord$1(source);
-			const list = record === null ? void 0 : record["entries"];
-			if (!Array.isArray(list)) return null;
-			const entries = [];
-			for (const item of list) {
-				const entry = asRecord$1(item);
-				if (entry === null) return null;
-				const name = entry["name"];
-				const description = entry["description"];
-				if (typeof name !== "string" || name === "" || typeof description !== "string") return null;
-				entries.push({
-					name,
-					description
-				});
-			}
-			return entries;
-		}
-		/**
-		* `catalog` form: the published entries as a list, read from the source rather
-		* than re-parsed out of the model-facing prose.
-		*
-		* A catalog whose source carries no usable entries falls through to the opaque
-		* body, so an older or hand-edited log still shows its text.
-		* @param props - Durable content, its source, and the locale seat.
-		* @returns The catalog context body, or the opaque body when the entry list is
-		* unreadable.
-		*/
-		function CatalogBody({ content, source, t }) {
-			const entries = catalogEntries(source);
-			if (entries === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
-				content,
-				source,
-				t
-			});
-			const update = asRecord$1(source)?.["update"] === true;
-			const shown = entries.slice(0, MAX_ENTRIES);
-			const rest = unknownBlocks(content);
-			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-				update && (0, react_jsx_runtime.jsx)("p", {
-					className: ContextBody_module_css_default.catalogNotice,
-					"data-context-catalog-update": true,
-					children: t("message.context.catalog.replaced")
-				}),
-				(0, react_jsx_runtime.jsx)("ul", {
-					className: ContextBody_module_css_default.entries,
-					"data-context-entries": true,
-					children: shown.map((entry, index) => (0, react_jsx_runtime.jsxs)("li", {
-						className: ContextBody_module_css_default.entry,
-						children: [(0, react_jsx_runtime.jsx)("code", {
-							className: ContextBody_module_css_default.entryName,
-							children: entry.name
-						}), (0, react_jsx_runtime.jsx)("span", {
-							className: ContextBody_module_css_default.entryDescription,
-							children: entry.description
-						})]
-					}, index))
-				}),
-				shown.length < entries.length && (0, react_jsx_runtime.jsx)("p", {
-					className: ContextBody_module_css_default.catalogNotice,
-					"data-context-entries-truncated": true,
-					children: t("message.context.catalog.more", { count: entries.length - shown.length })
-				}),
-				(0, react_jsx_runtime.jsx)(UnknownBlocks, {
-					blocks: rest,
-					t
-				})
-			] });
-		}
-		/** Snapshot sections read off the source, or null when the record is unusable. */
-		function snapshotSections(source) {
-			const record = asRecord$1(source);
-			const list = record === null ? void 0 : record["sections"];
-			if (!Array.isArray(list)) return null;
-			const sections = [];
-			for (const item of list) {
-				const section = asRecord$1(item);
-				if (section === null) return null;
-				const name = section["name"];
-				const text = section["text"];
-				if (typeof name !== "string" || name === "" || typeof text !== "string") return null;
-				sections.push({
-					name,
-					text
-				});
-			}
-			return sections.length === 0 ? null : sections;
-		}
-		/**
-		* `snapshot` form: the named contributions this snapshot assembled, in order.
-		*
-		* The sections are the same bytes the model read, split at the boundaries the
-		* producer assembled them on, so a reader sees which subsystem contributed
-		* which state instead of one undifferentiated wall.
-		*
-		* One sentence of the model-facing text is NOT in any section: the producer's
-		* framing line declaring that this snapshot supersedes earlier ones. Unlike the
-		* `<system-reminder>` wrapper an instruction context carries — which wraps
-		* content and cannot be separated from it — that line states the form's own
-		* semantics, so the body states them as a caption instead of reprinting the
-		* joined prose beside the sections it was split from.
-		* @param props - Durable content, its source, and the locale seat.
-		* @returns The snapshot context body, or the opaque body when unreadable.
-		*/
-		function SnapshotBody({ content, source, t }) {
-			const sections = snapshotSections(source);
-			/* v8 ignore next -- contextBody reads the sections before choosing this body. */
-			if (sections === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
-				content,
-				source,
-				t
-			});
-			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("p", {
-				className: ContextBody_module_css_default.catalogNotice,
-				"data-context-snapshot-supersedes": true,
-				children: t("message.context.snapshot.supersedes")
-			}), (0, react_jsx_runtime.jsx)("dl", {
-				className: ContextBody_module_css_default.sections,
-				"data-context-sections": true,
-				children: sections.map((section, index) => (0, react_jsx_runtime.jsxs)("div", {
-					className: ContextBody_module_css_default.section,
-					children: [(0, react_jsx_runtime.jsx)("dt", {
-						className: ContextBody_module_css_default.sectionName,
-						children: section.name
-					}), (0, react_jsx_runtime.jsx)("dd", {
-						className: ContextBody_module_css_default.sectionText,
-						children: boundedText(section.text, t)
-					})]
-				}, index))
-			})] });
-		}
-		/**
-		* `notice` form: what just happened, with the model-facing text beneath it.
-		*
-		* The one-line account also rides the collapsed row ({@link contextBody}), so a
-		* notice is usually readable without expanding at all.
-		* @param props - Durable content, its source, and the locale seat.
-		* @returns The notice context body.
-		*/
-		function NoticeBody({ content, t }) {
-			return (0, react_jsx_runtime.jsx)(ModelFacingContent, {
-				content,
-				t
-			});
-		}
-		/**
-		* `relay` form: which agent sent this, then what it said.
-		*
-		* The sender is an opaque session id; it is shown as a field rather than a
-		* label, because this client cannot resolve it to a title.
-		* @param props - Durable content, its source, and the locale seat.
-		* @returns The relay context body.
-		*/
-		function RelayBody({ content, source, t }) {
-			const sender = relaySender(source);
-			/* v8 ignore next -- contextBody resolves the sender before choosing this body. */
-			if (sender === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
-				content,
-				source,
-				t
-			});
-			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("p", {
-				className: ContextBody_module_css_default.relaySender,
-				"data-context-relay-sender": true,
-				children: t("message.context.relay.from", { session: sender })
-			}), (0, react_jsx_runtime.jsx)(ModelFacingContent, {
-				content,
-				t
-			})] });
-		}
-		/** The sending agent's session id, or null when the record does not name one. */
-		function relaySender(source) {
-			const sender = asRecord$1(source)?.["senderSessionId"];
-			return typeof sender === "string" && sender !== "" ? sender : null;
-		}
-		/** Recalled sessions read off the source, or null when the record is unusable. */
-		function recalledSessions(source) {
-			const record = asRecord$1(source);
-			const list = record === null ? void 0 : record["references"];
-			if (!Array.isArray(list)) return null;
-			const sessions = [];
-			for (const item of list) {
-				const reference = asRecord$1(item);
-				if (reference === null) return null;
-				const label = reference["label"];
-				const retained = reference["retainedMessages"];
-				const omitted = reference["omittedMessages"];
-				const truncated = reference["truncated"];
-				if (typeof label !== "string" || label === "" || typeof retained !== "number" || typeof omitted !== "number" || typeof truncated !== "boolean") return null;
-				sessions.push({
-					label,
-					retained,
-					omitted,
-					truncated
-				});
-			}
-			return sessions.length === 0 ? null : sessions;
-		}
-		/**
-		* `recall` form: which sessions this material came from and how much of each
-		* survived the read, then the material itself.
-		*
-		* Completeness is the fact a reader needs first: recalled context is bounded on
-		* the way in, so a card that hid the omitted count would overstate what the
-		* model received.
-		* @param props - Durable content, its source, and the locale seat.
-		* @returns The recall context body, or the opaque body when unreadable.
-		*/
-		function RecallBody({ content, source, t }) {
-			const sessions = recalledSessions(source);
-			if (sessions === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
-				content,
-				source,
-				t
-			});
-			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("ul", {
-				className: ContextBody_module_css_default.recalls,
-				"data-context-recalls": true,
-				children: sessions.map((session, index) => (0, react_jsx_runtime.jsxs)("li", {
-					className: ContextBody_module_css_default.recall,
-					children: [
-						(0, react_jsx_runtime.jsx)("span", {
-							className: ContextBody_module_css_default.recallLabel,
-							children: session.label
-						}),
-						(0, react_jsx_runtime.jsx)("span", {
-							className: ContextBody_module_css_default.recallCounts,
-							children: t("message.context.recall.counts", {
-								retained: session.retained,
-								omitted: session.omitted
-							})
-						}),
-						session.truncated && (0, react_jsx_runtime.jsx)("span", {
-							className: ContextBody_module_css_default.recallCounts,
-							children: t("message.context.recall.truncated")
-						})
-					]
-				}, index))
-			}), (0, react_jsx_runtime.jsx)(ModelFacingContent, {
-				content,
-				t
-			})] });
-		}
-		/** The one-line account a `notice` puts on its collapsed row, when it records one. */
-		function noticeSummary(source) {
-			const summary = asRecord$1(source)?.["summary"];
-			return typeof summary === "string" && summary !== "" ? summary : null;
-		}
-		/**
-		* Choose the body for one context node.
-		*
-		* Returns the form the body actually rendered as, which is not always the
-		* declared one: a declared form whose fields are unreadable falls back to
-		* opaque, and the caller labels the row with what it really shows.
-		* `summary` is the collapsed row's one-line account, which only a `notice`
-		* records: its whole point is being readable without expanding.
-		* @param form - the producer-declared form projected onto the node.
-		* @param props - durable content, its source, and the locale seat.
-		* @returns the rendered form (null for opaque), its collapsed summary, and its body.
-		*/
-		function contextBody(form, props) {
-			const opaque = {
-				rendered: null,
-				summary: null,
-				body: (0, react_jsx_runtime.jsx)(OpaqueBody, { ...props })
-			};
-			switch (form) {
-				case "instructions": return instructionChanges(props.source) === null ? opaque : {
-					rendered: "instructions",
-					summary: null,
-					body: (0, react_jsx_runtime.jsx)(InstructionsBody, { ...props })
-				};
-				case "catalog": return catalogEntries(props.source) === null ? opaque : {
-					rendered: "catalog",
-					summary: null,
-					body: (0, react_jsx_runtime.jsx)(CatalogBody, { ...props })
-				};
-				case "snapshot": return snapshotSections(props.source) === null ? opaque : {
-					rendered: "snapshot",
-					summary: null,
-					body: (0, react_jsx_runtime.jsx)(SnapshotBody, { ...props })
-				};
-				case "notice": {
-					const summary = noticeSummary(props.source);
-					return summary === null ? opaque : {
-						rendered: "notice",
-						summary,
-						body: (0, react_jsx_runtime.jsx)(NoticeBody, { ...props })
+				return indexes;
+			}, [items]);
+			const activeIndex = activeTurn === null ? void 0 : turnIndexes.get(activeTurn);
+			(0, react.useLayoutEffect)(() => {
+				initialization.current.index = activeIndex ?? 0;
+			}, [activeIndex]);
+			const focusedIndex = focusedTurn === null ? void 0 : turnIndexes.get(focusedTurn);
+			const previewIndex = previewTurn === null ? void 0 : turnIndexes.get(previewTurn);
+			const onFocusChange = (0, react.useCallback)((turn) => {
+				setFocusedTurn(turn);
+				setPreviewTurn(turn);
+			}, []);
+			const virtualizer = (0, _tanstack_react_virtual.useVirtualizer)({
+				count: items.length,
+				enabled: items.length >= 2,
+				directDomUpdates: true,
+				directDomUpdatesMode: "transform",
+				useScrollendEvent: true,
+				getScrollElement: (0, react.useCallback)(() => scrollerRef.current, []),
+				getItemKey: (0, react.useCallback)((index) => items[index]?.turn ?? index, [items]),
+				estimateSize: () => TURN_SPACING_PX,
+				measureElement: () => TURN_SPACING_PX,
+				initialRect: {
+					width: 0,
+					height: 0
+				},
+				initialOffset: 0,
+				scrollToFn: (offset, options, instance) => {
+					if (initialization.current.placed) (0, _tanstack_react_virtual.elementScroll)(offset, options, instance);
+				},
+				observeElementOffset: (instance, notify) => {
+					initialization.current.publishOffset = notify;
+					const dispose = (0, _tanstack_react_virtual.observeElementOffset)(instance, notify);
+					return () => {
+						dispose?.();
+						initialization.current.placed = false;
+						initialization.current.follow = null;
+						initialization.current.publishOffset = null;
 					};
-				}
-				case "relay": return relaySender(props.source) === null ? opaque : {
-					rendered: "relay",
-					summary: null,
-					body: (0, react_jsx_runtime.jsx)(RelayBody, { ...props })
-				};
-				case "recall": return recalledSessions(props.source) === null ? opaque : {
-					rendered: "recall",
-					summary: null,
-					body: (0, react_jsx_runtime.jsx)(RecallBody, { ...props })
-				};
-				case null: return opaque;
-				/* v8 ignore next 4 -- closed-union backstop; the compiler rejects a new
-				KnownContextForm here rather than letting it degrade to opaque silently. */
-				default: throw new Error(`unreachable context form: ${String(form)}`);
-			}
-		}
-		//#endregion
-		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/ContextInjectionRow.module.css.mjs
-		const css$15 = ".XrJvXW_root{min-width:0}.XrJvXW_root[data-open]{padding-bottom:4px}.XrJvXW_chevron{color:var(--dsw-alias-label-secondary)}.XrJvXW_sep{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.XrJvXW_source{min-width:0;color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:none;overflow:hidden}.XrJvXW_summary{min-width:0;color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:auto;overflow:hidden}.XrJvXW_body{box-sizing:border-box;width:calc(100% - 22px - var(--dsh-content-font-delta,0px));max-height:141px;margin:4px 0 0 calc(22px + var(--dsh-content-font-delta,0px));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-markdown-code-block);color:var(--dsw-alias-label-tertiary);font:400 11px/16px var(--ds-font-family-code);border:none;padding:10px 16px 12px 12px;overflow:auto}.XrJvXW_toolChanges{white-space:nowrap}";
-		const tagId$15 = "@deepseek-ai/dsh-client-ui-chat/ContextInjectionRow.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$15) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
-			tag.dataset.pluginCss = tagId$15;
-			tag.textContent = css$15;
-			document.head.appendChild(tag);
-		}
-		var ContextInjectionRow_module_css_default = {
-			"body": "XrJvXW_body",
-			"chevron": "XrJvXW_chevron",
-			"root": "XrJvXW_root",
-			"sep": "XrJvXW_sep",
-			"source": "XrJvXW_source",
-			"summary": "XrJvXW_summary",
-			"toolChanges": "XrJvXW_toolChanges"
-		};
-		//#endregion
-		//#region lib/types/client/chat/ContextInjectionRow.js
-		/**
-		* Render logged context with the Tool calls disclosure chrome from Figma.
-		*
-		* The header names the role the context plays and, beside it, the producer the
-		* durable source identifies, so a reader can tell an injected skill catalog
-		* from a workspace instruction file or a recalled session without expanding.
-		* The expanded body follows the producer-declared form; an absent or unknown
-		* form renders the opaque body.
-		* @param props - Durable content, its projected producer role/name and form, and the locale seat.
-		* @returns A collapsed context row with a bounded, form-specific body.
-		*/
-		function ContextInjectionRow({ content, source, producer, form, t }) {
-			const [open, setOpen] = (0, react.useState)(false);
-			const { rendered, summary, body } = contextBody(form, {
-				content,
-				source,
-				t
-			});
-			const toolBlocks = content.length > 0 && content.every((block) => block.type === "tool-addition" || block.type === "tool-removal") ? content : void 0;
-			const added = toolBlocks?.flatMap((block) => block.type === "tool-addition" ? [block.toolName] : []) ?? [];
-			const removed = toolBlocks?.flatMap((block) => block.type === "tool-removal" ? [block.toolName] : []) ?? [];
-			const single = toolBlocks?.length === 1 ? toolBlocks[0] : void 0;
-			const toolSummary = toolBlocks === void 0 || single !== void 0 ? null : added.length > 0 && removed.length > 0 ? t("message.toolsChanged", {
-				added: added.length,
-				removed: removed.length
-			}) : added.length > 0 ? t("message.toolsAddedCount", { count: added.length }) : t("message.toolsRemovedCount", { count: removed.length });
-			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
-				className: ContextInjectionRow_module_css_default.root,
-				icon: toolBlocks !== void 0 ? (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconBrowseOutlineRegular, { size: 14 }) : producer.role === "recall" ? (0, react_jsx_runtime.jsx)("span", {
-					"data-context-recall-icon": true,
-					children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.ReferenceIconRegular, { kind: "session" })
-				}) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconContextInjectionOutlineRegular, { size: 14 }),
-				chevronClassName: ContextInjectionRow_module_css_default.chevron,
-				title: single !== void 0 ? t(single.type === "tool-addition" ? "message.toolAdded" : "message.toolRemoved", { name: single.toolName }) : t(toolBlocks !== void 0 ? "message.toolsUpdated" : producer.role === "recall" ? "message.contextRecall" : "message.contextInjection"),
-				collapsedContent: toolSummary !== null ? (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
-					className: ContextInjectionRow_module_css_default.sep,
-					"aria-hidden": true
-				}), (0, react_jsx_runtime.jsx)("span", {
-					className: ContextInjectionRow_module_css_default.summary,
-					children: toolSummary
-				})] }) : toolBlocks !== void 0 || producer.label === null ? void 0 : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-					(0, react_jsx_runtime.jsx)("span", {
-						className: ContextInjectionRow_module_css_default.sep,
-						"aria-hidden": true
-					}),
-					(0, react_jsx_runtime.jsx)("span", {
-						className: ContextInjectionRow_module_css_default.source,
-						"data-context-source": true,
-						children: producer.label
-					}),
-					summary !== null && (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
-						className: ContextInjectionRow_module_css_default.sep,
-						"aria-hidden": true
-					}), (0, react_jsx_runtime.jsx)("span", {
-						className: ContextInjectionRow_module_css_default.summary,
-						"data-context-summary": true,
-						children: summary
-					})] })
-				] }),
-				keepContentWhenOpen: true,
-				open: open && single === void 0,
-				expandable: single === void 0,
-				expandOnRowClick: true,
-				onToggle: () => {
-					setOpen((value) => !value);
 				},
-				children: (0, react_jsx_runtime.jsx)("div", {
-					className: ContextInjectionRow_module_css_default.body,
-					"data-context-injection-body": true,
-					"data-context-form": rendered ?? void 0,
-					children: toolBlocks === void 0 ? body : (0, react_jsx_runtime.jsxs)("div", {
-						className: ContextInjectionRow_module_css_default.toolChanges,
-						children: [added.length > 0 && (0, react_jsx_runtime.jsx)("div", { children: t("message.toolsAdded", { names: added.join(", ") }) }), removed.length > 0 && (0, react_jsx_runtime.jsx)("div", { children: t("message.toolsRemoved", { names: removed.join(", ") }) })]
-					})
-				})
-			});
-		}
-		//#endregion
-		//#region lib/types/client/chat/message-chrome.js
-		/** Refresh interval for whole-second live run clocks. */
-		const LIVE_RUN_CLOCK_INTERVAL_MS = 1e3;
-		function pad2(n) {
-			return String(n).padStart(2, "0");
-		}
-		/**
-		* Local calendar-day epoch (ms at local midnight) for an instant.
-		* @param ms - Unix epoch ms.
-		* @returns Midnight of that local calendar day.
-		*/
-		function startOfLocalDay(ms) {
-			const d = new Date(ms);
-			d.setHours(0, 0, 0, 0);
-			return d.getTime();
-		}
-		/**
-		* Delay until the next local midnight after `ms` (at least 1ms).
-		* @param ms - Unix epoch ms.
-		* @returns Milliseconds until the following local midnight.
-		*/
-		function msUntilNextLocalMidnight(ms) {
-			const next = new Date(ms);
-			next.setHours(24, 0, 0, 0);
-			return Math.max(next.getTime() - ms, 1);
-		}
-		/**
-		* Build elapsed-time fragments for both live and completed Turn labels.
-		* @param ms - elapsed milliseconds; negatives clamp to zero and fractions floor.
-		* @param t - translate seat supplying units and their trailing spacing.
-		* @returns numbers and localized units in display order, without leading zeros;
-		* minutes start at 60 seconds and hours at 60 minutes.
-		*/
-		function formatRunDuration(ms, t) {
-			const total = Math.max(0, Math.floor(ms / 1e3));
-			const hours = Math.floor(total / 3600);
-			const minutes = Math.floor(total / 60) % 60;
-			const seconds = total % 60;
-			const parts = [];
-			if (hours > 0) parts.push({
-				text: String(hours),
-				numeric: true
-			}, {
-				text: t("duration.hourUnit"),
-				numeric: false
-			});
-			if (total >= 60) parts.push({
-				text: String(minutes),
-				numeric: true
-			}, {
-				text: t("duration.minuteUnit"),
-				numeric: false
-			});
-			parts.push({
-				text: String(seconds),
-				numeric: true
-			}, {
-				text: t("duration.secondUnit"),
-				numeric: false
-			});
-			return parts;
-		}
-		/**
-		* Decode-throughput figure: whole tokens from ten up, one decimal below.
-		* @param tps - Tokens per second.
-		* @returns Display number without unit.
-		*/
-		function formatTokensPerSecond(tps) {
-			const clamped = Math.max(0, tps);
-			return clamped >= 10 ? String(Math.round(clamped)) : String(Math.round(clamped * 10) / 10);
-		}
-		/**
-		* Compact local timestamp for message IconActions. Same calendar day →
-		* `HH:mm`; earlier this year → the `clock.md` date template + clock; other
-		* years → the `clock.ymd` template + clock. Pure: the date templates arrive
-		* through the caller's locale seat.
-		* @param time - Unix epoch ms from the source session event.
-		* @param t - translate seat supplying the `clock.md` / `clock.ymd` templates.
-		* @param now - Reference instant for the day/year cut (defaults to wall clock).
-		* @returns Date-aware clock string (24-hour, zero-padded time).
-		*/
-		function formatMessageClock(time, t, now = Date.now()) {
-			const d = new Date(time);
-			const n = new Date(now);
-			const clock = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-			if (d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()) return clock;
-			const params = {
-				y: d.getFullYear(),
-				m: d.getMonth() + 1,
-				d: d.getDate()
-			};
-			return `${d.getFullYear() === n.getFullYear() ? t("clock.md", params) : t("clock.ymd", params)} ${clock}`;
-		}
-		//#endregion
-		//#region lib/types/client/chat/use-calendar-day.js
-		/**
-		* Local calendar-day epoch that advances at each local midnight.
-		* @returns Midnight ms for the current local day; updates after the boundary.
-		*/
-		function useCalendarDay() {
-			const [day, setDay] = (0, react.useState)(() => startOfLocalDay(Date.now()));
-			(0, react.useEffect)(() => {
-				let timer;
-				const arm = () => {
-					const now = Date.now();
-					setDay(startOfLocalDay(now));
-					timer = setTimeout(arm, msUntilNextLocalMidnight(now));
-				};
-				timer = setTimeout(arm, msUntilNextLocalMidnight(Date.now()));
-				return () => {
-					clearTimeout(timer);
-				};
-			}, []);
-			return day;
-		}
-		//#endregion
-		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/MessageIconActions.module.css.mjs
-		const css$14 = ".xzv4MW_actions{height:calc(28px + var(--dsh-content-font-delta,0px));align-items:center;gap:8px;display:flex}.xzv4MW_timeStart{font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-tertiary);white-space:nowrap;padding-right:12px}.xzv4MW_timeEnd{font-size:calc(var(--dsh-content-font-size-secondary,13px) - 1px);line-height:calc(24px + var(--dsh-content-font-delta,0px));color:inherit;white-space:nowrap}.xzv4MW_endInfo{min-width:0;color:var(--dsw-alias-label-tertiary);align-items:center;gap:8px;margin-left:8px;display:inline-flex}@media (hover:hover){[data-actions-reveal=hover] .xzv4MW_actions,:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering]):has(~:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering])) .xzv4MW_actions{opacity:0;transition:opacity 80ms}[data-actions-reveal=hover]:hover .xzv4MW_actions,[data-actions-reveal=hover]:focus-within .xzv4MW_actions,:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering]):has(~:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering])):hover .xzv4MW_actions,:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering]):has(~:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering])):focus-within .xzv4MW_actions{opacity:1}}.xzv4MW_action{width:calc(28px + var(--dsh-content-font-delta,0px));height:calc(28px + var(--dsh-content-font-delta,0px));border-radius:var(--dsw-radius-sm);color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;justify-content:center;align-items:center;padding:6px;display:inline-flex}.xzv4MW_action svg{width:calc(15px + var(--dsh-content-font-delta,0px));height:calc(15px + var(--dsh-content-font-delta,0px))}.xzv4MW_actions[data-clock=end] .xzv4MW_action svg{width:calc(17px + var(--dsh-content-font-delta,0px));height:calc(17px + var(--dsh-content-font-delta,0px))}.xzv4MW_action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.xzv4MW_action[data-unavailable]{cursor:default;opacity:.4}.xzv4MW_action[data-unavailable]:hover{color:var(--dsw-alias-label-tertiary);background:0 0}.xzv4MW_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}";
-		const tagId$14 = "@deepseek-ai/dsh-client-ui-chat/MessageIconActions.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$14) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
-			tag.dataset.pluginCss = tagId$14;
-			tag.textContent = css$14;
-			document.head.appendChild(tag);
-		}
-		var MessageIconActions_module_css_default = {
-			"action": "xzv4MW_action",
-			"actions": "xzv4MW_actions",
-			"endInfo": "xzv4MW_endInfo",
-			"timeEnd": "xzv4MW_timeEnd",
-			"timeStart": "xzv4MW_timeStart",
-			"visuallyHidden": "xzv4MW_visuallyHidden"
-		};
-		//#endregion
-		//#region lib/types/client/chat/MessageIconActions.js
-		/**
-		* Copy / branch (/ clock) IconActions row shared by user and assistant chrome.
-		* @param props - Copy text, event time, clock side, branch callback, className.
-		* @returns The actions row element.
-		*/
-		function MessageIconActions({ text, time, clock, onBranch, branchUnavailable = false, className, extraActions, usageAction, t }) {
-			const day = useCalendarDay();
-			const reasonId = (0, react.useId)();
-			const [copied, setCopied] = (0, react.useState)(false);
-			const copyPending = (0, react.useRef)(false);
-			const copyTimer = (0, react.useRef)(null);
-			const copyEpoch = (0, react.useRef)(0);
-			(0, react.useEffect)(() => () => {
-				copyEpoch.current += 1;
-				copyPending.current = false;
-				if (copyTimer.current !== null) clearTimeout(copyTimer.current);
-			}, []);
-			const onCopy = (0, react.useCallback)(() => {
-				if (copied || copyPending.current) return;
-				const epoch = copyEpoch.current;
-				copyPending.current = true;
-				(0, _deepseek_ai_dsh_client_ui_primitives.writeClipboard)(text).then((ok) => {
-					if (epoch !== copyEpoch.current) return;
-					copyPending.current = false;
-					if (!ok) return;
-					setCopied(true);
-					copyTimer.current = window.setTimeout(() => {
-						copyTimer.current = null;
-						setCopied(false);
-					}, 1e3);
-				});
-			}, [copied, text]);
-			const clockEl = time === void 0 ? null : (0, react_jsx_runtime.jsx)("span", {
-				className: clock === "start" ? MessageIconActions_module_css_default.timeStart : MessageIconActions_module_css_default.timeEnd,
-				children: formatMessageClock(time, t, day)
-			});
-			return (0, react_jsx_runtime.jsxs)("div", {
-				className: className === void 0 ? MessageIconActions_module_css_default.actions : `${MessageIconActions_module_css_default.actions} ${className}`,
-				"data-clock": clock,
-				children: [
-					clock === "start" ? clockEl : null,
-					(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-						label: copied ? t("copied") : t("copy"),
-						side: "bottom",
-						children: (0, react_jsx_runtime.jsx)("button", {
-							type: "button",
-							className: MessageIconActions_module_css_default.action,
-							"aria-label": copied ? t("copied") : t("copy"),
-							onClick: onCopy,
-							children: copied ? (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCheckOutlineRegular, {}) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCopyOutlineRegular, {})
-						})
-					}),
-					extraActions,
-					onBranch !== void 0 && (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-						label: branchUnavailable ? t("message.branchUnavailable") : t("message.branch"),
-						side: "bottom",
-						children: (0, react_jsx_runtime.jsx)("button", {
-							type: "button",
-							className: MessageIconActions_module_css_default.action,
-							"aria-label": t("message.branch"),
-							"aria-disabled": branchUnavailable || void 0,
-							"aria-describedby": branchUnavailable ? reasonId : void 0,
-							"data-unavailable": branchUnavailable || void 0,
-							onClick: branchUnavailable ? void 0 : onBranch,
-							children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconBranchOutlineRegular, {})
-						})
-					}),
-					onBranch !== void 0 && branchUnavailable && (0, react_jsx_runtime.jsx)("span", {
-						id: reasonId,
-						className: MessageIconActions_module_css_default.visuallyHidden,
-						children: t("message.branchUnavailable")
-					}),
-					clock === "end" ? (0, react_jsx_runtime.jsxs)("span", {
-						className: MessageIconActions_module_css_default.endInfo,
-						children: [usageAction, clockEl]
-					}) : usageAction
-				]
-			});
-		}
-		//#endregion
-		//#region lib/types/client/chat/MessageItem.js
-		function contentParts(content) {
-			const texts = [];
-			const attachments = [];
-			const rest = [];
-			for (const block of content) {
-				const b = block;
-				if (b.type === "text" && typeof b.text === "string") texts.push(b.text);
-				else if (b.type === "image" && b.attachment !== void 0) attachments.push({
-					type: "image",
-					image: { attachment: b.attachment }
-				});
-				else if (b.type === "file" && b.attachment !== void 0) attachments.push({
-					type: "file",
-					file: b.attachment
-				});
-				else rest.push(block);
-			}
-			return {
-				text: texts.join(""),
-				attachments,
-				rest
-			};
-		}
-		function retrySeconds(milliseconds) {
-			return Math.max(1, Math.ceil(milliseconds / 1e3));
-		}
-		function failureMessage(message, code, t) {
-			if (code === "ACCOUNT_SIGNED_OUT") return t("message.failure.accountSignedOut");
-			if (code === "ACCOUNT_SIGN_IN_REQUIRED") return t("message.failure.accountSignInRequired");
-			if (code === "QUOTA" || code === "ACCOUNT_QUOTA") return t("message.failure.quota");
-			return code === "AUTH" ? t("message.failure.auth") : message;
-		}
-		function ModelRetryItem({ node, active, t }) {
-			const deadline = (0, react.useMemo)(() => Date.now() + node.delayMs, [node.delayMs, node.seq]);
-			const scheduledSeconds = retrySeconds(node.delayMs);
-			const maximum = node.mode === "normal" ? node.maxRetries : "∞";
-			const [countdown, setCountdown] = (0, react.useState)(() => ({
-				deadline,
-				seconds: retrySeconds(deadline - Date.now())
-			}));
-			const remainingSeconds = countdown.deadline === deadline ? countdown.seconds : retrySeconds(deadline - Date.now());
-			(0, react.useEffect)(() => {
-				if (!active) return;
-				const updateCountdown = () => {
-					const next = retrySeconds(deadline - Date.now());
-					setCountdown((current) => current.deadline === deadline && current.seconds === next ? current : {
-						deadline,
-						seconds: next
+				observeElementRect: (instance, notify) => {
+					const element = instance.scrollElement;
+					const Observer = instance.targetWindow?.ResizeObserver;
+					if (element === null || Observer === void 0) return;
+					const observer = new Observer(([entry]) => {
+						if (entry === void 0) return;
+						const box = entry.borderBoxSize[0];
+						const rect = {
+							width: Math.round(box?.inlineSize ?? entry.contentRect.width),
+							height: Math.round(box?.blockSize ?? entry.contentRect.height)
+						};
+						const initial = initialization.current;
+						if (!initial.placed && rect.height > 0) {
+							const max = Math.max(0, instance.getTotalSize() - rect.height);
+							const center = initial.index * TURN_SPACING_PX + RAIL_INSET_PX;
+							const target = Math.max(0, Math.min(max, center - rect.height / 2));
+							initial.placed = true;
+							initial.follow = {
+								index: initial.index,
+								count: instance.options.count,
+								height: rect.height
+							};
+							element.scrollTop = target;
+							initial.publishOffset?.(target, false);
+						}
+						notify(rect);
 					});
-					return next;
+					observer.observe(element, { box: "border-box" });
+					return () => {
+						observer.disconnect();
+					};
+				},
+				paddingStart: RAIL_INSET_PX - TURN_SPACING_PX / 2,
+				paddingEnd: RAIL_INSET_PX - TURN_SPACING_PX / 2,
+				scrollPaddingStart: FADE_PX,
+				scrollPaddingEnd: FADE_PX,
+				overscan: 3,
+				rangeExtractor: (0, react.useCallback)((range) => {
+					const indexes = (0, _tanstack_react_virtual.defaultRangeExtractor)(range);
+					if (focusedIndex !== void 0) {
+						const last = Math.min(range.count - 1, focusedIndex + 1);
+						for (let index = Math.max(0, focusedIndex - 1); index <= last; index++) if (!indexes.includes(index)) indexes.push(index);
+						indexes.sort((left, right) => left - right);
+					}
+					return indexes;
+				}, [focusedIndex])
+			});
+			const scrollTop = virtualizer.scrollOffset ?? 0;
+			const viewHeight = virtualizer.scrollRect?.height ?? 0;
+			const virtualItems = virtualizer.getVirtualItems();
+			const scrollToIndex = (0, react.useCallback)((index, reveal, behavior = preferredScrollBehavior()) => {
+				const item = virtualizer.measurementsCache[index];
+				const height = virtualizer.scrollRect?.height ?? 0;
+				if (item === void 0 || height <= 0) return;
+				const current = virtualizer.scrollOffset ?? 0;
+				const center = item.start + item.size / 2;
+				if (reveal === "if-needed") {
+					const { scrollPaddingStart, scrollPaddingEnd } = virtualizer.options;
+					if (center >= current + scrollPaddingStart && center <= current + height - scrollPaddingEnd) return;
+				}
+				const target = center - height / 2;
+				const max = Math.max(0, virtualizer.getTotalSize() - height);
+				const delta = Math.max(0, Math.min(max, target)) - current;
+				if (delta !== 0) virtualizer.scrollBy(delta, { behavior });
+			}, [virtualizer]);
+			(0, react.useImperativeHandle)(ref, () => ({
+				activateTurn(turn) {
+					const index = turnIndexes.get(turn);
+					const item = index === void 0 ? void 0 : items[index];
+					if (item !== void 0) onNavigate(item);
+				},
+				scrollToTurn(turn) {
+					const index = turnIndexes.get(turn);
+					if (index !== void 0) scrollToIndex(index, "always");
+				}
+			}), [
+				items,
+				turnIndexes,
+				onNavigate,
+				scrollToIndex
+			]);
+			(0, react.useEffect)(() => {
+				if (viewHeight <= 0) {
+					initialization.current.follow = null;
+					return;
+				}
+				if (activeIndex === void 0 || pointerInsideRef.current) return;
+				const previous = initialization.current.follow;
+				if (previous?.index === activeIndex && previous.count === items.length && previous.height === viewHeight) return;
+				initialization.current.follow = {
+					index: activeIndex,
+					count: items.length,
+					height: viewHeight
 				};
-				if (updateCountdown() === 1) return;
-				const timer = window.setInterval(() => {
-					if (updateCountdown() === 1) window.clearInterval(timer);
-				}, 250);
-				return () => {
-					window.clearInterval(timer);
-				};
-			}, [active, deadline]);
-			const label = active ? t("message.retry.active") : node.retryState === "cancelled" ? t("message.retry.cancelled") : node.retryState === "started" ? t("message.retry.started") : t("message.retry.scheduled");
-			const seconds = active ? remainingSeconds : scheduledSeconds;
-			return (0, react_jsx_runtime.jsxs)("details", {
-				className: MessageItem_module_css_default.retryRow,
-				"data-active": active || void 0,
-				children: [(0, react_jsx_runtime.jsx)("summary", {
-					className: MessageItem_module_css_default.retrySummary,
-					children: (0, react_jsx_runtime.jsx)("span", {
-						className: MessageItem_module_css_default.retryText,
-						role: "status",
-						children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.TextShimmer, {
-							active,
-							children: t("message.retry.status", {
-								label,
-								retry: node.retry,
-								maximum,
-								seconds
+				scrollToIndex(activeIndex, "if-needed", previous?.count === items.length && previous.height === viewHeight ? preferredScrollBehavior() : "instant");
+			}, [
+				activeIndex,
+				items.length,
+				viewHeight,
+				scrollToIndex
+			]);
+			if (items.length < 2) return null;
+			const preview = previewIndex === void 0 ? void 0 : items[previewIndex];
+			const previewPosition = virtualItems.find((item) => item.index === previewIndex);
+			const fadeClasses = [TurnNavigator_module_css_default.scroller];
+			if (scrollTop > 1) fadeClasses.push(TurnNavigator_module_css_default.fadeTop);
+			if (scrollTop < virtualizer.getTotalSize() - viewHeight - 1) fadeClasses.push(TurnNavigator_module_css_default.fadeBottom);
+			return (0, react_jsx_runtime.jsx)("div", {
+				className: TurnNavigator_module_css_default.slot,
+				children: (0, react_jsx_runtime.jsxs)("nav", {
+					className: TurnNavigator_module_css_default.frame,
+					"aria-label": t("chat.turnNavigation.label"),
+					onPointerEnter: () => {
+						pointerInsideRef.current = true;
+					},
+					onPointerLeave: () => {
+						pointerInsideRef.current = false;
+						setPreviewTurn(null);
+					},
+					children: [(0, react_jsx_runtime.jsx)("div", {
+						ref: scrollerRef,
+						className: fadeClasses.join(" "),
+						children: (0, react_jsx_runtime.jsx)("div", {
+							ref: virtualizer.containerRef,
+							className: TurnNavigator_module_css_default.marks,
+							children: virtualItems.map(({ index, key }) => {
+								const item = items[index];
+								if (item === void 0) return null;
+								return (0, react_jsx_runtime.jsx)(TurnMark, {
+									item,
+									index,
+									active: item.turn === activeTurn,
+									busy: item.turn === busyTurn,
+									previewId: item.turn === previewTurn ? previewId : void 0,
+									registerElement: virtualizer.measureElement,
+									onNavigate,
+									onPreview: setPreviewTurn,
+									onFocusChange,
+									t
+								}, key);
 							})
 						})
-					})
-				}), (0, react_jsx_runtime.jsxs)("div", {
-					className: MessageItem_module_css_default.retryDetails,
-					children: [(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("span", {
-						className: MessageItem_module_css_default.retryDetailLabel,
-						children: t("message.retry.delay")
-					}), t("duration.milliseconds", { milliseconds: Math.round(node.delayMs) })] }), (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("span", {
-						className: MessageItem_module_css_default.retryDetailLabel,
-						children: t("message.retry.failure")
-					}), failureMessage(node.failure.message, node.failure.code, t)] })]
-				})]
-			});
-		}
-		/** Persistent, turn-positioned feedback for a terminal failure. */
-		function TurnErrorItem({ node, t }) {
-			return (0, react_jsx_runtime.jsxs)("div", {
-				className: MessageItem_module_css_default.turnErrorRow,
-				role: "status",
-				children: [
-					(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
-						state: "error",
-						className: MessageItem_module_css_default.turnErrorDot
-					}),
-					(0, react_jsx_runtime.jsxs)("div", {
-						className: MessageItem_module_css_default.turnErrorCopy,
-						children: [(0, react_jsx_runtime.jsx)("span", {
-							className: MessageItem_module_css_default.turnErrorTitle,
-							children: node.code === "ACCOUNT_SIGNED_OUT" ? t("message.accountStopped") : t("message.turnError")
-						}), (0, react_jsx_runtime.jsx)("span", {
-							className: MessageItem_module_css_default.turnErrorMessage,
-							children: failureMessage(node.message, node.code, t)
+					}), preview !== void 0 && previewPosition !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
+						id: previewId,
+						role: "tooltip",
+						className: TurnNavigator_module_css_default.preview,
+						style: { "--turn-preview-center": `${String(previewPosition.start + previewPosition.size / 2 - scrollTop)}px` },
+						children: [(0, react_jsx_runtime.jsx)("div", {
+							className: TurnNavigator_module_css_default.previewPrompt,
+							children: preview.prompt || t("chat.turnNavigation.turn", { turn: preview.turn })
+						}), preview.response !== "" && (0, react_jsx_runtime.jsx)("div", {
+							className: TurnNavigator_module_css_default.previewResponse,
+							children: preview.response
 						})]
-					}),
-					node.code !== void 0 && (0, react_jsx_runtime.jsx)("code", {
-						className: MessageItem_module_css_default.turnErrorCode,
-						children: node.code
-					})
-				]
-			});
-		}
-		/** Persistent, turn-positioned notice for a turn ended at the output-token cap. */
-		function TurnMaxTokensItem({ t }) {
-			return (0, react_jsx_runtime.jsxs)("div", {
-				className: MessageItem_module_css_default.turnErrorRow,
-				role: "status",
-				children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
-					state: "warning",
-					className: MessageItem_module_css_default.turnErrorDot
-				}), (0, react_jsx_runtime.jsxs)("div", {
-					className: MessageItem_module_css_default.turnErrorCopy,
-					children: [(0, react_jsx_runtime.jsx)("span", {
-						className: MessageItem_module_css_default.maxTokensTitle,
-						children: t("message.maxTokens")
-					}), (0, react_jsx_runtime.jsx)("span", {
-						className: MessageItem_module_css_default.turnErrorMessage,
-						children: t("message.maxTokens.hint")
 					})]
-				})]
-			});
-		}
-		/** Right-aligned bubble shared by user and steering rows. */
-		function UserStyleBubble({ content, renderMessageImages, actions, pending = false, echo = false, referenceLabels = [], skillNames = [], previewAttachments, references, t }) {
-			const { text, attachments: contentAttachments, rest } = contentParts(content);
-			const attachments = previewAttachments ?? contentAttachments;
-			const compactImages = attachments.length > 1;
-			const truncated = (total) => t("json.truncated", { total });
-			const showBubble = text !== "" || rest.length > 0;
-			return (0, react_jsx_runtime.jsxs)("div", {
-				className: MessageItem_module_css_default.userRow,
-				"data-pending-steering": pending || void 0,
-				"data-submission-echo": echo || void 0,
-				children: [(0, react_jsx_runtime.jsxs)("div", {
-					className: MessageItem_module_css_default.userStack,
-					children: [
-						attachments.length > 0 && (0, react_jsx_runtime.jsx)("div", {
-							className: MessageItem_module_css_default.attachmentRow,
-							"data-message-attachments": true,
-							children: attachments.map((attachment, index) => attachment.type === "image" ? (0, react_jsx_runtime.jsx)(react.Fragment, { children: renderMessageImages({
-								images: [attachment.image],
-								align: "end",
-								compact: compactImages
-							}) }, `image:${index}`) : (0, react_jsx_runtime.jsxs)("span", {
-								className: MessageItem_module_css_default.fileCard,
-								title: attachment.file.name,
-								children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.FileTypeIcon, {
-									path: attachment.file.name,
-									className: MessageItem_module_css_default.fileIcon
-								}), (0, react_jsx_runtime.jsxs)("span", {
-									className: MessageItem_module_css_default.fileContent,
-									children: [(0, react_jsx_runtime.jsx)("span", {
-										className: MessageItem_module_css_default.fileName,
-										children: attachment.file.name
-									}), (0, react_jsx_runtime.jsx)("span", {
-										className: MessageItem_module_css_default.fileMeta,
-										children: [(0, _deepseek_ai_dsh_client_ui_primitives.fileExtension)(attachment.file.name).toUpperCase().slice(0, 8), (0, _deepseek_ai_dsh_client_ui_primitives.fileSizeText)(attachment.file.bytes)].filter(Boolean).join(" ")
-									})]
-								})]
-							}, `file:${index}`))
-						}),
-						showBubble && (0, react_jsx_runtime.jsxs)("div", {
-							className: MessageItem_module_css_default.bubble,
-							children: [(0, _deepseek_ai_dsh_client_ui_primitives.projectUserText)(text, referenceLabels, skillNames, "skill", references), rest.map((block, i) => (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
-								label: t("message.extraBlock"),
-								payload: block,
-								truncatedLabel: truncated
-							}, i))]
-						}),
-						referenceLabels.length > 0 && (0, react_jsx_runtime.jsx)("div", {
-							className: MessageItem_module_css_default.referenceSummary,
-							children: t("message.referenceSummary", { labels: referenceLabels.join(t("message.referenceSeparator")) })
-						})
-					]
-				}), actions?.(text)]
-			});
-		}
-		/**
-		* Render one Host-authoritative pending steering item with the same visual
-		* language as its eventual durable transcript node.
-		* @param props - Pending message content and conversation translator.
-		* @returns the pending steering bubble.
-		*/
-		function PendingSteeringBubble({ content, renderMessageImages, t }) {
-			return (0, react_jsx_runtime.jsx)(UserStyleBubble, {
-				content,
-				renderMessageImages,
-				pending: true,
-				t,
-				actions: (text) => (0, react_jsx_runtime.jsx)(MessageIconActions, {
-					text,
-					clock: "start",
-					className: MessageItem_module_css_default.actions,
-					t
 				})
 			});
 		}
 		/**
-		* Render one local transcript or steering submission echo with the same
-		* visual language and surface marker as the Host occurrence that replaces
-		* it: draft text plus object-URL previews, visible from the submit click
-		* until the durable `user/message` or steering occurrence renders.
-		* @param props - the session snapshot's pending submission and render seats.
-		* @returns the echoed user bubble.
+		* Fixed-pitch rail of every known Turn — loaded marks scroll, unloaded marks
+		* page history in first — with hover and focus previews. Overflow scrolls
+		* inside the frame, gradient fades marking each scrollable end, and the
+		* active mark centers only outside the fade-free band while the pointer is
+		* elsewhere. Previews follow pointer movement or focus, not scrolling under
+		* a stationary pointer.
 		*/
-		function PendingSubmissionBubble({ submission, renderMessageImages, t }) {
-			return (0, react_jsx_runtime.jsx)(UserStyleBubble, {
-				content: (0, react.useMemo)(() => submission.text === "" ? [] : [{
-					type: "text",
-					text: submission.text
-				}], [submission.text]),
-				previewAttachments: (0, react.useMemo)(() => submission.attachments.map((attachment) => attachment.type === "image" ? {
-					type: "image",
-					image: { preview: {
-						url: attachment.value.previewUrl,
-						...attachment.value.name === void 0 ? {} : { name: attachment.value.name },
-						...attachment.value.width === void 0 ? {} : { width: attachment.value.width },
-						...attachment.value.height === void 0 ? {} : { height: attachment.value.height }
-					} }
-				} : {
-					type: "file",
-					file: attachment.value
-				}), [submission.attachments]),
-				renderMessageImages,
-				pending: submission.placement === "steering",
-				echo: true,
-				t,
-				actions: (text) => (0, react_jsx_runtime.jsx)(MessageIconActions, {
-					text,
-					time: submission.time,
-					clock: "start",
-					className: MessageItem_module_css_default.actions,
-					t
-				})
-			});
-		}
-		/** User and admitted-steering keyed Chat renderer. */
-		const UserMessageNodeView = (0, react.memo)(function UserMessageNodeView({ node, renderMessageImages, openFile, openSkill, t }) {
-			const data = node.data;
-			return (0, react_jsx_runtime.jsx)(UserStyleBubble, {
-				content: data.content,
-				references: {
-					openFile,
-					openSkill
-				},
-				renderMessageImages,
-				...data.referenceLabels === void 0 ? {} : { referenceLabels: data.referenceLabels },
-				...data.skillNames === void 0 ? {} : { skillNames: data.skillNames },
-				t,
-				actions: (text) => (0, react_jsx_runtime.jsx)(MessageIconActions, {
-					text,
-					time: data.time,
-					clock: "start",
-					className: MessageItem_module_css_default.actions,
-					t
-				})
-			});
-		});
-		/** Injected-context keyed Chat renderer. */
-		const ContextMessageNodeView = (0, react.memo)(function ContextMessageNodeView({ node, t }) {
-			const data = node.data;
-			return (0, react_jsx_runtime.jsx)(ContextInjectionRow, {
-				content: data.content,
-				source: data.source,
-				producer: data.producer,
-				form: data.form,
-				t
-			});
-		});
-		/** Automatic compaction keyed Chat renderer. */
-		const CompactionNodeView = (0, react.memo)(function CompactionNodeView({ node, t }) {
-			return (0, react_jsx_runtime.jsx)(CompactionItem, {
-				node: node.data,
-				t
-			});
-		});
-		/** Correlated retry-chain keyed Chat renderer. */
-		const RetryNodeView = (0, react.memo)(function RetryNodeView({ node, t }) {
-			const data = node.data;
-			return (0, react_jsx_runtime.jsx)(ModelRetryItem, {
-				node: data.current,
-				active: data.current.retryState === "scheduled",
-				t
-			});
-		});
-		/** Terminal turn-error keyed Chat renderer. */
-		const TurnErrorNodeView = (0, react.memo)(function TurnErrorNodeView({ node, t }) {
-			return (0, react_jsx_runtime.jsx)(TurnErrorItem, {
-				node: node.data,
-				t
-			});
-		});
-		/** Max-tokens turn-end notice keyed Chat renderer. */
-		const TurnMaxTokensNodeView = (0, react.memo)(function TurnMaxTokensNodeView({ t }) {
-			return (0, react_jsx_runtime.jsx)(TurnMaxTokensItem, { t });
-		});
-		/** Explicit unknown-surface keyed Chat renderer. */
-		const UnknownNodeView = (0, react.memo)(function UnknownNodeView({ node, t }) {
-			const data = node.data;
-			return (0, react_jsx_runtime.jsx)("div", {
-				className: MessageItem_module_css_default.contextRow,
-				children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
-					label: t("message.unknownSurface", { type: data.type }),
-					payload: data.data,
-					truncatedLabel: (total) => t("json.truncated", { total })
-				})
-			});
-		});
-		/** Chat Node kinds that remain independent of a Turn's process disclosure. */
-		const TURN_PROCESS_INDEPENDENT_KINDS = new Set([
-			"system-prompt",
-			"user",
-			"steering",
-			"turn-trigger",
-			"turn-process",
-			"turn-error",
-			"turn-max-tokens",
-			"turn-tail"
-		]);
+		const TurnNavigator = (0, react.memo)((0, react.forwardRef)(TurnNavigatorRail));
+		//#endregion
+		//#region ../../util/brand/lib/index.js
 		/**
-		* Compare immutable Turn-process specifications by their published fields.
-		* @param left - previous specification.
-		* @param right - next specification.
-		* @returns whether both values describe the same process presentation.
+		* Duplicate-install-safe nominal primitive helpers.
+		*
+		* A brand makes structurally identical strings or numbers non-interchangeable
+		* at the type level: a `SessionId` cannot be passed where a `ToolCallId` is
+		* expected, and an event sequence cannot be passed as a log offset. Comparison,
+		* logging, and serialization retain the underlying primitive behavior.
+		*
+		* This package owns no concrete domain value and keeps no runtime identity or mutable
+		* state, so independently installed copies produce interchangeable values.
+		*
+		* @module @deepseek-ai/dsh-brand
 		*/
-		function sameTurnProcessSpec(left, right) {
-			return left.turn === right.turn && left.controlAnchorSeq === right.controlAnchorSeq && left.processStartSeq === right.processStartSeq && left.answerAnchorSeq === right.answerAnchorSeq && left.answerStep === right.answerStep && left.inlineReasoning === right.inlineReasoning && left.messageCount === right.messageCount && left.toolCallCount === right.toolCallCount && left.subagentCount === right.subagentCount;
+		/**
+		* Apply a compile-time string brand without changing the value.
+		* @param value - string admitted by the domain that owns the target brand.
+		* @returns the same string with the requested compile-time brand.
+		*/
+		function brandString(value) {
+			return value;
 		}
 		/**
-		* Recognize the shipped subagent delegation name and its configured variants.
-		* Control tools use distinct names such as `send_message` and `list_agents`.
-		* @param name - durable Tool-call name.
-		* @returns whether the call creates or forks a subagent.
+		* Apply a compile-time number brand without changing the value.
+		* @param value - number admitted by the domain that owns the target brand.
+		* @returns the same number with the requested compile-time brand.
 		*/
-		function isSubagentDelegationTool(name) {
-			return name === "subagent" || name.startsWith("subagent_");
-		}
-		/**
-		* Keep live, stopped, and failed Turns open.
-		* @param node - Node carrying the owning Turn.
-		* @returns whether whole-Turn collapse is unavailable.
-		*/
-		function turnProcessAlwaysOpen(node) {
-			const location = node?.location;
-			if (location?.kind !== "turn" && location?.kind !== "step") return false;
-			const reason = location.turn.end?.data.reason.kind;
-			return location.turn.status === "open" || reason === "aborted" || reason === "error";
+		function brandNumber(value) {
+			return value;
 		}
 		//#endregion
-		//#region lib/types/client/stores.js
-		/** Per-Session Chat view store. */
+		//#region ../../core/session/lib/types/types.js
 		/**
-		* Resolve the manually expanded answer for one Turn.
-		* @param state - Chat store snapshot.
-		* @param turn - owning Turn.
-		* @returns the Turn's stored entry, when present.
+		* Admit a numeric value as an existing Session event position.
+		* @param value - non-negative safe integer admitted by the owning log operation.
+		* @returns the same number with the Session-sequence brand.
 		*/
-		function storedTurnProcessEntry(state, turn) {
-			return state.turnProcesses.find((entry) => entry.turn === turn);
+		function SessionSeq(value) {
+			if (!Number.isSafeInteger(value) || value < 0 || Object.is(value, -0)) throw new TypeError(`SessionSeq must be a non-negative safe integer, got ${String(value)}`);
+			return brandNumber(value);
+		}
+		//#endregion
+		//#region lib/types/client/chat/turn-rail-items.js
+		/**
+		* View-layer union of the host turn outline and the loaded rail items. The
+		* conversation snapshot never carries projection values, so this merge is the
+		* one place the rail's two sources meet: the `turnOutline` projection names
+		* every turn of the session, and the loaded window supplies anchors and
+		* richer previews for the turns it holds.
+		*/
+		const EMPTY_ITEMS$1 = [];
+		/**
+		* Structurally narrow one wire outline entry (projection values cross the
+		* wire). `turn` and `seq` are the load-bearing fields — a mark cannot exist
+		* or jump without them — so their damage drops the entry; the previews are
+		* decorative, so a malformed one degrades to `''` and the turn stays
+		* navigable by number.
+		*/
+		function outlineEntry(value) {
+			if (typeof value !== "object" || value === null) return void 0;
+			const entry = value;
+			if (typeof entry.turn !== "number" || !Number.isSafeInteger(entry.turn) || entry.turn < 0) return void 0;
+			if (typeof entry.seq !== "number" || !Number.isSafeInteger(entry.seq) || entry.seq < 0 || Object.is(entry.seq, -0)) return void 0;
+			return {
+				turn: entry.turn,
+				seq: SessionSeq(entry.seq),
+				prompt: typeof entry.prompt === "string" ? entry.prompt : "",
+				response: typeof entry.response === "string" ? entry.response : ""
+			};
+		}
+		/** Wire outline entries, or none when the projection is absent or malformed. */
+		function outlineEntries(outline) {
+			return Array.isArray(outline) ? outline : EMPTY_ITEMS$1;
 		}
 		/**
-		* Create the Chat view store handle.
-		* @returns a handle instantiated once per rendered Session scope.
+		* Merge the host outline with the loaded rail items into the full ladder.
+		* A turn present in both sides keeps the loaded anchor, taking an outline
+		* preview only where the window's own is empty (a mid-Turn window head, or a
+		* turn whose loaded nodes carry no text); turns on one side only pass
+		* through. Result ascends by turn.
+		* @param loaded - loaded-window rail items (timeline order).
+		* @param outline - `turnOutline` projection value, treated as wire data.
+		* @returns every known turn, ascending; a stable empty array when none.
 		*/
-		function createChatStore() {
-			return (0, _deepseek_ai_dsh_client_store.defineStore)({
-				init: () => ({ turnProcesses: [] }),
-				actions: { setTurnProcessOpen: (draft, turn, answerStep, open) => {
-					const index = draft.turnProcesses.findIndex((entry) => entry.turn === turn);
-					if (!open) {
-						if (index >= 0) draft.turnProcesses.splice(index, 1);
+		function mergeTurnRailItems(loaded, outline) {
+			const byTurn = /* @__PURE__ */ new Map();
+			for (const raw of outlineEntries(outline)) {
+				const entry = outlineEntry(raw);
+				if (entry === void 0) continue;
+				byTurn.set(entry.turn, {
+					turn: entry.turn,
+					prompt: entry.prompt,
+					response: entry.response,
+					anchor: {
+						kind: "unloaded",
+						seq: entry.seq
+					}
+				});
+			}
+			for (const item of loaded) {
+				const preview = byTurn.get(item.turn);
+				byTurn.set(item.turn, {
+					turn: item.turn,
+					prompt: item.prompt !== "" ? item.prompt : preview?.prompt ?? "",
+					response: item.response !== "" ? item.response : preview?.response ?? "",
+					anchor: {
+						kind: "loaded",
+						key: item.anchorKey
+					}
+				});
+			}
+			if (byTurn.size === 0) return EMPTY_ITEMS$1;
+			return [...byTurn.values()].sort((left, right) => left.turn - right.turn);
+		}
+		//#endregion
+		//#region lib/types/client/chat/use-chat-navigation.js
+		/** Turn jumps and history-prepend anchoring, independent of DOM measurement. */
+		/** Owns one replaceable turn jump and the anchor retained while history loads. */
+		var ChatNavigation = class {
+			viewport;
+			reading;
+			input;
+			onBusyTurn;
+			jump = null;
+			settleFrame = null;
+			constructor(viewport, reading, input, onBusyTurn) {
+				this.viewport = viewport;
+				this.reading = reading;
+				this.input = input;
+				this.onBusyTurn = onBusyTurn;
+			}
+			/**
+			* Adopt committed history availability without starting a request.
+			* @param input - history state from the latest committed render.
+			*/
+			setInput(input) {
+				this.input = input;
+			}
+			/** Cancel navigation when opening a Chat view. */
+			reset() {
+				this.cancel();
+			}
+			/** Cancel local callbacks; late history completions cannot revive a task. */
+			dispose() {
+				this.clearTask();
+			}
+			/** Release the jump, paging anchor, and busy indicator without cancelling shared history I/O. */
+			cancel() {
+				this.clearTask();
+				this.onBusyTurn(null);
+			}
+			clearTask() {
+				this.cancelFrame();
+				this.jump = null;
+				this.viewport.stopPreserving();
+			}
+			/**
+			* Replace the current jump with an explicit turn selection.
+			* @param item - loaded anchor or unloaded turn to fetch before landing.
+			*/
+			navigateToTurn = (item) => {
+				if (item.anchor.kind === "loaded") {
+					this.cancel();
+					const landing = this.viewport.scrollToTurn(item.turn);
+					if (landing === null) return;
+					this.reading.acceptNavigation(landing);
+					if (this.input.loadingOlder) this.viewport.beginPreserving(landing.position);
+					return;
+				}
+				this.cancel();
+				this.viewport.beginPreserving();
+				this.reading.pauseFollowing();
+				const jump = {
+					turn: item.turn,
+					seq: item.anchor.seq,
+					phase: "loading",
+					landing: "pending",
+					repageHead: null
+				};
+				this.jump = jump;
+				this.onBusyTurn(jump.turn);
+				this.request(jump);
+			};
+			/** Request one older page while retaining the current semantic position. */
+			loadEarlier = () => {
+				this.cancel();
+				this.viewport.beginPaging();
+				this.reading.pauseFollowing();
+				this.input.loadOlder();
+			};
+			/**
+			* Preserve reader ownership across pending history work.
+			* @param sample - settled reader movement that can update or interrupt an anchor.
+			*/
+			readerSampled(sample) {
+				if (sample.movedByReader && this.jump?.landing === "landed") this.jump.landing = "interrupted";
+				if (sample.followingTail || sample.movedByReader) this.viewport.stopPreserving();
+			}
+			/**
+			* Preserve one paging anchor after a commit or a later size change, regardless of head identity.
+			* @returns whether the retained anchor handled the layout change.
+			*/
+			contentCommitted() {
+				if (!this.viewport.preserving || this.reading.pending) return false;
+				if (this.landJump(false)) return true;
+				const landing = this.viewport.preserve();
+				if (landing === null) return false;
+				this.reading.preservePosition(landing);
+				return true;
+			}
+			/** Retarget a still-loading page only after inner or outer reader scrolling ends. */
+			readerSettled() {
+				if (this.input.loadingOlder && this.jump === null && !this.viewport.preserving && !this.reading.followingTail) this.viewport.beginPreserving();
+			}
+			/** Land, retry, or complete the current jump against the committed window. */
+			reconcile() {
+				const jump = this.jump;
+				if (jump === null || this.reading.pending) return;
+				if (jump.phase === "loading") {
+					if (jump.landing === "pending") this.landJump(false);
+					return;
+				}
+				if (this.input.loadingOlder) return;
+				if (this.landJump(true)) return;
+				if ((this.input.firstSeq === null || this.input.firstSeq > jump.seq) && this.input.hasMore && jump.repageHead !== this.input.firstSeq) {
+					jump.repageHead = this.input.firstSeq;
+					this.viewport.beginPreserving();
+					this.request(jump);
+					return;
+				}
+				const fallback = this.viewport.scrollToTurnAtOrAfter(jump.turn);
+				this.cancel();
+				if (fallback !== null) this.reading.acceptNavigation(fallback);
+			}
+			landJump(settle) {
+				const jump = this.jump;
+				if (jump === null) return false;
+				if (jump.landing === "interrupted") {
+					if (settle) {
+						this.cancel();
+						return true;
+					}
+					return false;
+				}
+				const landing = this.viewport.scrollToTurn(jump.turn);
+				if (landing === null) return false;
+				this.reading.acceptNavigation(landing);
+				if (settle) this.cancel();
+				else {
+					this.viewport.beginPreserving(landing.position);
+					jump.landing = "landed";
+				}
+				return true;
+			}
+			request(jump) {
+				jump.phase = "loading";
+				const settled = () => {
+					if (this.jump !== jump) return;
+					jump.phase = "settled";
+					this.cancelFrame();
+					if (typeof requestAnimationFrame !== "function") this.reconcile();
+					else this.settleFrame = requestAnimationFrame(() => {
+						this.settleFrame = null;
+						if (this.jump === jump) this.reconcile();
+					});
+				};
+				this.input.loadThrough(jump.seq).then(settled, settled);
+			}
+			cancelFrame() {
+				if (this.settleFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(this.settleFrame);
+				this.settleFrame = null;
+			}
+		};
+		/**
+		* Retain one navigation owner for the component's lifetime.
+		* @param viewport - turn-aware DOM operations.
+		* @param reading - reading and follow policy receiving navigation landings.
+		* @param input - committed history state and load operations.
+		* @returns the navigation owner and its visible busy turn.
+		*/
+		function useChatNavigation(viewport, reading, input) {
+			const [busyTurn, setBusyTurn] = (0, react.useState)(null);
+			const [navigation] = (0, react.useState)(() => new ChatNavigation(viewport, reading, input, setBusyTurn));
+			(0, react.useLayoutEffect)(() => {
+				navigation.setInput(input);
+			}, [navigation, input]);
+			(0, react.useLayoutEffect)(() => () => {
+				navigation.dispose();
+			}, [navigation]);
+			return {
+				navigation,
+				busyTurn
+			};
+		}
+		//#endregion
+		//#region lib/types/client/chat/use-scroll-follow.js
+		/** Independent bottom-follow intent and native scrolling, without paging or DOM observers. */
+		/**
+		* Read one scrollport without measuring its children.
+		* @param element - scrolling element.
+		* @returns current position and range.
+		*/
+		function scrollMetrics(element) {
+			const height = element.clientHeight;
+			return {
+				top: element.scrollTop,
+				height,
+				floor: Math.max(0, element.scrollHeight - height)
+			};
+		}
+		/** One scrollport's follow intent; native animation progress does not count as reader movement. */
+		var ScrollFollow = class ScrollFollow {
+			following;
+			threshold;
+			static owners = /* @__PURE__ */ new WeakMap();
+			target = null;
+			sampledTop;
+			/**
+			* @param following - initial follow intent.
+			* @param threshold - accepted distance from the floor, in pixels.
+			*/
+			constructor(following, threshold) {
+				this.following = following;
+				this.threshold = threshold;
+			}
+			/**
+			* Find the mounted controller for reading-position compensation.
+			* @param element - scrollport with an optional follow owner.
+			* @returns its controller, when bound.
+			*/
+			static forElement(element) {
+				return this.owners.get(element);
+			}
+			/**
+			* Share this controller with reading-position compensation for the same scrollport.
+			* @param element - owned scrollport.
+			* @returns release the association on unmount or close.
+			*/
+			bind(element) {
+				ScrollFollow.owners.set(element, this);
+				return () => {
+					if (ScrollFollow.owners.get(element) === this) ScrollFollow.owners.delete(element);
+				};
+			}
+			/**
+			* Expose follow intent independently of the current offset.
+			* @returns whether content growth should follow the floor.
+			*/
+			get active() {
+				return this.following;
+			}
+			/**
+			* Expose outstanding native motion before accepting reader input.
+			* @returns whether a native follow animation has an outstanding target.
+			*/
+			get animating() {
+				return this.target !== null;
+			}
+			/**
+			* Classify bottom arrivals using this scrollport's own tolerance.
+			* @param metrics - current scroll geometry.
+			* @returns whether the position is within the follow threshold.
+			*/
+			nearBottom(metrics) {
+				return Math.abs(metrics.floor - metrics.top) <= this.threshold;
+			}
+			/**
+			* Commit caller-owned follow decisions without moving the scrollport.
+			* @param active - externally committed follow intent.
+			*/
+			setFollowing(active) {
+				this.following = active;
+				if (!active) this.target = null;
+			}
+			/** Adopt the next visible layout as a fresh reader position. */
+			reset() {
+				this.setFollowing(false);
+				this.sampledTop = void 0;
+			}
+			/**
+			* Adopt delivered scrolling while retaining intent during native animation.
+			* @param metrics - current geometry.
+			* @param movedByReader - caller attribution; omitted callers compare the last sampled position.
+			* @returns updated follow intent.
+			*/
+			sample(metrics, movedByReader = this.sampledTop === void 0 || Math.abs(metrics.top - this.sampledTop) > .5) {
+				this.sampledTop = metrics.top;
+				if (!this.animating && movedByReader) this.following = this.nearBottom(metrics);
+				return this.active;
+			}
+			/**
+			* Settle native scrolling; an off-target stop releases follow intent.
+			* @param metrics - actual geometry delivered at scrollend.
+			* @returns follow intent after completing or interrupting native motion.
+			*/
+			settle(metrics) {
+				const target = this.target;
+				this.target = null;
+				return this.sample(metrics, target === null ? void 0 : Math.abs(metrics.top - Math.min(target, metrics.floor)) > this.threshold);
+			}
+			/**
+			* Position immediately and adopt the resulting follow intent.
+			* @param element - scrolling element.
+			* @param metrics - geometry before positioning.
+			* @param top - requested offset, clamped to the measured range.
+			* @returns geometry after positioning.
+			*/
+			jump(element, metrics, top) {
+				const animated = this.animating;
+				this.target = null;
+				const target = Math.max(0, Math.min(metrics.floor, top));
+				if (animated) element.scrollTo({
+					top: target,
+					behavior: "instant"
+				});
+				else if (target !== metrics.top) element.scrollTop = target;
+				const landed = {
+					...metrics,
+					top: element.scrollTop
+				};
+				this.sampledTop = landed.top;
+				this.following = this.nearBottom(landed);
+				return landed;
+			}
+			/**
+			* Follow the measured floor, respecting reduced motion for smooth requests.
+			* Smooth requests preserve an outstanding target; immediate follow updates
+			* retarget active motion when content changes the floor.
+			* Within-tolerance positioning is immediate while no animation is outstanding.
+			* @param element - scrolling element.
+			* @param metrics - current geometry.
+			* @param behavior - native animation for growth, or immediate positioning unless motion is already active.
+			* @returns current geometry; smooth requests retain their starting position until native scroll delivery.
+			*/
+			toBottom(element, metrics, behavior) {
+				this.following = true;
+				if (metrics.top === metrics.floor) return this.jump(element, metrics, metrics.floor);
+				if (behavior === "instant" && this.animating) {
+					if (this.target !== metrics.floor) {
+						this.target = metrics.floor;
+						element.scrollTo({
+							top: metrics.floor,
+							behavior: "smooth"
+						});
+					}
+					return metrics;
+				}
+				if (behavior === "instant" || !this.animating && this.nearBottom(metrics)) return this.jump(element, metrics, metrics.floor);
+				if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) return this.jump(element, metrics, metrics.floor);
+				if (this.target === null) {
+					this.target = metrics.floor;
+					element.scrollTo({
+						top: metrics.floor,
+						behavior: "smooth"
+					});
+				}
+				return metrics;
+			}
+			/**
+			* Cancel native motion before a reader gesture; only subsequent actual movement changes follow intent.
+			* @param element - scrolling element.
+			* @param metrics - position at interruption.
+			*/
+			interrupt(element, metrics) {
+				if (!this.animating) return;
+				this.target = null;
+				this.sampledTop = metrics.top;
+				element.scrollTo({
+					top: metrics.top,
+					behavior: "instant"
+				});
+			}
+		};
+		/**
+		* Retain one independent follow controller without React updates for scroll samples.
+		* @param initial - initial follow intent.
+		* @param threshold - accepted distance from the floor, in pixels.
+		* @returns the stable controller shared by the caller's scroll and resize handlers.
+		*/
+		function useScrollFollow(initial, threshold) {
+			const [follow] = (0, react.useState)(() => new ScrollFollow(initial, threshold));
+			return follow;
+		}
+		//#endregion
+		//#region lib/types/client/chat/use-chat-reading.js
+		/** Follow-tail ownership, saved-position restoration, and sampled reader movement. */
+		const SCROLL_SAMPLE_INTERVAL_MS = 500;
+		/** Owns reading policy and its cancellable sampling work, without DOM access. */
+		var ChatReading = class {
+			viewport;
+			store;
+			state;
+			onChange;
+			follow;
+			sampleTimer = null;
+			probeFrame = null;
+			sampled = null;
+			constructor(viewport, store, state, onChange, follow) {
+				this.viewport = viewport;
+				this.store = store;
+				this.state = state;
+				this.onChange = onChange;
+				this.follow = follow;
+			}
+			/**
+			* Expose pending reader ownership to navigation and resize handlers.
+			* @returns whether reader input still awaits interval or scrollend sampling.
+			*/
+			get pending() {
+				return this.sampleTimer !== null;
+			}
+			/**
+			* Expose the active follow policy.
+			* @returns whether content growth retains bottom-follow ownership.
+			*/
+			get followingTail() {
+				return this.state.followingTail;
+			}
+			/**
+			* Adopt the committed Session's scroll memory.
+			* @param store - scroll memory for the current Session.
+			*/
+			setStore(store) {
+				this.store = store;
+			}
+			/**
+			* Connect history policy to settled reading observations.
+			* @param sampled - receives settled reader positions.
+			* @returns a disposer that disconnects only this listener.
+			*/
+			connect(sampled) {
+				this.sampled = sampled;
+				return () => {
+					if (this.sampled === sampled) this.sampled = null;
+				};
+			}
+			/** Cancel timers and animation frames and detach the sample listener. */
+			dispose() {
+				this.cancelPending();
+				this.sampled = null;
+			}
+			/** Release bottom follow and pending sampling for an explicit navigation. */
+			pauseFollowing() {
+				this.cancelPending();
+				this.publish({
+					...this.state,
+					followingTail: false
+				});
+			}
+			/**
+			* Land at the current floor and clear saved reader position.
+			* @param behavior - immediate positioning, or one native animation when the reader's own input moved the tail.
+			*/
+			followTail(behavior = "instant") {
+				const landing = this.viewport.scrollToBottom(this.follow, behavior);
+				if (landing === null) return;
+				this.cancelPending();
+				this.commit(landing, true, this.viewport.latestTurn);
+			}
+			/**
+			* Follow the tail on the active fold's animation clock.
+			* @returns whether a fold batch owns the tail movement instead of a separate scroll animation.
+			*/
+			followInputFold() {
+				this.cancelPending();
+				return this.viewport.followInputFold(this.follow);
+			}
+			/**
+			* Let fold batches read follow intent and commit their tail landings.
+			* @returns a disposer that disconnects this reading policy from the viewport.
+			*/
+			bindFolds() {
+				return this.viewport.bindReader({
+					follow: this.follow,
+					landedAtTail: (landing) => {
+						this.cancelPending();
+						this.commit(landing, true, this.viewport.latestTurn);
+					},
+					pending: () => this.pending
+				});
+			}
+			/** Stop a native follow animation where it is; the next sampled position decides follow intent. */
+			interruptFollow() {
+				this.viewport.interruptFollow(this.follow);
+			}
+			/** Restore the Session's semantic position, or follow the tail when none is saved. */
+			restore() {
+				const saved = this.store.read();
+				if (saved === null) {
+					this.followTail();
+					return;
+				}
+				const landing = this.viewport.restore(saved);
+				if (landing === null) return;
+				this.cancelPending();
+				const following = this.follow.nearBottom(landing.metrics);
+				this.commit(landing, following, following ? this.viewport.latestTurn : this.state.activeTurn, following);
+				if (!this.state.followingTail && landing.position === null) {
+					const position = this.viewport.capturePosition();
+					if (position !== null) this.store.save(position);
+				}
+				this.refreshActiveTurn();
+			}
+			/**
+			* Adopt a known landing without rediscovering its anchor.
+			* @param landing - measured navigation result that replaces pending reader input.
+			*/
+			acceptNavigation(landing) {
+				this.cancelPending();
+				const following = this.follow.nearBottom(landing.metrics);
+				this.commit(landing, following, landing.turn ?? (following ? this.viewport.latestTurn : this.state.activeTurn));
+			}
+			/**
+			* Retain reading policy while history changes the anchor's geometry.
+			* @param landing - compensated position that retains the current reading policy.
+			*/
+			preservePosition(landing) {
+				this.cancelPending();
+				this.commit(landing, this.state.followingTail, this.state.activeTurn);
+			}
+			/**
+			* Handle pinned layout movement and reader arrivals at the floor immediately.
+			* @param scroll - attributed scroll delivery; other reader movement remains pending until sampled.
+			*/
+			onScroll = (scroll) => {
+				if (this.follow.animating) return;
+				if (!scroll.movedByReader && this.state.followingTail || scroll.movedByReader && Math.abs(scroll.metrics.top - scroll.metrics.floor) < 1) {
+					this.followTail();
+					this.sampled?.({
+						position: null,
+						movedByReader: scroll.movedByReader,
+						followingTail: true
+					});
+					return;
+				}
+				this.sampleTimer ??= window.setTimeout(this.flushSample, SCROLL_SAMPLE_INTERVAL_MS);
+			};
+			/**
+			* Settle pending reader movement; only the outer scroller can finish its native follow animation.
+			* @param outer - whether the event belongs to the outer scroller rather than a process body.
+			*/
+			onScrollEnd = (outer = true) => {
+				if (this.follow.animating) {
+					if (!outer) return;
+					const scroll = this.viewport.readScroll();
+					if (scroll === null) return;
+					if (this.follow.settle(scroll.metrics)) {
+						this.followTail();
 						return;
 					}
-					const next = {
-						turn,
-						answerStep
-					};
-					if (index < 0) draft.turnProcesses.push(next);
-					else draft.turnProcesses[index] = next;
-				} }
-			});
+					this.viewport.acknowledge(scroll.metrics);
+					this.publish({
+						...this.state,
+						followingTail: false
+					});
+					this.refreshActiveTurn();
+					return;
+				}
+				this.flushSample();
+			};
+			/** Reconcile a layout change without overriding unsampled reader input. */
+			onResize() {
+				if (this.pending) return;
+				if (this.state.followingTail) this.followTail();
+				else this.refreshActiveTurn();
+			}
+			/** Resolve the active turn from tail ownership or a coalesced reading-line probe. */
+			refreshActiveTurn() {
+				if (this.pending) return;
+				if (this.state.followingTail) {
+					this.publish({
+						...this.state,
+						initialized: true,
+						activeTurn: this.viewport.latestTurn
+					});
+					return;
+				}
+				if (this.probeFrame !== null) return;
+				if (typeof requestAnimationFrame !== "function") this.probe();
+				else this.probeFrame = requestAnimationFrame(this.probe);
+			}
+			commit(landing, followingTail, activeTurn, initialized = true) {
+				if (followingTail) this.store.save(null);
+				else if (landing.position !== null) this.store.save(landing.position);
+				this.publish({
+					initialized,
+					followingTail,
+					activeTurn
+				});
+			}
+			publish(state) {
+				this.follow.setFollowing(state.followingTail);
+				if (state.initialized === this.state.initialized && state.followingTail === this.state.followingTail && state.activeTurn === this.state.activeTurn) return;
+				this.state = state;
+				this.onChange(state);
+			}
+			cancelPending() {
+				if (this.sampleTimer !== null) window.clearTimeout(this.sampleTimer);
+				if (this.probeFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(this.probeFrame);
+				this.sampleTimer = null;
+				this.probeFrame = null;
+			}
+			probe = () => {
+				this.probeFrame = null;
+				if (this.pending) return;
+				const scroll = this.viewport.readScroll();
+				if (scroll === null) return;
+				const activeTurn = this.follow.nearBottom(scroll.metrics) ? this.viewport.latestTurn : this.viewport.readVisibleTurn(scroll.metrics);
+				this.publish({
+					...this.state,
+					initialized: true,
+					activeTurn
+				});
+			};
+			flushSample = () => {
+				if (!this.pending) return;
+				this.cancelPending();
+				const scroll = this.viewport.readScroll();
+				if (scroll === null) return;
+				const followingTail = this.follow.sample(scroll.metrics, scroll.movedByReader);
+				let position = null;
+				if (!scroll.movedByReader && followingTail) this.followTail();
+				else {
+					position = followingTail ? null : this.viewport.capturePosition();
+					this.viewport.acknowledge(scroll.metrics);
+					if (followingTail || position !== null) this.store.save(position);
+					const activeTurn = this.follow.nearBottom(scroll.metrics) ? this.viewport.latestTurn : this.viewport.readVisibleTurn(scroll.metrics);
+					this.publish({
+						initialized: true,
+						followingTail,
+						activeTurn
+					});
+				}
+				this.sampled?.({
+					position,
+					movedByReader: scroll.movedByReader,
+					followingTail
+				});
+			};
+		};
+		/**
+		* Retain reading policy and expose only changes in visible reading state.
+		* @param viewport - turn-aware DOM operations.
+		* @param store - Session-owned semantic scroll memory.
+		* @param initialTurn - latest loaded turn before the first landing.
+		* @returns the reading owner and its React-visible state.
+		*/
+		function useChatReading(viewport, store, initialTurn) {
+			const [state, setState] = (0, react.useState)(() => ({
+				initialized: false,
+				followingTail: store.read() === null,
+				activeTurn: initialTurn
+			}));
+			const follow = useScrollFollow(state.followingTail, 25);
+			const [reading] = (0, react.useState)(() => new ChatReading(viewport, store, state, setState, follow));
+			(0, react.useLayoutEffect)(() => {
+				reading.setStore(store);
+			}, [reading, store]);
+			(0, react.useLayoutEffect)(() => reading.bindFolds(), [reading]);
+			(0, react.useLayoutEffect)(() => () => {
+				reading.dispose();
+			}, [reading]);
+			return {
+				reading,
+				state
+			};
 		}
 		//#endregion
 		//#region lib/types/client/chat/searchable-hidden.js
 		/**
 		* Apply searchable hidden state without unmounting a stable subtree.
 		* @param hidden - whether the subtree is currently hidden.
-		* @param reveal - callback for browser find's `beforematch` reveal.
+		* @param reveal - callback for browser find's beforematch reveal.
+		* @param transition - optional caller-owned visibility operation; otherwise apply synchronously.
 		* @returns ref for the stable subtree root.
 		*/
-		function useSearchableHidden(hidden, reveal) {
+		function useSearchableHidden(hidden, reveal, transition) {
 			const ref = (0, react.useRef)(null);
 			(0, react.useLayoutEffect)(() => {
 				const element = ref.current;
@@ -1653,9 +1316,17 @@ DSHConversationActions.installConversationActions();
 					reveal();
 					return;
 				}
-				if (hidden) element.setAttribute("hidden", "until-found");
-				else element.removeAttribute("hidden");
-			}, [hidden, reveal]);
+				const commit = () => {
+					if (hidden) element.setAttribute("hidden", "until-found");
+					else element.removeAttribute("hidden");
+				};
+				if (transition === void 0) commit();
+				else transition(element, hidden, commit);
+			}, [
+				hidden,
+				reveal,
+				transition
+			]);
 			(0, react.useEffect)(() => {
 				const element = ref.current;
 				if (element === null) return;
@@ -1667,14 +1338,1399 @@ DSHConversationActions.installConversationActions();
 			return ref;
 		}
 		//#endregion
+		//#region lib/types/client/chat/flow-motion.js
+		/**
+		* Fold transitions owned by one Chat viewport. Every batch containing a closing row moves its boxes and
+		* the scrollport on one frame clock; a batch that only reveals rows, or a viewport without a reading
+		* policy, uses CSS transitions. Motion is opt-in under `[data-chat-motion]`, respects reduced motion,
+		* and clears temporary styles.
+		*/
+		const FADE_OUT_MS = 70;
+		/** The box starts closing while the fade finishes; by then the row is nearly transparent. */
+		const CLOSE_DELAY_MS = 50;
+		const CLOSE_MS = 110;
+		const MOTION_SCOPE = "[data-chat-motion]";
+		const EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+		/**
+		* Decide whether a row may animate: inside a live scope and not under reduced motion.
+		* @param element - row about to be hidden.
+		* @returns whether the fade-then-close transition applies.
+		*/
+		function motionEnabled(element) {
+			if (element.closest(MOTION_SCOPE) === null) return false;
+			return typeof matchMedia !== "function" || !matchMedia("(prefers-reduced-motion: reduce)").matches;
+		}
+		/**
+		* Whether a row is already hidden or on its way there.
+		* @param element - row under Turn-level visibility control.
+		* @returns hidden attribute present or a collapse transition outstanding.
+		*/
+		function hiddenOrCollapsing(element) {
+			return element.hasAttribute("hidden") || element.dataset.chatMotion === "collapse";
+		}
+		/**
+		* Opacity of a revealing box at batch progress, continuing from the share its own transition reached.
+		* @param box - revealing box.
+		* @param progress - shared eased progress from zero to one.
+		* @returns opacity from zero to one.
+		*/
+		function revealedShare(box, progress) {
+			const start = box.height === 0 ? 0 : box.fromHeight / box.height;
+			return start + (1 - start) * progress;
+		}
+		/**
+		* Create animation coordination without cross-viewport broadcasts.
+		* @param driver - the viewport's driver for the next batch; null while detached.
+		* @param foldingChanged - disable or restore this viewport's native scroll anchoring.
+		* @returns stable callbacks and cleanup for this viewport's animations.
+		*/
+		function createFlowMotion(driver, foldingChanged) {
+			const running = /* @__PURE__ */ new Map();
+			let folding = 0;
+			const foldIdleListeners = /* @__PURE__ */ new Set();
+			let batchScheduled = false;
+			const boxes = /* @__PURE__ */ new Map();
+			let frameRequest = null;
+			let batch = false;
+			let cancelled = false;
+			let clearEpoch = 0;
+			let batchCleanup = null;
+			let cancelEmptyBatch = null;
+			/** The batch is committing hidden rows and its final geometry; idle listeners wait until both land. */
+			let settling = false;
+			let anchoringDisabled = false;
+			function cancelInput() {
+				if (batch) cancelled = true;
+			}
+			function resumeInput() {
+				if (batch) cancelled = false;
+			}
+			/** Rows inside a closing ancestor change with it and never join a batch on their own. */
+			function batchMember(box) {
+				return box.element.parentElement?.closest("[data-chat-motion=\"collapse\"]") === null;
+			}
+			function runBatch(current) {
+				for (const box of [...boxes.values()]) {
+					if (!batchMember(box)) continue;
+					const height = box.element.offsetHeight;
+					const marginTop = Number.parseFloat(getComputedStyle(box.element).marginTop) || 0;
+					if (!box.closing) {
+						box.fromHeight = Math.min(height, box.height);
+						box.fromMarginTop = Math.min(marginTop, box.marginTop);
+						continue;
+					}
+					box.height = height;
+					box.marginTop = marginTop;
+					if (height === 0 && marginTop === 0) box.finish();
+				}
+				const owned = [...boxes.values()];
+				const members = owned.filter(batchMember).sort((left, right) => left.element.compareDocumentPosition(right.element) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+				if (!members.some((box) => box.closing)) return;
+				batch = true;
+				cancelled = false;
+				const travelling = current.begin(members.map((box) => box.closing ? box : {
+					element: box.element,
+					height: box.height - box.fromHeight,
+					marginTop: box.marginTop - box.fromMarginTop,
+					closing: false
+				}));
+				batchCleanup = () => {
+					current.finish(true);
+				};
+				for (const box of owned) box.take();
+				for (const box of members) {
+					box.element.style.transition = "none";
+					box.element.style.height = `${box.closing ? box.height : box.fromHeight}px`;
+					box.element.style.marginTop = `${box.closing ? box.marginTop : box.fromMarginTop}px`;
+					box.element.style.opacity = box.closing ? "1" : String(revealedShare(box, 0));
+				}
+				const memberSet = new Set(members);
+				const settledTravel = /* @__PURE__ */ new Set();
+				const freezeTravelling = () => {
+					for (const element of travelling) {
+						if (settledTravel.has(element)) continue;
+						settledTravel.add(element);
+						element.style.translate = "";
+						for (const box of owned) {
+							if (memberSet.has(box) || !element.contains(box.element)) continue;
+							box.element.style.transition = "none";
+							box.element.style.height = `${box.height}px`;
+							box.element.style.marginTop = `${box.marginTop}px`;
+							box.element.style.opacity = "1";
+						}
+					}
+				};
+				freezeTravelling();
+				const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+				let started;
+				let displacement = 0;
+				const settle = (finishCancelled) => {
+					batch = false;
+					batchCleanup = null;
+					cancelEmptyBatch = null;
+					settling = true;
+					try {
+						for (const box of owned) if (boxes.get(box.element) === box) box.finish();
+						current.finish(finishCancelled);
+					} finally {
+						settling = false;
+					}
+					if (folding === 0) notifyIdle();
+					if ([...boxes.values()].some((box) => box.held)) flushBatch();
+				};
+				cancelEmptyBatch = () => {
+					if (members.some((box) => box.closing && boxes.get(box.element) === box)) return;
+					if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+					frameRequest = null;
+					settle(true);
+				};
+				const tick = (now) => {
+					frameRequest = null;
+					started ??= now;
+					const elapsed = reduced ? 160 : now - started;
+					const linear = Math.min(1, Math.max(0, (elapsed - CLOSE_DELAY_MS) / CLOSE_MS));
+					const progress = linear * linear * (3 - 2 * linear);
+					current.prepare(progress, cancelled);
+					freezeTravelling();
+					for (const box of members) {
+						if (boxes.get(box.element) !== box) continue;
+						if (box.closing) {
+							box.element.style.height = `${box.height * (1 - progress)}px`;
+							box.element.style.marginTop = `${box.marginTop * (1 - progress)}px`;
+							box.element.style.opacity = travelling.has(box.element) ? "1" : String(Math.max(0, 1 - elapsed / FADE_OUT_MS));
+						} else {
+							box.element.style.height = `${box.fromHeight + (box.height - box.fromHeight) * progress}px`;
+							box.element.style.marginTop = `${box.fromMarginTop + (box.marginTop - box.fromMarginTop) * progress}px`;
+							box.element.style.opacity = String(revealedShare(box, progress));
+						}
+					}
+					displacement = current.frame(progress, cancelled);
+					let removedBefore = 0;
+					for (const box of members) {
+						if (boxes.get(box.element) !== box) continue;
+						if (box.closing) {
+							if (!travelling.has(box.element)) box.element.style.translate = `0 ${displacement + removedBefore}px`;
+							removedBefore += (box.height + box.marginTop) * progress;
+						} else removedBefore -= (box.height - box.fromHeight + box.marginTop - box.fromMarginTop) * progress;
+					}
+					if (linear < 1) {
+						frameRequest = requestAnimationFrame(tick);
+						return;
+					}
+					settle(cancelled);
+				};
+				if (reduced) tick(0);
+				else frameRequest = requestAnimationFrame(tick);
+			}
+			function foldActive() {
+				return folding > 0;
+			}
+			function onFoldIdle(listener) {
+				if (folding === 0) listener();
+				else foldIdleListeners.add(listener);
+				return () => {
+					foldIdleListeners.delete(listener);
+				};
+			}
+			function flushBatch() {
+				batchScheduled = false;
+				if (batch) return;
+				const current = [...boxes.values()].some((box) => box.closing) ? driver() : null;
+				if (current !== null) {
+					runBatch(current);
+					return;
+				}
+				const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+				for (const box of [...boxes.values()]) if (reduced || box.held && box.closing) box.finish();
+				else if (box.held) box.release();
+			}
+			function scheduleBatch() {
+				if (batchScheduled) return;
+				batchScheduled = true;
+				const epoch = clearEpoch;
+				queueMicrotask(() => {
+					if (epoch === clearEpoch) flushBatch();
+				});
+			}
+			function foldStarted() {
+				folding += 1;
+				if (folding !== 1 || anchoringDisabled) return;
+				anchoringDisabled = true;
+				foldingChanged(true);
+			}
+			function foldEnded() {
+				folding = Math.max(0, folding - 1);
+				if (folding === 0 && !settling) notifyIdle();
+			}
+			function notifyIdle() {
+				if (anchoringDisabled) {
+					anchoringDisabled = false;
+					foldingChanged(false);
+				}
+				const listeners = [...foldIdleListeners];
+				foldIdleListeners.clear();
+				for (const listener of listeners) listener();
+			}
+			function clearMotion(element, onEnd, timer) {
+				element.removeEventListener("transitionend", onEnd);
+				clearTimeout(timer);
+				running.delete(element);
+				boxes.delete(element);
+				const { style } = element;
+				style.height = "";
+				style.marginTop = "";
+				style.opacity = "";
+				style.overflow = "";
+				style.transition = "";
+				style.translate = "";
+				delete element.dataset.chatMotion;
+			}
+			function cancelMotion(element) {
+				running.get(element)?.();
+				cancelEmptyBatch?.();
+			}
+			function collapse(element, done) {
+				cancelMotion(element);
+				const height = element.offsetHeight;
+				const marginTop = Number.parseFloat(getComputedStyle(element).marginTop) || 0;
+				if (height === 0 && marginTop === 0) {
+					done();
+					return;
+				}
+				const { style } = element;
+				const held = batch;
+				element.dataset.chatMotion = "collapse";
+				foldStarted();
+				scheduleBatch();
+				style.transition = "none";
+				style.overflow = "hidden";
+				style.height = `${height}px`;
+				style.marginTop = `${marginTop}px`;
+				if (!held) {
+					element.offsetHeight;
+					style.transition = `opacity ${FADE_OUT_MS}ms ${EASING}, height ${CLOSE_MS}ms ${EASING} ${CLOSE_DELAY_MS}ms, margin-top ${CLOSE_MS}ms ${EASING} ${CLOSE_DELAY_MS}ms`;
+					style.opacity = "0";
+					style.height = "0px";
+					style.marginTop = "0px";
+				}
+				const finish = () => {
+					if (running.get(element) !== cancel) return;
+					clearMotion(element, onEnd, timer);
+					done();
+					foldEnded();
+				};
+				const onEnd = (event) => {
+					if (event.target === element && event.propertyName === "height") finish();
+				};
+				const timer = held ? void 0 : setTimeout(finish, 240);
+				const cancel = () => {
+					clearMotion(element, onEnd, timer);
+					foldEnded();
+				};
+				if (!held) element.addEventListener("transitionend", onEnd);
+				running.set(element, cancel);
+				boxes.set(element, {
+					element,
+					height,
+					marginTop,
+					fromHeight: height,
+					fromMarginTop: marginTop,
+					closing: true,
+					held,
+					finish,
+					release: () => {},
+					take: () => {
+						element.removeEventListener("transitionend", onEnd);
+						clearTimeout(timer);
+					}
+				});
+			}
+			function reveal(element) {
+				cancelMotion(element);
+				const height = element.offsetHeight;
+				if (height === 0) return;
+				const marginTop = Number.parseFloat(getComputedStyle(element).marginTop) || 0;
+				scheduleBatch();
+				const { style } = element;
+				element.dataset.chatMotion = "reveal";
+				style.transition = "none";
+				style.overflow = "hidden";
+				style.opacity = "0";
+				style.height = "0px";
+				style.marginTop = "0px";
+				const finish = () => {
+					if (running.get(element) !== finish) return;
+					clearMotion(element, onEnd, timer);
+				};
+				const onEnd = (event) => {
+					if (event.target === element && event.propertyName === "height") finish();
+				};
+				let timer;
+				const startTransition = () => {
+					element.offsetHeight;
+					style.transition = `height ${CLOSE_MS}ms ${EASING} ${CLOSE_DELAY_MS}ms, margin-top ${CLOSE_MS}ms ${EASING} ${CLOSE_DELAY_MS}ms, opacity ${CLOSE_MS}ms ${EASING} ${CLOSE_DELAY_MS}ms`;
+					style.height = `${height}px`;
+					style.marginTop = `${marginTop}px`;
+					style.opacity = "1";
+					timer = setTimeout(finish, 240);
+					element.addEventListener("transitionend", onEnd);
+				};
+				const held = batch;
+				if (!held) startTransition();
+				running.set(element, finish);
+				const box = {
+					element,
+					height,
+					marginTop,
+					fromHeight: 0,
+					fromMarginTop: 0,
+					closing: false,
+					held,
+					finish,
+					release: () => {
+						box.held = false;
+						startTransition();
+					},
+					take: () => {
+						element.removeEventListener("transitionend", onEnd);
+						clearTimeout(timer);
+					}
+				};
+				boxes.set(element, box);
+			}
+			function clear() {
+				clearEpoch++;
+				batchScheduled = false;
+				batch = false;
+				cancelled = false;
+				if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+				frameRequest = null;
+				batchCleanup?.();
+				batchCleanup = null;
+				cancelEmptyBatch = null;
+				foldIdleListeners.clear();
+				for (const cancel of [...running.values()]) cancel();
+			}
+			return {
+				collapse,
+				reveal,
+				cancelMotion,
+				foldActive,
+				onFoldIdle,
+				cancelInput,
+				resumeInput,
+				clear,
+				inputActive: () => batch || batchScheduled && [...boxes.values()].some((box) => box.closing && batchMember(box))
+			};
+		}
+		function useFlowTransition(motion, grow) {
+			const current = (0, react.useRef)(null);
+			(0, react.useLayoutEffect)(() => () => {
+				if (current.current !== null) motion?.cancelMotion(current.current);
+				current.current = null;
+			}, [motion]);
+			const transition = (0, react.useCallback)((element, hidden, commit) => {
+				const mounted = current.current === element;
+				const animate = mounted && motionEnabled(element);
+				current.current = element;
+				if (hidden) {
+					if (hiddenOrCollapsing(element)) return;
+					if (mounted && element.closest(MOTION_SCOPE) !== null && motion !== void 0) motion.collapse(element, commit);
+					else commit();
+					return;
+				}
+				motion?.cancelMotion(element);
+				const wasHidden = element.hasAttribute("hidden");
+				commit();
+				if (wasHidden && animate && grow) motion?.reveal(element);
+			}, [motion, grow]);
+			return motion === void 0 ? void 0 : transition;
+		}
+		/**
+		* Apply searchable hiding with the containing Chat viewport's optional fold animation.
+		* @param hidden - desired visibility.
+		* @param reveal - browser-find and focus-protection callback.
+		* @param motion - owning viewport's row callbacks; undefined applies visibility synchronously.
+		* @returns the stable subtree ref.
+		*/
+		function useFlowHidden(hidden, reveal, motion) {
+			return useSearchableHidden(hidden, reveal, useFlowTransition(motion, false));
+		}
+		/**
+		* Toggle a plain hidden attribute on the fold clock, growing newly revealed headers.
+		* @param ref - element whose visibility follows hidden.
+		* @param hidden - desired hidden state.
+		* @param motion - containing viewport's row callbacks.
+		*/
+		function useMotionHidden(ref, hidden, motion) {
+			const transition = useFlowTransition(motion, true);
+			(0, react.useLayoutEffect)(() => {
+				const element = ref.current;
+				if (element === null) return;
+				transition?.(element, hidden, () => {
+					if (hidden) element.setAttribute("hidden", "");
+					else element.removeAttribute("hidden");
+				});
+			}, [
+				ref,
+				hidden,
+				transition
+			]);
+		}
+		//#endregion
+		//#region lib/types/client/chat/use-chat-viewport.js
+		/** Turn-aware DOM scrolling and geometry, without history-loading or follow policy. */
+		const READING_INTENTS = [
+			"wheel",
+			"touchstart",
+			"pointerdown",
+			"keydown",
+			"beforematch"
+		];
+		const SCROLL_KEYS$1 = new Set([
+			"ArrowUp",
+			"ArrowDown",
+			"PageUp",
+			"PageDown",
+			"Home",
+			"End",
+			" "
+		]);
+		/** Owns one Chat scrollport's DOM operations, event listeners, and size observer. */
+		var ChatViewport = class {
+			elements = null;
+			observer = null;
+			events = null;
+			turns = [];
+			observation = {
+				top: 0,
+				landing: null
+			};
+			paging = null;
+			reader = null;
+			/** The pending or running fold batch lands at the tail. */
+			tailRequested = false;
+			/** Switches the running batch to a tail landing; null while no batch runs. */
+			retarget = null;
+			/** Transition state and row callbacks owned by this viewport's attachment. */
+			motion = createFlowMotion(() => this.foldDriver(), (active) => {
+				if (this.elements !== null) this.elements.scroller.style.overflowAnchor = active ? "none" : "";
+			});
+			/**
+			* Bind to the containing scrollport and observe content and viewport sizes.
+			* @param list - Chat root inside an optional shared conversation scrollport.
+			* @param column - ordered outer Node/Group boxes; its size changes invalidate cached landings.
+			*/
+			attach(list, column) {
+				this.detach();
+				const scroller = list.closest("[data-conversation-scroll]") ?? list;
+				const composer = scroller.querySelector("[data-composer-seat]");
+				const spacer = list.querySelector("[data-chat-turn-spacer]");
+				const elements = {
+					list,
+					column,
+					scroller,
+					composer,
+					spacer
+				};
+				this.elements = elements;
+				if (spacer !== null) spacer.style.height = "";
+				scroller.addEventListener("scroll", this.onScroll, { passive: true });
+				scroller.addEventListener("scrollend", this.onScrollEnd, {
+					passive: true,
+					capture: true
+				});
+				for (const type of READING_INTENTS) scroller.addEventListener(type, this.onIntent, {
+					passive: true,
+					capture: true
+				});
+				if (typeof ResizeObserver !== "undefined") {
+					this.observer = new ResizeObserver(() => {
+						if (this.elements !== elements) return;
+						this.reclaimBelow();
+						this.invalidate();
+						this.events?.resize();
+					});
+					this.observer.observe(column);
+					this.observer.observe(scroller);
+					if (composer !== null) this.observer.observe(composer);
+				}
+			}
+			/** Disconnect DOM resources and clear observations for the detached view. */
+			detach() {
+				this.stopPreserving();
+				this.motion.clear();
+				if (this.elements !== null) this.elements.scroller.style.overflowAnchor = "";
+				this.elements?.scroller.removeEventListener("scroll", this.onScroll);
+				this.elements?.scroller.removeEventListener("scrollend", this.onScrollEnd, true);
+				for (const type of READING_INTENTS) this.elements?.scroller.removeEventListener(type, this.onIntent, true);
+				this.observer?.disconnect();
+				this.observer = null;
+				this.elements = null;
+				this.events = null;
+				this.tailRequested = false;
+				this.retarget = null;
+				this.turns = [];
+				this.observation = {
+					top: 0,
+					landing: null
+				};
+			}
+			/**
+			* Connect business policy without changing DOM listener ownership.
+			* @param events - business handlers for scroll and layout changes.
+			* @returns a disposer that disconnects only these handlers.
+			*/
+			connect(events) {
+				this.events = events;
+				return () => {
+					if (this.events === events) this.events = null;
+				};
+			}
+			/**
+			* Adopt the loaded turn anchors without querying the DOM.
+			* @param turns - ordered loaded turns from the committed Chat snapshot.
+			*/
+			updateTurns(turns) {
+				this.turns = turns;
+			}
+			/**
+			* Resolve the tail from the committed turn index.
+			* @returns the latest loaded turn, or null for an empty window.
+			*/
+			get latestTurn() {
+				return this.turns.at(-1)?.turn ?? null;
+			}
+			/** Discard geometry-dependent landing knowledge while retaining scroll attribution. */
+			invalidate() {
+				this.observation.landing = null;
+			}
+			spacerHeight() {
+				const spacer = this.elements?.spacer;
+				return spacer == null ? 0 : Number.parseFloat(spacer.style.height) || 0;
+			}
+			setSpacer(height) {
+				const spacer = this.elements?.spacer;
+				if (spacer == null) return;
+				const next = height <= 0 ? "" : `${Math.ceil(height)}px`;
+				if (spacer.style.height !== next) spacer.style.height = next;
+			}
+			/**
+			* Connect the reading policy that fold batches consult.
+			* @param reader - follow intent and the tail-landing commit.
+			* @returns a disposer that disconnects only this reader.
+			*/
+			bindReader(reader) {
+				this.reader = reader;
+				return () => {
+					if (this.reader === reader) this.reader = null;
+				};
+			}
+			/**
+			* Land the pending or running fold batch at the tail instead of starting a separate scroll.
+			* @param follow - follow controller whose native animation yields to the batch.
+			* @returns whether a fold owns the tail movement.
+			*/
+			followInputFold(follow) {
+				if (this.elements === null || this.reader === null || !this.motion.inputActive()) return false;
+				this.interruptFollow(follow);
+				this.tailRequested = true;
+				this.retarget?.();
+				return true;
+			}
+			/**
+			* Drive one fold batch on its frame clock. A tail landing ends at the floor, never above the reader's
+			* compensated position; a reader landing keeps the visible content still. Both install only the room
+			* the landing lacks.
+			* @returns the batch driver, or null while detached or without a reading policy.
+			*/
+			foldDriver() {
+				const elements = this.elements;
+				const reader = this.reader;
+				if (elements === null || reader === null) return null;
+				const { follow } = reader;
+				let tail = false;
+				let start = 0;
+				let base = 0;
+				let target = 0;
+				let removed = 0;
+				let growth = 0;
+				let initialHeight = 0;
+				let finalRoom = 0;
+				let previousColumnHeight = 0;
+				let previousProgress = 0;
+				let segmentProgress = 0;
+				let segmentTop = 0;
+				let written = 0;
+				const closing = [];
+				const travelling = /* @__PURE__ */ new Set();
+				let reference = null;
+				let referenceTop = 0;
+				let viewportTop = 0;
+				const screenTop = (element) => element.getBoundingClientRect().top - viewportTop;
+				const aim = () => {
+					const finalHeight = initialHeight - removed + growth;
+					const height = elements.scroller.clientHeight;
+					target = tail ? Math.max(base, finalHeight - height, 0) : base;
+					finalRoom = target === 0 ? 0 : Math.max(0, target + height - finalHeight);
+				};
+				const restart = () => {
+					segmentTop = elements.scroller.scrollTop;
+					segmentProgress = previousProgress;
+				};
+				const automatic = (cancelled) => !(cancelled && tail);
+				const position = (progress, cancelled) => {
+					if (!automatic(cancelled)) return elements.scroller.scrollTop;
+					const remaining = segmentProgress === 1 ? 1 : (progress - segmentProgress) / (1 - segmentProgress);
+					return segmentTop + (target - segmentTop) * remaining;
+				};
+				const room = (top, progress, cancelled) => Math.max(automatic(cancelled) ? finalRoom : 0, top + elements.scroller.clientHeight - (initialHeight + (growth - removed) * progress));
+				return {
+					begin: (boxes) => {
+						tail = this.tailRequested || follow.active && !reader.pending();
+						this.tailRequested = false;
+						viewportTop = elements.scroller.getBoundingClientRect().top;
+						start = elements.scroller.scrollTop;
+						const originalRoom = this.spacerHeight();
+						initialHeight = Math.max(elements.column.offsetHeight, elements.scroller.scrollHeight - originalRoom);
+						let above = 0;
+						const below = [];
+						for (const box of boxes) {
+							const amount = box.height + box.marginTop;
+							const top = box.element.getBoundingClientRect().top - box.marginTop;
+							if (box.closing) {
+								removed += amount;
+								above += Math.max(0, Math.min(amount, viewportTop - top));
+								if (top >= viewportTop) below.push(box.element);
+								closing.push(box);
+							} else {
+								growth += amount;
+								if (top < viewportTop) above -= amount;
+							}
+						}
+						if (!tail) reference = this.readingReference();
+						const referenceBefore = reference === null ? 0 : screenTop(reference);
+						elements.column.dataset.inputFold = "";
+						if (reference !== null) {
+							referenceTop = screenTop(reference);
+							above -= referenceTop - referenceBefore;
+						}
+						base = Math.max(0, start - above);
+						segmentTop = start;
+						written = start;
+						previousColumnHeight = elements.column.offsetHeight;
+						aim();
+						this.setSpacer(Math.max(originalRoom, finalRoom, removed));
+						if (tail) follow.setFollowing(true);
+						this.retarget = () => {
+							tail = true;
+							follow.setFollowing(true);
+							this.motion.resumeInput();
+							aim();
+							restart();
+							if (target <= segmentTop) return;
+							for (const box of closing) {
+								const shift = Number.parseFloat(box.element.style.translate.split(" ")[1] ?? "") || 0;
+								if (box.element.getBoundingClientRect().top - shift - box.marginTop >= viewportTop) travelling.add(box.element);
+							}
+						};
+						if (tail && target > start) for (const element of below) travelling.add(element);
+						return travelling;
+					},
+					prepare: (progress, cancelled) => {
+						if (this.elements !== elements) return;
+						if (!tail) {
+							const drift = elements.scroller.scrollTop - written;
+							if (Math.abs(drift) > .5) {
+								base = Math.max(0, base + drift);
+								segmentTop += drift;
+								referenceTop -= drift;
+								aim();
+							}
+						}
+						const added = elements.column.offsetHeight - previousColumnHeight;
+						if (added !== 0) {
+							initialHeight += added;
+							aim();
+							restart();
+						}
+						const top = position(progress, cancelled);
+						this.setSpacer(Math.max(this.spacerHeight(), room(top, progress, cancelled)));
+					},
+					frame: (progress, cancelled) => {
+						if (this.elements !== elements) return 0;
+						const top = position(progress, cancelled);
+						elements.scroller.scrollTop = top;
+						this.setSpacer(room(top, progress, cancelled));
+						written = elements.scroller.scrollTop;
+						if (reference !== null && progress === 1) referenceTop = screenTop(reference);
+						if (automatic(cancelled)) this.observation = {
+							top: written,
+							landing: null
+						};
+						previousColumnHeight = elements.column.offsetHeight;
+						previousProgress = progress;
+						return written - start;
+					},
+					finish: (cancelled) => {
+						this.retarget = null;
+						this.tailRequested = false;
+						if (this.elements !== elements) return;
+						elements.column.offsetHeight;
+						delete elements.column.dataset.inputFold;
+						if (!tail || cancelled) {
+							if (!tail && reference?.isConnected === true && reference.closest("[hidden]") === null) {
+								const shift = screenTop(reference) - referenceTop;
+								if (Math.abs(shift) > .5) {
+									const top = elements.scroller.scrollTop + shift;
+									const content = elements.scroller.scrollHeight - this.spacerHeight();
+									this.setSpacer(Math.max(this.spacerHeight(), top + elements.scroller.clientHeight - content));
+									elements.scroller.scrollTop = top;
+								}
+							}
+							const metrics = scrollMetrics(elements.scroller);
+							const height = elements.scroller.scrollHeight - this.spacerHeight();
+							this.setSpacer(metrics.top === 0 ? 0 : Math.max(0, metrics.top + metrics.height - height));
+							if (tail) this.invalidate();
+							else this.observation = {
+								top: elements.scroller.scrollTop,
+								landing: null
+							};
+							return;
+						}
+						const content = elements.scroller.scrollHeight - this.spacerHeight();
+						const clientHeight = elements.scroller.clientHeight;
+						const top = Math.max(target, content - clientHeight, 0);
+						this.setSpacer(top === 0 ? 0 : Math.max(0, top + clientHeight - content));
+						elements.scroller.scrollTop = top;
+						const metrics = scrollMetrics(elements.scroller);
+						const landing = {
+							metrics,
+							position: null,
+							turn: this.latestTurn
+						};
+						this.observation = {
+							top: metrics.top,
+							landing
+						};
+						reader.landedAtTail(landing);
+					}
+				};
+			}
+			/**
+			* Find the first visible top-level row at or below the scrollport top that holds no batch box.
+			* Binary search over the ordered top-level rows reads O(log n) boxes.
+			* @returns the reference row, or null when every visible row folds.
+			*/
+			readingReference() {
+				const elements = this.elements;
+				if (elements === null) return null;
+				const viewport = elements.scroller.getBoundingClientRect();
+				const rows = (elements.column.querySelector(":scope > [data-slot=\"conversation.chat.flow\"]") ?? elements.column).children;
+				let low = 0;
+				let high = rows.length;
+				while (low < high) {
+					const middle = low + high >>> 1;
+					if (rows[middle].getBoundingClientRect().bottom > viewport.top) high = middle;
+					else low = middle + 1;
+				}
+				for (let index = low; index < rows.length; index++) {
+					const row = rows[index];
+					if (row.hasAttribute("hidden")) continue;
+					const rect = row.getBoundingClientRect();
+					if (rect.top >= viewport.bottom) return null;
+					if (rect.height === 0 || rect.bottom <= viewport.top) continue;
+					if (row.hasAttribute("data-chat-motion") || row.querySelector("[data-chat-motion]") !== null) continue;
+					return row;
+				}
+				return null;
+			}
+			/** Clear fold reservations after a display-mode change, allowing the scroll range to shrink. */
+			resetBelow() {
+				this.setSpacer(0);
+				this.invalidate();
+			}
+			/**
+			* Give reserved room back after acknowledged scrolling or content growth without clamping the reader.
+			* Holds still during folds and unsampled movement; following includes the room that remains.
+			*/
+			reclaimBelow() {
+				const elements = this.elements;
+				if (elements === null || elements.spacer === null) return;
+				const current = this.spacerHeight();
+				if (current === 0 || this.motion.foldActive()) return;
+				const scroll = this.readScroll();
+				if (scroll === null || scroll.movedByReader) return;
+				const floorWithoutSpacer = scroll.metrics.floor - current;
+				this.setSpacer(Math.min(current, Math.max(0, scroll.metrics.top - floorWithoutSpacer)));
+			}
+			/**
+			* Stop an outstanding native follow animation at its current position before a reading gesture.
+			* @param follow - follow controller bound to this scrollport.
+			*/
+			interruptFollow(follow) {
+				if (!follow.animating) return;
+				const metrics = this.metrics();
+				if (metrics === null || this.elements === null) return;
+				follow.interrupt(this.elements.scroller, metrics);
+				this.observation = {
+					top: metrics.top,
+					landing: null
+				};
+			}
+			/**
+			* Accept a sampled reader position without retaining a known landing.
+			* @param metrics - settled reader position used as the next attribution baseline.
+			*/
+			acknowledge(metrics) {
+				this.observation = {
+					top: metrics.top,
+					landing: null
+				};
+				this.reclaimBelow();
+			}
+			/**
+			* Compare the current scroll geometry with the last acknowledged position.
+			* @returns current metrics and movement attribution, or null while detached.
+			*/
+			readScroll() {
+				const metrics = this.metrics();
+				if (metrics === null) return null;
+				return {
+					metrics,
+					movedByReader: Math.abs(metrics.top - Math.min(this.observation.top, metrics.floor)) > .5
+				};
+			}
+			metrics() {
+				const scroller = this.elements?.scroller;
+				if (scroller === void 0) return null;
+				return scrollMetrics(scroller);
+			}
+			anchor(key, identity = "position") {
+				if (this.elements === null) return null;
+				let nodePart = null;
+				for (const row of this.elements.list.querySelectorAll("[data-chat-anchor-key]:not([hidden]):not([hidden] *)")) {
+					if (row.dataset.chatAnchorKey === key || identity === "node" && row.dataset.chatNodeKey === key) return row;
+					if (nodePart === null && row.dataset.chatNodeKey === key) nodePart = row;
+				}
+				return nodePart;
+			}
+			/**
+			* Capture visible transcript content, excluding Turn controls that relocate when history expands.
+			* @returns a visible semantic anchor, or null when no anchor can be resolved.
+			*/
+			capturePosition() {
+				const elements = this.elements;
+				if (elements === null) return null;
+				const { list, scroller, composer } = elements;
+				const viewport = scroller.getBoundingClientRect();
+				const bottom = composer?.getBoundingClientRect().top ?? viewport.bottom;
+				let anchor = null;
+				if (typeof document.elementsFromPoint === "function" && bottom > viewport.top) {
+					const content = list.getBoundingClientRect();
+					const left = Math.max(viewport.left, content.left);
+					const right = Math.min(viewport.right, content.right);
+					for (const element of document.elementsFromPoint(left + Math.max(0, right - left) / 2, viewport.top + 1)) {
+						const row = element instanceof HTMLElement ? element.closest("[data-chat-anchor-key]") : null;
+						if (row !== null && row.dataset.chatFlowKind !== "turn-process" && list.contains(row)) {
+							anchor = row.dataset.chatGroupKey === void 0 ? row : row.querySelector("[data-step-process-content] > [data-chat-anchor-key]:not(:empty):not([hidden]):not([hidden] *)") ?? row;
+							break;
+						}
+					}
+				}
+				if (anchor === null) {
+					const rows = list.querySelectorAll("[data-chat-flow-key]:not([data-chat-group-key]):not([data-chat-flow-kind=\"turn-process\"]):not(:empty):not([hidden]):not([hidden] *)");
+					let low = 0;
+					let high = rows.length;
+					while (low < high) {
+						const middle = low + high >>> 1;
+						if (rows.item(middle).getBoundingClientRect().bottom > viewport.top) high = middle;
+						else low = middle + 1;
+					}
+					const row = rows[low];
+					anchor = row !== void 0 && row.getBoundingClientRect().top < bottom ? row : rows[0] ?? null;
+				}
+				const key = anchor?.dataset.chatAnchorKey;
+				return anchor === null || key === void 0 ? null : {
+					anchorKey: key,
+					anchorTop: anchor.getBoundingClientRect().top - viewport.top,
+					scrollTop: scroller.scrollTop
+				};
+			}
+			/**
+			* Approximate the active Turn by binary-searching outer Node/Group boxes.
+			* Gaps retain the last visited Turn candidate, not necessarily the immediate predecessor.
+			* A known landing bypasses measurement while its position is unchanged.
+			* @param metrics - reusable scroll metrics; omitted callers request a fresh read.
+			* @returns the Turn near the reading line, or null while detached or empty.
+			*/
+			readVisibleTurn(metrics = this.metrics()) {
+				const knownTurn = this.observation.landing?.turn;
+				if (knownTurn != null && metrics?.top === this.observation.top) return knownTurn;
+				const elements = this.elements;
+				const first = this.turns[0];
+				if (elements === null || metrics === null || first === void 0) return null;
+				const line = elements.scroller.getBoundingClientRect().top + Math.min(96, metrics.height * .2);
+				const rows = (elements.column.querySelector(":scope > [data-slot=\"conversation.chat.flow\"]") ?? elements.column).children;
+				let low = 0;
+				let high = rows.length;
+				let reading = first.turn;
+				while (low < high) {
+					const middle = low + high >>> 1;
+					const row = rows[middle];
+					if (row.getBoundingClientRect().top > line) high = middle;
+					else {
+						const value = row.getAttribute("data-chat-turn");
+						const turn = value === null ? NaN : Number(value);
+						if (Number.isSafeInteger(turn)) reading = turn;
+						low = middle + 1;
+					}
+				}
+				return reading;
+			}
+			/**
+			* Align a known loaded turn and return its actual clamped position.
+			* A split Node anchor selects its first visible part.
+			* @param turn - loaded turn to align below the scrollport's top edge.
+			* @returns the actual landing, or null when its anchor is unavailable.
+			*/
+			scrollToTurn(turn) {
+				const item = this.turns.find((candidate) => candidate.turn === turn);
+				if (item === void 0) return null;
+				const row = this.anchor(item.anchorKey, "node");
+				return row === null ? null : this.align(row, 24, turn);
+			}
+			/**
+			* Align the nearest available fallback for an unavailable turn anchor.
+			* @param turn - minimum turn number for a mounted fallback row.
+			* @returns the fallback landing, or null when no eligible row exists.
+			*/
+			scrollToTurnAtOrAfter(turn) {
+				if (this.elements === null) return null;
+				for (const row of this.elements.list.querySelectorAll("[data-chat-turn]:not([hidden]):not([hidden] *)")) {
+					const candidate = Number(row.dataset.chatTurn);
+					if (Number.isSafeInteger(candidate) && candidate >= turn) return this.align(row, 24, candidate);
+				}
+				return null;
+			}
+			/**
+			* Restore a semantic anchor with a raw-position fallback.
+			* @param position - semantic scroll memory; raw top is used only if its row is absent.
+			* @returns the actual landing, or null while detached.
+			*/
+			restore(position) {
+				const row = this.anchor(position.anchorKey);
+				if (row !== null) return this.align(row, position.anchorTop, null);
+				const metrics = this.metrics();
+				return metrics === null ? null : this.write(position.scrollTop, metrics, null);
+			}
+			/** Retain the first eligible transcript seat in DOM order; selection reads no geometry. */
+			beginPaging() {
+				this.stopPreserving();
+				const row = this.elements?.list.querySelector("[data-chat-paging-anchor]:not(:empty):not([hidden]):not([hidden] *)");
+				if (row != null) this.retain(row);
+			}
+			/**
+			* Retain one old row and its inner/outer offsets for paging and later content growth.
+			* @param position - an explicit landing to retain; omitted callers capture the current reading position.
+			*/
+			beginPreserving(position = this.capturePosition()) {
+				this.stopPreserving();
+				if (position === null) return;
+				const row = this.anchor(position.anchorKey);
+				if (row === null) return;
+				this.retain(row, position);
+			}
+			retain(row, position, groupTop) {
+				const elements = this.elements;
+				const key = row.dataset.chatAnchorKey;
+				if (elements === null || key === void 0) return null;
+				const previous = this.paging?.group;
+				if (previous != null) this.observer?.unobserve(previous.content);
+				const top = row.getBoundingClientRect().top;
+				const body = row.closest("[data-step-process-body]");
+				const content = body?.querySelector("[data-step-process-content]");
+				const group = body === null || content == null ? null : {
+					body,
+					content,
+					top: groupTop ?? top - body.getBoundingClientRect().top
+				};
+				this.paging = {
+					row,
+					group,
+					position: position ?? {
+						anchorKey: key,
+						anchorTop: top - elements.scroller.getBoundingClientRect().top,
+						scrollTop: elements.scroller.scrollTop
+					}
+				};
+				if (group !== null) this.observer?.observe(group.content);
+				return this.paging;
+			}
+			/** Release paging ownership and its content-size observation. */
+			stopPreserving() {
+				const group = this.paging?.group;
+				if (group != null) this.observer?.unobserve(group.content);
+				this.paging = null;
+			}
+			/**
+			* Expose retained paging ownership to navigation and resize policy.
+			* @returns whether a paging row is retained for subsequent layout changes.
+			*/
+			get preserving() {
+				return this.paging !== null;
+			}
+			/**
+			* Compensate inner scrolling first, then the outer scrollport, within their actual scroll ranges.
+			* An inner write pauses its bound follow controller so the reading anchor takes priority.
+			* @returns the actual landing, or null when no visible retained row remains.
+			*/
+			preserve() {
+				let paging = this.paging;
+				const elements = this.elements;
+				if (paging === null || elements === null) return null;
+				if (!elements.list.contains(paging.row)) {
+					const replacement = this.anchor(paging.position.anchorKey);
+					if (replacement === null) {
+						this.stopPreserving();
+						return null;
+					}
+					paging = this.retain(replacement, paging.position, paging.group?.top);
+					if (paging === null) return null;
+				}
+				const { row, group, position } = paging;
+				if (row.closest("[hidden]") !== null || row.matches(":empty")) {
+					this.stopPreserving();
+					return null;
+				}
+				if (group !== null && group.body.contains(row)) {
+					const top = row.getBoundingClientRect().top - group.body.getBoundingClientRect().top;
+					const metrics = scrollMetrics(group.body);
+					const target = Math.max(0, Math.min(metrics.floor, metrics.top + top - group.top));
+					if (metrics.top !== target) {
+						const follow = ScrollFollow.forElement(group.body);
+						if (follow === void 0) group.body.scrollTop = target;
+						else {
+							follow.jump(group.body, metrics, target);
+							follow.setFollowing(false);
+						}
+					}
+				}
+				const metrics = this.metrics();
+				if (metrics === null) return null;
+				const top = row.getBoundingClientRect().top - elements.scroller.getBoundingClientRect().top;
+				const target = metrics.top + top - position.anchorTop;
+				return this.write(target, metrics, null, {
+					key: position.anchorKey,
+					top
+				});
+			}
+			/**
+			* Align with the physical floor, including fold room that newer content has not yet filled.
+			* @param follow - independent follow intent and scrolling controller.
+			* @param behavior - immediate positioning, or one native animation for a reader-caused tail change.
+			* @returns the actual floor landing, or null while detached. A smooth landing reports the starting
+			* position; native scroll delivery moves it.
+			*/
+			scrollToBottom(follow, behavior = "instant") {
+				const metrics = this.metrics();
+				if (metrics === null || this.elements === null) return null;
+				this.observation = {
+					top: metrics.top,
+					landing: null
+				};
+				this.reclaimBelow();
+				const landing = {
+					metrics: follow.toBottom(this.elements.scroller, scrollMetrics(this.elements.scroller), behavior),
+					position: null,
+					turn: this.latestTurn
+				};
+				this.observation = {
+					top: landing.metrics.top,
+					landing
+				};
+				return landing;
+			}
+			align(row, offset, turn) {
+				const metrics = this.metrics();
+				if (metrics === null || this.elements === null) return null;
+				const top = row.getBoundingClientRect().top - this.elements.scroller.getBoundingClientRect().top;
+				return this.write(metrics.top + top - offset, metrics, turn, {
+					key: row.dataset.chatAnchorKey,
+					top
+				});
+			}
+			write(target, metrics, turn, anchor) {
+				if (this.elements === null) return null;
+				const top = Math.max(0, Math.min(metrics.floor, target));
+				if (top !== metrics.top) this.elements.scroller.scrollTop = top;
+				const actual = this.elements.scroller.scrollTop;
+				const landing = {
+					metrics: {
+						...metrics,
+						top: actual
+					},
+					turn,
+					position: anchor?.key === void 0 ? null : {
+						anchorKey: anchor.key,
+						anchorTop: anchor.top - (actual - metrics.top),
+						scrollTop: actual
+					}
+				};
+				this.observation = {
+					top: actual,
+					landing
+				};
+				return landing;
+			}
+			onScroll = (event) => {
+				if (this.elements === null || event.target !== this.elements.scroller) return;
+				if (this.observation.landing !== null && this.elements.scroller.scrollTop === this.observation.top) return;
+				this.invalidate();
+				if (this.paging !== null) {
+					this.events?.resize();
+					return;
+				}
+				const scroll = this.readScroll();
+				if (scroll !== null) this.events?.scroll(scroll);
+			};
+			onScrollEnd = (event) => {
+				if (event.target === this.elements?.scroller) {
+					this.events?.scrollEnd(true);
+					this.reclaimBelow();
+				} else if (event.target instanceof HTMLElement && event.target.hasAttribute("data-step-process-body")) this.events?.scrollEnd(false);
+			};
+			onIntent = (event) => {
+				if (event.type === "keydown" || event.type === "pointerdown") {
+					if (event.target instanceof Element && event.target.closest("[data-composer-seat]") !== null) return;
+					if (event.type === "keydown" && (!(event instanceof KeyboardEvent) || !SCROLL_KEYS$1.has(event.key))) return;
+				}
+				this.events?.intent?.();
+				if (this.paging === null) return;
+				this.stopPreserving();
+				this.events?.interact();
+			};
+		};
+		/**
+		* Bind viewport resource ownership to the component's layout lifetime.
+		* @returns one viewport owner and the element refs attached for this mount.
+		*/
+		function useChatViewport() {
+			const listRef = (0, react.useRef)(null);
+			const columnRef = (0, react.useRef)(null);
+			const [viewport] = (0, react.useState)(() => new ChatViewport());
+			(0, react.useLayoutEffect)(() => {
+				if (listRef.current === null || columnRef.current === null) return;
+				viewport.attach(listRef.current, columnRef.current);
+				return () => {
+					viewport.detach();
+				};
+			}, [viewport]);
+			return {
+				viewport,
+				listRef,
+				columnRef
+			};
+		}
+		//#endregion
+		//#region lib/types/client/chat/use-chat-scroll.js
+		/** Composes viewport operations, reading policy, and history navigation for Chat. */
+		/**
+		* Coordinate scroll policy after Chat content commits. Initial history must be ready
+		* before automatic scroll or resize handling can initialize reading state and fold motion.
+		* New submitted input supersedes pending reader sampling.
+		* @param input - current Chat content, scroll memory, and history operations.
+		* @returns element refs, visible reading state, and navigation callbacks.
+		*/
+		function useChatScroll(input) {
+			const { ready, order, firstSeq, lastKey, lastIsUser, steeringId, submissionId, running, deferCompletedTurns, loadedTurns, chatScroll, hasMore, loadingOlder, loadOlder, loadThrough, transcriptView } = input;
+			const { viewport, listRef, columnRef } = useChatViewport();
+			const { reading, state } = useChatReading(viewport, chatScroll, loadedTurns.at(-1)?.turn ?? null);
+			const navigationInput = (0, react.useMemo)(() => ({
+				firstSeq,
+				loadingOlder,
+				hasMore,
+				loadOlder,
+				loadThrough
+			}), [
+				firstSeq,
+				loadingOlder,
+				hasMore,
+				loadOlder,
+				loadThrough
+			]);
+			const { navigation, busyTurn } = useChatNavigation(viewport, reading, navigationInput);
+			const content = (0, react.useRef)({
+				input,
+				applied: null,
+				opened: false
+			});
+			const cancelPendingFollow = (0, react.useCallback)(() => {
+				viewport.motion.cancelInput();
+			}, [viewport]);
+			const processContent = (0, react.useCallback)(() => {
+				const current = content.current.input;
+				if (!current.ready && !content.current.opened) return;
+				const previous = content.current.applied;
+				const ownInput = current.lastIsUser && current.lastKey !== previous?.lastKey || current.steeringId !== null && current.steeringId !== previous?.steeringId && current.steeringId !== previous?.submissionId || current.submissionId !== null && current.submissionId !== previous?.submissionId && current.submissionId !== previous?.steeringId;
+				if (reading.pending && !ownInput) return;
+				content.current.applied = current;
+				if (current.ready && !content.current.opened) {
+					content.current.opened = true;
+					navigation.reset();
+					reading.restore();
+					return;
+				}
+				if (ownInput) {
+					navigation.cancel();
+					if (current.deferCompletedTurns && reading.followInputFold()) return;
+					reading.followTail(current.deferCompletedTurns ? "smooth" : "instant");
+					return;
+				}
+				if (navigation.contentCommitted()) {
+					navigation.reconcile();
+					return;
+				}
+				if ((previous === null || current.ready !== previous.ready || current.firstSeq !== previous.firstSeq || current.lastKey !== previous.lastKey || current.order.length !== previous.order.length || current.running !== previous.running || current.steeringId !== previous.steeringId || current.submissionId !== previous.submissionId) && reading.followingTail) {
+					navigation.cancel();
+					if (current.deferCompletedTurns && reading.followInputFold()) return;
+					reading.followTail();
+				} else navigation.reconcile();
+			}, [reading, navigation]);
+			(0, react.useLayoutEffect)(() => {
+				const disconnectViewport = viewport.connect({
+					scroll: (event) => {
+						if (!content.current.opened) return;
+						if (!event.movedByReader && viewport.motion.foldActive()) return;
+						reading.onScroll(event);
+					},
+					scrollEnd: (outer) => {
+						reading.onScrollEnd(outer);
+						navigation.readerSettled();
+					},
+					interact: () => {
+						navigation.cancel();
+					},
+					intent: () => {
+						cancelPendingFollow();
+						reading.interruptFollow();
+					},
+					resize: () => {
+						if (!content.current.opened) return;
+						if (navigation.contentCommitted()) {
+							navigation.reconcile();
+							return;
+						}
+						if (!content.current.input.deferCompletedTurns || !viewport.motion.foldActive()) reading.onResize();
+						navigation.reconcile();
+					}
+				});
+				const disconnectReading = reading.connect((sample) => {
+					navigation.readerSampled(sample);
+					processContent();
+				});
+				return () => {
+					disconnectViewport();
+					disconnectReading();
+					content.current.opened = false;
+					content.current.applied = null;
+				};
+			}, [
+				viewport,
+				reading,
+				navigation,
+				processContent,
+				cancelPendingFollow
+			]);
+			(0, react.useLayoutEffect)(() => {
+				const previous = content.current.input;
+				content.current.input = {
+					ready,
+					order,
+					lastKey,
+					lastIsUser,
+					steeringId,
+					submissionId,
+					running,
+					loadedTurns,
+					chatScroll,
+					deferCompletedTurns,
+					transcriptView,
+					...navigationInput
+				};
+				if (!deferCompletedTurns) {
+					cancelPendingFollow();
+					reading.interruptFollow();
+				}
+				viewport.updateTurns(loadedTurns);
+				const layoutChanged = previous.order !== order || previous.ready !== ready;
+				if (layoutChanged) viewport.invalidate();
+				viewport.reclaimBelow();
+				processContent();
+				if (layoutChanged && content.current.opened) reading.refreshActiveTurn();
+			}, [
+				viewport,
+				reading,
+				processContent,
+				navigationInput,
+				ready,
+				order,
+				lastKey,
+				lastIsUser,
+				steeringId,
+				submissionId,
+				running,
+				loadedTurns,
+				chatScroll,
+				deferCompletedTurns,
+				transcriptView,
+				cancelPendingFollow
+			]);
+			const previousView = (0, react.useRef)(transcriptView);
+			(0, react.useLayoutEffect)(() => {
+				if (previousView.current === transcriptView) return;
+				previousView.current = transcriptView;
+				cancelPendingFollow();
+				reading.interruptFollow();
+				return viewport.motion.onFoldIdle(() => {
+					viewport.resetBelow();
+					if (content.current.opened) reading.onResize();
+				});
+			}, [
+				transcriptView,
+				viewport,
+				reading,
+				cancelPendingFollow
+			]);
+			const returnToBottom = (0, react.useCallback)(() => {
+				cancelPendingFollow();
+				navigation.cancel();
+				reading.followTail();
+			}, [
+				navigation,
+				reading,
+				cancelPendingFollow
+			]);
+			return {
+				listRef,
+				columnRef,
+				...state,
+				busyTurn,
+				motion: viewport.motion,
+				navigateToTurn: navigation.navigateToTurn,
+				loadEarlier: navigation.loadEarlier,
+				returnToBottom
+			};
+		}
+		//#endregion
 		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/ChatView.module.css.mjs
-		const css$13 = ".EvIC1a_frame{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative;container-type:inline-size}.EvIC1a_root{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative;overflow:visible clip}.EvIC1a_scroll{min-height:0;padding:16px calc(var(--dsh-composer-side-clearance) + 16px);flex:auto;overflow-y:auto;container-type:inline-size}.EvIC1a_root[data-chat-following-tail] .EvIC1a_scroll,[data-conversation-scroll]:has(.EvIC1a_root[data-chat-following-tail]){overflow-anchor:none}[data-conversation-scroll] .EvIC1a_frame,[data-conversation-scroll] .EvIC1a_root{flex:none;height:auto;min-height:auto}[data-conversation-scroll] .EvIC1a_scroll{flex:none;min-height:auto;overflow:visible}.EvIC1a_column{max-width:var(--dsh-chat-content-width);flex-direction:column;width:100%;margin:0 auto;display:flex}.EvIC1a_column>:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty)))~:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty))){margin-top:var(--dsh-chat-flow-gap,6px)}.EvIC1a_flowItem[data-chat-group-part=response],.EvIC1a_column>[data-chat-group-part=response]:not([hidden]):not(:empty)+:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty))):not(.EvIC1a_running){--dsh-chat-flow-gap:12px}.EvIC1a_flowItem{min-width:0}.EvIC1a_flowItem[data-chat-flow-kind=turn-process],.EvIC1a_flowItem[data-turn-process-answer],.EvIC1a_column>[data-chat-flow-kind=turn-process]+:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty))):not(.EvIC1a_running){--dsh-chat-flow-gap:16px}.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty)){height:0}.EvIC1a_callRow{border-radius:var(--dsw-radius-sm)}.EvIC1a_hint{color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px))}.EvIC1a_running{--dsh-chat-flow-gap:12px;--dsw-alias-label-shimmer:var(--dsw-alias-label-deep-diving-shimmer);color:var(--dsw-alias-label-deep-diving);font-size:calc(var(--dsh-content-font-size,14px) - 2px);line-height:calc(22px + var(--dsh-content-font-delta,0px));flex-direction:column;align-items:flex-start;display:flex}.EvIC1a_column>:nth-last-child(2 of :not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty)))):is(.EvIC1a_flowItem:not([data-chat-flow-kind=user]):not([data-chat-flow-kind=steering]):not([data-chat-flow-kind=turn-trigger]),[data-chat-group-key])~.EvIC1a_running>.EvIC1a_runningDivider{display:block}.EvIC1a_runningDivider{background:color-mix(in srgb, var(--dsw-alias-border-l1) 75%, var(--dsw-alias-border-l2));pointer-events:none;width:100%;height:.5px;margin:8px 0 10px;display:none}.EvIC1a_runningContent{align-items:center;gap:6px;min-width:0;display:inline-flex}.EvIC1a_runningText{font-variant-numeric:tabular-nums;min-width:0}.EvIC1a_runningIcon{width:calc(14px + var(--dsh-content-font-delta,0px));height:calc(14px + var(--dsh-content-font-delta,0px));contain:strict;flex:none;display:inline-flex;position:relative;overflow:hidden}.EvIC1a_runningWhaleAnimated{display:none;position:absolute;inset:0}.EvIC1a_runningWhaleStill{display:initial}@supports (mask-mode:alpha) and (mask-image:url('')){@media (prefers-reduced-motion:no-preference) and (forced-colors:none){.EvIC1a_runningWhaleAnimated{will-change:transform;background:currentColor;display:block;mask:url(data:image/png;base64,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) 50%/100% 100% no-repeat alpha}.EvIC1a_runningWhaleStill{display:none}}}.EvIC1a_openError{color:var(--dsw-alias-state-error-primary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px))}.EvIC1a_older{justify-content:center;display:flex}.EvIC1a_older button{border-radius:var(--dsw-radius-sm);color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover-solid);cursor:pointer;border:none;padding:4px 12px;font-size:12px}.EvIC1a_older button:disabled{cursor:default;opacity:.6}.EvIC1a_toBottomSlot{z-index:8;height:0;padding-right:max(calc(var(--dsh-composer-side-clearance) + 16px), calc((100% - var(--dsh-chat-content-width)) / 2));pointer-events:none;justify-content:flex-end;display:flex;position:absolute;bottom:16px;left:0;right:0}[data-conversation-scroll] .EvIC1a_toBottomSlot{bottom:calc(var(--dsh-composer-height,152px) + 16px);position:sticky}.EvIC1a_toBottom{--dsw-elevation-stroke-color:var(--dsw-alias-border-l3);corner-shape:round;width:34px;height:34px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-button-floating-fill);box-shadow:var(--dsw-elevation-panel);cursor:pointer;pointer-events:auto;border:0;border-radius:100px;justify-content:center;align-items:center;margin-top:-34px;padding:0;display:flex}.EvIC1a_toBottom:hover{background:var(--dsw-alias-button-floating-hover)}.EvIC1a_modalAction{min-width:72px}";
-		const tagId$13 = "@deepseek-ai/dsh-client-ui-chat/ChatView.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$13) + "]") === null) {
+		const css$16 = ".EvIC1a_frame{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative;container-type:inline-size}.EvIC1a_root{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative;overflow:visible clip}.EvIC1a_scroll{min-height:0;padding:16px calc(var(--dsh-composer-side-clearance) + 16px);flex:auto;overflow-y:auto;container-type:inline-size}.EvIC1a_root[data-chat-following-tail] .EvIC1a_scroll,[data-conversation-scroll]:has(.EvIC1a_root[data-chat-following-tail]){overflow-anchor:none}[data-conversation-scroll] .EvIC1a_frame,[data-conversation-scroll] .EvIC1a_root{flex:none;height:auto;min-height:auto}[data-conversation-scroll] .EvIC1a_scroll{flex:none;min-height:auto;overflow:visible}.EvIC1a_column{max-width:var(--dsh-chat-content-width);flex-direction:column;width:100%;margin:0 auto;display:flex}:is(.EvIC1a_column,[data-slot=\"conversation.chat.flow\"])>:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty)))~:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty))),.EvIC1a_column:has(>.EvIC1a_older)>[data-slot=\"conversation.chat.flow\"]>:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty))){margin-top:var(--dsh-chat-flow-gap,6px)}.EvIC1a_flowItem[data-chat-group-part=response],:is(.EvIC1a_column,[data-slot=\"conversation.chat.flow\"])>[data-chat-group-part=response]:not([hidden]):not(:empty)+:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty))):not(.EvIC1a_running){--dsh-chat-flow-gap:12px}.EvIC1a_flowItem{min-width:0}.EvIC1a_turnSpacer{height:0}.EvIC1a_column[data-chat-motion]>:not([data-chat-motion]),.EvIC1a_column[data-chat-motion]>[data-slot=\"conversation.chat.flow\"]>:not([data-chat-motion]){transition:margin-top .16s cubic-bezier(.4,0,.2,1)}.EvIC1a_column[data-input-fold]>:not([data-chat-motion]),.EvIC1a_column[data-input-fold]>[data-slot=\"conversation.chat.flow\"]>:not([data-chat-motion]){transition:none}@media (prefers-reduced-motion:reduce){.EvIC1a_column[data-chat-motion]>:not([data-chat-motion]),.EvIC1a_column[data-chat-motion]>[data-slot=\"conversation.chat.flow\"]>:not([data-chat-motion]){transition:none}}.EvIC1a_flowItem[data-chat-flow-kind=turn-process],.EvIC1a_flowItem[data-turn-process-answer],:is(.EvIC1a_column,[data-slot=\"conversation.chat.flow\"])>[data-chat-flow-kind=turn-process]+:not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty))):not(.EvIC1a_running){--dsh-chat-flow-gap:16px}.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty)){height:0}.EvIC1a_callRow{border-radius:var(--dsw-radius-sm)}.EvIC1a_hint{color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px))}.EvIC1a_running{--dsh-chat-flow-gap:12px;--dsw-alias-label-shimmer:var(--dsw-alias-label-deep-diving-shimmer);color:var(--dsw-alias-label-deep-diving);font-size:calc(var(--dsh-content-font-size,14px) - 2px);line-height:calc(22px + var(--dsh-content-font-delta,0px));flex-direction:column;align-items:flex-start;display:flex}:is(.EvIC1a_column,[data-slot=\"conversation.chat.flow\"])>:nth-last-child(2 of :not([hidden]):not(.EvIC1a_flowItem:is(:empty,:has(>[data-slot=\"conversation.chat.node\"]:empty)))):is(.EvIC1a_flowItem:not([data-chat-flow-kind=user]):not([data-chat-flow-kind=steering]):not([data-chat-flow-kind=turn-trigger]),[data-chat-group-key])~.EvIC1a_running>.EvIC1a_runningDivider{display:block}.EvIC1a_runningDivider{background:color-mix(in srgb, var(--dsw-alias-border-l1) 75%, var(--dsw-alias-border-l2));pointer-events:none;width:100%;height:.5px;margin:8px 0 10px;display:none}.EvIC1a_runningContent{align-items:center;gap:6px;min-width:0;display:inline-flex}.EvIC1a_runningText{font-variant-numeric:tabular-nums;min-width:0}.EvIC1a_runningIcon{width:calc(14px + var(--dsh-content-font-delta,0px));height:calc(14px + var(--dsh-content-font-delta,0px));contain:strict;flex:none;display:inline-flex;position:relative;overflow:hidden}.EvIC1a_runningWhaleAnimated{display:none;position:absolute;inset:0}.EvIC1a_runningWhaleStill{display:initial}@supports (mask-mode:alpha) and (mask-image:url('')){@media (prefers-reduced-motion:no-preference) and (forced-colors:none){.EvIC1a_runningWhaleAnimated{will-change:transform;background:currentColor;display:block;mask:url(data:image/png;base64,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) 50%/100% 100% no-repeat alpha}.EvIC1a_runningWhaleStill{display:none}}}.EvIC1a_openError{color:var(--dsw-alias-state-error-primary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px))}.EvIC1a_older{justify-content:center;display:flex}.EvIC1a_older button{border-radius:var(--dsw-radius-sm);color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover-solid);cursor:pointer;border:none;padding:4px 12px;font-size:12px}.EvIC1a_older button:disabled{cursor:default;opacity:.6}.EvIC1a_toBottomSlot{z-index:8;height:0;padding-right:max(calc(var(--dsh-composer-side-clearance) + 16px), calc((100% - var(--dsh-chat-content-width)) / 2));pointer-events:none;justify-content:flex-end;display:flex;position:absolute;bottom:16px;left:0;right:0}[data-conversation-scroll] .EvIC1a_toBottomSlot{bottom:calc(var(--dsh-composer-height,152px) + 16px);position:sticky}.EvIC1a_toBottom{--dsw-elevation-stroke-color:var(--dsw-alias-border-l3);corner-shape:round;width:34px;height:34px;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-button-floating-fill);box-shadow:var(--dsw-elevation-panel);cursor:pointer;pointer-events:auto;border:0;border-radius:100px;justify-content:center;align-items:center;margin-top:-34px;padding:0;display:flex}.EvIC1a_toBottom:hover{background:var(--dsw-alias-button-floating-hover)}.EvIC1a_modalAction{min-width:72px}";
+		const tagId$16 = "@deepseek-ai/dsh-client-ui-chat/ChatView.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$16) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
-			tag.dataset.pluginCss = tagId$13;
-			tag.textContent = css$13;
+			tag.dataset.pluginCss = tagId$16;
+			tag.textContent = css$16;
 			document.head.appendChild(tag);
 		}
 		var ChatView_module_css_default = {
@@ -1696,137 +2752,281 @@ DSHConversationActions.installConversationActions();
 			"runningWhaleStill": "EvIC1a_runningWhaleStill",
 			"scroll": "EvIC1a_scroll",
 			"toBottom": "EvIC1a_toBottom",
-			"toBottomSlot": "EvIC1a_toBottomSlot"
+			"toBottomSlot": "EvIC1a_toBottomSlot",
+			"turnSpacer": "EvIC1a_turnSpacer"
 		};
 		//#endregion
-		//#region lib/types/client/chat/ChatNodeSeat.js
-		function turnDataOf(node) {
-			const location = node?.location;
-			return location?.kind === "turn" || location?.kind === "step" ? location.turn.data : void 0;
-		}
-		function turnOf$1(node) {
-			const location = node?.location;
-			return location?.kind === "turn" || location?.kind === "step" ? location.turn.turn : void 0;
+		//#region lib/types/client/chat/ChatView.js
+		/** Host/OS refusal text for the file-open dialog; empty throws keep a locale fallback. */
+		function openFailureMessage(error, fallback) {
+			const message = error instanceof Error ? error.message : String(error);
+			return message === "" ? fallback : message;
 		}
 		/**
-		* Subscribe, apply Turn-process visibility, and dispatch one stable Context key.
-		* Policy reads select this seat's own conclusion, so a mode change re-renders
-		* only seats whose visibility actually changes.
+		* Durable input identities suppress matching echoes in the same render.
+		* The last input's Turn also distinguishes an empty opening control from
+		* one whose human input or trigger notice is already present.
 		*/
-		const ChatNodeSeat = (0, react.memo)(function ChatNodeSeat({ nodeKey, groupPart, useChatNode, useChatNodeProcess, usePresentation, cwd, openFile, openSkill, inspectCall, forkAt, loadImage, renderMessageImages, fileMentions, useStore, actions, renderSlot, t }) {
-			const node = useChatNode(nodeKey);
-			const routedNode = node;
-			const turn = turnOf$1(routedNode);
-			const processPresentation = useChatNodeProcess(nodeKey);
-			const processSpec = processPresentation?.spec;
-			const storedEntry = useStore((state) => processSpec === void 0 ? void 0 : storedTurnProcessEntry(state, processSpec.turn));
-			const processEntry = processSpec !== void 0 && storedEntry?.answerStep === (processSpec.answerStep ?? 0) ? storedEntry : void 0;
-			const liveProcess = processPresentation !== void 0 && !processPresentation.turnClosed;
-			const interleavedInput = processPresentation?.hasInterleavedInput === true;
-			const alwaysOpen = liveProcess || interleavedInput || turnProcessAlwaysOpen(routedNode);
-			const processOpen = alwaysOpen || processEntry !== void 0;
-			const setOpen = (0, react.useCallback)((open) => {
-				if (processSpec !== void 0 && !alwaysOpen) actions.setTurnProcessOpen(processSpec.turn, processSpec.answerStep ?? 0, open);
-			}, [
-				actions,
-				processSpec,
-				alwaysOpen
-			]);
-			const foldCompleted = usePresentation((policy) => policy.foldCompletedTurns);
-			const processWindowReady = processSpec !== void 0 && processPresentation !== void 0 && foldCompleted && processPresentation.turn === processSpec.turn && (processPresentation.turnStarted || processPresentation.turnClosed);
-			const processMember = routedNode !== void 0 && processWindowReady && !TURN_PROCESS_INDEPENDENT_KINDS.has(routedNode.kind) && routedNode.anchorSeq >= processSpec.processStartSeq && (liveProcess || processSpec.answerAnchorSeq === null || routedNode.anchorSeq < processSpec.answerAnchorSeq || groupPart === "reasoning" && routedNode.kind === "assistant-step" && routedNode.data.step === processSpec.answerStep);
-			const processAnswer = routedNode !== void 0 && processWindowReady && !liveProcess && groupPart !== "reasoning" && routedNode.kind === "assistant-step" && routedNode.data.step === processSpec.answerStep;
-			const ownsDisclosure = routedNode?.kind === "turn-process" || processAnswer;
-			const foldable = processWindowReady && (liveProcess || processMember || ownsDisclosure);
-			const turnProcess = (0, react.useMemo)(() => processSpec === void 0 ? void 0 : {
-				spec: processSpec,
-				foldable,
-				hasContent: !interleavedInput && (processPresentation?.hasExternalProcess === true || processSpec.inlineReasoning),
-				open: processOpen,
-				setOpen
-			}, [
-				foldable,
-				interleavedInput,
-				processOpen,
-				processSpec,
-				processPresentation?.hasExternalProcess,
-				setOpen
-			]);
-			const controllerInactive = routedNode?.kind === "turn-process" && foldCompleted && !foldable;
-			const compactAnswer = processAnswer && foldable && processPresentation.compactAnswer && !processOpen;
-			const processHidden = controllerInactive || foldable && processMember && !processOpen;
-			const wrapperRef = useSearchableHidden(processHidden, (0, react.useCallback)(() => {
-				if (processMember) setOpen(true);
-			}, [processMember, setOpen]));
-			const [disclosureReset] = (0, react.useState)(() => (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(0));
-			const turnData = turnDataOf(routedNode);
-			const hookContext = (0, react.useMemo)(() => ({
-				turnData,
-				disclosureReset
-			}), [turnData, disclosureReset]);
-			(0, react.useEffect)(() => {
-				if (processMember && processHidden && wrapperRef.current?.hasAttribute("hidden")) disclosureReset.set(disclosureReset.getSnapshot() + 1);
-			}, [
-				processMember,
-				processHidden,
-				wrapperRef,
-				disclosureReset
-			]);
-			const owner = (0, react.useMemo)(() => node === void 0 ? null : {
-				...groupPart === void 0 ? {} : { groupPart },
-				cwd,
-				openFile,
-				openSkill,
-				inspectCall,
-				forkAt,
-				loadImage,
-				renderMessageImages,
-				fileMentions,
-				turnProcess
-			}, [
-				node,
-				groupPart,
-				cwd,
-				openFile,
-				openSkill,
-				inspectCall,
-				forkAt,
-				loadImage,
-				renderMessageImages,
-				fileMentions,
-				turnProcess
-			]);
-			if (routedNode === void 0 || owner === null) return null;
-			const routedOwner = {
-				...owner,
-				node: routedNode
+		function observedInputs(order, nodes) {
+			const observed = /* @__PURE__ */ new Set();
+			let lastInputTurn;
+			for (const key of order) {
+				const node = nodes.get(key);
+				if (node === void 0 || !isAtOrOutside(node, "input")) continue;
+				if (node.location.kind === "turn" || node.location.kind === "step") lastInputTurn = node.location.turn.turn;
+				const data = node.data;
+				const source = typeof data === "object" && data !== null && "source" in data ? data.source : void 0;
+				if (typeof source === "object" && source !== null && "kind" in source && source.kind === "user" && "rpcId" in source && typeof source.rpcId === "string") observed.add(source.rpcId);
+			}
+			return {
+				rpcIds: observed,
+				lastInputTurn
 			};
-			const flowKey = groupPart === void 0 || groupPart === "response" ? routedNode.key : JSON.stringify([routedNode.key, groupPart]);
-			return (0, react_jsx_runtime.jsx)("div", {
-				ref: wrapperRef,
-				className: ChatView_module_css_default.flowItem,
-				"data-chat-anchor-key": flowKey,
-				"data-chat-flow-key": flowKey,
-				"data-chat-paging-anchor": routedNode.kind !== "turn-process" || void 0,
-				"data-chat-node-key": routedNode.key,
-                "data-conversation-message-seq": routedNode.kind === "user" || routedNode.kind === "steering" ? routedNode.anchorSeq : routedNode.kind === "assistant-step" && routedNode.data.finalNode?.messageId !== void 0 ? routedNode.data.finalNode?.seq : void 0,
-				"data-chat-group-part": groupPart,
-				"data-chat-flow-kind": routedNode.kind,
-				"data-chat-turn": turn,
-				"data-turn-process-member": processMember || void 0,
-				"data-turn-process-hidden": processHidden || void 0,
-				"data-turn-process-answer": compactAnswer || void 0,
-				children: renderSlot("conversation.chat.node", routedOwner, {
-					entryKey: routedNode.kind,
-					hookContext,
-					fallback: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
-						label: t("message.unknownSurface", { type: routedNode.kind }),
-						payload: routedNode.data,
-						truncatedLabel: (total) => t("json.truncated", { total })
-					})
-				})
+		}
+		/** How long fold transitions stay enabled after a Turn stops running. */
+		const MOTION_TAIL_MS = 800;
+		/**
+		* The chat view slot entry: pure component over the composed props; each
+		* ordered business Node crosses the keyed renderer seat.
+		*/
+		function ConversationManagementButton({sessionId}) {return (0,react_jsx_runtime.jsx)("button",{type:"button",className:"dsh-ca-manage-trigger",children:"消息管理",onClick:event=>document.dispatchEvent(new CustomEvent("dsh:conversation-actions",{detail:{sessionId,origin:event.currentTarget.closest("[data-conversation-session]")}}))});}
+        function ChatView({ useSession, useChat, useConversation, useSessions, renderSlot, sessionId, openFile, openExternalLink, loadOlder, loadThrough, loadImage, inspectCall, chatScroll, forkAt, fileMentions, usePresentation, useProjection, t }) {
+			const order = useChat((s) => s.order);
+			const groupedEntries = useConversation((snapshot) => snapshot.views.grouped("chat")?.entries);
+			const entries = (0, react.useMemo)(() => groupedEntries ?? order.map((key) => ({
+				kind: "node",
+				key
+			})), [groupedEntries, order]);
+			const nodeStore = useChat((s) => s.nodes);
+			const deferCompletedTurns = usePresentation((policy) => policy.collapseTiming === "next-input");
+			const transcriptView = usePresentation((policy) => policy.mode);
+			const turnNavigationItems = useChat((s) => s.navigation.items());
+			const turnOutline = useProjection("turnOutline");
+			const conversationEdited=useConversation(s=>s.edited === true);
+            const railItems = (0, react.useMemo)(() => mergeTurnRailItems(turnNavigationItems, conversationEdited ? void 0 : turnOutline), [turnNavigationItems, turnOutline, conversationEdited]);
+			const inbox = useProjection("inbox");
+			const cwd = useSessions((s) => s.byId[sessionId]?.cwd);
+			const fileImages = (0, react.useMemo)(() => ({
+				resolve: (path) => fileMediaUrl(document.baseURI, resolveWorkspacePath(cwd, path)),
+				labels: {
+					open: t("image.open"),
+					loading: t("image.loading"),
+					failed: t("image.failed"),
+					dialog: t("image.dialog"),
+					close: t("image.close")
+				}
+			}), [cwd, t]);
+			const running = useSession((s) => s.running);
+			const [motionTail, setMotionTail] = (0, react.useState)(false);
+			(0, react.useEffect)(() => {
+				if (!deferCompletedTurns) {
+					setMotionTail(false);
+					return;
+				}
+				if (running) {
+					setMotionTail(true);
+					return;
+				}
+				const timer = setTimeout(() => {
+					setMotionTail(false);
+				}, MOTION_TAIL_MS);
+				return () => {
+					clearTimeout(timer);
+				};
+			}, [running, deferCompletedTurns]);
+			const openState = useSession((s) => s.openState);
+			const openError = useSession((s) => s.openError);
+			const hasMore = useSession((s) => s.hasMore);
+			const loadingOlder = useSession((s) => s.loadingOlder);
+			const [fileOpenError, setFileOpenError] = (0, react.useState)(null);
+			const [fileOpenBusy, setFileOpenBusy] = (0, react.useState)(false);
+			const fileOpenRequest = (0, react.useRef)(0);
+			const requestOpenFile = (0, react.useCallback)((path, options) => {
+				const id = ++fileOpenRequest.current;
+				setFileOpenBusy(true);
+				(options === void 0 ? openFile(path) : openFile(path, options)).then(() => {
+					if (id !== fileOpenRequest.current) return;
+					setFileOpenError(null);
+					setFileOpenBusy(false);
+				}, (error) => {
+					if (id !== fileOpenRequest.current) return;
+					setFileOpenError({
+						path,
+						message: openFailureMessage(error, t("fileOpen.unknown"))
+					});
+					setFileOpenBusy(false);
+				});
+			}, [openFile, t]);
+			const closeFileOpenError = (0, react.useCallback)(() => {
+				fileOpenRequest.current += 1;
+				setFileOpenError(null);
+				setFileOpenBusy(false);
+			}, []);
+			const inboxSteering = (0, react.useMemo)(() => inbox?.["next-step"].filter((message) => message.source.kind === "user") ?? [], [inbox]);
+			const pendingSubmissions = useSession((s) => s.pendingSubmissions);
+			const [visibleSubmissions, lastInputTurn] = (0, react.useMemo)(() => {
+				if (pendingSubmissions.length === 0) return [pendingSubmissions, void 0];
+				const observed = observedInputs(order, nodeStore);
+				return [pendingSubmissions.filter((submission) => submission.placement !== "queued" && !observed.rpcIds.has(submission.requestId)), observed.lastInputTurn];
+			}, [
+				pendingSubmissions,
+				order,
+				nodeStore
+			]);
+			const pendingInputs = (0, react.useMemo)(() => {
+				const local = new Map(visibleSubmissions.map((submission) => [submission.requestId, submission]));
+				const localIds = new Set(pendingSubmissions.filter((submission) => submission.placement !== "queued").map((submission) => submission.requestId));
+				return [...inboxSteering.flatMap((item) => {
+					const source = item.source;
+					if (source.kind !== "user" || !("rpcId" in source)) return [item];
+					const submission = local.get(source.rpcId);
+					if (submission === void 0) return localIds.has(source.rpcId) ? [] : [item];
+					local.delete(source.rpcId);
+					return [submission];
+				}), ...local.values()];
+			}, [
+				inboxSteering,
+				pendingSubmissions,
+				visibleSubmissions
+			]);
+			const deferCollapse = deferCompletedTurns && !pendingInputs.some((item) => "requestId" in item && item.placement === "transcript");
+			const firstKey = order[0];
+			const firstSeq = firstKey === void 0 ? null : nodeStore.get(firstKey)?.anchorSeq ?? null;
+			const lastKey = order.at(-1) ?? null;
+			const latestSteering = pendingInputs.findLast((item) => "source" in item);
+			const steeringId = latestSteering?.source.kind === "user" && "rpcId" in latestSteering.source ? latestSteering.source.rpcId : latestSteering?.id ?? null;
+			const scroll = useChatScroll({
+				ready: openState === "open",
+				order,
+				firstSeq,
+				lastKey,
+				running,
+				loadingOlder,
+				hasMore,
+				chatScroll,
+				loadOlder,
+				loadThrough,
+				deferCompletedTurns,
+				lastIsUser: lastKey !== null && nodeStore.get(lastKey)?.kind === "user",
+				steeringId,
+				submissionId: visibleSubmissions.at(-1)?.requestId ?? null,
+				loadedTurns: turnNavigationItems,
+				transcriptView
 			});
-		});
+			const flowContext = (0, react.useMemo)(() => ({ motion: scroll.motion }), [scroll.motion]);
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: ChatView_module_css_default.frame,
+                "data-conversation-session":sessionId,
+				children: [
+                    (0,react_jsx_runtime.jsx)(ConversationManagementButton,{sessionId}),
+					scroll.initialized && (0, react_jsx_runtime.jsx)(TurnNavigator, {
+						items: railItems,
+						activeTurn: scroll.activeTurn,
+						busyTurn: scroll.busyTurn,
+						onNavigate: scroll.navigateToTurn,
+						t
+					}),
+					(0, react_jsx_runtime.jsx)("div", {
+						className: ChatView_module_css_default.root,
+						"data-chat-following-tail": scroll.followingTail ? "" : void 0,
+						children: (0, react_jsx_runtime.jsxs)("div", {
+							ref: scroll.listRef,
+							className: ChatView_module_css_default.scroll,
+							children: [(0, react_jsx_runtime.jsxs)("div", {
+								ref: scroll.columnRef,
+								className: ChatView_module_css_default.column,
+								"data-chat-flow": "",
+								"data-chat-motion": deferCompletedTurns && scroll.initialized && (running || motionTail || pendingInputs.length > 0) ? "" : void 0,
+								children: [
+									openState === "loading" && (0, react_jsx_runtime.jsx)("div", {
+										className: ChatView_module_css_default.hint,
+										children: t("chat.loadingHistory")
+									}),
+									openState === "error" && openError !== null && (0, react_jsx_runtime.jsx)("div", {
+										className: ChatView_module_css_default.openError,
+										children: t("chat.loadError", {
+											message: openError.message,
+											code: openError.code
+										})
+									}),
+									hasMore && (0, react_jsx_runtime.jsx)("div", {
+										className: ChatView_module_css_default.older,
+										children: (0, react_jsx_runtime.jsx)("button", {
+											type: "button",
+											disabled: loadingOlder,
+											onClick: scroll.loadEarlier,
+											children: loadingOlder ? t("loading") : t("chat.loadOlder")
+										})
+									}),
+									(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownDelegateProvider, {
+										openFile: requestOpenFile,
+										openExternalLink,
+										fileImages,
+										children: renderSlot("conversation.chat.flow", {
+											entries,
+											pendingInputs,
+											lastInputTurn,
+											deferCollapse,
+											cwd,
+											openFile: requestOpenFile,
+											inspectCall,
+											forkAt,
+											loadImage,
+											fileMentions
+										}, { hookContext: flowContext })
+									})
+								]
+							}), (0, react_jsx_runtime.jsx)("div", {
+								className: ChatView_module_css_default.turnSpacer,
+								"data-chat-turn-spacer": true,
+								"aria-hidden": "true"
+							})]
+						})
+					}),
+					!scroll.followingTail && (0, react_jsx_runtime.jsx)("div", {
+						className: ChatView_module_css_default.toBottomSlot,
+						children: (0, react_jsx_runtime.jsx)("button", {
+							type: "button",
+							className: ChatView_module_css_default.toBottom,
+							"aria-label": t("chat.toBottom"),
+							onClick: scroll.returnToBottom,
+							children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronDownOutlineRegular, {})
+						})
+					}),
+					fileOpenError !== null && (0, react_jsx_runtime.jsx)(FileOpenErrorDialog, {
+						message: fileOpenError.message,
+						busy: fileOpenBusy,
+						onClose: closeFileOpenError,
+						onRetry: () => {
+							requestOpenFile(fileOpenError.path);
+						},
+						t
+					})
+				]
+			});
+		}
+		/** In-page Host open-path refusal: the wire reason plus a retry of the same path. */
+		function FileOpenErrorDialog({ message, busy, onClose, onRetry, t }) {
+			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose,
+				closeLabel: t("close"),
+				title: t("fileOpen.title"),
+				description: message,
+				footer: (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "outline",
+					className: ChatView_module_css_default.modalAction,
+					onClick: onClose,
+					children: t("cancel")
+				}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "primary",
+					className: ChatView_module_css_default.modalAction,
+					disabled: busy,
+					onClick: onRetry,
+					children: t("retry")
+				})] })
+			});
+		}
 		//#endregion
 		//#region ../../util/values/lib/index.js
 		/**
@@ -2469,6 +3669,214 @@ DSHConversationActions.installConversationActions();
 			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
 		}
 		//#endregion
+		//#region lib/types/client/contract/turn-process.js
+		/**
+		* Compare immutable Turn-process specifications by their published fields.
+		* @param left - previous specification.
+		* @param right - next specification.
+		* @returns whether both values describe the same process presentation.
+		*/
+		function sameTurnProcessSpec(left, right) {
+			return left.turn === right.turn && left.controlAnchorSeq === right.controlAnchorSeq && left.processStartSeq === right.processStartSeq && left.answerAnchorSeq === right.answerAnchorSeq && left.answerStep === right.answerStep && left.inlineReasoning === right.inlineReasoning && left.messageCount === right.messageCount && left.toolCallCount === right.toolCallCount && left.subagentCount === right.subagentCount;
+		}
+		/**
+		* Recognize the shipped subagent delegation name and its configured variants.
+		* Control tools use distinct names such as `send_message` and `list_agents`.
+		* @param name - durable Tool-call name.
+		* @returns whether the call creates or forks a subagent.
+		*/
+		function isSubagentDelegationTool(name) {
+			return name === "subagent" || name.startsWith("subagent_");
+		}
+		/**
+		* Keep live, stopped, and failed Turns open.
+		* @param node - Node carrying the owning Turn.
+		* @returns whether whole-Turn collapse is unavailable.
+		*/
+		function turnProcessAlwaysOpen(node) {
+			const location = node?.location;
+			if (location?.kind !== "turn" && location?.kind !== "step") return false;
+			const reason = location.turn.end?.data.reason.kind;
+			return location.turn.status === "open" || reason === "aborted" || reason === "interrupted" || reason === "error";
+		}
+		//#endregion
+		//#region lib/types/client/stores.js
+		/** Per-Session Chat view store. */
+		/**
+		* Resolve the manual disclosure choice for one Turn.
+		* @param state - Chat store snapshot.
+		* @param turn - owning Turn.
+		* @returns the Turn's stored entry, when present.
+		*/
+		function storedTurnProcessEntry(state, turn) {
+			return state.turnProcesses.find((entry) => entry.turn === turn);
+		}
+		/**
+		* Whether a foldable Turn's process is open: the reader's choice for the current answer generation
+		* wins; otherwise the latest completed Turn stays open until the next input, and older Turns fold.
+		* @param state - Chat store snapshot.
+		* @param spec - the Turn's process specification.
+		* @param defaultOpen - whether this Turn is exempt from automatic folding.
+		* @returns the effective open state.
+		*/
+		function turnProcessOpen(state, spec, defaultOpen) {
+			const stored = storedTurnProcessEntry(state, spec.turn);
+			if (stored === void 0 || stored.answerStep !== (spec.answerStep ?? 0)) return defaultOpen;
+			return stored.collapsed !== true;
+		}
+		/**
+		* Create the Chat view store handle.
+		* @returns a handle instantiated once per rendered Session scope.
+		*/
+		function createChatStore() {
+			return (0, _deepseek_ai_dsh_client_store.defineStore)({
+				init: () => ({ turnProcesses: [] }),
+				actions: { setTurnProcessOpen: (draft, turn, answerStep, open) => {
+					const index = draft.turnProcesses.findIndex((entry) => entry.turn === turn);
+					const next = open ? {
+						turn,
+						answerStep
+					} : {
+						turn,
+						answerStep,
+						collapsed: true
+					};
+					if (index < 0) draft.turnProcesses.push(next);
+					else draft.turnProcesses[index] = next;
+				} }
+			});
+		}
+		//#endregion
+		//#region lib/types/client/chat/ChatNodeSeat.js
+		function turnDataOf(node) {
+			const location = node?.location;
+			return location?.kind === "turn" || location?.kind === "step" ? location.turn.data : void 0;
+		}
+		function turnOf$1(node) {
+			const location = node?.location;
+			return location?.kind === "turn" || location?.kind === "step" ? location.turn.turn : void 0;
+		}
+		/**
+		* Subscribe, apply Turn-process visibility, and dispatch one stable Context key.
+		* Policy reads select this seat's own conclusion, so a mode change re-renders
+		* only seats whose visibility actually changes.
+		*/
+		const ChatNodeSeat = (0, react.memo)(function ChatNodeSeat({ nodeKey, groupPart, useChatNode, useChatNodeProcess, usePresentation, cwd, openFile, inspectCall, forkAt, loadImage, fileMentions, useStore, actions, renderSlot, t, useChatNodeBottom, deferCollapse, useGroupAction }) {
+			const bottom = useChatNodeBottom(nodeKey);
+			const node = useChatNode(nodeKey);
+			const routedNode = node;
+			const turn = turnOf$1(routedNode);
+			const processPresentation = useChatNodeProcess(nodeKey);
+			const processSpec = processPresentation?.spec;
+			const storedOpen = useStore((state) => processSpec !== void 0 && turnProcessOpen(state, processSpec, bottom === true && deferCollapse));
+			const liveProcess = processPresentation !== void 0 && !processPresentation.turnClosed;
+			const interleavedInput = processPresentation?.hasInterleavedInput === true;
+			const alwaysOpen = liveProcess || interleavedInput || turnProcessAlwaysOpen(routedNode);
+			const processOpen = alwaysOpen || storedOpen;
+			const setOpen = (0, react.useCallback)((open) => {
+				if (processSpec !== void 0 && !alwaysOpen) actions.setTurnProcessOpen(processSpec.turn, processSpec.answerStep ?? 0, open);
+			}, [
+				actions,
+				processSpec,
+				alwaysOpen
+			]);
+			const foldCompleted = usePresentation((policy) => policy.foldCompletedTurns);
+			const processWindowReady = processSpec !== void 0 && processPresentation !== void 0 && foldCompleted && processPresentation.turn === processSpec.turn && (processPresentation.turnStarted || processPresentation.turnClosed);
+			const processMember = routedNode !== void 0 && processWindowReady && !isAtOrOutside(routedNode, "turn") && routedNode.anchorSeq >= processSpec.processStartSeq && (liveProcess || processSpec.answerAnchorSeq === null || routedNode.anchorSeq < processSpec.answerAnchorSeq || groupPart === "reasoning" && routedNode.kind === "assistant-step" && routedNode.data.step === processSpec.answerStep);
+			const processAnswer = routedNode !== void 0 && processWindowReady && !liveProcess && groupPart !== "reasoning" && routedNode.kind === "assistant-step" && routedNode.data.step === processSpec.answerStep;
+			const ownsDisclosure = routedNode?.kind === "turn-process" || processAnswer;
+			const foldable = processWindowReady && (liveProcess || processMember || ownsDisclosure);
+			const turnProcess = (0, react.useMemo)(() => processSpec === void 0 ? void 0 : {
+				spec: processSpec,
+				foldable,
+				hasContent: !interleavedInput && (processPresentation?.hasExternalProcess === true || processSpec.inlineReasoning),
+				open: processOpen,
+				setOpen
+			}, [
+				foldable,
+				interleavedInput,
+				processOpen,
+				processSpec,
+				processPresentation?.hasExternalProcess,
+				setOpen
+			]);
+			const controllerInactive = routedNode?.kind === "turn-process" && foldCompleted && !foldable;
+			const compactAnswer = processAnswer && foldable && processPresentation.compactAnswer && !processOpen;
+			const processHidden = controllerInactive || foldable && processMember && !processOpen;
+			const wrapperRef = useGroupAction(processHidden, (0, react.useCallback)(() => {
+				if (processMember) setOpen(true);
+			}, [processMember, setOpen]));
+			const [disclosureReset] = (0, react.useState)(() => (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(0));
+			const turnData = turnDataOf(routedNode);
+			const hookContext = (0, react.useMemo)(() => ({
+				turnData,
+				disclosureReset,
+				useGroupAction
+			}), [
+				turnData,
+				disclosureReset,
+				useGroupAction
+			]);
+			(0, react.useEffect)(() => {
+				if (processMember && processHidden && wrapperRef.current !== null && hiddenOrCollapsing(wrapperRef.current)) disclosureReset.set(disclosureReset.getSnapshot() + 1);
+			}, [
+				processMember,
+				processHidden,
+				wrapperRef,
+				disclosureReset
+			]);
+			const owner = (0, react.useMemo)(() => node === void 0 ? null : {
+				...groupPart === void 0 ? {} : { groupPart },
+				cwd,
+				openFile,
+				inspectCall,
+				forkAt,
+				loadImage,
+				fileMentions,
+				turnProcess
+			}, [
+				node,
+				groupPart,
+				cwd,
+				openFile,
+				inspectCall,
+				forkAt,
+				loadImage,
+				fileMentions,
+				turnProcess
+			]);
+			if (routedNode === void 0 || owner === null) return null;
+			const routedOwner = {
+				...owner,
+				node: routedNode
+			};
+			const flowKey = groupPart === void 0 || groupPart === "response" ? routedNode.key : JSON.stringify([routedNode.key, groupPart]);
+			return (0, react_jsx_runtime.jsx)("div", {
+				ref: wrapperRef,
+				className: ChatView_module_css_default.flowItem,
+				"data-chat-anchor-key": flowKey,
+				"data-chat-flow-key": flowKey,
+				"data-chat-paging-anchor": routedNode.kind !== "turn-process" || void 0,
+				"data-chat-node-key": routedNode.key,
+                "data-conversation-message-seq": routedNode.kind === "user" || routedNode.kind === "steering" ? routedNode.anchorSeq : routedNode.kind === "assistant-step" && routedNode.data.finalNode?.messageId !== void 0 ? routedNode.data.finalNode?.seq : void 0,
+				"data-chat-group-part": groupPart,
+				"data-chat-flow-kind": routedNode.kind,
+				"data-chat-turn": turn,
+				"data-turn-process-member": processMember || void 0,
+				"data-turn-process-hidden": processHidden || void 0,
+				"data-turn-process-answer": compactAnswer || void 0,
+				children: renderSlot("conversation.chat.node", routedOwner, {
+					entryKey: routedNode.kind,
+					hookContext,
+					fallback: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
+						label: t("message.unknownSurface", { type: routedNode.kind }),
+						payload: routedNode.data,
+						truncatedLabel: (total) => t("json.truncated", { total })
+					})
+				})
+			});
+		});
+		//#endregion
 		//#region lib/types/client/chat/render-entry.js
 		/**
 		* Identify a rendering position independently of presentation mode.
@@ -2544,190 +3952,13 @@ DSHConversationActions.installConversationActions();
 			};
 		}
 		//#endregion
-		//#region lib/types/client/chat/use-scroll-follow.js
-		/** Independent bottom-follow intent and native scrolling, without paging or DOM observers. */
-		/**
-		* Read one scrollport without measuring its children.
-		* @param element - scrolling element.
-		* @returns current position and range.
-		*/
-		function scrollMetrics(element) {
-			const height = element.clientHeight;
-			return {
-				top: element.scrollTop,
-				height,
-				floor: Math.max(0, element.scrollHeight - height)
-			};
-		}
-		/** One scrollport's follow intent; native animation progress does not count as reader movement. */
-		var ScrollFollow = class ScrollFollow {
-			following;
-			threshold;
-			static owners = /* @__PURE__ */ new WeakMap();
-			target = null;
-			sampledTop;
-			/**
-			* @param following - initial follow intent.
-			* @param threshold - accepted distance from the floor, in pixels.
-			*/
-			constructor(following, threshold) {
-				this.following = following;
-				this.threshold = threshold;
-			}
-			/**
-			* Find the mounted controller for reading-position compensation.
-			* @param element - scrollport with an optional follow owner.
-			* @returns its controller, when bound.
-			*/
-			static forElement(element) {
-				return this.owners.get(element);
-			}
-			/**
-			* Share this controller with reading-position compensation for the same scrollport.
-			* @param element - owned scrollport.
-			* @returns release the association on unmount or close.
-			*/
-			bind(element) {
-				ScrollFollow.owners.set(element, this);
-				return () => {
-					if (ScrollFollow.owners.get(element) === this) ScrollFollow.owners.delete(element);
-				};
-			}
-			/**
-			* Expose follow intent independently of the current offset.
-			* @returns whether content growth should follow the floor.
-			*/
-			get active() {
-				return this.following;
-			}
-			/**
-			* Expose outstanding native motion before accepting reader input.
-			* @returns whether a native follow animation has an outstanding target.
-			*/
-			get animating() {
-				return this.target !== null;
-			}
-			/**
-			* Classify bottom arrivals using this scrollport's own tolerance.
-			* @param metrics - current scroll geometry.
-			* @returns whether the position is within the follow threshold.
-			*/
-			nearBottom(metrics) {
-				return metrics.floor - metrics.top <= this.threshold;
-			}
-			/**
-			* Commit caller-owned follow decisions without moving the scrollport.
-			* @param active - externally committed follow intent.
-			*/
-			setFollowing(active) {
-				this.following = active;
-				if (!active) this.target = null;
-			}
-			/** Adopt the next visible layout as a fresh reader position. */
-			reset() {
-				this.setFollowing(false);
-				this.sampledTop = void 0;
-			}
-			/**
-			* Adopt delivered scrolling while retaining intent during native animation.
-			* @param metrics - current geometry.
-			* @param movedByReader - caller attribution; omitted callers compare the last sampled position.
-			* @returns updated follow intent.
-			*/
-			sample(metrics, movedByReader = this.sampledTop === void 0 || Math.abs(metrics.top - this.sampledTop) > .5) {
-				this.sampledTop = metrics.top;
-				if (!this.animating && movedByReader) this.following = this.nearBottom(metrics);
-				return this.active;
-			}
-			/**
-			* Settle native scrolling; an off-target stop releases follow intent.
-			* @param metrics - actual geometry delivered at scrollend.
-			* @returns follow intent after completing or interrupting native motion.
-			*/
-			settle(metrics) {
-				const target = this.target;
-				this.target = null;
-				return this.sample(metrics, target === null ? void 0 : Math.abs(metrics.top - Math.min(target, metrics.floor)) > this.threshold);
-			}
-			/**
-			* Position immediately and adopt the resulting follow intent.
-			* @param element - scrolling element.
-			* @param metrics - geometry before positioning.
-			* @param top - requested offset, clamped to the measured range.
-			* @returns geometry after positioning.
-			*/
-			jump(element, metrics, top) {
-				const animated = this.animating;
-				this.target = null;
-				const target = Math.max(0, Math.min(metrics.floor, top));
-				if (animated) element.scrollTo({
-					top: target,
-					behavior: "instant"
-				});
-				else if (target !== metrics.top) element.scrollTop = target;
-				const landed = {
-					...metrics,
-					top: element.scrollTop
-				};
-				this.sampledTop = landed.top;
-				this.following = this.nearBottom(landed);
-				return landed;
-			}
-			/**
-			* Follow the measured floor, respecting reduced motion for smooth requests.
-			* An outstanding smooth target finishes before another is issued.
-			* Within-tolerance positioning is immediate while no animation is outstanding.
-			* @param element - scrolling element.
-			* @param metrics - current geometry.
-			* @param behavior - native animation for growth, or immediate positioning.
-			* @returns current geometry; smooth requests retain their starting position until native scroll delivery.
-			*/
-			toBottom(element, metrics, behavior) {
-				this.following = true;
-				if (behavior === "instant" || metrics.top >= metrics.floor || !this.animating && this.nearBottom(metrics)) return this.jump(element, metrics, metrics.floor);
-				if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) return this.jump(element, metrics, metrics.floor);
-				if (this.target === null) {
-					this.target = metrics.floor;
-					element.scrollTo({
-						top: metrics.floor,
-						behavior: "smooth"
-					});
-				}
-				return metrics;
-			}
-			/**
-			* Cancel native motion before a reader gesture; only subsequent actual movement changes follow intent.
-			* @param element - scrolling element.
-			* @param metrics - position at interruption.
-			*/
-			interrupt(element, metrics) {
-				if (!this.animating) return;
-				this.target = null;
-				this.sampledTop = metrics.top;
-				element.scrollTo({
-					top: metrics.top,
-					behavior: "instant"
-				});
-			}
-		};
-		/**
-		* Retain one independent follow controller without React updates for scroll samples.
-		* @param initial - initial follow intent.
-		* @param threshold - accepted distance from the floor, in pixels.
-		* @returns the stable controller shared by the caller's scroll and resize handlers.
-		*/
-		function useScrollFollow(initial, threshold) {
-			const [follow] = (0, react.useState)(() => new ScrollFollow(initial, threshold));
-			return follow;
-		}
-		//#endregion
 		//#region lib/types/client/chat/use-process-scroll.js
 		/** Capped process-group scrolling and fades over the shared follow controller. */
 		const AT_REST = {
 			canScrollUp: false,
 			canScrollDown: false
 		};
-		const SCROLL_KEYS$1 = new Set([
+		const SCROLL_KEYS = new Set([
 			"ArrowUp",
 			"ArrowDown",
 			"PageUp",
@@ -2788,7 +4019,7 @@ DSHConversationActions.installConversationActions();
 				onTouchStart: interrupt,
 				onPointerDown: interrupt,
 				onKeyDown: (event) => {
-					if (!event.defaultPrevented && SCROLL_KEYS$1.has(event.key)) interrupt();
+					if (!event.defaultPrevented && SCROLL_KEYS.has(event.key)) interrupt();
 				}
 			}), [interrupt, sync]);
 			(0, react.useLayoutEffect)(() => {
@@ -2834,13 +4065,13 @@ DSHConversationActions.installConversationActions();
 		}
 		//#endregion
 		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/ChatGroupSeat.module.css.mjs
-		const css$12 = ".O_Ebla_root{min-width:0}.O_Ebla_title{max-width:100%;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:var(--dsh-content-font-size,14px);text-align:left;cursor:pointer;background:0 0;border:0;align-items:center;gap:6px;padding:0;transition:color .1s;display:flex}.O_Ebla_title:hover{color:var(--dsw-alias-label-secondary)}.O_Ebla_leading{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px));color:inherit;flex:none;justify-content:center;align-items:center;display:inline-flex;position:relative}.O_Ebla_leading svg{width:calc(14px + var(--dsh-content-font-delta,0px));height:calc(14px + var(--dsh-content-font-delta,0px))}.O_Ebla_leading svg[width=\"16\"]{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px))}.O_Ebla_activityIcon,.O_Ebla_chevron{justify-content:center;align-items:center;transition:opacity .1s;display:inline-flex;position:absolute;inset:0}.O_Ebla_activityIcon{opacity:1}.O_Ebla_chevron,.O_Ebla_title:is(:hover,:focus-visible) .O_Ebla_activityIcon{opacity:0}.O_Ebla_title:is(:hover,:focus-visible) .O_Ebla_chevron{opacity:1}.O_Ebla_title[aria-expanded=true] .O_Ebla_activityIcon{opacity:0}.O_Ebla_title[aria-expanded=true] .O_Ebla_chevron{opacity:1}.O_Ebla_title[aria-expanded=true]{padding-bottom:8px}.O_Ebla_body{--dsh-chat-flow-gap:6px;overscroll-behavior-y:auto;scrollbar-gutter:stable;max-height:min(400px,50vh);overflow-y:auto}.O_Ebla_label{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.O_Ebla_fadeTop{mask-image:linear-gradient(#0000 0,#000 24px 100%)}.O_Ebla_fadeBottom{mask-image:linear-gradient(#000 0 calc(100% - 24px),#0000 100%)}.O_Ebla_fadeTop.O_Ebla_fadeBottom{mask-image:linear-gradient(#0000 0,#000 24px calc(100% - 24px),#0000 100%)}@media (prefers-reduced-motion:reduce){.O_Ebla_title,.O_Ebla_activityIcon,.O_Ebla_chevron{transition:none}}.O_Ebla_content{flex-direction:column;display:flex}.O_Ebla_content>*{flex-shrink:0}.O_Ebla_content>:not([hidden]):not(:empty)~:not([hidden]):not(:empty){margin-top:var(--dsh-chat-flow-gap,6px)}.O_Ebla_expandedBody{scrollbar-gutter:auto;max-height:none;overflow:visible}";
-		const tagId$12 = "@deepseek-ai/dsh-client-ui-chat/ChatGroupSeat.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$12) + "]") === null) {
+		const css$15 = ".O_Ebla_root{min-width:0}.O_Ebla_title{max-width:100%;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:var(--dsh-content-font-size,14px);text-align:left;cursor:pointer;background:0 0;border:0;align-items:center;gap:6px;padding:0;transition:color .1s;display:flex}.O_Ebla_title:hover{color:var(--dsw-alias-label-secondary)}.O_Ebla_leading{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px));color:inherit;flex:none;justify-content:center;align-items:center;display:inline-flex;position:relative}.O_Ebla_leading svg{width:calc(14px + var(--dsh-content-font-delta,0px));height:calc(14px + var(--dsh-content-font-delta,0px))}.O_Ebla_leading svg[width=\"16\"]{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px))}.O_Ebla_activityIcon,.O_Ebla_chevron{justify-content:center;align-items:center;transition:opacity .1s;display:inline-flex;position:absolute;inset:0}.O_Ebla_activityIcon{opacity:1}.O_Ebla_chevron,.O_Ebla_title:is(:hover,:focus-visible) .O_Ebla_activityIcon{opacity:0}.O_Ebla_title:is(:hover,:focus-visible) .O_Ebla_chevron{opacity:1}.O_Ebla_title[aria-expanded=true] .O_Ebla_activityIcon{opacity:0}.O_Ebla_title[aria-expanded=true] .O_Ebla_chevron{opacity:1}.O_Ebla_title[aria-expanded=true]{padding-bottom:8px}.O_Ebla_body{--dsh-chat-flow-gap:6px;overscroll-behavior-y:auto;scrollbar-gutter:stable;max-height:min(400px,50vh);overflow-y:auto}.O_Ebla_label{text-overflow:ellipsis;white-space:nowrap;min-width:0;overflow:hidden}.O_Ebla_fadeTop{mask-image:linear-gradient(#0000 0,#000 24px 100%)}.O_Ebla_fadeBottom{mask-image:linear-gradient(#000 0 calc(100% - 24px),#0000 100%)}.O_Ebla_fadeTop.O_Ebla_fadeBottom{mask-image:linear-gradient(#0000 0,#000 24px calc(100% - 24px),#0000 100%)}@media (prefers-reduced-motion:reduce){.O_Ebla_title,.O_Ebla_activityIcon,.O_Ebla_chevron{transition:none}}.O_Ebla_content{flex-direction:column;display:flex}.O_Ebla_content>*{flex-shrink:0}.O_Ebla_content>:not([hidden]):not(:empty)~:not([hidden]):not(:empty){margin-top:var(--dsh-chat-flow-gap,6px)}.O_Ebla_expandedBody{scrollbar-gutter:auto;max-height:none;overflow:visible}[data-chat-motion] .O_Ebla_content>:not([data-chat-motion]){transition:margin-top .16s cubic-bezier(.4,0,.2,1)}@media (prefers-reduced-motion:reduce){[data-chat-motion] .O_Ebla_content>:not([data-chat-motion]){transition:none}}";
+		const tagId$15 = "@deepseek-ai/dsh-client-ui-chat/ChatGroupSeat.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$15) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
-			tag.dataset.pluginCss = tagId$12;
-			tag.textContent = css$12;
+			tag.dataset.pluginCss = tagId$15;
+			tag.textContent = css$15;
 			document.head.appendChild(tag);
 		}
 		var ChatGroupSeat_module_css_default = {
@@ -2963,34 +4194,39 @@ DSHConversationActions.installConversationActions();
 			});
 		});
 		/** Render a process group with local disclosure and the existing outer-Turn visibility. */
-		const ChatGroupSeat = (0, react.memo)(function ChatGroupSeat({ groupKey, useChatGroup, ...props }) {
+		const ChatGroupSeat = (0, react.memo)(function ChatGroupSeat({ groupKey, useChatGroup, useGroupHeaderAction, ...props }) {
 			const members = useChatGroup(groupKey, (group) => group?.members);
 			const turn = useChatGroup(groupKey, (group) => group?.data.turn);
 			const closed = useChatGroup(groupKey, (group) => group?.data.closed);
 			const foldCompleted = props.usePresentation((policy) => policy.foldCompletedTurns);
 			const { expanded: open, setExpanded: setOpen } = useDisclosure();
 			const firstKey = members?.[0]?.key ?? "";
+			const deferCollapse = props.useChatNodeBottom(firstKey) === true && props.deferCollapse;
 			const presentation = props.useChatNodeProcess(firstKey);
 			const turnLocation = props.useChatNode(firstKey, (node) => {
 				const location = node?.location;
 				return location?.kind === "turn" || location?.kind === "step" ? location.turn : void 0;
 			});
-			const grouped = props.usePresentation((policy) => policy.stepGrouping === "collapsed" || policy.stepGrouping === "history" && turnLocation?.status !== "open");
+			const grouped = props.usePresentation((policy) => policy.stepGrouping === "collapsed" || policy.stepGrouping === "history" && turnLocation?.status !== "open" && !deferCollapse);
 			const reason = turnLocation?.end?.data.reason.kind;
-			const alwaysOpen = presentation?.turnClosed === false || presentation?.hasInterleavedInput === true || reason === "aborted" || reason === "error";
+			const alwaysOpen = presentation?.turnClosed === false || presentation?.hasInterleavedInput === true || reason === "aborted" || reason === "interrupted" || reason === "error";
 			const spec = presentation?.spec;
-			const selectStored = (0, react.useCallback)((state) => turn === void 0 ? void 0 : storedTurnProcessEntry(state, turn), [turn]);
-			const stored = props.useStore(selectStored);
-			const outerHidden = foldCompleted && presentation?.turnClosed === true && spec !== void 0 && !alwaysOpen && stored?.answerStep !== (spec.answerStep ?? 0);
-			const rootRef = useSearchableHidden(outerHidden, (0, react.useCallback)(() => {
+			const selectOpen = (0, react.useCallback)((state) => spec !== void 0 && turnProcessOpen(state, spec, deferCollapse), [spec, deferCollapse]);
+			const storedOpen = props.useStore(selectOpen);
+			const outerHidden = foldCompleted && presentation?.turnClosed === true && spec !== void 0 && !alwaysOpen && !storedOpen;
+			const revealOuter = (0, react.useCallback)(() => {
 				if (spec !== void 0 && !alwaysOpen) props.actions.setTurnProcessOpen(spec.turn, spec.answerStep ?? 0, true);
 			}, [
 				props.actions,
 				spec,
 				alwaysOpen
-			]));
+			]);
+			const rootRef = props.useGroupAction(outerHidden, revealOuter);
+			const headerRef = (0, react.useRef)(null);
+			const deferCompletedTurns = props.usePresentation((policy) => policy.collapseTiming === "next-input");
+			useGroupHeaderAction(headerRef, !grouped || deferCompletedTurns && outerHidden);
 			(0, react.useEffect)(() => {
-				if (outerHidden && rootRef.current?.hasAttribute("hidden")) setOpen(false);
+				if (outerHidden && rootRef.current !== null && hiddenOrCollapsing(rootRef.current)) setOpen(false);
 			}, [
 				outerHidden,
 				rootRef,
@@ -2999,7 +4235,7 @@ DSHConversationActions.installConversationActions();
 			const reveal = (0, react.useCallback)(() => {
 				setOpen(true);
 			}, [setOpen]);
-			const bodyRef = useSearchableHidden(grouped && !open, reveal);
+			const bodyRef = props.useGroupAction(grouped && !open, reveal);
 			const contentRef = (0, react.useRef)(null);
 			const bodyId = (0, react.useId)();
 			const { edges, events, initialize } = useProcessScroll(bodyRef, contentRef, open, grouped);
@@ -3013,11 +4249,12 @@ DSHConversationActions.installConversationActions();
 				setOpen
 			]);
 			if (members === void 0) return null;
+			const capped = grouped && (!deferCompletedTurns || open);
 			const classes = [
 				ChatGroupSeat_module_css_default.body,
-				!grouped ? ChatGroupSeat_module_css_default.expandedBody : "",
-				grouped && edges.canScrollUp ? ChatGroupSeat_module_css_default.fadeTop : "",
-				grouped && edges.canScrollDown ? ChatGroupSeat_module_css_default.fadeBottom : ""
+				!capped ? ChatGroupSeat_module_css_default.expandedBody : "",
+				capped && edges.canScrollUp ? ChatGroupSeat_module_css_default.fadeTop : "",
+				capped && edges.canScrollDown ? ChatGroupSeat_module_css_default.fadeBottom : ""
 			];
 			return (0, react_jsx_runtime.jsxs)("div", {
 				ref: rootRef,
@@ -3030,7 +4267,7 @@ DSHConversationActions.installConversationActions();
 				"data-step-process": true,
 				"data-group-expanded-mode": !grouped || void 0,
 				children: [(0, react_jsx_runtime.jsx)("div", {
-					hidden: !grouped,
+					ref: headerRef,
 					children: (0, react_jsx_runtime.jsx)(ProcessGroupHeader, {
 						groupKey,
 						useChatGroup,
@@ -3062,1186 +4299,910 @@ DSHConversationActions.installConversationActions();
 			});
 		});
 		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+virtual-core@3.17.7/node_modules/@tanstack/virtual-core/dist/esm/lazy-measurements.js
-		function createLazyMeasurementsView(count, flat, getItemKey) {
-			const cache = new Array(count);
-			return new Proxy(cache, { get(target, prop, receiver) {
-				if (typeof prop === "string") {
-					const c = prop.charCodeAt(0);
-					if (c >= 48 && c <= 57) {
-						const i = +prop;
-						if (Number.isInteger(i) && i >= 0 && i < count) {
-							let v = target[i];
-							if (!v) {
-								const s = flat[i * 2];
-								v = target[i] = {
-									index: i,
-									key: getItemKey(i),
-									start: s,
-									size: flat[i * 2 + 1],
-									end: s + flat[i * 2 + 1],
-									lane: 0
-								};
-							}
-							return v;
-						}
-					}
-					if (prop === "length") return count;
-				}
-				return Reflect.get(target, prop, receiver);
-			} });
-		}
-		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+virtual-core@3.17.7/node_modules/@tanstack/virtual-core/dist/esm/utils.js
-		function memo$12(getDeps, fn, opts) {
-			let deps = opts.initialDeps ?? [];
-			let result;
-			let isInitial = true;
-			function memoizedFunction() {
-				const newDeps = getDeps();
-				if (!(newDeps.length !== deps.length || newDeps.some((dep, index) => deps[index] !== dep))) return result;
-				deps = newDeps;
-				result = fn(...newDeps);
-				if ((opts == null ? void 0 : opts.onChange) && !(isInitial && opts.skipInitialOnChange)) opts.onChange(result);
-				isInitial = false;
-				return result;
-			}
-			memoizedFunction.updateDeps = (newDeps) => {
-				deps = newDeps;
-			};
-			return memoizedFunction;
-		}
-		function notUndefined(value, msg) {
-			if (value === void 0) throw new Error(`Unexpected undefined${msg ? `: ${msg}` : ""}`);
-			else return value;
-		}
-		const approxEqual = (a, b) => Math.abs(a - b) < 1.01;
-		const debounce = (targetWindow, fn, ms) => {
-			let timeoutId;
-			return function(...args) {
-				targetWindow.clearTimeout(timeoutId);
-				timeoutId = targetWindow.setTimeout(() => fn.apply(this, args), ms);
-			};
-		};
-		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+virtual-core@3.17.7/node_modules/@tanstack/virtual-core/dist/esm/index.js
-		let _isIOSResult;
-		const isIOSWebKit = () => {
-			if (_isIOSResult !== void 0) return _isIOSResult;
-			if (typeof navigator === "undefined") return _isIOSResult = false;
-			if (/iP(hone|od|ad)/.test(navigator.userAgent)) return _isIOSResult = true;
-			const mtp = navigator.maxTouchPoints;
-			return _isIOSResult = navigator.platform === "MacIntel" && mtp !== void 0 && mtp > 0;
-		};
-		const getRect = (element) => {
-			const { offsetWidth, offsetHeight } = element;
+		//#region lib/types/client/markdown-labels.js
+		/** Localized copy adapters for Cordis-free Markdown primitives. */
+		/**
+		* Build the complete Markdown chrome copy for one locale revision.
+		* @param t - Chat locale seat.
+		* @returns Labels for code fences and footnotes.
+		*/
+		function markdownLabels(t) {
 			return {
-				width: offsetWidth,
-				height: offsetHeight
-			};
-		};
-		const defaultKeyExtractor = (index) => index;
-		const defaultRangeExtractor = (range) => {
-			const start = Math.max(range.startIndex - range.overscan, 0);
-			const len = Math.min(range.endIndex + range.overscan, range.count - 1) - start + 1;
-			const arr = new Array(len);
-			for (let i = 0; i < len; i++) arr[i] = start + i;
-			return arr;
-		};
-		const observeElementRect = (instance, cb) => {
-			const element = instance.scrollElement;
-			if (!element) return;
-			const targetWindow = instance.targetWindow;
-			if (!targetWindow) return;
-			const handler = (rect) => {
-				const { width, height } = rect;
-				cb({
-					width: Math.round(width),
-					height: Math.round(height)
-				});
-			};
-			handler(getRect(element));
-			if (!targetWindow.ResizeObserver) return () => {};
-			const observer = new targetWindow.ResizeObserver((entries) => {
-				const run = () => {
-					const entry = entries[0];
-					if (entry == null ? void 0 : entry.borderBoxSize) {
-						const box = entry.borderBoxSize[0];
-						if (box) {
-							handler({
-								width: box.inlineSize,
-								height: box.blockSize
-							});
-							return;
-						}
+				code: {
+					copyLabel: t("copy"),
+					copiedLabel: t("copied"),
+					toolbarLabels: {
+						codeLabel: t("codeBlock.title"),
+						wrapLabel: t("codeBlock.wrap"),
+						unwrapLabel: t("codeBlock.unwrap")
 					}
-					handler(getRect(element));
-				};
-				instance.options.useAnimationFrameWithResizeObserver ? requestAnimationFrame(run) : run();
-			});
-			observer.observe(element, { box: "border-box" });
-			return () => {
-				observer.unobserve(element);
+				},
+				footnotes: t("markdown.footnotes")
 			};
+		}
+		//#endregion
+		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/MessageItem.module.css.mjs
+		const css$14 = ".Sixlwa_userRow{flex-direction:column;align-items:flex-end;gap:6px;display:flex}.Sixlwa_userStack{min-width:0;max-width:min(calc(var(--dsh-chat-content-width,748px) * .702), 82%);flex-direction:column;align-items:flex-end;gap:8px;display:flex}.Sixlwa_bubble{background:var(--dsw-specific-bubble);border-radius:var(--dsw-radius-xl);max-width:100%;font-size:var(--dsh-content-font-size,14px);line-height:calc(22px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-primary);white-space:pre-wrap;word-break:break-word;padding:10px 16px}.Sixlwa_referenceSummary{color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px))}.Sixlwa_contextRow{padding:2px 0}.Sixlwa_compactionRow{--dsh-compaction-header-height:calc(24px + var(--dsh-content-font-delta,0px));padding:2px 0}.Sixlwa_compactionButton{width:100%;height:var(--dsh-compaction-header-height);border-radius:var(--dsw-radius-sm);min-width:0;color:var(--dsw-alias-label-tertiary);font:inherit;text-align:left;background:0 0;border:none;align-items:center;padding:0;transition:color .1s;display:flex}.Sixlwa_compactionRow:has(.Sixlwa_compactionBody) .Sixlwa_compactionButton{z-index:7;background:var(--dsw-alias-bg-base);border-radius:0;position:sticky;top:0}.Sixlwa_compactionBody :has(>[data-code-block-banner]){top:var(--dsh-compaction-header-height)}.Sixlwa_compactionRow:has(.Sixlwa_compactionBody) .Sixlwa_compactionButton:hover{background:var(--dsw-alias-interactive-bg-hover-solid)}.Sixlwa_compactionButton:not(:disabled){cursor:pointer}.Sixlwa_compactionButton:hover{color:var(--dsw-alias-label-secondary)}.Sixlwa_compactionButton:not(:disabled):hover{background:var(--dsw-alias-interactive-bg-hover)}.Sixlwa_compactionLeading{width:calc(16px + var(--dsh-content-font-delta,0px));height:calc(16px + var(--dsh-content-font-delta,0px));color:inherit;flex:none;place-items:center;margin-right:6px;display:inline-grid}.Sixlwa_compactionLeading svg{width:calc(14px + var(--dsh-content-font-delta,0px));height:calc(14px + var(--dsh-content-font-delta,0px))}.Sixlwa_compactionContextIcon,.Sixlwa_compactionDisclosureIcon{grid-area:1/1;justify-content:center;align-items:center;display:inline-flex}.Sixlwa_compactionDisclosureIcon,.Sixlwa_compactionButton:not(:disabled):hover .Sixlwa_compactionContextIcon,.Sixlwa_compactionButton:not(:disabled):focus-visible .Sixlwa_compactionContextIcon{opacity:0}.Sixlwa_compactionButton:not(:disabled):hover .Sixlwa_compactionDisclosureIcon,.Sixlwa_compactionButton:not(:disabled):focus-visible .Sixlwa_compactionDisclosureIcon{opacity:1}.Sixlwa_compactionTitle{font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));color:inherit;flex:none}.Sixlwa_compactionSep{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.Sixlwa_compactionSummary{min-width:0;color:inherit;font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:auto;overflow:hidden}.Sixlwa_compactionBody{padding:4px 0 4px calc(22px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px))}.Sixlwa_retryRow{color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px))}.Sixlwa_retrySummary{border-radius:var(--dsw-radius-sm);width:fit-content;max-width:100%;color:inherit;cursor:pointer;user-select:none;align-items:center;gap:7px;padding:2px 0;list-style:none;display:inline-flex}.Sixlwa_retrySummary::-webkit-details-marker{display:none}.Sixlwa_retrySummary:after{content:\"\";border-bottom:1.5px solid;border-right:1.5px solid;flex:none;width:6px;height:6px;margin-right:2px;transition:transform .12s;transform:rotate(-45deg)}.Sixlwa_retrySummary:hover{color:var(--dsw-alias-label-secondary)}@media (prefers-reduced-motion:reduce){.Sixlwa_compactionButton{transition:none}}.Sixlwa_retrySummary:focus-visible{outline:1.5px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}.Sixlwa_retryText{overflow-wrap:anywhere;min-width:0}.Sixlwa_retryRow[open] .Sixlwa_retrySummary:after{transform:rotate(45deg)}.Sixlwa_retryDetails{overflow-wrap:anywhere;font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(18px + var(--dsh-content-font-delta-secondary,0px));gap:2px;margin-top:3px;padding-left:14px;display:grid}.Sixlwa_retryDetailLabel{color:var(--dsw-alias-label-secondary)}.Sixlwa_turnErrorRow{font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));grid-template-columns:10px minmax(0,1fr) auto;align-items:start;gap:8px;padding:2px 0;display:grid}.Sixlwa_turnErrorDot{margin-top:5px}.Sixlwa_turnErrorCopy{overflow-wrap:anywhere;min-width:0}.Sixlwa_turnErrorTitle{color:var(--dsw-alias-state-error-primary);margin-right:6px;font-weight:600}.Sixlwa_turnErrorMessage{color:var(--dsw-alias-label-secondary)}.Sixlwa_turnErrorCode{color:var(--dsw-alias-label-tertiary);font:var(--dsw-font-markdown-code-block-small)}.Sixlwa_maxTokensTitle{color:var(--dsw-alias-state-warn-primary);margin-right:6px;font-weight:600}.Sixlwa_attachmentRow{flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:100%;display:flex}.Sixlwa_fileCard{border:.5px solid var(--dsw-alias-border-l2,#0000001f);border-radius:var(--dsw-radius-lg);background:var(--dsw-specific-input-major,transparent);box-sizing:border-box;flex:0 0 240px;align-items:center;gap:10px;width:240px;min-height:64px;padding:8px 12px;display:inline-flex}.Sixlwa_fileIcon{flex:none;width:28px;height:28px}.Sixlwa_fileContent{flex-direction:column;flex:1;min-width:0;display:flex}.Sixlwa_fileName{white-space:nowrap;text-overflow:ellipsis;color:var(--dsw-alias-label-primary);font-size:14px;font-weight:500;line-height:22px;overflow:hidden}.Sixlwa_fileMeta{white-space:nowrap;text-overflow:ellipsis;color:var(--dsw-alias-label-tertiary,#00000073);font-size:12px;line-height:15px;overflow:hidden}";
+		const tagId$14 = "@deepseek-ai/dsh-client-ui-chat/MessageItem.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$14) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
+			tag.dataset.pluginCss = tagId$14;
+			tag.textContent = css$14;
+			document.head.appendChild(tag);
+		}
+		var MessageItem_module_css_default = {
+			"attachmentRow": "Sixlwa_attachmentRow",
+			"bubble": "Sixlwa_bubble",
+			"compactionBody": "Sixlwa_compactionBody",
+			"compactionButton": "Sixlwa_compactionButton",
+			"compactionContextIcon": "Sixlwa_compactionContextIcon",
+			"compactionDisclosureIcon": "Sixlwa_compactionDisclosureIcon",
+			"compactionLeading": "Sixlwa_compactionLeading",
+			"compactionRow": "Sixlwa_compactionRow",
+			"compactionSep": "Sixlwa_compactionSep",
+			"compactionSummary": "Sixlwa_compactionSummary",
+			"compactionTitle": "Sixlwa_compactionTitle",
+			"contextRow": "Sixlwa_contextRow",
+			"fileCard": "Sixlwa_fileCard",
+			"fileContent": "Sixlwa_fileContent",
+			"fileIcon": "Sixlwa_fileIcon",
+			"fileMeta": "Sixlwa_fileMeta",
+			"fileName": "Sixlwa_fileName",
+			"maxTokensTitle": "Sixlwa_maxTokensTitle",
+			"referenceSummary": "Sixlwa_referenceSummary",
+			"retryDetailLabel": "Sixlwa_retryDetailLabel",
+			"retryDetails": "Sixlwa_retryDetails",
+			"retryRow": "Sixlwa_retryRow",
+			"retrySummary": "Sixlwa_retrySummary",
+			"retryText": "Sixlwa_retryText",
+			"turnErrorCode": "Sixlwa_turnErrorCode",
+			"turnErrorCopy": "Sixlwa_turnErrorCopy",
+			"turnErrorDot": "Sixlwa_turnErrorDot",
+			"turnErrorMessage": "Sixlwa_turnErrorMessage",
+			"turnErrorRow": "Sixlwa_turnErrorRow",
+			"turnErrorTitle": "Sixlwa_turnErrorTitle",
+			"userRow": "Sixlwa_userRow",
+			"userStack": "Sixlwa_userStack"
 		};
-		const addEventListenerOptions = { passive: true };
-		const supportsScrollend = typeof window == "undefined" ? true : "onscrollend" in window;
-		const observeOffset = (instance, cb, readOffset) => {
-			const element = instance.scrollElement;
-			if (!element) return;
-			const targetWindow = instance.targetWindow;
-			if (!targetWindow) return;
-			const registerScrollendEvent = instance.options.useScrollendEvent && supportsScrollend;
-			let offset = 0;
-			const fallback = registerScrollendEvent ? null : debounce(targetWindow, () => cb(offset, false), instance.options.isScrollingResetDelay);
-			const createHandler = (isScrolling) => () => {
-				offset = readOffset(element);
-				fallback?.();
-				cb(offset, isScrolling);
-			};
-			const handler = createHandler(true);
-			const endHandler = createHandler(false);
-			element.addEventListener("scroll", handler, addEventListenerOptions);
-			if (registerScrollendEvent) element.addEventListener("scrollend", endHandler, addEventListenerOptions);
-			return () => {
-				element.removeEventListener("scroll", handler);
-				if (registerScrollendEvent) element.removeEventListener("scrollend", endHandler);
-			};
-		};
-		const observeElementOffset = (instance, cb) => observeOffset(instance, cb, (el) => {
-			const { horizontal, isRtl } = instance.options;
-			return horizontal ? el.scrollLeft * (isRtl && -1 || 1) : el.scrollTop;
-		});
-		const measureElement = (element, entry, instance) => {
-			if (instance.options.useCachedMeasurements) {
-				const index = instance.indexFromElement(element);
-				const key = instance.options.getItemKey(index);
-				return instance.itemSizeCache.get(key) ?? instance.options.estimateSize(index);
-			}
-			if (entry == null ? void 0 : entry.borderBoxSize) {
-				const box = entry.borderBoxSize[0];
-				if (box) return Math.round(box[instance.options.horizontal ? "inlineSize" : "blockSize"]);
-			}
-			if (!entry) {
-				const index = instance.indexFromElement(element);
-				const key = instance.options.getItemKey(index);
-				const cachedSize = instance.itemSizeCache.get(key);
-				if (cachedSize !== void 0) return cachedSize;
-			}
-			return element[instance.options.horizontal ? "offsetWidth" : "offsetHeight"];
-		};
-		const scrollWithAdjustments = (offset, { adjustments = 0, behavior }, instance) => {
-			var _a, _b;
-			(_b = (_a = instance.scrollElement) == null ? void 0 : _a.scrollTo) == null || _b.call(_a, {
-				[instance.options.horizontal ? "left" : "top"]: offset + adjustments,
-				behavior
-			});
-		};
-		const elementScroll = scrollWithAdjustments;
-		var Virtualizer = class {
-			constructor(opts) {
-				this.unsubs = [];
-				this.scrollElement = null;
-				this.targetWindow = null;
-				this.isScrolling = false;
-				this.scrollState = null;
-				this.measurementsCache = [];
-				this._flatMeasurements = null;
-				this.itemSizeCache = /* @__PURE__ */ new Map();
-				this.itemSizeCacheVersion = 0;
-				this.laneAssignments = /* @__PURE__ */ new Map();
-				this.pendingMin = null;
-				this.prevLanes = void 0;
-				this.lanesChangedFlag = false;
-				this.lanesSettling = false;
-				this.pendingScrollAnchor = null;
-				this.scrollRect = null;
-				this.scrollOffset = null;
-				this.scrollDirection = null;
-				this.scrollAdjustments = 0;
-				this._iosDeferredAdjustment = 0;
-				this._iosTouching = false;
-				this._iosJustTouchEnded = false;
-				this._iosTouchEndTimerId = null;
-				this._intendedScrollOffset = null;
-				this.elementsCache = /* @__PURE__ */ new Map();
-				this.now = () => {
-					var _a, _b, _c;
-					return ((_c = (_b = (_a = this.targetWindow) == null ? void 0 : _a.performance) == null ? void 0 : _b.now) == null ? void 0 : _c.call(_b)) ?? Date.now();
-				};
-				this.observer = /* @__PURE__ */ (() => {
-					let _ro = null;
-					const get = () => {
-						if (_ro) return _ro;
-						if (!this.targetWindow || !this.targetWindow.ResizeObserver) return null;
-						return _ro = new this.targetWindow.ResizeObserver((entries) => {
-							entries.forEach((entry) => {
-								const run = () => {
-									const node = entry.target;
-									const index = this.indexFromElement(node);
-									if (!node.isConnected) {
-										this.observer.unobserve(node);
-										for (const [cacheKey, cachedNode] of this.elementsCache) if (cachedNode === node) {
-											this.elementsCache.delete(cacheKey);
-											break;
-										}
-										return;
-									}
-									if (this.shouldMeasureDuringScroll(index)) this.resizeItem(index, this.options.measureElement(node, entry, this));
-								};
-								this.options.useAnimationFrameWithResizeObserver ? requestAnimationFrame(run) : run();
-							});
-						});
-					};
-					return {
-						disconnect: () => {
-							var _a;
-							(_a = get()) == null || _a.disconnect();
-							_ro = null;
-						},
-						observe: (target) => {
-							var _a;
-							return (_a = get()) == null ? void 0 : _a.observe(target, { box: "border-box" });
-						},
-						unobserve: (target) => {
-							var _a;
-							return (_a = get()) == null ? void 0 : _a.unobserve(target);
-						}
-					};
-				})();
-				this.range = null;
-				this.setOptions = (opts2) => {
-					var _a, _b;
-					const merged = {
-						debug: false,
-						initialOffset: 0,
-						overscan: 1,
-						paddingStart: 0,
-						paddingEnd: 0,
-						scrollPaddingStart: 0,
-						scrollPaddingEnd: 0,
-						horizontal: false,
-						getItemKey: defaultKeyExtractor,
-						rangeExtractor: defaultRangeExtractor,
-						onChange: () => {},
-						measureElement,
-						initialRect: {
-							width: 0,
-							height: 0
-						},
-						scrollMargin: 0,
-						gap: 0,
-						indexAttribute: "data-index",
-						initialMeasurementsCache: [],
-						lanes: 1,
-						anchorTo: "start",
-						followOnAppend: false,
-						scrollEndThreshold: 1,
-						isScrollingResetDelay: 150,
-						enabled: true,
-						isRtl: false,
-						useScrollendEvent: false,
-						useAnimationFrameWithResizeObserver: false,
-						laneAssignmentMode: "estimate",
-						useCachedMeasurements: false
-					};
-					for (const key in opts2) {
-						const v = opts2[key];
-						if (v !== void 0) merged[key] = v;
-					}
-					const prevOptions = this.options;
-					let anchor = null;
-					let followOnAppend = null;
-					let edgeKeysChanged = false;
-					if (prevOptions !== void 0 && prevOptions.enabled && merged.enabled && merged.anchorTo === "end" && this.scrollElement !== null) {
-						const prevCount = prevOptions.count;
-						const nextCount = merged.count;
-						const measurements = this.getMeasurements();
-						const prevFirstKey = prevCount > 0 ? ((_a = measurements[0]) == null ? void 0 : _a.key) ?? prevOptions.getItemKey(0) : null;
-						const prevLastKey = prevCount > 0 ? ((_b = measurements[prevCount - 1]) == null ? void 0 : _b.key) ?? prevOptions.getItemKey(prevCount - 1) : null;
-						if (nextCount !== prevCount || prevCount > 0 && nextCount > 0 && (merged.getItemKey(0) !== prevFirstKey || merged.getItemKey(nextCount - 1) !== prevLastKey)) {
-							edgeKeysChanged = true;
-							const item = prevCount > 0 ? this.getVirtualItemForOffset(this.getScrollOffset()) ?? measurements[0] : null;
-							if (item) anchor = [item.key, this.getScrollOffset() - item.start];
-							const behavior = merged.followOnAppend === true ? "auto" : merged.followOnAppend || null;
-							if (behavior && nextCount > prevCount && this.isAtEnd(prevOptions.scrollEndThreshold) && (prevCount === 0 || merged.getItemKey(nextCount - 1) !== prevLastKey)) followOnAppend = behavior;
-						}
-					}
-					this.options = merged;
-					if (edgeKeysChanged) {
-						this.pendingMin = 0;
-						this.itemSizeCacheVersion++;
-					}
-					let anchorResolved = false;
-					let anchorDelta = 0;
-					if (anchor && this.scrollOffset !== null) {
-						const [anchorKey, anchorOffset] = anchor;
-						const newMeasurements = this.getMeasurements();
-						const { count, getItemKey } = this.options;
-						let idx = 0;
-						while (idx < count && getItemKey(idx) !== anchorKey) idx++;
-						if (idx < count) {
-							const anchorItem = newMeasurements[idx];
-							if (anchorItem) {
-								const newOffset = Math.max(0, anchorItem.start + anchorOffset);
-								if (newOffset !== this.scrollOffset) {
-									anchorDelta = newOffset - this.scrollOffset;
-									this.scrollOffset = newOffset;
-									anchorResolved = true;
-								}
-							}
-						}
-					}
-					if (anchorResolved || followOnAppend) this.pendingScrollAnchor = [
-						anchorResolved ? anchor[0] : null,
-						anchorResolved ? anchor[1] : 0,
-						followOnAppend,
-						anchorDelta
-					];
-				};
-				this.notify = (sync) => {
-					var _a, _b;
-					(_b = (_a = this.options).onChange) == null || _b.call(_a, this, sync);
-				};
-				this.maybeNotify = memo$12(() => {
-					this.calculateRange();
-					return [
-						this.isScrolling,
-						this.range ? this.range.startIndex : null,
-						this.range ? this.range.endIndex : null
-					];
-				}, (isScrolling) => {
-					this.notify(isScrolling);
-				}, {
-					key: false,
-					debug: () => this.options.debug,
-					initialDeps: [
-						this.isScrolling,
-						this.range ? this.range.startIndex : null,
-						this.range ? this.range.endIndex : null
+		//#endregion
+		//#region lib/types/client/chat/CompactionItem.js
+		/**
+		* Renders the model-history compaction marker.
+		* @param props - the marker node off the snapshot cache.
+		* @returns the marker row, with the summary disclosure when one is available.
+		*/
+		const CompactionItem = (0, react.memo)(function CompactionItem({ node, title, fallbackSummary, t }) {
+			const [expanded, setExpanded] = (0, react.useState)(false);
+			const labels = (0, react.useMemo)(() => markdownLabels(t), [t]);
+			const expandable = node.summary !== null;
+			const open = expandable && expanded;
+			const summary = node.shadowedItemCount !== null && node.shadowedTokenCount !== null ? t("message.compaction.completed", {
+				items: node.shadowedItemCount,
+				tokens: node.shadowedTokenCount
+			}) : fallbackSummary ?? (expandable ? t("message.compaction.expand") : t("message.compaction.unavailable"));
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: MessageItem_module_css_default.compactionRow,
+				children: [(0, react_jsx_runtime.jsxs)("button", {
+					type: "button",
+					className: MessageItem_module_css_default.compactionButton,
+					disabled: !expandable,
+					"aria-expanded": expandable ? open : void 0,
+					onClick: () => {
+						setExpanded((value) => !value);
+					},
+					children: [
+						(0, react_jsx_runtime.jsxs)("span", {
+							className: MessageItem_module_css_default.compactionLeading,
+							"aria-hidden": true,
+							children: [(0, react_jsx_runtime.jsx)("span", {
+								className: MessageItem_module_css_default.compactionContextIcon,
+								"data-compaction-icon": "context",
+								children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconApiOutlineRegular, {})
+							}), (0, react_jsx_runtime.jsx)("span", {
+								className: MessageItem_module_css_default.compactionDisclosureIcon,
+								"data-compaction-disclosure": open ? "expanded" : "collapsed",
+								children: open ? (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronDownOutlineRegular, {}) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronRightOutlineRegular, {})
+							})]
+						}),
+						(0, react_jsx_runtime.jsx)("span", {
+							className: MessageItem_module_css_default.compactionTitle,
+							children: title ?? t("message.compaction")
+						}),
+						(0, react_jsx_runtime.jsx)("span", {
+							className: MessageItem_module_css_default.compactionSep,
+							"aria-hidden": true
+						}),
+						(0, react_jsx_runtime.jsx)("span", {
+							className: MessageItem_module_css_default.compactionSummary,
+							children: summary
+						})
 					]
-				});
-				this.cleanup = () => {
-					this.unsubs.filter(Boolean).forEach((d) => d());
-					this.unsubs = [];
-					this.observer.disconnect();
-					if (this.rafId != null && this.targetWindow) {
-						this.targetWindow.cancelAnimationFrame(this.rafId);
-						this.rafId = null;
-					}
-					this.scrollState = null;
-					this._iosDeferredAdjustment = 0;
-					this._iosTouching = false;
-					this._iosJustTouchEnded = false;
-					this.scrollElement = null;
-					this.targetWindow = null;
-				};
-				this._didMount = () => {
-					return () => {
-						this.cleanup();
-					};
-				};
-				this._willUpdate = () => {
-					var _a;
-					const scrollElement = this.options.enabled ? this.options.getScrollElement() : null;
-					if (this.scrollElement !== scrollElement) {
-						this.cleanup();
-						if (!scrollElement) {
-							this.maybeNotify();
-							return;
-						}
-						this.scrollElement = scrollElement;
-						if (this.scrollElement && "ownerDocument" in this.scrollElement) this.targetWindow = this.scrollElement.ownerDocument.defaultView;
-						else this.targetWindow = ((_a = this.scrollElement) == null ? void 0 : _a.window) ?? null;
-						this.elementsCache.forEach((cached) => {
-							this.observer.observe(cached);
-						});
-						this.unsubs.push(this.options.observeElementRect(this, (rect) => {
-							this.scrollRect = rect;
-							this.maybeNotify();
-						}));
-						this.unsubs.push(this.options.observeElementOffset(this, (offset, isScrolling) => {
-							if (isScrolling && this._intendedScrollOffset === null && offset === this.scrollOffset) return;
-							if (this._intendedScrollOffset !== null && Math.abs(offset - this._intendedScrollOffset) < 1.5) offset = this._intendedScrollOffset;
-							this._intendedScrollOffset = null;
-							this.scrollAdjustments = 0;
-							const prevOffset = this.getScrollOffset();
-							this.scrollDirection = isScrolling ? prevOffset === offset ? this.scrollDirection : prevOffset < offset ? "forward" : "backward" : null;
-							this.scrollOffset = offset;
-							this.isScrolling = isScrolling;
-							this._flushIosDeferredIfReady();
-							if (this.scrollState) this.scheduleScrollReconcile();
-							this.maybeNotify();
-						}));
-						if ("addEventListener" in this.scrollElement) {
-							const scrollEl = this.scrollElement;
-							const onTouchStart = () => {
-								this._iosTouching = true;
-								this._iosJustTouchEnded = false;
-								if (this._iosTouchEndTimerId !== null && this.targetWindow != null) {
-									this.targetWindow.clearTimeout(this._iosTouchEndTimerId);
-									this._iosTouchEndTimerId = null;
-								}
-							};
-							const onTouchEnd = () => {
-								this._iosTouching = false;
-								if (!isIOSWebKit() || this.targetWindow == null) return;
-								this._iosJustTouchEnded = true;
-								this._iosTouchEndTimerId = this.targetWindow.setTimeout(() => {
-									this._iosJustTouchEnded = false;
-									this._iosTouchEndTimerId = null;
-									this._flushIosDeferredIfReady();
-								}, 150);
-							};
-							scrollEl.addEventListener("touchstart", onTouchStart, addEventListenerOptions);
-							scrollEl.addEventListener("touchend", onTouchEnd, addEventListenerOptions);
-							this.unsubs.push(() => {
-								scrollEl.removeEventListener("touchstart", onTouchStart);
-								scrollEl.removeEventListener("touchend", onTouchEnd);
-								if (this._iosTouchEndTimerId !== null && this.targetWindow != null) {
-									this.targetWindow.clearTimeout(this._iosTouchEndTimerId);
-									this._iosTouchEndTimerId = null;
-								}
-							});
-						}
-						this._scrollToOffset(this.getScrollOffset(), {
-							adjustments: void 0,
-							behavior: void 0
-						});
-					}
-					const anchor = this.pendingScrollAnchor;
-					this.pendingScrollAnchor = null;
-					if (anchor && this.scrollElement && this.options.enabled) {
-						const [key, _offset, followOnAppend, anchorDelta] = anchor;
-						if (key !== null && !followOnAppend) if (isIOSWebKit() && (this.isScrolling || this._iosTouching || this._iosJustTouchEnded)) {
-							if (anchorDelta !== 0) this._iosDeferredAdjustment += anchorDelta;
-						} else this._scrollToOffset(this.getScrollOffset(), {
-							adjustments: void 0,
-							behavior: void 0
-						});
-						if (followOnAppend) this.scrollToEnd({ behavior: followOnAppend });
-					}
-				};
-				this._flushIosDeferredIfReady = () => {
-					if (this._iosDeferredAdjustment === 0) return;
-					if (this.isScrolling) return;
-					if (this._iosTouching) return;
-					if (this._iosJustTouchEnded) return;
-					const cur = this.getScrollOffset();
-					const max = this.getMaxScrollOffset();
-					if (cur < 0 || cur > max) return;
-					if (this._iosDeferredAdjustment < 0 && cur >= max - 1) {
-						this._iosDeferredAdjustment = 0;
-						return;
-					}
-					const delta = this._iosDeferredAdjustment;
-					this._iosDeferredAdjustment = 0;
-					this._scrollToOffset(cur, {
-						adjustments: this.scrollAdjustments += delta,
-						behavior: void 0
-					});
-				};
-				this.rafId = null;
-				this.getSize = () => {
-					if (!this.options.enabled) {
-						this.scrollRect = null;
-						return 0;
-					}
-					this.scrollRect = this.scrollRect ?? this.options.initialRect;
-					return this.scrollRect[this.options.horizontal ? "width" : "height"];
-				};
-				this.getScrollOffset = () => {
-					if (!this.options.enabled) {
-						this.scrollOffset = null;
-						return 0;
-					}
-					this.scrollOffset = this.scrollOffset ?? (typeof this.options.initialOffset === "function" ? this.options.initialOffset() : this.options.initialOffset);
-					return this.scrollOffset;
-				};
-				this.getMeasurementOptions = memo$12(() => [
-					this.options.count,
-					this.options.paddingStart,
-					this.options.scrollMargin,
-					this.options.getItemKey,
-					this.options.enabled,
-					this.options.lanes,
-					this.options.laneAssignmentMode,
-					this.options.gap
-				], (count, paddingStart, scrollMargin, getItemKey, enabled, lanes, laneAssignmentMode, gap) => {
-					if (this.prevLanes !== void 0 && this.prevLanes !== lanes) this.lanesChangedFlag = true;
-					this.prevLanes = lanes;
-					this.pendingMin = null;
-					return {
-						count,
-						paddingStart,
-						scrollMargin,
-						getItemKey,
-						enabled,
-						lanes,
-						laneAssignmentMode,
-						gap
-					};
-				}, { key: false });
-				this.getMeasurements = memo$12(() => [this.getMeasurementOptions(), this.itemSizeCacheVersion], ({ count, paddingStart, scrollMargin, getItemKey, enabled, lanes, laneAssignmentMode, gap }, _itemSizeCacheVersion) => {
-					const itemSizeCache = this.itemSizeCache;
-					if (!enabled) {
-						this.measurementsCache = [];
-						this.itemSizeCache.clear();
-						this.laneAssignments.clear();
-						return [];
-					}
-					if (this.laneAssignments.size > count) {
-						for (const index of this.laneAssignments.keys()) if (index >= count) this.laneAssignments.delete(index);
-					}
-					if (this.lanesChangedFlag) {
-						this.lanesChangedFlag = false;
-						this.lanesSettling = true;
-						this.measurementsCache = [];
-						this.itemSizeCache.clear();
-						this.laneAssignments.clear();
-						this.pendingMin = null;
-					}
-					if (this.measurementsCache.length === 0 && !this.lanesSettling) {
-						this.measurementsCache = this.options.initialMeasurementsCache;
-						this.measurementsCache.forEach((item) => {
-							this.itemSizeCache.set(item.key, item.size);
-						});
-					}
-					const min = this.lanesSettling ? 0 : this.pendingMin ?? 0;
-					this.pendingMin = null;
-					if (this.lanesSettling && this.measurementsCache.length === count) this.lanesSettling = false;
-					if (lanes === 1) {
-						const need = count * 2;
-						let flat = this._flatMeasurements;
-						if (!flat || flat.length < need) {
-							const next = new Float64Array(need);
-							if (flat && min > 0) next.set(flat.subarray(0, min * 2));
-							flat = next;
-							this._flatMeasurements = flat;
-						}
-						let runningStart;
-						if (min === 0) runningStart = paddingStart + scrollMargin;
-						else {
-							const prevIdx = min - 1;
-							runningStart = flat[prevIdx * 2] + flat[prevIdx * 2 + 1] + gap;
-						}
-						for (let i = min; i < count; i++) {
-							const key = getItemKey(i);
-							const measuredSize = itemSizeCache.get(key);
-							const size = typeof measuredSize === "number" ? measuredSize : this.options.estimateSize(i);
-							flat[i * 2] = runningStart;
-							flat[i * 2 + 1] = size;
-							runningStart += size + gap;
-						}
-						const view = createLazyMeasurementsView(count, flat, getItemKey);
-						this.measurementsCache = view;
-						return view;
-					}
-					const measurements = this.measurementsCache.slice(0, min);
-					const laneLastIndex = new Array(lanes).fill(void 0);
-					const laneEnds = new Float64Array(lanes);
-					let filledLanes = 0;
-					for (let m = 0; m < min; m++) {
-						const item = measurements[m];
-						if (item) {
-							if (laneLastIndex[item.lane] === void 0) filledLanes++;
-							laneLastIndex[item.lane] = m;
-							laneEnds[item.lane] = item.end;
-						}
-					}
-					for (let i = min; i < count; i++) {
-						const key = getItemKey(i);
-						const cachedLane = this.laneAssignments.get(i);
-						let lane;
-						let start;
-						const shouldCacheLane = laneAssignmentMode === "estimate" || itemSizeCache.has(key);
-						if (cachedLane !== void 0 && this.options.lanes > 1) {
-							lane = cachedLane;
-							const prevIndex = laneLastIndex[lane];
-							const prevInLane = prevIndex !== void 0 ? measurements[prevIndex] : void 0;
-							start = prevInLane ? prevInLane.end + gap : paddingStart + scrollMargin;
-						} else if (filledLanes === lanes) {
-							let bestLane = 0;
-							let bestEnd = laneEnds[0];
-							let bestIdx = laneLastIndex[0];
-							for (let l = 1; l < lanes; l++) {
-								const e = laneEnds[l];
-								if (e < bestEnd || e === bestEnd && laneLastIndex[l] < bestIdx) {
-									bestLane = l;
-									bestEnd = e;
-									bestIdx = laneLastIndex[l];
-								}
-							}
-							lane = bestLane;
-							start = bestEnd + gap;
-							if (shouldCacheLane) this.laneAssignments.set(i, lane);
-						} else {
-							lane = i % this.options.lanes;
-							start = paddingStart + scrollMargin;
-							if (shouldCacheLane) this.laneAssignments.set(i, lane);
-						}
-						const measuredSize = itemSizeCache.get(key);
-						const size = typeof measuredSize === "number" ? measuredSize : this.options.estimateSize(i);
-						const end = start + size;
-						measurements[i] = {
-							index: i,
-							start,
-							size,
-							end,
-							key,
-							lane
-						};
-						if (laneLastIndex[lane] === void 0) filledLanes++;
-						laneLastIndex[lane] = i;
-						laneEnds[lane] = end;
-					}
-					this.measurementsCache = measurements;
-					return measurements;
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.calculateRange = memo$12(() => [
-					this.getMeasurements(),
-					this.getSize(),
-					this.getScrollOffset(),
-					this.options.lanes
-				], (measurements, outerSize, scrollOffset, lanes) => {
-					if (measurements.length === 0 || outerSize === 0) {
-						this.range = null;
-						return null;
-					}
-					this.range = calculateRangeImpl(measurements, outerSize, scrollOffset, lanes, lanes === 1 && this._flatMeasurements != null ? this._flatMeasurements : null);
-					return this.range;
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.getVirtualIndexes = memo$12(() => {
-					let startIndex = null;
-					let endIndex = null;
-					const range = this.calculateRange();
-					if (range) {
-						startIndex = range.startIndex;
-						endIndex = range.endIndex;
-					}
-					this.maybeNotify.updateDeps([
-						this.isScrolling,
-						startIndex,
-						endIndex
-					]);
-					return [
-						this.options.rangeExtractor,
-						this.options.overscan,
-						this.options.count,
-						startIndex,
-						endIndex
-					];
-				}, (rangeExtractor, overscan, count, startIndex, endIndex) => {
-					return startIndex === null || endIndex === null ? [] : rangeExtractor({
-						startIndex,
-						endIndex,
-						overscan,
-						count
-					});
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.indexFromElement = (node) => {
-					const attributeName = this.options.indexAttribute;
-					const indexStr = node.getAttribute(attributeName);
-					if (!indexStr) {
-						console.warn(`Missing attribute name '${attributeName}={index}' on measured element.`);
-						return -1;
-					}
-					return parseInt(indexStr, 10);
-				};
-				this.shouldMeasureDuringScroll = (index) => {
-					var _a;
-					if (!this.scrollState || this.scrollState.behavior !== "smooth") return true;
-					const scrollIndex = this.scrollState.index ?? ((_a = this.getVirtualItemForOffset(this.scrollState.lastTargetOffset)) == null ? void 0 : _a.index);
-					if (scrollIndex !== void 0 && this.range) {
-						const bufferSize = Math.max(this.options.overscan, Math.ceil((this.range.endIndex - this.range.startIndex) / 2));
-						const minIndex = Math.max(0, scrollIndex - bufferSize);
-						const maxIndex = Math.min(this.options.count - 1, scrollIndex + bufferSize);
-						return index >= minIndex && index <= maxIndex;
-					}
-					return true;
-				};
-				this.measureElement = (node) => {
-					if (!node) {
-						this.elementsCache.forEach((cached, key2) => {
-							if (!cached.isConnected) {
-								this.observer.unobserve(cached);
-								this.elementsCache.delete(key2);
-							}
-						});
-						return;
-					}
-					const index = this.indexFromElement(node);
-					const key = this.options.getItemKey(index);
-					const prevNode = this.elementsCache.get(key);
-					if (prevNode !== node) {
-						if (prevNode) this.observer.unobserve(prevNode);
-						this.observer.observe(node);
-						this.elementsCache.set(key, node);
-					}
-					if ((!this.isScrolling || this.scrollState) && this.shouldMeasureDuringScroll(index)) this.resizeItem(index, this.options.measureElement(node, void 0, this));
-				};
-				this.resizeItem = (index, size) => {
-					var _a, _b;
-					if (index < 0 || index >= this.options.count) return;
-					let cachedSize;
-					let itemStart;
-					let key;
-					const flat = this._flatMeasurements;
-					if (this.options.lanes === 1 && flat !== null) {
-						key = this.options.getItemKey(index);
-						itemStart = flat[index * 2];
-						cachedSize = flat[index * 2 + 1];
-					} else {
-						const item = this.measurementsCache[index];
-						if (!item) return;
-						key = item.key;
-						itemStart = item.start;
-						cachedSize = item.size;
-					}
-					const itemSize = this.itemSizeCache.get(key) ?? cachedSize;
-					const delta = size - itemSize;
-					if (delta !== 0) {
-						const wasAtEnd = this.options.anchorTo === "end" && ((_a = this.scrollState) == null ? void 0 : _a.behavior) !== "smooth" && this.getVirtualDistanceFromEnd() <= this.options.scrollEndThreshold;
-						const prevTotalSize = wasAtEnd ? this.getTotalSize() : 0;
-						const scrollOffsetWithAdj = this.getScrollOffset() + this.scrollAdjustments;
-						const defaultShouldAdjust = !this.itemSizeCache.has(key) ? itemStart < scrollOffsetWithAdj : itemStart + itemSize <= scrollOffsetWithAdj && this.scrollDirection !== "backward";
-						const shouldAdjustScroll = ((_b = this.scrollState) == null ? void 0 : _b.behavior) !== "smooth" && (this.shouldAdjustScrollPositionOnItemSizeChange !== void 0 ? this.shouldAdjustScrollPositionOnItemSizeChange(this.measurementsCache[index] ?? {
-							index,
-							key,
-							start: itemStart,
-							size: cachedSize,
-							end: itemStart + cachedSize,
-							lane: 0
-						}, delta, this) : defaultShouldAdjust);
-						if (this.pendingMin === null || index < this.pendingMin) this.pendingMin = index;
-						this.itemSizeCache.set(key, size);
-						this.itemSizeCacheVersion++;
-						let adjustedSync = false;
-						if (wasAtEnd) adjustedSync = this.applyScrollAdjustment(this.getTotalSize() - prevTotalSize);
-						else if (shouldAdjustScroll) adjustedSync = this.applyScrollAdjustment(delta);
-						this.notify(adjustedSync);
-					}
-				};
-				this.getVirtualItems = memo$12(() => [this.getVirtualIndexes(), this.getMeasurements()], (indexes, measurements) => {
-					const virtualItems = [];
-					for (let k = 0, len = indexes.length; k < len; k++) {
-						const measurement = measurements[indexes[k]];
-						virtualItems.push(measurement);
-					}
-					return virtualItems;
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.getVirtualItemForOffset = (offset) => {
-					const measurements = this.getMeasurements();
-					if (measurements.length === 0) return;
-					const flat = this._flatMeasurements;
-					const useFlat = this.options.lanes === 1 && flat != null;
-					return notUndefined(measurements[findNearestBinarySearch(0, measurements.length - 1, useFlat ? (i) => flat[i * 2] : (i) => notUndefined(measurements[i]).start, offset)]);
-				};
-				this.getMaxScrollOffset = () => {
-					if (!this.scrollElement) return 0;
-					if ("scrollHeight" in this.scrollElement) return this.options.horizontal ? this.scrollElement.scrollWidth - this.scrollElement.clientWidth : this.scrollElement.scrollHeight - this.scrollElement.clientHeight;
-					else {
-						const doc = this.scrollElement.document.documentElement;
-						return this.options.horizontal ? doc.scrollWidth - this.scrollElement.innerWidth : doc.scrollHeight - this.scrollElement.innerHeight;
-					}
-				};
-				this.getVirtualDistanceFromEnd = () => {
-					return Math.max(this.getTotalSize() - this.getSize() - this.getScrollOffset(), 0);
-				};
-				this.getDistanceFromEnd = () => {
-					return Math.max(this.getMaxScrollOffset() - this.getScrollOffset(), 0);
-				};
-				this.isAtEnd = (threshold = this.options.scrollEndThreshold) => {
-					return this.getDistanceFromEnd() <= threshold;
-				};
-				this.getOffsetForAlignment = (toOffset, align, itemSize = 0) => {
-					if (!this.scrollElement) return 0;
-					const size = this.getSize();
-					const scrollOffset = this.getScrollOffset();
-					if (align === "auto") align = toOffset >= scrollOffset + size ? "end" : "start";
-					if (align === "center") toOffset += (itemSize - size) / 2;
-					else if (align === "end") toOffset -= size;
-					const maxOffset = this.getMaxScrollOffset();
-					return Math.max(Math.min(maxOffset, toOffset), 0);
-				};
-				this.getOffsetForIndex = (index, align = "auto") => {
-					index = Math.max(0, Math.min(index, this.options.count - 1));
-					const size = this.getSize();
-					const scrollOffset = this.getScrollOffset();
-					const item = this.measurementsCache[index];
-					if (!item) return;
-					if (align === "auto") if (item.end >= scrollOffset + size - this.options.scrollPaddingEnd) align = "end";
-					else if (item.start <= scrollOffset + this.options.scrollPaddingStart) align = "start";
-					else return [scrollOffset, align];
-					if (align === "end" && index === this.options.count - 1) return [this.getMaxScrollOffset(), align];
-					const toOffset = align === "end" ? item.end + this.options.scrollPaddingEnd : item.start - this.options.scrollPaddingStart;
-					return [this.getOffsetForAlignment(toOffset, align, item.size), align];
-				};
-				this.scrollToOffset = (toOffset, { align = "start", behavior = "auto" } = {}) => {
-					this._iosDeferredAdjustment = 0;
-					const offset = this.getOffsetForAlignment(toOffset, align);
-					const now = this.now();
-					this.scrollState = {
-						index: null,
-						align,
-						behavior,
-						startedAt: now,
-						lastTargetOffset: offset,
-						stableFrames: 0
-					};
-					this._scrollToOffset(offset, {
-						adjustments: void 0,
-						behavior
-					});
-					this.scheduleScrollReconcile();
-				};
-				this.scrollToIndex = (index, { align: initialAlign = "auto", behavior = "auto" } = {}) => {
-					this._iosDeferredAdjustment = 0;
-					index = Math.max(0, Math.min(index, this.options.count - 1));
-					const offsetInfo = this.getOffsetForIndex(index, initialAlign);
-					if (!offsetInfo) return;
-					const [offset, align] = offsetInfo;
-					const now = this.now();
-					this.scrollState = {
-						index,
-						align,
-						behavior,
-						startedAt: now,
-						lastTargetOffset: offset,
-						stableFrames: 0
-					};
-					this._scrollToOffset(offset, {
-						adjustments: void 0,
-						behavior
-					});
-					this.scheduleScrollReconcile();
-				};
-				this.scrollBy = (delta, { behavior = "auto" } = {}) => {
-					const offset = this.getScrollOffset() + delta;
-					const now = this.now();
-					this.scrollState = {
-						index: null,
-						align: "start",
-						behavior,
-						startedAt: now,
-						lastTargetOffset: offset,
-						stableFrames: 0
-					};
-					this._scrollToOffset(offset, {
-						adjustments: void 0,
-						behavior
-					});
-					this.scheduleScrollReconcile();
-				};
-				this.scrollToEnd = ({ behavior = "auto" } = {}) => {
-					if (this.options.count > 0) {
-						this.scrollToIndex(this.options.count - 1, {
-							align: "end",
-							behavior
-						});
-						return;
-					}
-					this.scrollToOffset(Math.max(this.getTotalSize() - this.getSize(), 0), { behavior });
-				};
-				this.getTotalSize = () => {
-					var _a;
-					const measurements = this.getMeasurements();
-					let end;
-					if (measurements.length === 0) end = this.options.paddingStart;
-					else if (this.options.lanes === 1) {
-						const lastIdx = measurements.length - 1;
-						const flat = this._flatMeasurements;
-						if (flat != null) end = flat[lastIdx * 2] + flat[lastIdx * 2 + 1];
-						else end = ((_a = measurements[lastIdx]) == null ? void 0 : _a.end) ?? 0;
-					} else {
-						const endByLane = Array(this.options.lanes).fill(null);
-						let endIndex = measurements.length - 1;
-						while (endIndex >= 0 && endByLane.some((val) => val === null)) {
-							const item = measurements[endIndex];
-							if (endByLane[item.lane] === null) endByLane[item.lane] = item.end;
-							endIndex--;
-						}
-						end = Math.max(...endByLane.filter((val) => val !== null));
-					}
-					return Math.max(end - this.options.scrollMargin + this.options.paddingEnd, 0);
-				};
-				this.takeSnapshot = () => {
-					const snapshot = [];
-					if (this.itemSizeCache.size === 0) return snapshot;
-					const m = this.getMeasurements();
-					for (const item of m) if (item && this.itemSizeCache.has(item.key)) snapshot.push({
-						index: item.index,
-						key: item.key,
-						start: item.start,
-						size: item.size,
-						end: item.end,
-						lane: item.lane
-					});
-					return snapshot;
-				};
-				this._scrollToOffset = (offset, { adjustments, behavior }) => {
-					this._intendedScrollOffset = offset + (adjustments ?? 0);
-					this.options.scrollToFn(offset, {
-						behavior,
-						adjustments
-					}, this);
-				};
-				this.measure = () => {
-					this.pendingMin = null;
-					this.itemSizeCache.clear();
-					this.laneAssignments.clear();
-					this.itemSizeCacheVersion++;
-					this.notify(false);
-				};
-				this.setOptions(opts);
-			}
-			applyScrollAdjustment(delta, behavior) {
-				if (delta === 0) return false;
-				if (isIOSWebKit() && (this.isScrolling || this._iosTouching || this._iosJustTouchEnded)) {
-					this._iosDeferredAdjustment += delta;
-					return false;
-				} else {
-					this._scrollToOffset(this.getScrollOffset(), {
-						adjustments: this.scrollAdjustments += delta,
-						behavior
-					});
-					if (this.scrollOffset !== null) {
-						this.scrollOffset += this.scrollAdjustments;
-						if (this.scrollOffset < 0) this.scrollOffset = 0;
-						this.scrollAdjustments = 0;
-					}
-					return true;
-				}
-			}
-			scheduleScrollReconcile() {
-				if (!this.targetWindow) {
-					this.scrollState = null;
-					return;
-				}
-				if (this.rafId != null) return;
-				this.rafId = this.targetWindow.requestAnimationFrame(() => {
-					this.rafId = null;
-					this.reconcileScroll();
-				});
-			}
-			reconcileScroll() {
-				if (!this.scrollState) return;
-				if (!this.scrollElement) return;
-				if (this.now() - this.scrollState.startedAt > 5e3) {
-					this.scrollState = null;
-					return;
-				}
-				const offsetInfo = this.scrollState.index != null ? this.getOffsetForIndex(this.scrollState.index, this.scrollState.align) : void 0;
-				const targetOffset = offsetInfo ? offsetInfo[0] : this.scrollState.lastTargetOffset;
-				const STABLE_FRAMES = 1;
-				const targetChanged = targetOffset !== this.scrollState.lastTargetOffset;
-				if (!targetChanged && approxEqual(targetOffset, this.getScrollOffset())) {
-					this.scrollState.stableFrames++;
-					if (this.scrollState.stableFrames >= STABLE_FRAMES) {
-						if (this.getScrollOffset() !== targetOffset) this._scrollToOffset(targetOffset, {
-							adjustments: void 0,
-							behavior: "auto"
-						});
-						this.scrollState = null;
-						return;
-					}
-				} else {
-					this.scrollState.stableFrames = 0;
-					if (targetChanged) {
-						const viewport = this.getSize() || 600;
-						const distance = Math.abs(targetOffset - this.getScrollOffset());
-						const keepSmooth = this.scrollState.behavior === "smooth" && distance > viewport;
-						this.scrollState.lastTargetOffset = targetOffset;
-						if (!keepSmooth) this.scrollState.behavior = "auto";
-						this._scrollToOffset(targetOffset, {
-							adjustments: void 0,
-							behavior: keepSmooth ? "smooth" : "auto"
-						});
-					}
-				}
-				this.scheduleScrollReconcile();
-			}
-		};
-		const findNearestBinarySearch = (low, high, getCurrentValue, value) => {
-			while (low <= high) {
-				const middle = (low + high) / 2 | 0;
-				const currentValue = getCurrentValue(middle);
-				if (currentValue < value) low = middle + 1;
-				else if (currentValue > value) high = middle - 1;
-				else return middle;
-			}
-			if (low > 0) return low - 1;
-			else return 0;
-		};
-		function findNearestBinarySearchFlat(flat, high, value) {
-			let low = 0;
-			while (low <= high) {
-				const middle = (low + high) / 2 | 0;
-				const currentValue = flat[middle * 2];
-				if (currentValue < value) low = middle + 1;
-				else if (currentValue > value) high = middle - 1;
-				else return middle;
-			}
-			return low > 0 ? low - 1 : 0;
+				}), open && node.summary !== null && (0, react_jsx_runtime.jsx)("div", {
+					className: MessageItem_module_css_default.compactionBody,
+					children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
+						text: node.summary,
+						labels
+					})
+				})]
+			});
+		});
+		//#endregion
+		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/ContextBody.module.css.mjs
+		const css$13 = ".ZkiH0q_text{color:var(--dsw-alias-label-secondary);font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}.ZkiH0q_fields{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;gap:2px;margin:8px 0 0;padding-top:8px;display:flex}.ZkiH0q_field{gap:8px;min-width:0;display:flex}.ZkiH0q_fieldKey{min-width:96px;color:var(--dsw-alias-label-caption);flex:none}.ZkiH0q_fieldValue{min-width:0;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere;flex:auto;margin:0}.ZkiH0q_files{flex-wrap:wrap;gap:4px 12px;margin:0 0 8px;padding:0;list-style:none;display:flex}.ZkiH0q_file{align-items:baseline;gap:6px;min-width:0;display:flex}.ZkiH0q_filePath{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.ZkiH0q_fileAction{color:var(--dsw-alias-label-caption)}.ZkiH0q_catalogNotice{color:var(--dsw-alias-label-caption);margin:0 0 6px}.ZkiH0q_entries{flex-direction:column;gap:4px;margin:0;padding:0;list-style:none;display:flex}.ZkiH0q_entry{gap:8px;min-width:0;display:flex}.ZkiH0q_entryName{color:var(--dsw-alias-label-secondary);flex:none}.ZkiH0q_entryDescription{min-width:0;color:var(--dsw-alias-label-tertiary);text-overflow:ellipsis;white-space:nowrap;flex:auto;overflow:hidden}.ZkiH0q_sections{flex-direction:column;gap:8px;margin:0;display:flex}.ZkiH0q_section{flex-direction:column;gap:2px;min-width:0;display:flex}.ZkiH0q_sectionName{color:var(--dsw-alias-label-caption)}.ZkiH0q_sectionText{color:var(--dsw-alias-label-secondary);white-space:pre-wrap;overflow-wrap:anywhere;margin:0}.ZkiH0q_relaySender{color:var(--dsw-alias-label-caption);overflow-wrap:anywhere;margin:0 0 6px}.ZkiH0q_recalls{flex-direction:column;gap:2px;margin:0 0 8px;padding:0;list-style:none;display:flex}.ZkiH0q_recall{gap:8px;min-width:0;display:flex}.ZkiH0q_recallLabel{color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.ZkiH0q_recallCounts{color:var(--dsw-alias-label-caption);flex:none}";
+		const tagId$13 = "@deepseek-ai/dsh-client-ui-chat/ContextBody.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$13) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
+			tag.dataset.pluginCss = tagId$13;
+			tag.textContent = css$13;
+			document.head.appendChild(tag);
 		}
-		function calculateRangeImpl(measurements, outerSize, scrollOffset, lanes, flat) {
-			const lastIndex = measurements.length - 1;
-			if (measurements.length <= lanes) return {
-				startIndex: 0,
-				endIndex: lastIndex
+		var ContextBody_module_css_default = {
+			"catalogNotice": "ZkiH0q_catalogNotice",
+			"entries": "ZkiH0q_entries",
+			"entry": "ZkiH0q_entry",
+			"entryDescription": "ZkiH0q_entryDescription",
+			"entryName": "ZkiH0q_entryName",
+			"field": "ZkiH0q_field",
+			"fieldKey": "ZkiH0q_fieldKey",
+			"fieldValue": "ZkiH0q_fieldValue",
+			"fields": "ZkiH0q_fields",
+			"file": "ZkiH0q_file",
+			"fileAction": "ZkiH0q_fileAction",
+			"filePath": "ZkiH0q_filePath",
+			"files": "ZkiH0q_files",
+			"recall": "ZkiH0q_recall",
+			"recallCounts": "ZkiH0q_recallCounts",
+			"recallLabel": "ZkiH0q_recallLabel",
+			"recalls": "ZkiH0q_recalls",
+			"relaySender": "ZkiH0q_relaySender",
+			"section": "ZkiH0q_section",
+			"sectionName": "ZkiH0q_sectionName",
+			"sectionText": "ZkiH0q_sectionText",
+			"sections": "ZkiH0q_sections",
+			"text": "ZkiH0q_text"
+		};
+		//#endregion
+		//#region lib/types/client/chat/ContextBody.js
+		/** Model-facing text stays bounded at the disclosure, not at the producer. */
+		const MAX_CHARS = 2e4;
+		/** Rows a list body materializes before summarizing the remainder. */
+		const MAX_ENTRIES = 200;
+		/** One durable source narrowed to the readable-record shape; null for anything else. */
+		function asRecord$1(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
+		}
+		/**
+		* The content blocks as runs, IN THE ORDER the model received them.
+		*
+		* Adjacent text blocks join with no separator, matching how provider adapters
+		* flatten them — inserting a line break would show the reader a line the model
+		* never saw. An unknown block breaks the run and keeps its own fallback rather
+		* than being hoisted past the text around it or vanishing; the block union is
+		* merge-extensible, so a foreign log may interleave shapes this build does not
+		* know.
+		*/
+		function contentRuns(content) {
+			const runs = [];
+			for (const block of content) {
+				if (block.type !== "text") {
+					runs.push({ block });
+					continue;
+				}
+				const last = runs[runs.length - 1];
+				if (last !== void 0 && "text" in last) last.text += block.text;
+				else runs.push({ text: block.text });
+			}
+			return runs;
+		}
+		/** Only the blocks this UI version does not know, for bodies that replace the text. */
+		function unknownBlocks(content) {
+			return contentRuns(content).flatMap((run) => "block" in run ? [run.block] : []);
+		}
+		/** The model-facing text, truncated to the display bound. */
+		function boundedText(text, t) {
+			return text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS)}\n${t("json.truncated", { total: text.length })}` : text;
+		}
+		/**
+		* One source field rendered as a value row; nested shapes stay compact JSON.
+		* Bounded on its own, because source fields are as unbounded as the text: an unknown
+		* producer may record an arbitrarily large string or array.
+		*/
+		function fieldValue(value, t) {
+			return boundedText(typeof value === "string" ? value : typeof value === "number" || typeof value === "boolean" ? String(value) : JSON.stringify(value), t);
+		}
+		/**
+		* Source fields as a key/value list. `kind` is always omitted because the
+		* row header already names the producer. `form` is omitted only when a
+		* dedicated body rendered for it — then the presentation the reader is looking
+		* at IS that value. On the opaque fallback the declaration is kept, because
+		* that is the one place a form this version cannot present would otherwise
+		* disappear from the UI entirely.
+		*/
+		function SourceFields({ source, formRendered, t }) {
+			const record = asRecord$1(source);
+			if (record === null) return null;
+			const hidden = formRendered ? ["kind", "form"] : ["kind"];
+			const rows = Object.entries(record).filter(([key]) => !hidden.includes(key));
+			if (rows.length === 0) return null;
+			return (0, react_jsx_runtime.jsx)("dl", {
+				className: ContextBody_module_css_default.fields,
+				"data-context-fields": true,
+				children: rows.map(([key, value]) => (0, react_jsx_runtime.jsxs)("div", {
+					className: ContextBody_module_css_default.field,
+					children: [(0, react_jsx_runtime.jsx)("dt", {
+						className: ContextBody_module_css_default.fieldKey,
+						children: key
+					}), (0, react_jsx_runtime.jsx)("dd", {
+						className: ContextBody_module_css_default.fieldValue,
+						children: fieldValue(value, t)
+					})]
+				}, key))
+			});
+		}
+		/**
+		* Content blocks this UI version does not know, kept visible rather than
+		* dropped: the block union is merge-extensible, so a newer or foreign log may
+		* carry a shape this build has no presentation for.
+		* @param props - The unrecognized blocks and the locale seat.
+		* @returns One generic JSON block per unknown entry.
+		*/
+		function UnknownBlocks({ blocks, t }) {
+			return (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: blocks.map((block, index) => (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
+				label: t("message.unknownBlock"),
+				payload: block,
+				truncatedLabel: (total) => t("json.truncated", { total })
+			}, index)) });
+		}
+		/**
+		* The model-facing content of one context, shared by every form that shows it:
+		* the text with its real line breaks, then any block this UI version does not
+		* know, which keeps its own fallback rather than vanishing.
+		* @param props - Durable content and the locale seat.
+		* @returns The content blocks as the model received them.
+		*/
+		function ModelFacingContent({ content, t }) {
+			return (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: contentRuns(content).map((run, index) => "text" in run ? run.text !== "" && (0, react_jsx_runtime.jsx)("pre", {
+				className: ContextBody_module_css_default.text,
+				"data-context-text": true,
+				children: boundedText(run.text, t)
+			}, index) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
+				label: t("message.unknownBlock"),
+				payload: run.block,
+				truncatedLabel: (total) => t("json.truncated", { total })
+			}, index)) });
+		}
+		/**
+		* Default presentation: the model-facing text as text, with its real line
+		* breaks, and the remaining source fields beneath it. This is what every form
+		* this UI version does not recognize renders as.
+		* @param props - Durable content, its source, and the locale seat.
+		* @returns The opaque context body.
+		*/
+		function OpaqueBody({ content, source, t }) {
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(ModelFacingContent, {
+				content,
+				t
+			}), (0, react_jsx_runtime.jsx)(SourceFields, {
+				source,
+				formRendered: false,
+				t
+			})] });
+		}
+		/**
+		* Instruction changes read off the source, or null when the record is not a
+		* usable instruction list.
+		*
+		* The read is all-or-nothing: silently dropping one unreadable entry would show
+		* a confident, incomplete file list for a log this version cannot fully read.
+		* Paths are deduplicated in first-seen order, matching how the header label is
+		* derived from the same array.
+		*/
+		function instructionChanges(source) {
+			const record = asRecord$1(source);
+			const list = record === null ? void 0 : record["changes"];
+			if (!Array.isArray(list)) return null;
+			const changes = [];
+			const seen = /* @__PURE__ */ new Set();
+			for (const entry of list) {
+				const change = asRecord$1(entry);
+				if (change === null) return null;
+				const path = change["path"];
+				if (typeof path !== "string" || path === "") return null;
+				const action = change["action"];
+				if (action !== "set" && action !== "replace" && action !== "remove") return null;
+				const digest = change["digest"];
+				if (seen.has(path)) continue;
+				seen.add(path);
+				changes.push({
+					action,
+					path,
+					...typeof digest === "string" ? { digest } : {}
+				});
+			}
+			return changes.length === 0 ? null : changes;
+		}
+		/**
+		* Locale key for one reconciled file. The baseline loads a file; a later delta
+		* distinguishes a newly reconciled path from a rewritten one, which `set` and
+		* `replace` already separate at the producer.
+		* @param action - the durable change action.
+		* @param baseline - whether this context is the startup/resume baseline.
+		* @returns the key naming what happened to that file.
+		*/
+		function instructionAction(action, baseline) {
+			if (action === "remove") return "message.context.instructions.removed";
+			if (baseline) return "message.context.instructions.loaded";
+			return action === "set" ? "message.context.instructions.added" : "message.context.instructions.updated";
+		}
+		/**
+		* `instructions` form: the files this context reconciled, then their text.
+		*
+		* The text keeps its `<system-reminder>` framing verbatim — the framing is part
+		* of what the model read, so hiding it would misreport the request.
+		* @param props - Durable content, its source, and the locale seat.
+		* @returns The instructions context body, or the opaque body when the change
+		* list is unreadable.
+		*/
+		function InstructionsBody({ content, source, t }) {
+			const changes = instructionChanges(source);
+			if (changes === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
+				content,
+				source,
+				t
+			});
+			const baseline = asRecord$1(source)?.["baseline"] === true;
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("ul", {
+				className: ContextBody_module_css_default.files,
+				"data-context-files": true,
+				children: changes.map((change) => (0, react_jsx_runtime.jsxs)("li", {
+					className: ContextBody_module_css_default.file,
+					title: change.digest,
+					children: [(0, react_jsx_runtime.jsx)("span", {
+						className: ContextBody_module_css_default.filePath,
+						children: change.path
+					}), (0, react_jsx_runtime.jsx)("span", {
+						className: ContextBody_module_css_default.fileAction,
+						children: t(instructionAction(change.action, baseline))
+					})]
+				}, change.path))
+			}), (0, react_jsx_runtime.jsx)(ModelFacingContent, {
+				content,
+				t
+			})] });
+		}
+		/**
+		* Catalog entries read off the source, or null when the record is not a usable
+		* catalog. All-or-nothing for the same reason as the instruction list: this body
+		* replaces the model-facing text, so a partial list would hide the only complete
+		* account of what the model read.
+		*/
+		function catalogEntries(source) {
+			const record = asRecord$1(source);
+			const list = record === null ? void 0 : record["entries"];
+			if (!Array.isArray(list)) return null;
+			const entries = [];
+			for (const item of list) {
+				const entry = asRecord$1(item);
+				if (entry === null) return null;
+				const name = entry["name"];
+				const description = entry["description"];
+				if (typeof name !== "string" || name === "" || typeof description !== "string") return null;
+				entries.push({
+					name,
+					description
+				});
+			}
+			return entries;
+		}
+		/**
+		* `catalog` form: the published entries as a list, read from the source rather
+		* than re-parsed out of the model-facing prose.
+		*
+		* A catalog whose source carries no usable entries falls through to the opaque
+		* body, so an older or hand-edited log still shows its text.
+		* @param props - Durable content, its source, and the locale seat.
+		* @returns The catalog context body, or the opaque body when the entry list is
+		* unreadable.
+		*/
+		function CatalogBody({ content, source, t }) {
+			const entries = catalogEntries(source);
+			if (entries === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
+				content,
+				source,
+				t
+			});
+			const update = asRecord$1(source)?.["update"] === true;
+			const shown = entries.slice(0, MAX_ENTRIES);
+			const rest = unknownBlocks(content);
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+				update && (0, react_jsx_runtime.jsx)("p", {
+					className: ContextBody_module_css_default.catalogNotice,
+					"data-context-catalog-update": true,
+					children: t("message.context.catalog.replaced")
+				}),
+				(0, react_jsx_runtime.jsx)("ul", {
+					className: ContextBody_module_css_default.entries,
+					"data-context-entries": true,
+					children: shown.map((entry, index) => (0, react_jsx_runtime.jsxs)("li", {
+						className: ContextBody_module_css_default.entry,
+						children: [(0, react_jsx_runtime.jsx)("code", {
+							className: ContextBody_module_css_default.entryName,
+							children: entry.name
+						}), (0, react_jsx_runtime.jsx)("span", {
+							className: ContextBody_module_css_default.entryDescription,
+							children: entry.description
+						})]
+					}, index))
+				}),
+				shown.length < entries.length && (0, react_jsx_runtime.jsx)("p", {
+					className: ContextBody_module_css_default.catalogNotice,
+					"data-context-entries-truncated": true,
+					children: t("message.context.catalog.more", { count: entries.length - shown.length })
+				}),
+				(0, react_jsx_runtime.jsx)(UnknownBlocks, {
+					blocks: rest,
+					t
+				})
+			] });
+		}
+		/** Snapshot sections read off the source, or null when the record is unusable. */
+		function snapshotSections(source) {
+			const record = asRecord$1(source);
+			const list = record === null ? void 0 : record["sections"];
+			if (!Array.isArray(list)) return null;
+			const sections = [];
+			for (const item of list) {
+				const section = asRecord$1(item);
+				if (section === null) return null;
+				const name = section["name"];
+				const text = section["text"];
+				if (typeof name !== "string" || name === "" || typeof text !== "string") return null;
+				sections.push({
+					name,
+					text
+				});
+			}
+			return sections.length === 0 ? null : sections;
+		}
+		/**
+		* `snapshot` form: the named contributions this snapshot assembled, in order.
+		*
+		* The sections are the same bytes the model read, split at the boundaries the
+		* producer assembled them on, so a reader sees which subsystem contributed
+		* which state instead of one undifferentiated wall.
+		*
+		* One sentence of the model-facing text is NOT in any section: the producer's
+		* framing line declaring that this snapshot supersedes earlier ones. Unlike the
+		* `<system-reminder>` wrapper an instruction context carries — which wraps
+		* content and cannot be separated from it — that line states the form's own
+		* semantics, so the body states them as a caption instead of reprinting the
+		* joined prose beside the sections it was split from.
+		* @param props - Durable content, its source, and the locale seat.
+		* @returns The snapshot context body, or the opaque body when unreadable.
+		*/
+		function SnapshotBody({ content, source, t }) {
+			const sections = snapshotSections(source);
+			/* v8 ignore next -- contextBody reads the sections before choosing this body. */
+			if (sections === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
+				content,
+				source,
+				t
+			});
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("p", {
+				className: ContextBody_module_css_default.catalogNotice,
+				"data-context-snapshot-supersedes": true,
+				children: t("message.context.snapshot.supersedes")
+			}), (0, react_jsx_runtime.jsx)("dl", {
+				className: ContextBody_module_css_default.sections,
+				"data-context-sections": true,
+				children: sections.map((section, index) => (0, react_jsx_runtime.jsxs)("div", {
+					className: ContextBody_module_css_default.section,
+					children: [(0, react_jsx_runtime.jsx)("dt", {
+						className: ContextBody_module_css_default.sectionName,
+						children: section.name
+					}), (0, react_jsx_runtime.jsx)("dd", {
+						className: ContextBody_module_css_default.sectionText,
+						children: boundedText(section.text, t)
+					})]
+				}, index))
+			})] });
+		}
+		/**
+		* `notice` form: what just happened, with the model-facing text beneath it.
+		*
+		* The one-line account also rides the collapsed row ({@link contextBody}), so a
+		* notice is usually readable without expanding at all.
+		* @param props - Durable content, its source, and the locale seat.
+		* @returns The notice context body.
+		*/
+		function NoticeBody({ content, t }) {
+			return (0, react_jsx_runtime.jsx)(ModelFacingContent, {
+				content,
+				t
+			});
+		}
+		/**
+		* `relay` form: which agent sent this, then what it said.
+		*
+		* The sender is an opaque session id; it is shown as a field rather than a
+		* label, because this client cannot resolve it to a title.
+		* @param props - Durable content, its source, and the locale seat.
+		* @returns The relay context body.
+		*/
+		function RelayBody({ content, source, t }) {
+			const sender = relaySender(source);
+			/* v8 ignore next -- contextBody resolves the sender before choosing this body. */
+			if (sender === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
+				content,
+				source,
+				t
+			});
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("p", {
+				className: ContextBody_module_css_default.relaySender,
+				"data-context-relay-sender": true,
+				children: t("message.context.relay.from", { session: sender })
+			}), (0, react_jsx_runtime.jsx)(ModelFacingContent, {
+				content,
+				t
+			})] });
+		}
+		/** The sending agent's session id, or null when the record does not name one. */
+		function relaySender(source) {
+			const sender = asRecord$1(source)?.["senderSessionId"];
+			return typeof sender === "string" && sender !== "" ? sender : null;
+		}
+		/** Recalled sessions read off the source, or null when the record is unusable. */
+		function recalledSessions(source) {
+			const record = asRecord$1(source);
+			const list = record === null ? void 0 : record["references"];
+			if (!Array.isArray(list)) return null;
+			const sessions = [];
+			for (const item of list) {
+				const reference = asRecord$1(item);
+				if (reference === null) return null;
+				const label = reference["label"];
+				const retained = reference["retainedMessages"];
+				const omitted = reference["omittedMessages"];
+				const truncated = reference["truncated"];
+				if (typeof label !== "string" || label === "" || typeof retained !== "number" || typeof omitted !== "number" || typeof truncated !== "boolean") return null;
+				sessions.push({
+					label,
+					retained,
+					omitted,
+					truncated
+				});
+			}
+			return sessions.length === 0 ? null : sessions;
+		}
+		/**
+		* `recall` form: which sessions this material came from and how much of each
+		* survived the read, then the material itself.
+		*
+		* Completeness is the fact a reader needs first: recalled context is bounded on
+		* the way in, so a card that hid the omitted count would overstate what the
+		* model received.
+		* @param props - Durable content, its source, and the locale seat.
+		* @returns The recall context body, or the opaque body when unreadable.
+		*/
+		function RecallBody({ content, source, t }) {
+			const sessions = recalledSessions(source);
+			if (sessions === null) return (0, react_jsx_runtime.jsx)(OpaqueBody, {
+				content,
+				source,
+				t
+			});
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("ul", {
+				className: ContextBody_module_css_default.recalls,
+				"data-context-recalls": true,
+				children: sessions.map((session, index) => (0, react_jsx_runtime.jsxs)("li", {
+					className: ContextBody_module_css_default.recall,
+					children: [
+						(0, react_jsx_runtime.jsx)("span", {
+							className: ContextBody_module_css_default.recallLabel,
+							children: session.label
+						}),
+						(0, react_jsx_runtime.jsx)("span", {
+							className: ContextBody_module_css_default.recallCounts,
+							children: t("message.context.recall.counts", {
+								retained: session.retained,
+								omitted: session.omitted
+							})
+						}),
+						session.truncated && (0, react_jsx_runtime.jsx)("span", {
+							className: ContextBody_module_css_default.recallCounts,
+							children: t("message.context.recall.truncated")
+						})
+					]
+				}, index))
+			}), (0, react_jsx_runtime.jsx)(ModelFacingContent, {
+				content,
+				t
+			})] });
+		}
+		/** The one-line account a `notice` puts on its collapsed row, when it records one. */
+		function noticeSummary(source) {
+			const summary = asRecord$1(source)?.["summary"];
+			return typeof summary === "string" && summary !== "" ? summary : null;
+		}
+		/**
+		* Choose the body for one context node.
+		*
+		* Returns the form the body actually rendered as, which is not always the
+		* declared one: a declared form whose fields are unreadable falls back to
+		* opaque, and the caller labels the row with what it really shows.
+		* `summary` is the collapsed row's one-line account, which only a `notice`
+		* records: its whole point is being readable without expanding.
+		* @param form - the producer-declared form projected onto the node.
+		* @param props - durable content, its source, and the locale seat.
+		* @returns the rendered form (null for opaque), its collapsed summary, and its body.
+		*/
+		function contextBody(form, props) {
+			const opaque = {
+				rendered: null,
+				summary: null,
+				body: (0, react_jsx_runtime.jsx)(OpaqueBody, { ...props })
 			};
-			if (lanes === 1 && flat !== null) {
-				const startIndex2 = findNearestBinarySearchFlat(flat, lastIndex, scrollOffset);
-				let endIndex2 = startIndex2;
-				const limit = scrollOffset + outerSize;
-				while (endIndex2 < lastIndex && flat[endIndex2 * 2] + flat[endIndex2 * 2 + 1] < limit) endIndex2++;
-				return {
-					startIndex: startIndex2,
-					endIndex: endIndex2
+			switch (form) {
+				case "instructions": return instructionChanges(props.source) === null ? opaque : {
+					rendered: "instructions",
+					summary: null,
+					body: (0, react_jsx_runtime.jsx)(InstructionsBody, { ...props })
 				};
-			}
-			const getStart = (index) => measurements[index].start;
-			let startIndex = findNearestBinarySearch(0, lastIndex, getStart, scrollOffset);
-			let endIndex = startIndex;
-			if (lanes === 1) while (endIndex < lastIndex && measurements[endIndex].end < scrollOffset + outerSize) endIndex++;
-			else if (lanes > 1) {
-				const endPerLane = Array(lanes).fill(0);
-				while (endIndex < lastIndex && endPerLane.some((pos) => pos < scrollOffset + outerSize)) {
-					const item = measurements[endIndex];
-					endPerLane[item.lane] = item.end;
-					endIndex++;
+				case "catalog": return catalogEntries(props.source) === null ? opaque : {
+					rendered: "catalog",
+					summary: null,
+					body: (0, react_jsx_runtime.jsx)(CatalogBody, { ...props })
+				};
+				case "snapshot": return snapshotSections(props.source) === null ? opaque : {
+					rendered: "snapshot",
+					summary: null,
+					body: (0, react_jsx_runtime.jsx)(SnapshotBody, { ...props })
+				};
+				case "notice": {
+					const summary = noticeSummary(props.source);
+					return summary === null ? opaque : {
+						rendered: "notice",
+						summary,
+						body: (0, react_jsx_runtime.jsx)(NoticeBody, { ...props })
+					};
 				}
-				const startPerLane = Array(lanes).fill(scrollOffset + outerSize);
-				while (startIndex >= 0 && startPerLane.some((pos) => pos >= scrollOffset)) {
-					const item = measurements[startIndex];
-					startPerLane[item.lane] = item.start;
-					startIndex--;
-				}
-				startIndex = Math.max(0, startIndex - startIndex % lanes);
-				endIndex = Math.min(lastIndex, endIndex + (lanes - 1 - endIndex % lanes));
+				case "relay": return relaySender(props.source) === null ? opaque : {
+					rendered: "relay",
+					summary: null,
+					body: (0, react_jsx_runtime.jsx)(RelayBody, { ...props })
+				};
+				case "recall": return recalledSessions(props.source) === null ? opaque : {
+					rendered: "recall",
+					summary: null,
+					body: (0, react_jsx_runtime.jsx)(RecallBody, { ...props })
+				};
+				case null: return opaque;
+				/* v8 ignore next 4 -- closed-union backstop; the compiler rejects a new
+				KnownContextForm here rather than letting it degrade to opaque silently. */
+				default: throw new Error(`unreachable context form: ${String(form)}`);
 			}
-			return {
-				startIndex,
-				endIndex
-			};
 		}
 		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+react-virtual@3.14.9_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/@tanstack/react-virtual/dist/esm/index.js
-		const useIsomorphicLayoutEffect = typeof document !== "undefined" ? react.useLayoutEffect : react.useEffect;
-		function useVirtualizerBase({ useFlushSync = true, directDomUpdates = false, directDomUpdatesMode = "transform", ...options }) {
-			const rerender = react.useReducer((x) => x + 1, 0)[1];
-			const directRef = react.useRef({
-				enabled: directDomUpdates,
-				mode: directDomUpdatesMode,
-				container: null,
-				lastSize: null,
-				lastPositions: /* @__PURE__ */ new WeakMap(),
-				prevRange: null
+		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/ContextInjectionRow.module.css.mjs
+		const css$12 = ".XrJvXW_root{min-width:0}.XrJvXW_root[data-open]{padding-bottom:4px}.XrJvXW_chevron{color:var(--dsw-alias-label-secondary)}.XrJvXW_sep{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.XrJvXW_source{min-width:0;color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:none;overflow:hidden}.XrJvXW_summary{min-width:0;color:var(--dsw-alias-label-tertiary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));text-overflow:ellipsis;white-space:nowrap;flex:auto;overflow:hidden}.XrJvXW_body{box-sizing:border-box;width:calc(100% - 22px - var(--dsh-content-font-delta,0px));max-height:141px;margin:4px 0 0 calc(22px + var(--dsh-content-font-delta,0px));border-radius:var(--dsw-radius-md);background:var(--dsw-alias-markdown-code-block);color:var(--dsw-alias-label-tertiary);font:400 11px/16px var(--ds-font-family-code);border:none;padding:10px 16px 12px 12px;overflow:auto}.XrJvXW_toolChanges{white-space:nowrap}";
+		const tagId$12 = "@deepseek-ai/dsh-client-ui-chat/ContextInjectionRow.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$12) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
+			tag.dataset.pluginCss = tagId$12;
+			tag.textContent = css$12;
+			document.head.appendChild(tag);
+		}
+		var ContextInjectionRow_module_css_default = {
+			"body": "XrJvXW_body",
+			"chevron": "XrJvXW_chevron",
+			"root": "XrJvXW_root",
+			"sep": "XrJvXW_sep",
+			"source": "XrJvXW_source",
+			"summary": "XrJvXW_summary",
+			"toolChanges": "XrJvXW_toolChanges"
+		};
+		//#endregion
+		//#region lib/types/client/chat/ContextInjectionRow.js
+		/**
+		* Render logged context with the Tool calls disclosure chrome from Figma.
+		*
+		* The header names the role the context plays and, beside it, the producer the
+		* durable source identifies, so a reader can tell an injected skill catalog
+		* from a workspace instruction file or a recalled session without expanding.
+		* The expanded body follows the producer-declared form; an absent or unknown
+		* form renders the opaque body.
+		* @param props - Durable content, its projected producer role/name and form, and the locale seat.
+		* @returns A collapsed context row with a bounded, form-specific body.
+		*/
+		function ContextInjectionRow({ content, source, producer, form, t }) {
+			const [open, setOpen] = (0, react.useState)(false);
+			const { rendered, summary, body } = contextBody(form, {
+				content,
+				source,
+				t
 			});
-			directRef.current.enabled = directDomUpdates;
-			directRef.current.mode = directDomUpdatesMode;
-			const applyContainerSize = (instance2) => {
-				const state = directRef.current;
-				if (!state.enabled || !state.container) return;
-				const totalSize = instance2.getTotalSize();
-				if (totalSize !== state.lastSize) {
-					state.lastSize = totalSize;
-					const sizeAxis = instance2.options.horizontal ? "width" : "height";
-					state.container.style[sizeAxis] = `${totalSize}px`;
-				}
-			};
-			const applyDirectStyles = (instance2) => {
-				const state = directRef.current;
-				if (!state.enabled || !state.container) return;
-				applyContainerSize(instance2);
-				const horizontal = !!instance2.options.horizontal;
-				const useTransform = state.mode === "transform";
-				const posAxis = horizontal ? "left" : "top";
-				const scrollMargin = instance2.options.scrollMargin;
-				const items = instance2.getVirtualItems();
-				for (const item of items) {
-					const next = item.start - scrollMargin;
-					const el = instance2.elementsCache.get(item.key);
-					if (!el) continue;
-					if (state.lastPositions.get(el) === next) continue;
-					state.lastPositions.set(el, next);
-					if (useTransform) el.style.transform = horizontal ? `translate3d(${next}px, 0, 0)` : `translate3d(0, ${next}px, 0)`;
-					else el.style[posAxis] = `${next}px`;
-				}
-			};
-			const resolvedOptions = {
-				...options,
-				onChange: (instance2, sync) => {
-					var _a;
-					const state = directRef.current;
-					let shouldRerender = true;
-					if (state.enabled) {
-						applyDirectStyles(instance2);
-						const range = instance2.range;
-						const prev = state.prevRange;
-						shouldRerender = !prev || prev.isScrolling !== instance2.isScrolling || prev.startIndex !== (range == null ? void 0 : range.startIndex) || prev.endIndex !== (range == null ? void 0 : range.endIndex);
-						if (shouldRerender) state.prevRange = range ? {
-							startIndex: range.startIndex,
-							endIndex: range.endIndex,
-							isScrolling: instance2.isScrolling
-						} : null;
-					}
-					if (shouldRerender) if (useFlushSync && sync) (0, react_dom.flushSync)(rerender);
-					else rerender();
-					(_a = options.onChange) == null || _a.call(options, instance2, sync);
-				}
-			};
-			const [instance] = react.useState(() => {
-				const v = new Virtualizer(resolvedOptions);
-				return Object.assign(v, { containerRef: (node) => {
-					const state = directRef.current;
-					state.container = node;
-					state.lastSize = null;
-					if (node && state.enabled) {
-						const total = v.getTotalSize();
-						state.lastSize = total;
-						const axis = v.options.horizontal ? "width" : "height";
-						node.style[axis] = `${total}px`;
-					}
-				} });
+			const toolBlocks = content.length > 0 && content.every((block) => block.type === "tool-addition" || block.type === "tool-removal") ? content : void 0;
+			const added = toolBlocks?.flatMap((block) => block.type === "tool-addition" ? [block.toolName] : []) ?? [];
+			const removed = toolBlocks?.flatMap((block) => block.type === "tool-removal" ? [block.toolName] : []) ?? [];
+			const single = toolBlocks?.length === 1 ? toolBlocks[0] : void 0;
+			const toolSummary = toolBlocks === void 0 || single !== void 0 ? null : added.length > 0 && removed.length > 0 ? t("message.toolsChanged", {
+				added: added.length,
+				removed: removed.length
+			}) : added.length > 0 ? t("message.toolsAddedCount", { count: added.length }) : t("message.toolsRemovedCount", { count: removed.length });
+			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
+				className: ContextInjectionRow_module_css_default.root,
+				icon: toolBlocks !== void 0 ? (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconBrowseOutlineRegular, { size: 14 }) : producer.role === "recall" ? (0, react_jsx_runtime.jsx)("span", {
+					"data-context-recall-icon": true,
+					children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.ReferenceIconRegular, { kind: "session" })
+				}) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconContextInjectionOutlineRegular, { size: 14 }),
+				chevronClassName: ContextInjectionRow_module_css_default.chevron,
+				title: single !== void 0 ? t(single.type === "tool-addition" ? "message.toolAdded" : "message.toolRemoved", { name: single.toolName }) : t(toolBlocks !== void 0 ? "message.toolsUpdated" : producer.role === "recall" ? "message.contextRecall" : "message.contextInjection"),
+				collapsedContent: toolSummary !== null ? (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
+					className: ContextInjectionRow_module_css_default.sep,
+					"aria-hidden": true
+				}), (0, react_jsx_runtime.jsx)("span", {
+					className: ContextInjectionRow_module_css_default.summary,
+					children: toolSummary
+				})] }) : toolBlocks !== void 0 || producer.label === null ? void 0 : (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+					(0, react_jsx_runtime.jsx)("span", {
+						className: ContextInjectionRow_module_css_default.sep,
+						"aria-hidden": true
+					}),
+					(0, react_jsx_runtime.jsx)("span", {
+						className: ContextInjectionRow_module_css_default.source,
+						"data-context-source": true,
+						children: producer.label
+					}),
+					summary !== null && (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
+						className: ContextInjectionRow_module_css_default.sep,
+						"aria-hidden": true
+					}), (0, react_jsx_runtime.jsx)("span", {
+						className: ContextInjectionRow_module_css_default.summary,
+						"data-context-summary": true,
+						children: summary
+					})] })
+				] }),
+				keepContentWhenOpen: true,
+				open: open && single === void 0,
+				expandable: single === void 0,
+				expandOnRowClick: true,
+				onToggle: () => {
+					setOpen((value) => !value);
+				},
+				children: (0, react_jsx_runtime.jsx)("div", {
+					className: ContextInjectionRow_module_css_default.body,
+					"data-context-injection-body": true,
+					"data-context-form": rendered ?? void 0,
+					children: toolBlocks === void 0 ? body : (0, react_jsx_runtime.jsxs)("div", {
+						className: ContextInjectionRow_module_css_default.toolChanges,
+						children: [added.length > 0 && (0, react_jsx_runtime.jsx)("div", { children: t("message.toolsAdded", { names: added.join(", ") }) }), removed.length > 0 && (0, react_jsx_runtime.jsx)("div", { children: t("message.toolsRemoved", { names: removed.join(", ") }) })]
+					})
+				})
 			});
-			instance.setOptions(resolvedOptions);
-			useIsomorphicLayoutEffect(() => {
-				return instance._didMount();
+		}
+		//#endregion
+		//#region lib/types/client/chat/message-chrome.js
+		/** Refresh interval for whole-second live run clocks. */
+		const LIVE_RUN_CLOCK_INTERVAL_MS = 1e3;
+		function pad2(n) {
+			return String(n).padStart(2, "0");
+		}
+		/**
+		* Local calendar-day epoch (ms at local midnight) for an instant.
+		* @param ms - Unix epoch ms.
+		* @returns Midnight of that local calendar day.
+		*/
+		function startOfLocalDay(ms) {
+			const d = new Date(ms);
+			d.setHours(0, 0, 0, 0);
+			return d.getTime();
+		}
+		/**
+		* Delay until the next local midnight after `ms` (at least 1ms).
+		* @param ms - Unix epoch ms.
+		* @returns Milliseconds until the following local midnight.
+		*/
+		function msUntilNextLocalMidnight(ms) {
+			const next = new Date(ms);
+			next.setHours(24, 0, 0, 0);
+			return Math.max(next.getTime() - ms, 1);
+		}
+		/**
+		* Build elapsed-time fragments for both live and completed Turn labels.
+		* @param ms - elapsed milliseconds; negatives clamp to zero and fractions floor.
+		* @param t - translate seat supplying units and their trailing spacing.
+		* @returns numbers and localized units in display order, without leading zeros;
+		* minutes start at 60 seconds and hours at 60 minutes.
+		*/
+		function formatRunDuration(ms, t) {
+			const total = Math.max(0, Math.floor(ms / 1e3));
+			const hours = Math.floor(total / 3600);
+			const minutes = Math.floor(total / 60) % 60;
+			const seconds = total % 60;
+			const parts = [];
+			if (hours > 0) parts.push({
+				text: String(hours),
+				numeric: true
+			}, {
+				text: t("duration.hourUnit"),
+				numeric: false
+			});
+			if (total >= 60) parts.push({
+				text: String(minutes),
+				numeric: true
+			}, {
+				text: t("duration.minuteUnit"),
+				numeric: false
+			});
+			parts.push({
+				text: String(seconds),
+				numeric: true
+			}, {
+				text: t("duration.secondUnit"),
+				numeric: false
+			});
+			return parts;
+		}
+		/**
+		* Decode-throughput figure: whole tokens from ten up, one decimal below.
+		* @param tps - Tokens per second.
+		* @returns Display number without unit.
+		*/
+		function formatTokensPerSecond(tps) {
+			const clamped = Math.max(0, tps);
+			return clamped >= 10 ? String(Math.round(clamped)) : String(Math.round(clamped * 10) / 10);
+		}
+		/**
+		* Compact local timestamp for message IconActions. Same calendar day →
+		* `HH:mm`; earlier this year → the `clock.md` date template + clock; other
+		* years → the `clock.ymd` template + clock. Pure: the date templates arrive
+		* through the caller's locale seat.
+		* @param time - Unix epoch ms from the source session event.
+		* @param t - translate seat supplying the `clock.md` / `clock.ymd` templates.
+		* @param now - Reference instant for the day/year cut (defaults to wall clock).
+		* @returns Date-aware clock string (24-hour, zero-padded time).
+		*/
+		function formatMessageClock(time, t, now = Date.now()) {
+			const d = new Date(time);
+			const n = new Date(now);
+			const clock = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+			if (d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()) return clock;
+			const params = {
+				y: d.getFullYear(),
+				m: d.getMonth() + 1,
+				d: d.getDate()
+			};
+			return `${d.getFullYear() === n.getFullYear() ? t("clock.md", params) : t("clock.ymd", params)} ${clock}`;
+		}
+		//#endregion
+		//#region lib/types/client/chat/use-calendar-day.js
+		/**
+		* Local calendar-day epoch that advances at each local midnight.
+		* @returns Midnight ms for the current local day; updates after the boundary.
+		*/
+		function useCalendarDay() {
+			const [day, setDay] = (0, react.useState)(() => startOfLocalDay(Date.now()));
+			(0, react.useEffect)(() => {
+				let timer;
+				const arm = () => {
+					const now = Date.now();
+					setDay(startOfLocalDay(now));
+					timer = setTimeout(arm, msUntilNextLocalMidnight(now));
+				};
+				timer = setTimeout(arm, msUntilNextLocalMidnight(Date.now()));
+				return () => {
+					clearTimeout(timer);
+				};
 			}, []);
-			useIsomorphicLayoutEffect(() => {
-				applyContainerSize(instance);
-				return instance._willUpdate();
-			});
-			useIsomorphicLayoutEffect(() => {
-				applyDirectStyles(instance);
-			});
-			return instance;
-		}
-		function useVirtualizer(options) {
-			return useVirtualizerBase({
-				observeElementRect,
-				observeElementOffset,
-				scrollToFn: elementScroll,
-				...options
-			});
+			return day;
 		}
 		//#endregion
-		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/TurnNavigator.module.css.mjs
-		const css$11 = ".eGxaPq_slot{z-index:7;height:0;padding-inline:calc(var(--dsh-composer-side-clearance) + 16px);pointer-events:none;position:absolute;top:0;left:0;right:0;container-type:inline-size}[data-conversation-scroll] .eGxaPq_slot{position:sticky}.eGxaPq_frame{--turn-rail-band:calc(var(--dsh-conversation-viewport-height,100dvh) - var(--dsh-composer-height,152px));--turn-preview-height:100px;top:calc(var(--turn-rail-band) / 2);width:28px;max-height:min(max(0px, calc(var(--turn-rail-band) - 64px)), 420px);contain:layout;cursor:pointer;pointer-events:auto;position:absolute;right:12px;transform:translateY(-50%)}.eGxaPq_scroller{max-height:inherit;overscroll-behavior:contain;scrollbar-width:none;position:relative;overflow-y:auto}.eGxaPq_scroller::-webkit-scrollbar{display:none}.eGxaPq_fadeTop{mask-image:linear-gradient(#0000 0,#000 24px 100%)}.eGxaPq_fadeBottom{mask-image:linear-gradient(#000 0 calc(100% - 24px),#0000 100%)}.eGxaPq_fadeTop.eGxaPq_fadeBottom{mask-image:linear-gradient(#0000 0,#000 24px calc(100% - 24px),#0000 100%)}.eGxaPq_marks{position:relative}.eGxaPq_mark{cursor:pointer;background:0 0;border:0;border-radius:8px;height:10px;padding:0;position:absolute;top:0;left:0;right:0}.eGxaPq_mark:before{background:var(--dsw-alias-border-l4);content:\"\";transform-origin:100%;border-radius:2px;width:20px;height:2px;transition:transform .14s,background-color .14s;position:absolute;top:50%;right:0;transform:translateY(-50%)scaleX(.6)}.eGxaPq_markUnloaded:before{opacity:.6;transform:translateY(-50%)scaleX(.4)}.eGxaPq_markPreview:before{background:var(--dsw-alias-label-tertiary);transform:translateY(-50%)scaleX(.9)}.eGxaPq_markBusy:before{animation:1s ease-in-out infinite eGxaPq_dsh-turn-mark-busy}.eGxaPq_markActive:before{background:var(--dsw-alias-label-primary);transform:translateY(-50%)scaleX(1)}.eGxaPq_mark:focus-visible:before{background:var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));transform:translateY(-50%)scaleX(1)}.eGxaPq_mark:focus-visible{outline:none}.eGxaPq_mark:focus-visible:after{border-radius:inherit;outline:1px solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:-1px;content:\"\";width:20px;position:absolute;inset:0 0 0 auto}.eGxaPq_preview{top:clamp(0px, calc(var(--turn-preview-center) - var(--turn-preview-height) / 2), calc(100% - var(--turn-preview-height)));box-sizing:border-box;width:min(300px,100cqw - 120px);max-height:var(--turn-preview-height);border-radius:var(--dsw-radius-lg);color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-1);box-shadow:var(--dsw-elevation-panel);pointer-events:none;border:0;padding:10px 12px;transition:top .14s cubic-bezier(.2,.8,.2,1);animation:.12s ease-out eGxaPq_dsh-turn-preview-enter;position:absolute;right:calc(100% + 10px);overflow:hidden}.eGxaPq_previewPrompt,.eGxaPq_previewResponse{-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.eGxaPq_previewPrompt{font:var(--dsw-font-xs-strong-13);-webkit-line-clamp:1}.eGxaPq_previewResponse{color:var(--dsw-alias-label-caption);font:var(--dsw-font-xxs-12);-webkit-line-clamp:3;margin-top:4px}@keyframes eGxaPq_dsh-turn-preview-enter{0%{opacity:0;transform:translate(4px)}to{opacity:1;transform:translate(0)}}@keyframes eGxaPq_dsh-turn-mark-busy{0%,to{opacity:1}50%{opacity:.35}}@container (width<=900px){.eGxaPq_frame{display:none}}@media (prefers-reduced-motion:reduce){.eGxaPq_frame,.eGxaPq_scroller,.eGxaPq_mark:before,.eGxaPq_markBusy:before,.eGxaPq_preview{scroll-behavior:auto;transition:none;animation:none}}";
-		const tagId$11 = "@deepseek-ai/dsh-client-ui-chat/TurnNavigator.module.css";
+		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/MessageIconActions.module.css.mjs
+		const css$11 = ".xzv4MW_actions{height:calc(28px + var(--dsh-content-font-delta,0px));align-items:center;gap:8px;display:flex}.xzv4MW_timeStart{font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(24px + var(--dsh-content-font-delta,0px));color:var(--dsw-alias-label-tertiary);white-space:nowrap;padding-right:12px}.xzv4MW_timeEnd{font-size:calc(var(--dsh-content-font-size-secondary,13px) - 1px);line-height:calc(24px + var(--dsh-content-font-delta,0px));color:inherit;white-space:nowrap}.xzv4MW_endInfo{min-width:0;color:var(--dsw-alias-label-tertiary);align-items:center;gap:8px;margin-left:8px;display:inline-flex}@media (hover:hover){[data-actions-reveal=hover] .xzv4MW_actions,:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering]):has(~:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering])) .xzv4MW_actions{opacity:0;transition:opacity 80ms}[data-actions-reveal=hover]:hover .xzv4MW_actions,[data-actions-reveal=hover]:focus-within .xzv4MW_actions,:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering]):has(~:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering])):hover .xzv4MW_actions,:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering]):has(~:is([data-chat-flow-kind=user],[data-chat-flow-kind=steering])):focus-within .xzv4MW_actions{opacity:1}}.xzv4MW_action{width:calc(28px + var(--dsh-content-font-delta,0px));height:calc(28px + var(--dsh-content-font-delta,0px));border-radius:var(--dsw-radius-sm);color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;justify-content:center;align-items:center;padding:6px;display:inline-flex}.xzv4MW_action svg{width:calc(15px + var(--dsh-content-font-delta,0px));height:calc(15px + var(--dsh-content-font-delta,0px))}.xzv4MW_actions[data-clock=end] .xzv4MW_action svg{width:calc(17px + var(--dsh-content-font-delta,0px));height:calc(17px + var(--dsh-content-font-delta,0px))}.xzv4MW_action:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.xzv4MW_action[data-unavailable]{cursor:default;opacity:.4}.xzv4MW_action[data-unavailable]:hover{color:var(--dsw-alias-label-tertiary);background:0 0}.xzv4MW_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}";
+		const tagId$11 = "@deepseek-ai/dsh-client-ui-chat/MessageIconActions.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$11) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@deepseek-ai/dsh-client-ui-chat";
@@ -4249,290 +5210,399 @@ DSHConversationActions.installConversationActions();
 			tag.textContent = css$11;
 			document.head.appendChild(tag);
 		}
-		var TurnNavigator_module_css_default = {
-			"dsh-turn-mark-busy": "eGxaPq_dsh-turn-mark-busy",
-			"dsh-turn-preview-enter": "eGxaPq_dsh-turn-preview-enter",
-			"fadeBottom": "eGxaPq_fadeBottom",
-			"fadeTop": "eGxaPq_fadeTop",
-			"frame": "eGxaPq_frame",
-			"mark": "eGxaPq_mark",
-			"markActive": "eGxaPq_markActive",
-			"markBusy": "eGxaPq_markBusy",
-			"markPreview": "eGxaPq_markPreview",
-			"markUnloaded": "eGxaPq_markUnloaded",
-			"marks": "eGxaPq_marks",
-			"preview": "eGxaPq_preview",
-			"previewPrompt": "eGxaPq_previewPrompt",
-			"previewResponse": "eGxaPq_previewResponse",
-			"scroller": "eGxaPq_scroller",
-			"slot": "eGxaPq_slot"
+		var MessageIconActions_module_css_default = {
+			"action": "xzv4MW_action",
+			"actions": "xzv4MW_actions",
+			"endInfo": "xzv4MW_endInfo",
+			"timeEnd": "xzv4MW_timeEnd",
+			"timeStart": "xzv4MW_timeStart",
+			"visuallyHidden": "xzv4MW_visuallyHidden"
 		};
 		//#endregion
-		//#region lib/types/client/chat/TurnNavigator.js
-		/** Fixed-pitch virtual turn rail with independent activation and scroll controls. */
-		/** Fixed pitch between neighbouring marks; overflow scrolls inside the frame. */
-		const TURN_SPACING_PX = 10;
-		/** Rail padding above the first mark and below the last one, per end. */
-		const RAIL_INSET_PX = 6;
-		/** Fade band the mask reserves at a scrollable end. */
-		const FADE_PX = 24;
-		function preferredScrollBehavior() {
-			return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-		}
-		const TurnMark = (0, react.memo)(function TurnMark({ item, index, active, busy, previewId, registerElement, onNavigate, onPreview, onFocusChange, t }) {
-			const classes = [TurnNavigator_module_css_default.mark];
-			if (item.anchor.kind === "unloaded") classes.push(TurnNavigator_module_css_default.markUnloaded);
-			if (active) classes.push(TurnNavigator_module_css_default.markActive);
-			else if (previewId !== void 0) classes.push(TurnNavigator_module_css_default.markPreview);
-			if (busy) classes.push(TurnNavigator_module_css_default.markBusy);
-			return (0, react_jsx_runtime.jsx)("button", {
-				ref: registerElement,
-				"data-index": index,
-				type: "button",
-				className: classes.join(" "),
-				"aria-label": t(item.anchor.kind === "loaded" ? "chat.turnNavigation.jump" : "chat.turnNavigation.jumpLoad", { turn: item.turn }),
-				"aria-current": active ? "true" : void 0,
-				"aria-busy": busy ? "true" : void 0,
-				"aria-describedby": previewId,
-				onPointerMove: () => {
-					onPreview(item.turn);
-				},
-				onClick: () => {
-					onNavigate(item);
-				},
-				onFocus: () => {
-					onFocusChange(item.turn);
-				},
-				onBlur: () => {
-					onFocusChange(null);
-				}
-			});
-		});
-		function TurnNavigatorRail({ items, activeTurn, busyTurn, onNavigate, t }, ref) {
-			const [previewTurn, setPreviewTurn] = (0, react.useState)(null);
-			const [focusedTurn, setFocusedTurn] = (0, react.useState)(null);
-			const scrollerRef = (0, react.useRef)(null);
-			const initialization = (0, react.useRef)({
-				placed: false,
-				index: 0,
-				follow: null,
-				publishOffset: null
-			});
-			/** While the pointer works the rail, follow must not move it under the hand. */
-			const pointerInsideRef = (0, react.useRef)(false);
-			const previewId = (0, react.useId)();
-			const turnIndexes = (0, react.useMemo)(() => {
-				const indexes = /* @__PURE__ */ new Map();
-				items.forEach((item, index) => {
-					indexes.set(item.turn, index);
-				});
-				return indexes;
-			}, [items]);
-			const activeIndex = activeTurn === null ? void 0 : turnIndexes.get(activeTurn);
-			(0, react.useLayoutEffect)(() => {
-				initialization.current.index = activeIndex ?? 0;
-			}, [activeIndex]);
-			const focusedIndex = focusedTurn === null ? void 0 : turnIndexes.get(focusedTurn);
-			const previewIndex = previewTurn === null ? void 0 : turnIndexes.get(previewTurn);
-			const onFocusChange = (0, react.useCallback)((turn) => {
-				setFocusedTurn(turn);
-				setPreviewTurn(turn);
+		//#region lib/types/client/chat/MessageIconActions.js
+		/**
+		* Copy / branch (/ clock) IconActions row shared by user and assistant chrome.
+		* @param props - Copy text, event time, clock side, branch callback, className.
+		* @returns The actions row element.
+		*/
+		function MessageIconActions({ text, time, clock, onBranch, branchUnavailable = false, className, extraActions, usageAction, t }) {
+			const day = useCalendarDay();
+			const reasonId = (0, react.useId)();
+			const [copied, setCopied] = (0, react.useState)(false);
+			const copyPending = (0, react.useRef)(false);
+			const copyTimer = (0, react.useRef)(null);
+			const copyEpoch = (0, react.useRef)(0);
+			(0, react.useEffect)(() => () => {
+				copyEpoch.current += 1;
+				copyPending.current = false;
+				if (copyTimer.current !== null) clearTimeout(copyTimer.current);
 			}, []);
-			const virtualizer = useVirtualizer({
-				count: items.length,
-				enabled: items.length >= 2,
-				directDomUpdates: true,
-				directDomUpdatesMode: "transform",
-				useScrollendEvent: true,
-				getScrollElement: (0, react.useCallback)(() => scrollerRef.current, []),
-				getItemKey: (0, react.useCallback)((index) => items[index]?.turn ?? index, [items]),
-				estimateSize: () => TURN_SPACING_PX,
-				measureElement: () => TURN_SPACING_PX,
-				initialRect: {
-					width: 0,
-					height: 0
-				},
-				initialOffset: 0,
-				scrollToFn: (offset, options, instance) => {
-					if (initialization.current.placed) elementScroll(offset, options, instance);
-				},
-				observeElementOffset: (instance, notify) => {
-					initialization.current.publishOffset = notify;
-					const dispose = observeElementOffset(instance, notify);
-					return () => {
-						dispose?.();
-						initialization.current.placed = false;
-						initialization.current.follow = null;
-						initialization.current.publishOffset = null;
-					};
-				},
-				observeElementRect: (instance, notify) => {
-					const element = instance.scrollElement;
-					const Observer = instance.targetWindow?.ResizeObserver;
-					if (element === null || Observer === void 0) return;
-					const observer = new Observer(([entry]) => {
-						if (entry === void 0) return;
-						const box = entry.borderBoxSize[0];
-						const rect = {
-							width: Math.round(box?.inlineSize ?? entry.contentRect.width),
-							height: Math.round(box?.blockSize ?? entry.contentRect.height)
-						};
-						const initial = initialization.current;
-						if (!initial.placed && rect.height > 0) {
-							const max = Math.max(0, instance.getTotalSize() - rect.height);
-							const center = initial.index * TURN_SPACING_PX + RAIL_INSET_PX;
-							const target = Math.max(0, Math.min(max, center - rect.height / 2));
-							initial.placed = true;
-							initial.follow = {
-								index: initial.index,
-								count: instance.options.count,
-								height: rect.height
-							};
-							element.scrollTop = target;
-							initial.publishOffset?.(target, false);
-						}
-						notify(rect);
-					});
-					observer.observe(element, { box: "border-box" });
-					return () => {
-						observer.disconnect();
-					};
-				},
-				paddingStart: RAIL_INSET_PX - TURN_SPACING_PX / 2,
-				paddingEnd: RAIL_INSET_PX - TURN_SPACING_PX / 2,
-				scrollPaddingStart: FADE_PX,
-				scrollPaddingEnd: FADE_PX,
-				overscan: 3,
-				rangeExtractor: (0, react.useCallback)((range) => {
-					const indexes = defaultRangeExtractor(range);
-					if (focusedIndex !== void 0) {
-						const last = Math.min(range.count - 1, focusedIndex + 1);
-						for (let index = Math.max(0, focusedIndex - 1); index <= last; index++) if (!indexes.includes(index)) indexes.push(index);
-						indexes.sort((left, right) => left - right);
-					}
-					return indexes;
-				}, [focusedIndex])
+			const onCopy = (0, react.useCallback)(() => {
+				if (copied || copyPending.current) return;
+				const epoch = copyEpoch.current;
+				copyPending.current = true;
+				(0, _deepseek_ai_dsh_client_ui_primitives.writeClipboard)(text).then((ok) => {
+					if (epoch !== copyEpoch.current) return;
+					copyPending.current = false;
+					if (!ok) return;
+					setCopied(true);
+					copyTimer.current = window.setTimeout(() => {
+						copyTimer.current = null;
+						setCopied(false);
+					}, 1e3);
+				});
+			}, [copied, text]);
+			const clockEl = time === void 0 ? null : (0, react_jsx_runtime.jsx)("span", {
+				className: clock === "start" ? MessageIconActions_module_css_default.timeStart : MessageIconActions_module_css_default.timeEnd,
+				children: formatMessageClock(time, t, day)
 			});
-			const scrollTop = virtualizer.scrollOffset ?? 0;
-			const viewHeight = virtualizer.scrollRect?.height ?? 0;
-			const virtualItems = virtualizer.getVirtualItems();
-			const scrollToIndex = (0, react.useCallback)((index, reveal, behavior = preferredScrollBehavior()) => {
-				const item = virtualizer.measurementsCache[index];
-				const height = virtualizer.scrollRect?.height ?? 0;
-				if (item === void 0 || height <= 0) return;
-				const current = virtualizer.scrollOffset ?? 0;
-				const center = item.start + item.size / 2;
-				if (reveal === "if-needed") {
-					const { scrollPaddingStart, scrollPaddingEnd } = virtualizer.options;
-					if (center >= current + scrollPaddingStart && center <= current + height - scrollPaddingEnd) return;
-				}
-				const target = center - height / 2;
-				const max = Math.max(0, virtualizer.getTotalSize() - height);
-				const delta = Math.max(0, Math.min(max, target)) - current;
-				if (delta !== 0) virtualizer.scrollBy(delta, { behavior });
-			}, [virtualizer]);
-			(0, react.useImperativeHandle)(ref, () => ({
-				activateTurn(turn) {
-					const index = turnIndexes.get(turn);
-					const item = index === void 0 ? void 0 : items[index];
-					if (item !== void 0) onNavigate(item);
-				},
-				scrollToTurn(turn) {
-					const index = turnIndexes.get(turn);
-					if (index !== void 0) scrollToIndex(index, "always");
-				}
-			}), [
-				items,
-				turnIndexes,
-				onNavigate,
-				scrollToIndex
-			]);
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: className === void 0 ? MessageIconActions_module_css_default.actions : `${MessageIconActions_module_css_default.actions} ${className}`,
+				"data-clock": clock,
+				children: [
+					clock === "start" ? clockEl : null,
+					(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+						label: copied ? t("copied") : t("copy"),
+						side: "bottom",
+						children: (0, react_jsx_runtime.jsx)("button", {
+							type: "button",
+							className: MessageIconActions_module_css_default.action,
+							"aria-label": copied ? t("copied") : t("copy"),
+							onClick: onCopy,
+							children: copied ? (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCheckOutlineRegular, {}) : (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconCopyOutlineRegular, {})
+						})
+					}),
+					extraActions,
+					onBranch !== void 0 && (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
+						label: branchUnavailable ? t("message.branchUnavailable") : t("message.branch"),
+						side: "bottom",
+						children: (0, react_jsx_runtime.jsx)("button", {
+							type: "button",
+							className: MessageIconActions_module_css_default.action,
+							"aria-label": t("message.branch"),
+							"aria-disabled": branchUnavailable || void 0,
+							"aria-describedby": branchUnavailable ? reasonId : void 0,
+							"data-unavailable": branchUnavailable || void 0,
+							onClick: branchUnavailable ? void 0 : onBranch,
+							children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconBranchOutlineRegular, {})
+						})
+					}),
+					onBranch !== void 0 && branchUnavailable && (0, react_jsx_runtime.jsx)("span", {
+						id: reasonId,
+						className: MessageIconActions_module_css_default.visuallyHidden,
+						children: t("message.branchUnavailable")
+					}),
+					clock === "end" ? (0, react_jsx_runtime.jsxs)("span", {
+						className: MessageIconActions_module_css_default.endInfo,
+						children: [usageAction, clockEl]
+					}) : usageAction
+				]
+			});
+		}
+		//#endregion
+		//#region lib/types/client/chat/MessageItem.js
+		const EMPTY_TEXT_FACTS = {};
+		function contentParts(content) {
+			const texts = [];
+			const attachments = [];
+			const rest = [];
+			for (const block of content) {
+				const b = block;
+				if (b.type === "text" && typeof b.text === "string") texts.push(b.text);
+				else if (b.type === "image" && b.attachment !== void 0) attachments.push({
+					type: "image",
+					image: { attachment: b.attachment }
+				});
+				else if (b.type === "file" && b.attachment !== void 0) attachments.push({
+					type: "file",
+					file: b.attachment
+				});
+				else rest.push(block);
+			}
+			return {
+				text: texts.join(""),
+				attachments,
+				rest
+			};
+		}
+		function retrySeconds(milliseconds) {
+			return Math.max(1, Math.ceil(milliseconds / 1e3));
+		}
+		function failureMessage(message, code, t) {
+			if (code === "ACCOUNT_SIGNED_OUT") return t("message.failure.accountSignedOut");
+			if (code === "INTERRUPTED") return t("message.failure.interrupted");
+			if (code === "ACCOUNT_SIGN_IN_REQUIRED") return t("message.failure.accountSignInRequired");
+			if (code === "QUOTA" || code === "ACCOUNT_QUOTA") return t("message.failure.quota");
+			return code === "AUTH" ? t("message.failure.auth") : message;
+		}
+		function ModelRetryItem({ node, active, t }) {
+			const deadline = (0, react.useMemo)(() => Date.now() + node.delayMs, [node.delayMs, node.seq]);
+			const scheduledSeconds = retrySeconds(node.delayMs);
+			const maximum = node.mode === "normal" ? node.maxRetries : "∞";
+			const [countdown, setCountdown] = (0, react.useState)(() => ({
+				deadline,
+				seconds: retrySeconds(deadline - Date.now())
+			}));
+			const remainingSeconds = countdown.deadline === deadline ? countdown.seconds : retrySeconds(deadline - Date.now());
 			(0, react.useEffect)(() => {
-				if (viewHeight <= 0) {
-					initialization.current.follow = null;
-					return;
-				}
-				if (activeIndex === void 0 || pointerInsideRef.current) return;
-				const previous = initialization.current.follow;
-				if (previous?.index === activeIndex && previous.count === items.length && previous.height === viewHeight) return;
-				initialization.current.follow = {
-					index: activeIndex,
-					count: items.length,
-					height: viewHeight
+				if (!active) return;
+				const updateCountdown = () => {
+					const next = retrySeconds(deadline - Date.now());
+					setCountdown((current) => current.deadline === deadline && current.seconds === next ? current : {
+						deadline,
+						seconds: next
+					});
+					return next;
 				};
-				scrollToIndex(activeIndex, "if-needed", previous?.count === items.length && previous.height === viewHeight ? preferredScrollBehavior() : "instant");
-			}, [
-				activeIndex,
-				items.length,
-				viewHeight,
-				scrollToIndex
-			]);
-			if (items.length < 2) return null;
-			const preview = previewIndex === void 0 ? void 0 : items[previewIndex];
-			const previewPosition = virtualItems.find((item) => item.index === previewIndex);
-			const fadeClasses = [TurnNavigator_module_css_default.scroller];
-			if (scrollTop > 1) fadeClasses.push(TurnNavigator_module_css_default.fadeTop);
-			if (scrollTop < virtualizer.getTotalSize() - viewHeight - 1) fadeClasses.push(TurnNavigator_module_css_default.fadeBottom);
-			return (0, react_jsx_runtime.jsx)("div", {
-				className: TurnNavigator_module_css_default.slot,
-				children: (0, react_jsx_runtime.jsxs)("nav", {
-					className: TurnNavigator_module_css_default.frame,
-					"aria-label": t("chat.turnNavigation.label"),
-					onPointerEnter: () => {
-						pointerInsideRef.current = true;
-					},
-					onPointerLeave: () => {
-						pointerInsideRef.current = false;
-						setPreviewTurn(null);
-					},
-					children: [(0, react_jsx_runtime.jsx)("div", {
-						ref: scrollerRef,
-						className: fadeClasses.join(" "),
-						children: (0, react_jsx_runtime.jsx)("div", {
-							ref: virtualizer.containerRef,
-							className: TurnNavigator_module_css_default.marks,
-							children: virtualItems.map(({ index, key }) => {
-								const item = items[index];
-								if (item === void 0) return null;
-								return (0, react_jsx_runtime.jsx)(TurnMark, {
-									item,
-									index,
-									active: item.turn === activeTurn,
-									busy: item.turn === busyTurn,
-									previewId: item.turn === previewTurn ? previewId : void 0,
-									registerElement: virtualizer.measureElement,
-									onNavigate,
-									onPreview: setPreviewTurn,
-									onFocusChange,
-									t
-								}, key);
+				if (updateCountdown() === 1) return;
+				const timer = window.setInterval(() => {
+					if (updateCountdown() === 1) window.clearInterval(timer);
+				}, 250);
+				return () => {
+					window.clearInterval(timer);
+				};
+			}, [active, deadline]);
+			const label = active ? t("message.retry.active") : node.retryState === "cancelled" ? t("message.retry.cancelled") : node.retryState === "started" ? t("message.retry.started") : t("message.retry.scheduled");
+			const seconds = active ? remainingSeconds : scheduledSeconds;
+			return (0, react_jsx_runtime.jsxs)("details", {
+				className: MessageItem_module_css_default.retryRow,
+				"data-active": active || void 0,
+				children: [(0, react_jsx_runtime.jsx)("summary", {
+					className: MessageItem_module_css_default.retrySummary,
+					children: (0, react_jsx_runtime.jsx)("span", {
+						className: MessageItem_module_css_default.retryText,
+						role: "status",
+						children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.TextShimmer, {
+							active,
+							children: t("message.retry.status", {
+								label,
+								retry: node.retry,
+								maximum,
+								seconds
 							})
 						})
-					}), preview !== void 0 && previewPosition !== void 0 && (0, react_jsx_runtime.jsxs)("div", {
-						id: previewId,
-						role: "tooltip",
-						className: TurnNavigator_module_css_default.preview,
-						style: { "--turn-preview-center": `${String(previewPosition.start + previewPosition.size / 2 - scrollTop)}px` },
-						children: [(0, react_jsx_runtime.jsx)("div", {
-							className: TurnNavigator_module_css_default.previewPrompt,
-							children: preview.prompt || t("chat.turnNavigation.turn", { turn: preview.turn })
-						}), preview.response !== "" && (0, react_jsx_runtime.jsx)("div", {
-							className: TurnNavigator_module_css_default.previewResponse,
-							children: preview.response
+					})
+				}), (0, react_jsx_runtime.jsxs)("div", {
+					className: MessageItem_module_css_default.retryDetails,
+					children: [(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("span", {
+						className: MessageItem_module_css_default.retryDetailLabel,
+						children: t("message.retry.delay")
+					}), t("duration.milliseconds", { milliseconds: Math.round(node.delayMs) })] }), (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("span", {
+						className: MessageItem_module_css_default.retryDetailLabel,
+						children: t("message.retry.failure")
+					}), failureMessage(node.failure.message, node.failure.code, t)] })]
+				})]
+			});
+		}
+		/** Persistent, turn-positioned feedback for a terminal failure. */
+		function TurnErrorItem({ node, t }) {
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: MessageItem_module_css_default.turnErrorRow,
+				role: "status",
+				children: [
+					(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
+						state: "error",
+						className: MessageItem_module_css_default.turnErrorDot
+					}),
+					(0, react_jsx_runtime.jsxs)("div", {
+						className: MessageItem_module_css_default.turnErrorCopy,
+						children: [(0, react_jsx_runtime.jsx)("span", {
+							className: MessageItem_module_css_default.turnErrorTitle,
+							children: node.code === "ACCOUNT_SIGNED_OUT" || node.code === "INTERRUPTED" ? t("message.taskStopped") : t("message.turnError")
+						}), (0, react_jsx_runtime.jsx)("span", {
+							className: MessageItem_module_css_default.turnErrorMessage,
+							children: failureMessage(node.message, node.code, t)
 						})]
+					}),
+					node.code !== void 0 && node.code !== "INTERRUPTED" && (0, react_jsx_runtime.jsx)("code", {
+						className: MessageItem_module_css_default.turnErrorCode,
+						children: node.code
+					})
+				]
+			});
+		}
+		/** Persistent, turn-positioned notice for a turn ended at the output-token cap. */
+		function TurnMaxTokensItem({ t }) {
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: MessageItem_module_css_default.turnErrorRow,
+				role: "status",
+				children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
+					state: "warning",
+					className: MessageItem_module_css_default.turnErrorDot
+				}), (0, react_jsx_runtime.jsxs)("div", {
+					className: MessageItem_module_css_default.turnErrorCopy,
+					children: [(0, react_jsx_runtime.jsx)("span", {
+						className: MessageItem_module_css_default.maxTokensTitle,
+						children: t("message.maxTokens")
+					}), (0, react_jsx_runtime.jsx)("span", {
+						className: MessageItem_module_css_default.turnErrorMessage,
+						children: t("message.maxTokens.hint")
 					})]
+				})]
+			});
+		}
+		/** Right-aligned bubble shared by user and steering rows. */
+		function UserStyleBubble({ content, loadImage, renderFactorySlot, actions, pending = false, echo = false, referenceLabels, skillNames, previewAttachments, facts: inputFacts = EMPTY_TEXT_FACTS, interactive = false }) {
+			const parts = (0, react.useMemo)(() => contentParts(content), [content]);
+			const prepared = (0, react.useMemo)(() => ({
+				text: parts.text,
+				attachments: previewAttachments ?? parts.attachments,
+				extraBlocks: parts.rest,
+				...referenceLabels === void 0 ? {} : { referenceLabels }
+			}), [
+				parts,
+				previewAttachments,
+				referenceLabels
+			]);
+			const facts = (0, react.useMemo)(() => ({
+				...inputFacts,
+				...referenceLabels === void 0 ? {} : { sessionLabels: referenceLabels },
+				...skillNames === void 0 ? {} : { skillNames }
+			}), [
+				inputFacts,
+				referenceLabels,
+				skillNames
+			]);
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: MessageItem_module_css_default.userRow,
+				"data-pending-steering": pending || void 0,
+				"data-submission-echo": echo || void 0,
+				children: [renderFactorySlot("conversation.chat.user.content", {
+					content: prepared,
+					loadImage,
+					facts,
+					interactive
+				}), actions?.(prepared.text)]
+			});
+		}
+		/**
+		* Render one Host-authoritative pending steering item with the same visual
+		* language as its eventual durable transcript node.
+		* @param props - pending content, authorized image loader, and Factory/locale seats.
+		* @returns the pending steering bubble.
+		*/
+		function PendingSteeringBubble({ content, loadImage, renderFactorySlot, t }) {
+			return (0, react_jsx_runtime.jsx)(UserStyleBubble, {
+				content,
+				renderFactorySlot,
+				loadImage,
+				pending: true,
+				actions: (text) => (0, react_jsx_runtime.jsx)(MessageIconActions, {
+					text,
+					clock: "start",
+					className: MessageItem_module_css_default.actions,
+					t
 				})
 			});
 		}
 		/**
-		* Fixed-pitch rail of every known Turn — loaded marks scroll, unloaded marks
-		* page history in first — with hover and focus previews. Overflow scrolls
-		* inside the frame, gradient fades marking each scrollable end, and the
-		* active mark centers only outside the fade-free band while the pointer is
-		* elsewhere. Previews follow pointer movement or focus, not scrolling under
-		* a stationary pointer.
+		* Render one local transcript or steering submission echo with the same
+		* visual language and surface marker as the Host occurrence that replaces
+		* it: draft text plus object-URL previews, visible from the submit click
+		* until the durable `user/message` or steering occurrence renders.
+		* @param props - the pending submission, authorized image loader, and render seats.
+		* @returns the echoed user bubble.
 		*/
-		const TurnNavigator = (0, react.memo)((0, react.forwardRef)(TurnNavigatorRail));
+		function PendingSubmissionBubble({ submission, loadImage, renderFactorySlot, t }) {
+			return (0, react_jsx_runtime.jsx)(UserStyleBubble, {
+				content: (0, react.useMemo)(() => submission.text === "" ? [] : [{
+					type: "text",
+					text: submission.text
+				}], [submission.text]),
+				previewAttachments: (0, react.useMemo)(() => submission.attachments.map((attachment) => attachment.type === "image" ? {
+					type: "image",
+					image: { preview: {
+						url: attachment.value.previewUrl,
+						...attachment.value.name === void 0 ? {} : { name: attachment.value.name },
+						...attachment.value.width === void 0 ? {} : { width: attachment.value.width },
+						...attachment.value.height === void 0 ? {} : { height: attachment.value.height }
+					} }
+				} : {
+					type: "file",
+					file: attachment.value
+				}), [submission.attachments]),
+				renderFactorySlot,
+				loadImage,
+				pending: submission.placement === "steering",
+				echo: true,
+				actions: (text) => (0, react_jsx_runtime.jsx)(MessageIconActions, {
+					text,
+					time: submission.time,
+					clock: "start",
+					className: MessageItem_module_css_default.actions,
+					t
+				})
+			});
+		}
+		/** User and admitted-steering keyed Chat renderer. */
+		const UserMessageNodeView = (0, react.memo)(function UserMessageNodeView({ node, renderFactorySlot, loadImage, t }) {
+			const data = node.data;
+			return (0, react_jsx_runtime.jsx)(UserStyleBubble, {
+				content: data.content,
+				interactive: true,
+				renderFactorySlot,
+				loadImage,
+				...data.referenceLabels === void 0 ? {} : { referenceLabels: data.referenceLabels },
+				...data.skillNames === void 0 ? {} : { skillNames: data.skillNames },
+				actions: (text) => (0, react_jsx_runtime.jsx)(MessageIconActions, {
+					text,
+					time: data.time,
+					clock: "start",
+					className: MessageItem_module_css_default.actions,
+					t
+				})
+			});
+		});
+		/** Injected-context keyed Chat renderer. */
+		const ContextMessageNodeView = (0, react.memo)(function ContextMessageNodeView({ node, t }) {
+			const data = node.data;
+			return (0, react_jsx_runtime.jsx)(ContextInjectionRow, {
+				content: data.content,
+				source: data.source,
+				producer: data.producer,
+				form: data.form,
+				t
+			});
+		});
+		/** Automatic compaction keyed Chat renderer. */
+		const CompactionNodeView = (0, react.memo)(function CompactionNodeView({ node, t }) {
+			return (0, react_jsx_runtime.jsx)(CompactionItem, {
+				node: node.data,
+				t
+			});
+		});
+		/** Correlated retry-chain keyed Chat renderer. */
+		const RetryNodeView = (0, react.memo)(function RetryNodeView({ node, t }) {
+			const data = node.data;
+			return (0, react_jsx_runtime.jsx)(ModelRetryItem, {
+				node: data.current,
+				active: data.current.retryState === "scheduled",
+				t
+			});
+		});
+		/** Terminal turn-error keyed Chat renderer. */
+		const TurnErrorNodeView = (0, react.memo)(function TurnErrorNodeView({ node, t }) {
+			return (0, react_jsx_runtime.jsx)(TurnErrorItem, {
+				node: node.data,
+				t
+			});
+		});
+		/** Max-tokens turn-end notice keyed Chat renderer. */
+		const TurnMaxTokensNodeView = (0, react.memo)(function TurnMaxTokensNodeView({ t }) {
+			return (0, react_jsx_runtime.jsx)(TurnMaxTokensItem, { t });
+		});
+		/** Explicit unknown-surface keyed Chat renderer. */
+		const UnknownNodeView = (0, react.memo)(function UnknownNodeView({ node, t }) {
+			const data = node.data;
+			return (0, react_jsx_runtime.jsx)("div", {
+				className: MessageItem_module_css_default.contextRow,
+				children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
+					label: t("message.unknownSurface", { type: data.type }),
+					payload: data.data,
+					truncatedLabel: (total) => t("json.truncated", { total })
+				})
+			});
+		});
 		//#endregion
 		//#region lib/types/client/chat/RunningWhaleTail.js
 		/** Animated whale mask and static SVG fallback for the running Chat status. */
@@ -4619,1153 +5689,35 @@ DSHConversationActions.installConversationActions();
 			});
 		});
 		//#endregion
-		//#region ../../util/brand/lib/index.js
-		/**
-		* Duplicate-install-safe nominal primitive helpers.
-		*
-		* A brand makes structurally identical strings or numbers non-interchangeable
-		* at the type level: a `SessionId` cannot be passed where a `ToolCallId` is
-		* expected, and an event sequence cannot be passed as a log offset. Comparison,
-		* logging, and serialization retain the underlying primitive behavior.
-		*
-		* This package owns no concrete domain value and keeps no runtime identity or mutable
-		* state, so independently installed copies produce interchangeable values.
-		*
-		* @module @deepseek-ai/dsh-brand
-		*/
-		/**
-		* Apply a compile-time string brand without changing the value.
-		* @param value - string admitted by the domain that owns the target brand.
-		* @returns the same string with the requested compile-time brand.
-		*/
-		function brandString(value) {
-			return value;
-		}
-		/**
-		* Apply a compile-time number brand without changing the value.
-		* @param value - number admitted by the domain that owns the target brand.
-		* @returns the same number with the requested compile-time brand.
-		*/
-		function brandNumber(value) {
-			return value;
-		}
-		//#endregion
-		//#region ../../core/session/lib/types/types.js
-		/**
-		* Admit a numeric value as an existing Session event position.
-		* @param value - non-negative safe integer admitted by the owning log operation.
-		* @returns the same number with the Session-sequence brand.
-		*/
-		function SessionSeq(value) {
-			if (!Number.isSafeInteger(value) || value < 0 || Object.is(value, -0)) throw new TypeError(`SessionSeq must be a non-negative safe integer, got ${String(value)}`);
-			return brandNumber(value);
-		}
-		//#endregion
-		//#region lib/types/client/chat/turn-rail-items.js
-		/**
-		* View-layer union of the host turn outline and the loaded rail items. The
-		* conversation snapshot never carries projection values, so this merge is the
-		* one place the rail's two sources meet: the `turnOutline` projection names
-		* every turn of the session, and the loaded window supplies anchors and
-		* richer previews for the turns it holds.
-		*/
-		const EMPTY_ITEMS$1 = [];
-		/**
-		* Structurally narrow one wire outline entry (projection values cross the
-		* wire). `turn` and `seq` are the load-bearing fields — a mark cannot exist
-		* or jump without them — so their damage drops the entry; the previews are
-		* decorative, so a malformed one degrades to `''` and the turn stays
-		* navigable by number.
-		*/
-		function outlineEntry(value) {
-			if (typeof value !== "object" || value === null) return void 0;
-			const entry = value;
-			if (typeof entry.turn !== "number" || !Number.isSafeInteger(entry.turn) || entry.turn < 0) return void 0;
-			if (typeof entry.seq !== "number" || !Number.isSafeInteger(entry.seq) || entry.seq < 0 || Object.is(entry.seq, -0)) return void 0;
-			return {
-				turn: entry.turn,
-				seq: SessionSeq(entry.seq),
-				prompt: typeof entry.prompt === "string" ? entry.prompt : "",
-				response: typeof entry.response === "string" ? entry.response : ""
-			};
-		}
-		/** Wire outline entries, or none when the projection is absent or malformed. */
-		function outlineEntries(outline) {
-			return Array.isArray(outline) ? outline : EMPTY_ITEMS$1;
-		}
-		/**
-		* Merge the host outline with the loaded rail items into the full ladder.
-		* A turn present in both sides keeps the loaded anchor, taking an outline
-		* preview only where the window's own is empty (a mid-Turn window head, or a
-		* turn whose loaded nodes carry no text); turns on one side only pass
-		* through. Result ascends by turn.
-		* @param loaded - loaded-window rail items (timeline order).
-		* @param outline - `turnOutline` projection value, treated as wire data.
-		* @returns every known turn, ascending; a stable empty array when none.
-		*/
-		function mergeTurnRailItems(loaded, outline) {
-			const byTurn = /* @__PURE__ */ new Map();
-			for (const raw of outlineEntries(outline)) {
-				const entry = outlineEntry(raw);
-				if (entry === void 0) continue;
-				byTurn.set(entry.turn, {
-					turn: entry.turn,
-					prompt: entry.prompt,
-					response: entry.response,
-					anchor: {
-						kind: "unloaded",
-						seq: entry.seq
-					}
-				});
-			}
-			for (const item of loaded) {
-				const preview = byTurn.get(item.turn);
-				byTurn.set(item.turn, {
-					turn: item.turn,
-					prompt: item.prompt !== "" ? item.prompt : preview?.prompt ?? "",
-					response: item.response !== "" ? item.response : preview?.response ?? "",
-					anchor: {
-						kind: "loaded",
-						key: item.anchorKey
-					}
-				});
-			}
-			if (byTurn.size === 0) return EMPTY_ITEMS$1;
-			return [...byTurn.values()].sort((left, right) => left.turn - right.turn);
-		}
-		//#endregion
-		//#region lib/types/client/chat/use-chat-navigation.js
-		/** Turn jumps and history-prepend anchoring, independent of DOM measurement. */
-		/** Owns one replaceable turn jump and the anchor retained while history loads. */
-		var ChatNavigation = class {
-			viewport;
-			reading;
-			input;
-			onBusyTurn;
-			jump = null;
-			settleFrame = null;
-			constructor(viewport, reading, input, onBusyTurn) {
-				this.viewport = viewport;
-				this.reading = reading;
-				this.input = input;
-				this.onBusyTurn = onBusyTurn;
-			}
-			/**
-			* Adopt committed history availability without starting a request.
-			* @param input - history state from the latest committed render.
-			*/
-			setInput(input) {
-				this.input = input;
-			}
-			/** Cancel navigation when opening a Chat view. */
-			reset() {
-				this.cancel();
-			}
-			/** Cancel local callbacks; late history completions cannot revive a task. */
-			dispose() {
-				this.clearTask();
-			}
-			/** Release the jump, paging anchor, and busy indicator without cancelling shared history I/O. */
-			cancel() {
-				this.clearTask();
-				this.onBusyTurn(null);
-			}
-			clearTask() {
-				this.cancelFrame();
-				this.jump = null;
-				this.viewport.stopPreserving();
-			}
-			/**
-			* Replace the current jump with an explicit turn selection.
-			* @param item - loaded anchor or unloaded turn to fetch before landing.
-			*/
-			navigateToTurn = (item) => {
-				if (item.anchor.kind === "loaded") {
-					this.cancel();
-					const landing = this.viewport.scrollToTurn(item.turn);
-					if (landing === null) return;
-					this.reading.acceptNavigation(landing);
-					if (this.input.loadingOlder) this.viewport.beginPreserving(landing.position);
-					return;
-				}
-				this.cancel();
-				this.viewport.beginPreserving();
-				this.reading.pauseFollowing();
-				const jump = {
-					turn: item.turn,
-					seq: item.anchor.seq,
-					phase: "loading",
-					landing: "pending",
-					repageHead: null
-				};
-				this.jump = jump;
-				this.onBusyTurn(jump.turn);
-				this.request(jump);
-			};
-			/** Request one older page while retaining the current semantic position. */
-			loadEarlier = () => {
-				this.cancel();
-				this.viewport.beginPaging();
-				this.reading.pauseFollowing();
-				this.input.loadOlder();
-			};
-			/**
-			* Preserve reader ownership across pending history work.
-			* @param sample - settled reader movement that can update or interrupt an anchor.
-			*/
-			readerSampled(sample) {
-				if (sample.movedByReader && this.jump?.landing === "landed") this.jump.landing = "interrupted";
-				if (sample.followingTail || sample.movedByReader) this.viewport.stopPreserving();
-			}
-			/**
-			* Preserve one paging anchor after a commit or a later size change, regardless of head identity.
-			* @returns whether the retained anchor handled the layout change.
-			*/
-			contentCommitted() {
-				if (!this.viewport.preserving || this.reading.pending) return false;
-				if (this.landJump(false)) return true;
-				const landing = this.viewport.preserve();
-				if (landing === null) return false;
-				this.reading.preservePosition(landing);
-				return true;
-			}
-			/** Retarget a still-loading page only after inner or outer reader scrolling ends. */
-			readerSettled() {
-				if (this.input.loadingOlder && this.jump === null && !this.viewport.preserving && !this.reading.followingTail) this.viewport.beginPreserving();
-			}
-			/** Land, retry, or complete the current jump against the committed window. */
-			reconcile() {
-				const jump = this.jump;
-				if (jump === null || this.reading.pending) return;
-				if (jump.phase === "loading") {
-					if (jump.landing === "pending") this.landJump(false);
-					return;
-				}
-				if (this.input.loadingOlder) return;
-				if (this.landJump(true)) return;
-				if ((this.input.firstSeq === null || this.input.firstSeq > jump.seq) && this.input.hasMore && jump.repageHead !== this.input.firstSeq) {
-					jump.repageHead = this.input.firstSeq;
-					this.viewport.beginPreserving();
-					this.request(jump);
-					return;
-				}
-				const fallback = this.viewport.scrollToTurnAtOrAfter(jump.turn);
-				this.cancel();
-				if (fallback !== null) this.reading.acceptNavigation(fallback);
-			}
-			landJump(settle) {
-				const jump = this.jump;
-				if (jump === null) return false;
-				if (jump.landing === "interrupted") {
-					if (settle) {
-						this.cancel();
-						return true;
-					}
-					return false;
-				}
-				const landing = this.viewport.scrollToTurn(jump.turn);
-				if (landing === null) return false;
-				this.reading.acceptNavigation(landing);
-				if (settle) this.cancel();
-				else {
-					this.viewport.beginPreserving(landing.position);
-					jump.landing = "landed";
-				}
-				return true;
-			}
-			request(jump) {
-				jump.phase = "loading";
-				const settled = () => {
-					if (this.jump !== jump) return;
-					jump.phase = "settled";
-					this.cancelFrame();
-					if (typeof requestAnimationFrame !== "function") this.reconcile();
-					else this.settleFrame = requestAnimationFrame(() => {
-						this.settleFrame = null;
-						if (this.jump === jump) this.reconcile();
-					});
-				};
-				this.input.loadThrough(jump.seq).then(settled, settled);
-			}
-			cancelFrame() {
-				if (this.settleFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(this.settleFrame);
-				this.settleFrame = null;
-			}
-		};
-		/**
-		* Retain one navigation owner for the component's lifetime.
-		* @param viewport - turn-aware DOM operations.
-		* @param reading - reading and follow policy receiving navigation landings.
-		* @param input - committed history state and load operations.
-		* @returns the navigation owner and its visible busy turn.
-		*/
-		function useChatNavigation(viewport, reading, input) {
-			const [busyTurn, setBusyTurn] = (0, react.useState)(null);
-			const [navigation] = (0, react.useState)(() => new ChatNavigation(viewport, reading, input, setBusyTurn));
-			(0, react.useLayoutEffect)(() => {
-				navigation.setInput(input);
-			}, [navigation, input]);
-			(0, react.useLayoutEffect)(() => () => {
-				navigation.dispose();
-			}, [navigation]);
-			return {
-				navigation,
-				busyTurn
-			};
-		}
-		//#endregion
-		//#region lib/types/client/chat/use-chat-reading.js
-		/** Follow-tail ownership, saved-position restoration, and sampled reader movement. */
-		const SCROLL_SAMPLE_INTERVAL_MS = 500;
-		/** Owns reading policy and its cancellable sampling work, without DOM access. */
-		var ChatReading = class {
-			viewport;
-			store;
-			state;
-			onChange;
-			follow;
-			sampleTimer = null;
-			probeFrame = null;
-			sampled = null;
-			constructor(viewport, store, state, onChange, follow) {
-				this.viewport = viewport;
-				this.store = store;
-				this.state = state;
-				this.onChange = onChange;
-				this.follow = follow;
-			}
-			/**
-			* Expose pending reader ownership to navigation and resize handlers.
-			* @returns whether reader input still awaits interval or scrollend sampling.
-			*/
-			get pending() {
-				return this.sampleTimer !== null;
-			}
-			/**
-			* Expose the active follow policy.
-			* @returns whether content growth retains bottom-follow ownership.
-			*/
-			get followingTail() {
-				return this.state.followingTail;
-			}
-			/**
-			* Adopt the committed Session's scroll memory.
-			* @param store - scroll memory for the current Session.
-			*/
-			setStore(store) {
-				this.store = store;
-			}
-			/**
-			* Connect history policy to settled reading observations.
-			* @param sampled - receives settled reader positions.
-			* @returns a disposer that disconnects only this listener.
-			*/
-			connect(sampled) {
-				this.sampled = sampled;
-				return () => {
-					if (this.sampled === sampled) this.sampled = null;
-				};
-			}
-			/** Cancel timers and animation frames and detach the sample listener. */
-			dispose() {
-				this.cancelPending();
-				this.sampled = null;
-			}
-			/** Release bottom follow and pending sampling for an explicit navigation. */
-			pauseFollowing() {
-				this.cancelPending();
-				this.publish({
-					...this.state,
-					followingTail: false
-				});
-			}
-			/** Land at the current floor and clear saved reader position. */
-			followTail() {
-				const landing = this.viewport.scrollToBottom(this.follow);
-				if (landing === null) return;
-				this.cancelPending();
-				this.commit(landing, true, this.viewport.latestTurn);
-			}
-			/** Restore the Session's semantic position, or follow the tail when none is saved. */
-			restore() {
-				const saved = this.store.read();
-				if (saved === null) {
-					this.followTail();
-					return;
-				}
-				const landing = this.viewport.restore(saved);
-				if (landing === null) return;
-				this.cancelPending();
-				const following = this.follow.nearBottom(landing.metrics);
-				this.commit(landing, following, following ? this.viewport.latestTurn : this.state.activeTurn, following);
-				if (!this.state.followingTail && landing.position === null) {
-					const position = this.viewport.capturePosition();
-					if (position !== null) this.store.save(position);
-				}
-				this.refreshActiveTurn();
-			}
-			/**
-			* Adopt a known landing without rediscovering its anchor.
-			* @param landing - measured navigation result that replaces pending reader input.
-			*/
-			acceptNavigation(landing) {
-				this.cancelPending();
-				const following = this.follow.nearBottom(landing.metrics);
-				this.commit(landing, following, landing.turn ?? (following ? this.viewport.latestTurn : this.state.activeTurn));
-			}
-			/**
-			* Retain reading policy while history changes the anchor's geometry.
-			* @param landing - compensated position that retains the current reading policy.
-			*/
-			preservePosition(landing) {
-				this.cancelPending();
-				this.commit(landing, this.state.followingTail, this.state.activeTurn);
-			}
-			/**
-			* Handle pinned layout movement and reader arrivals at the floor immediately.
-			* @param scroll - attributed scroll delivery; other reader movement remains pending until sampled.
-			*/
-			onScroll = (scroll) => {
-				if (!scroll.movedByReader && this.state.followingTail || scroll.movedByReader && scroll.metrics.top >= scroll.metrics.floor) {
-					this.followTail();
-					this.sampled?.({
-						position: null,
-						movedByReader: scroll.movedByReader,
-						followingTail: true
-					});
-					return;
-				}
-				this.sampleTimer ??= window.setTimeout(this.flushSample, SCROLL_SAMPLE_INTERVAL_MS);
-			};
-			/** Settle pending reader movement at the browser's scrollend. */
-			onScrollEnd = () => {
-				this.flushSample();
-			};
-			/** Reconcile a layout change without overriding unsampled reader input. */
-			onResize() {
-				if (this.pending) return;
-				if (this.state.followingTail) this.followTail();
-				else this.refreshActiveTurn();
-			}
-			/** Resolve the active turn from tail ownership or a coalesced reading-line probe. */
-			refreshActiveTurn() {
-				if (this.pending) return;
-				if (this.state.followingTail) {
-					this.publish({
-						...this.state,
-						initialized: true,
-						activeTurn: this.viewport.latestTurn
-					});
-					return;
-				}
-				if (this.probeFrame !== null) return;
-				if (typeof requestAnimationFrame !== "function") this.probe();
-				else this.probeFrame = requestAnimationFrame(this.probe);
-			}
-			commit(landing, followingTail, activeTurn, initialized = true) {
-				if (followingTail) this.store.save(null);
-				else if (landing.position !== null) this.store.save(landing.position);
-				this.publish({
-					initialized,
-					followingTail,
-					activeTurn
-				});
-			}
-			publish(state) {
-				this.follow.setFollowing(state.followingTail);
-				if (state.initialized === this.state.initialized && state.followingTail === this.state.followingTail && state.activeTurn === this.state.activeTurn) return;
-				this.state = state;
-				this.onChange(state);
-			}
-			cancelPending() {
-				if (this.sampleTimer !== null) window.clearTimeout(this.sampleTimer);
-				if (this.probeFrame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(this.probeFrame);
-				this.sampleTimer = null;
-				this.probeFrame = null;
-			}
-			probe = () => {
-				this.probeFrame = null;
-				if (this.pending) return;
-				const scroll = this.viewport.readScroll();
-				if (scroll === null) return;
-				const activeTurn = this.follow.nearBottom(scroll.metrics) ? this.viewport.latestTurn : this.viewport.readVisibleTurn(scroll.metrics);
-				this.publish({
-					...this.state,
-					initialized: true,
-					activeTurn
-				});
-			};
-			flushSample = () => {
-				if (!this.pending) return;
-				this.cancelPending();
-				const scroll = this.viewport.readScroll();
-				if (scroll === null) return;
-				const followingTail = this.follow.sample(scroll.metrics, scroll.movedByReader);
-				let position = null;
-				if (!scroll.movedByReader && followingTail) this.followTail();
-				else {
-					position = followingTail ? null : this.viewport.capturePosition();
-					this.viewport.acknowledge(scroll.metrics);
-					if (followingTail || position !== null) this.store.save(position);
-					const activeTurn = this.follow.nearBottom(scroll.metrics) ? this.viewport.latestTurn : this.viewport.readVisibleTurn(scroll.metrics);
-					this.publish({
-						initialized: true,
-						followingTail,
-						activeTurn
-					});
-				}
-				this.sampled?.({
-					position,
-					movedByReader: scroll.movedByReader,
-					followingTail
-				});
-			};
-		};
-		/**
-		* Retain reading policy and expose only changes in visible reading state.
-		* @param viewport - turn-aware DOM operations.
-		* @param store - Session-owned semantic scroll memory.
-		* @param initialTurn - latest loaded turn before the first landing.
-		* @returns the reading owner and its React-visible state.
-		*/
-		function useChatReading(viewport, store, initialTurn) {
-			const [state, setState] = (0, react.useState)(() => ({
-				initialized: false,
-				followingTail: store.read() === null,
-				activeTurn: initialTurn
-			}));
-			const follow = useScrollFollow(state.followingTail, 25);
-			const [reading] = (0, react.useState)(() => new ChatReading(viewport, store, state, setState, follow));
-			(0, react.useLayoutEffect)(() => {
-				reading.setStore(store);
-			}, [reading, store]);
-			(0, react.useLayoutEffect)(() => () => {
-				reading.dispose();
-			}, [reading]);
-			return {
-				reading,
-				state
-			};
-		}
-		//#endregion
-		//#region lib/types/client/chat/use-chat-viewport.js
-		/** Turn-aware DOM scrolling and geometry, without history-loading or follow policy. */
-		const READING_INTENTS = [
-			"wheel",
-			"touchstart",
-			"pointerdown",
-			"keydown",
-			"beforematch"
-		];
-		const SCROLL_KEYS = new Set([
-			"ArrowUp",
-			"ArrowDown",
-			"PageUp",
-			"PageDown",
-			"Home",
-			"End",
-			" "
-		]);
-		/** Owns one Chat scrollport's DOM operations, event listeners, and size observer. */
-		var ChatViewport = class {
-			elements = null;
-			observer = null;
-			events = null;
-			turns = [];
-			observation = {
-				top: 0,
-				landing: null
-			};
-			paging = null;
-			/**
-			* Bind to the containing scrollport and observe content and viewport sizes.
-			* @param list - Chat root inside an optional shared conversation scrollport.
-			* @param column - ordered outer Node/Group boxes; its size changes invalidate cached landings.
-			*/
-			attach(list, column) {
-				this.detach();
-				const scroller = list.closest("[data-conversation-scroll]") ?? list;
-				const composer = scroller.querySelector("[data-composer-seat]");
-				const elements = {
-					list,
-					column,
-					scroller,
-					composer
-				};
-				this.elements = elements;
-				scroller.addEventListener("scroll", this.onScroll, { passive: true });
-				scroller.addEventListener("scrollend", this.onScrollEnd, {
-					passive: true,
-					capture: true
-				});
-				for (const type of READING_INTENTS) scroller.addEventListener(type, this.onIntent, {
-					passive: true,
-					capture: true
-				});
-				if (typeof ResizeObserver !== "undefined") {
-					this.observer = new ResizeObserver(() => {
-						if (this.elements !== elements) return;
-						this.invalidate();
-						this.events?.resize();
-					});
-					this.observer.observe(column);
-					this.observer.observe(scroller);
-					if (composer !== null) this.observer.observe(composer);
-				}
-			}
-			/** Disconnect DOM resources and clear observations for the detached view. */
-			detach() {
-				this.stopPreserving();
-				this.elements?.scroller.removeEventListener("scroll", this.onScroll);
-				this.elements?.scroller.removeEventListener("scrollend", this.onScrollEnd, true);
-				for (const type of READING_INTENTS) this.elements?.scroller.removeEventListener(type, this.onIntent, true);
-				this.observer?.disconnect();
-				this.observer = null;
-				this.elements = null;
-				this.events = null;
-				this.turns = [];
-				this.observation = {
-					top: 0,
-					landing: null
-				};
-			}
-			/**
-			* Connect business policy without changing DOM listener ownership.
-			* @param events - business handlers for scroll and layout changes.
-			* @returns a disposer that disconnects only these handlers.
-			*/
-			connect(events) {
-				this.events = events;
-				return () => {
-					if (this.events === events) this.events = null;
-				};
-			}
-			/**
-			* Adopt the loaded turn anchors without querying the DOM.
-			* @param turns - ordered loaded turns from the committed Chat snapshot.
-			*/
-			updateTurns(turns) {
-				this.turns = turns;
-			}
-			/**
-			* Resolve the tail from the committed turn index.
-			* @returns the latest loaded turn, or null for an empty window.
-			*/
-			get latestTurn() {
-				return this.turns.at(-1)?.turn ?? null;
-			}
-			/** Discard geometry-dependent landing knowledge while retaining scroll attribution. */
-			invalidate() {
-				this.observation.landing = null;
-			}
-			/**
-			* Accept a sampled reader position without retaining a known landing.
-			* @param metrics - settled reader position used as the next attribution baseline.
-			*/
-			acknowledge(metrics) {
-				this.observation = {
-					top: metrics.top,
-					landing: null
-				};
-			}
-			/**
-			* Compare the current scroll geometry with the last acknowledged position.
-			* @returns current metrics and movement attribution, or null while detached.
-			*/
-			readScroll() {
-				const metrics = this.metrics();
-				if (metrics === null) return null;
-				return {
-					metrics,
-					movedByReader: Math.abs(metrics.top - Math.min(this.observation.top, metrics.floor)) > .5
-				};
-			}
-			metrics() {
-				const scroller = this.elements?.scroller;
-				if (scroller === void 0) return null;
-				return scrollMetrics(scroller);
-			}
-			anchor(key, identity = "position") {
-				if (this.elements === null) return null;
-				let nodePart = null;
-				for (const row of this.elements.list.querySelectorAll("[data-chat-anchor-key]:not([hidden]):not([hidden] *)")) {
-					if (row.dataset.chatAnchorKey === key || identity === "node" && row.dataset.chatNodeKey === key) return row;
-					if (nodePart === null && row.dataset.chatNodeKey === key) nodePart = row;
-				}
-				return nodePart;
-			}
-			/**
-			* Capture visible transcript content, excluding Turn controls that relocate when history expands.
-			* @returns a visible semantic anchor, or null when no anchor can be resolved.
-			*/
-			capturePosition() {
-				const elements = this.elements;
-				if (elements === null) return null;
-				const { list, scroller, composer } = elements;
-				const viewport = scroller.getBoundingClientRect();
-				const bottom = composer?.getBoundingClientRect().top ?? viewport.bottom;
-				let anchor = null;
-				if (typeof document.elementsFromPoint === "function" && bottom > viewport.top) {
-					const content = list.getBoundingClientRect();
-					const left = Math.max(viewport.left, content.left);
-					const right = Math.min(viewport.right, content.right);
-					for (const element of document.elementsFromPoint(left + Math.max(0, right - left) / 2, viewport.top + 1)) {
-						const row = element instanceof HTMLElement ? element.closest("[data-chat-anchor-key]") : null;
-						if (row !== null && row.dataset.chatFlowKind !== "turn-process" && list.contains(row)) {
-							anchor = row.dataset.chatGroupKey === void 0 ? row : row.querySelector("[data-step-process-content] > [data-chat-anchor-key]:not(:empty):not([hidden]):not([hidden] *)") ?? row;
-							break;
-						}
-					}
-				}
-				if (anchor === null) {
-					const rows = list.querySelectorAll("[data-chat-flow-key]:not([data-chat-group-key]):not([data-chat-flow-kind=\"turn-process\"]):not(:empty):not([hidden]):not([hidden] *)");
-					let low = 0;
-					let high = rows.length;
-					while (low < high) {
-						const middle = low + high >>> 1;
-						if (rows.item(middle).getBoundingClientRect().bottom > viewport.top) high = middle;
-						else low = middle + 1;
-					}
-					const row = rows[low];
-					anchor = row !== void 0 && row.getBoundingClientRect().top < bottom ? row : rows[0] ?? null;
-				}
-				const key = anchor?.dataset.chatAnchorKey;
-				return anchor === null || key === void 0 ? null : {
-					anchorKey: key,
-					anchorTop: anchor.getBoundingClientRect().top - viewport.top,
-					scrollTop: scroller.scrollTop
-				};
-			}
-			/**
-			* Approximate the active Turn by binary-searching outer Node/Group boxes.
-			* Gaps retain the last visited Turn candidate, not necessarily the immediate predecessor.
-			* A known landing bypasses measurement while its position is unchanged.
-			* @param metrics - reusable scroll metrics; omitted callers request a fresh read.
-			* @returns the Turn near the reading line, or null while detached or empty.
-			*/
-			readVisibleTurn(metrics = this.metrics()) {
-				const knownTurn = this.observation.landing?.turn;
-				if (knownTurn != null && metrics?.top === this.observation.top) return knownTurn;
-				const elements = this.elements;
-				const first = this.turns[0];
-				if (elements === null || metrics === null || first === void 0) return null;
-				const line = elements.scroller.getBoundingClientRect().top + Math.min(96, metrics.height * .2);
-				const rows = elements.column.children;
-				let low = 0;
-				let high = rows.length;
-				let reading = first.turn;
-				while (low < high) {
-					const middle = low + high >>> 1;
-					const row = rows[middle];
-					if (row.getBoundingClientRect().top > line) high = middle;
-					else {
-						const value = row.getAttribute("data-chat-turn");
-						const turn = value === null ? NaN : Number(value);
-						if (Number.isSafeInteger(turn)) reading = turn;
-						low = middle + 1;
-					}
-				}
-				return reading;
-			}
-			/**
-			* Align a known loaded turn and return its actual clamped position.
-			* A split Node anchor selects its first visible part.
-			* @param turn - loaded turn to align below the scrollport's top edge.
-			* @returns the actual landing, or null when its anchor is unavailable.
-			*/
-			scrollToTurn(turn) {
-				const item = this.turns.find((candidate) => candidate.turn === turn);
-				if (item === void 0) return null;
-				const row = this.anchor(item.anchorKey, "node");
-				return row === null ? null : this.align(row, 24, turn);
-			}
-			/**
-			* Align the nearest available fallback for an unavailable turn anchor.
-			* @param turn - minimum turn number for a mounted fallback row.
-			* @returns the fallback landing, or null when no eligible row exists.
-			*/
-			scrollToTurnAtOrAfter(turn) {
-				if (this.elements === null) return null;
-				for (const row of this.elements.list.querySelectorAll("[data-chat-turn]:not([hidden]):not([hidden] *)")) {
-					const candidate = Number(row.dataset.chatTurn);
-					if (Number.isSafeInteger(candidate) && candidate >= turn) return this.align(row, 24, candidate);
-				}
-				return null;
-			}
-			/**
-			* Restore a semantic anchor with a raw-position fallback.
-			* @param position - semantic scroll memory; raw top is used only if its row is absent.
-			* @returns the actual landing, or null while detached.
-			*/
-			restore(position) {
-				const row = this.anchor(position.anchorKey);
-				if (row !== null) return this.align(row, position.anchorTop, null);
-				const metrics = this.metrics();
-				return metrics === null ? null : this.write(position.scrollTop, metrics, null);
-			}
-			/** Retain the first eligible transcript seat in DOM order; selection reads no geometry. */
-			beginPaging() {
-				this.stopPreserving();
-				const row = this.elements?.list.querySelector("[data-chat-paging-anchor]:not(:empty):not([hidden]):not([hidden] *)");
-				if (row != null) this.retain(row);
-			}
-			/**
-			* Retain one old row and its inner/outer offsets for paging and later content growth.
-			* @param position - an explicit landing to retain; omitted callers capture the current reading position.
-			*/
-			beginPreserving(position = this.capturePosition()) {
-				this.stopPreserving();
-				if (position === null) return;
-				const row = this.anchor(position.anchorKey);
-				if (row === null) return;
-				this.retain(row, position);
-			}
-			retain(row, position, groupTop) {
-				const elements = this.elements;
-				const key = row.dataset.chatAnchorKey;
-				if (elements === null || key === void 0) return null;
-				const previous = this.paging?.group;
-				if (previous != null) this.observer?.unobserve(previous.content);
-				const top = row.getBoundingClientRect().top;
-				const body = row.closest("[data-step-process-body]");
-				const content = body?.querySelector("[data-step-process-content]");
-				const group = body === null || content == null ? null : {
-					body,
-					content,
-					top: groupTop ?? top - body.getBoundingClientRect().top
-				};
-				this.paging = {
-					row,
-					group,
-					position: position ?? {
-						anchorKey: key,
-						anchorTop: top - elements.scroller.getBoundingClientRect().top,
-						scrollTop: elements.scroller.scrollTop
-					}
-				};
-				if (group !== null) this.observer?.observe(group.content);
-				return this.paging;
-			}
-			/** Release paging ownership and its content-size observation. */
-			stopPreserving() {
-				const group = this.paging?.group;
-				if (group != null) this.observer?.unobserve(group.content);
-				this.paging = null;
-			}
-			/**
-			* Expose retained paging ownership to navigation and resize policy.
-			* @returns whether a paging row is retained for subsequent layout changes.
-			*/
-			get preserving() {
-				return this.paging !== null;
-			}
-			/**
-			* Compensate inner scrolling first, then the outer scrollport, within their actual scroll ranges.
-			* An inner write pauses its bound follow controller so the reading anchor takes priority.
-			* @returns the actual landing, or null when no visible retained row remains.
-			*/
-			preserve() {
-				let paging = this.paging;
-				const elements = this.elements;
-				if (paging === null || elements === null) return null;
-				if (!elements.list.contains(paging.row)) {
-					const replacement = this.anchor(paging.position.anchorKey);
-					if (replacement === null) {
-						this.stopPreserving();
-						return null;
-					}
-					paging = this.retain(replacement, paging.position, paging.group?.top);
-					if (paging === null) return null;
-				}
-				const { row, group, position } = paging;
-				if (row.closest("[hidden]") !== null || row.matches(":empty")) {
-					this.stopPreserving();
-					return null;
-				}
-				if (group !== null && group.body.contains(row)) {
-					const top = row.getBoundingClientRect().top - group.body.getBoundingClientRect().top;
-					const metrics = scrollMetrics(group.body);
-					const target = Math.max(0, Math.min(metrics.floor, metrics.top + top - group.top));
-					if (metrics.top !== target) {
-						const follow = ScrollFollow.forElement(group.body);
-						if (follow === void 0) group.body.scrollTop = target;
-						else {
-							follow.jump(group.body, metrics, target);
-							follow.setFollowing(false);
-						}
-					}
-				}
-				const metrics = this.metrics();
-				if (metrics === null) return null;
-				const top = row.getBoundingClientRect().top - elements.scroller.getBoundingClientRect().top;
-				const target = metrics.top + top - position.anchorTop;
-				return this.write(target, metrics, null, {
-					key: position.anchorKey,
-					top
-				});
-			}
-			/**
-			* Align the scrollport with its current floor.
-			* @param follow - independent follow intent and scrolling controller.
-			* @returns the actual floor landing, or null while detached.
-			*/
-			scrollToBottom(follow) {
-				const metrics = this.metrics();
-				if (metrics === null || this.elements === null) return null;
-				const landing = {
-					metrics: follow.toBottom(this.elements.scroller, metrics, "instant"),
-					position: null,
-					turn: this.latestTurn
-				};
-				this.observation = {
-					top: landing.metrics.top,
-					landing
-				};
-				return landing;
-			}
-			align(row, offset, turn) {
-				const metrics = this.metrics();
-				if (metrics === null || this.elements === null) return null;
-				const top = row.getBoundingClientRect().top - this.elements.scroller.getBoundingClientRect().top;
-				return this.write(metrics.top + top - offset, metrics, turn, {
-					key: row.dataset.chatAnchorKey,
-					top
-				});
-			}
-			write(target, metrics, turn, anchor) {
-				if (this.elements === null) return null;
-				const top = Math.max(0, Math.min(metrics.floor, target));
-				if (top !== metrics.top) this.elements.scroller.scrollTop = top;
-				const actual = this.elements.scroller.scrollTop;
-				const landing = {
-					metrics: {
-						...metrics,
-						top: actual
-					},
-					turn,
-					position: anchor?.key === void 0 ? null : {
-						anchorKey: anchor.key,
-						anchorTop: anchor.top - (actual - metrics.top),
-						scrollTop: actual
-					}
-				};
-				this.observation = {
-					top: actual,
-					landing
-				};
-				return landing;
-			}
-			onScroll = (event) => {
-				if (this.elements === null || event.target !== this.elements.scroller) return;
-				if (this.observation.landing !== null && this.elements.scroller.scrollTop === this.observation.top) return;
-				this.invalidate();
-				if (this.paging !== null) {
-					this.events?.resize();
-					return;
-				}
-				const scroll = this.readScroll();
-				if (scroll !== null) this.events?.scroll(scroll);
-			};
-			onScrollEnd = (event) => {
-				if (event.target === this.elements?.scroller || event.target instanceof HTMLElement && event.target.hasAttribute("data-step-process-body")) this.events?.scrollEnd();
-			};
-			onIntent = (event) => {
-				if (event.type === "keydown" || event.type === "pointerdown") {
-					if (event.target instanceof Element && event.target.closest("[data-composer-seat]") !== null) return;
-					if (event.type === "keydown" && (!(event instanceof KeyboardEvent) || !SCROLL_KEYS.has(event.key))) return;
-				}
-				if (this.paging === null) return;
-				this.stopPreserving();
-				this.events?.interact();
-			};
-		};
-		/**
-		* Bind viewport resource ownership to the component's layout lifetime.
-		* @returns one viewport owner and the element refs attached for this mount.
-		*/
-		function useChatViewport() {
-			const listRef = (0, react.useRef)(null);
-			const columnRef = (0, react.useRef)(null);
-			const [viewport] = (0, react.useState)(() => new ChatViewport());
-			(0, react.useLayoutEffect)(() => {
-				if (listRef.current === null || columnRef.current === null) return;
-				viewport.attach(listRef.current, columnRef.current);
-				return () => {
-					viewport.detach();
-				};
-			}, [viewport]);
-			return {
-				viewport,
-				listRef,
-				columnRef
-			};
-		}
-		//#endregion
-		//#region lib/types/client/chat/use-chat-scroll.js
-		/** Composes viewport operations, reading policy, and history navigation for Chat. */
-		/**
-		* Coordinate scroll policy after Chat content commits.
-		* New submitted input supersedes pending reader sampling.
-		* @param input - current Chat content, scroll memory, and history operations.
-		* @returns element refs, visible reading state, and navigation callbacks.
-		*/
-		function useChatScroll(input) {
-			const { ready, order, firstSeq, lastKey, lastIsUser, steeringId, submissionId, running, loadedTurns, chatScroll, hasMore, loadingOlder, loadOlder, loadThrough } = input;
-			const { viewport, listRef, columnRef } = useChatViewport();
-			const { reading, state } = useChatReading(viewport, chatScroll, loadedTurns.at(-1)?.turn ?? null);
-			const navigationInput = (0, react.useMemo)(() => ({
-				firstSeq,
-				loadingOlder,
-				hasMore,
-				loadOlder,
-				loadThrough
-			}), [
-				firstSeq,
-				loadingOlder,
-				hasMore,
-				loadOlder,
-				loadThrough
-			]);
-			const { navigation, busyTurn } = useChatNavigation(viewport, reading, navigationInput);
-			const content = (0, react.useRef)({
-				input,
-				applied: null,
-				opened: false
+		//#region lib/types/client/chat/ChatFlow.js
+		/** Ordered Chat rows, local echoes, and running status share the flow slot's parent. */
+		/** Render the flow without adding a DOM parent or changing keyed row positions. */
+		const ChatFlow = (0, react.memo)(function ChatFlow({ entries, pendingInputs, lastInputTurn, deferCollapse, useSession, useChat, useChatNode, useChatNodeBottom, useChatNodeProcess, useChatGroup, usePresentation, useStore, actions, renderSlot, renderFactorySlot, t, useGroupAction, useGroupHeaderAction, cwd, openFile, inspectCall, forkAt, loadImage, fileMentions }) {
+			const nodeStore = useChat((snapshot) => snapshot.nodes);
+			const running = useSession((snapshot) => snapshot.running);
+			const runningStartTime = useChatNode(useChat((snapshot) => snapshot.navigation.items().at(-1)?.anchorKey) ?? "", (node) => {
+				const location = node?.location;
+				return location?.kind === "turn" || location?.kind === "step" ? location.turn.status === "open" ? location.turn.start?.time : void 0 : void 0;
 			});
-			const processContent = (0, react.useCallback)(() => {
-				const current = content.current.input;
-				const previous = content.current.applied;
-				const ownInput = current.lastIsUser && current.lastKey !== previous?.lastKey || current.steeringId !== null && current.steeringId !== previous?.steeringId && current.steeringId !== previous?.submissionId || current.submissionId !== null && current.submissionId !== previous?.submissionId && current.submissionId !== previous?.steeringId;
-				if (reading.pending && !ownInput) return;
-				content.current.applied = current;
-				if (current.ready && !content.current.opened) {
-					content.current.opened = true;
-					navigation.reset();
-					reading.restore();
-					return;
-				}
-				if (ownInput) {
-					navigation.cancel();
-					reading.followTail();
-					return;
-				}
-				if (navigation.contentCommitted()) {
-					navigation.reconcile();
-					return;
-				}
-				if ((previous === null || current.ready !== previous.ready || current.firstSeq !== previous.firstSeq || current.lastKey !== previous.lastKey || current.order.length !== previous.order.length || current.running !== previous.running || current.steeringId !== previous.steeringId || current.submissionId !== previous.submissionId) && reading.followingTail) {
-					navigation.cancel();
-					reading.followTail();
-				} else navigation.reconcile();
-			}, [reading, navigation]);
-			(0, react.useLayoutEffect)(() => {
-				const disconnectViewport = viewport.connect({
-					scroll: reading.onScroll,
-					scrollEnd: () => {
-						reading.onScrollEnd();
-						navigation.readerSettled();
-					},
-					interact: () => {
-						navigation.cancel();
-					},
-					resize: () => {
-						if (!navigation.contentCommitted()) reading.onResize();
-						navigation.reconcile();
-					}
-				});
-				const disconnectReading = reading.connect((sample) => {
-					navigation.readerSampled(sample);
-					processContent();
-				});
-				return () => {
-					disconnectViewport();
-					disconnectReading();
-					content.current.opened = false;
-					content.current.applied = null;
-				};
-			}, [
-				viewport,
-				reading,
-				navigation,
-				processContent
-			]);
-			(0, react.useLayoutEffect)(() => {
-				const previous = content.current.input;
-				content.current.input = {
-					ready,
-					order,
-					lastKey,
-					lastIsUser,
-					steeringId,
-					submissionId,
-					running,
-					loadedTurns,
-					chatScroll,
-					...navigationInput
-				};
-				viewport.updateTurns(loadedTurns);
-				const layoutChanged = previous.order !== order || previous.ready !== ready;
-				if (layoutChanged) viewport.invalidate();
-				processContent();
-				if (layoutChanged) reading.refreshActiveTurn();
-			}, [
-				viewport,
-				reading,
-				processContent,
-				navigationInput,
-				ready,
-				order,
-				lastKey,
-				lastIsUser,
-				steeringId,
-				submissionId,
-				running,
-				loadedTurns,
-				chatScroll
-			]);
-			const returnToBottom = (0, react.useCallback)(() => {
-				navigation.cancel();
-				reading.followTail();
-			}, [navigation, reading]);
-			return {
-				listRef,
-				columnRef,
-				...state,
-				busyTurn,
-				navigateToTurn: navigation.navigateToTurn,
-				loadEarlier: navigation.loadEarlier,
-				returnToBottom
+			const seatProps = {
+				nodeStore,
+				useChatNode,
+				useChatNodeBottom,
+				useChatNodeProcess,
+				usePresentation,
+				useStore,
+				actions,
+				renderSlot,
+				t,
+				useGroupAction,
+				deferCollapse,
+				cwd,
+				openFile,
+				inspectCall,
+				forkAt,
+				loadImage,
+				fileMentions
 			};
-		}
-		//#endregion
-		//#region lib/types/client/chat/ChatView.js
-		/** Host/OS refusal text for the file-open dialog; empty throws keep a locale fallback. */
-		function openFailureMessage(error, fallback) {
-			const message = error instanceof Error ? error.message : String(error);
-			return message === "" ? fallback : message;
-		}
-		/**
-		* Durable input identities suppress matching echoes in the same render.
-		* The last input's Turn also distinguishes an empty opening control from
-		* one whose human input or trigger notice is already present.
-		*/
-		function observedInputs(order, nodes) {
-			const observed = /* @__PURE__ */ new Set();
-			let lastInputTurn;
-			for (const key of order) {
-				const node = nodes.get(key);
-				if (node === void 0 || node.kind !== "user" && node.kind !== "steering" && node.kind !== "turn-trigger") continue;
-				if (node.location.kind === "turn" || node.location.kind === "step") lastInputTurn = node.location.turn.turn;
-				if (node.kind === "turn-trigger") continue;
-				const source = node.data.source;
-				if (source?.kind === "user" && typeof source.rpcId === "string") observed.add(source.rpcId);
-			}
-			return {
-				rpcIds: observed,
-				lastInputTurn
-			};
-		}
-		const ChatNodeList = (0, react.memo)(function ChatNodeList({ entries, useChatGroup, pendingInputs, lastInputTurn, ...seatProps }) {
 			const rows = entries.map((entry) => {
 				switch (entry.kind) {
 					case "node": return (0, react.createElement)(ChatNodeSeat, {
@@ -5778,267 +5730,38 @@ DSHConversationActions.installConversationActions();
 						...seatProps,
 						key: chatRenderKey(entry),
 						groupKey: entry.key,
-						useChatGroup
+						useChatGroup,
+						useGroupHeaderAction
 					});
 					default: return assertNever(entry);
 				}
 			});
 			const pendingRows = pendingInputs.map((item) => "requestId" in item ? (0, react_jsx_runtime.jsx)(PendingSubmissionBubble, {
 				submission: item,
-				renderMessageImages: seatProps.renderMessageImages,
-				t: seatProps.t
+				loadImage,
+				renderFactorySlot,
+				t
 			}, item.requestId) : (0, react_jsx_runtime.jsx)(PendingSteeringBubble, {
 				content: item.content,
-				renderMessageImages: seatProps.renderMessageImages,
-				t: seatProps.t
+				loadImage,
+				renderFactorySlot,
+				t
 			}, item.id));
 			const tail = entries.at(-1);
-			const node = tail?.kind === "node" ? seatProps.nodeStore.get(tail.key) : void 0;
+			const node = tail?.kind === "node" ? nodeStore.get(tail.key) : void 0;
 			if (node?.kind === "turn-process" && node.location.kind === "turn" && node.location.turn.status === "open" && node.location.turn.turn !== lastInputTurn) {
 				const index = pendingInputs.findIndex((item) => "requestId" in item && item.placement === "transcript");
 				if (index !== -1) rows.splice(rows.length - 1, 0, ...pendingRows.splice(index, 1));
 			}
-			return [...rows, ...pendingRows];
+			return [
+				...rows,
+				...pendingRows,
+				...running ? [(0, react_jsx_runtime.jsx)(RunningStatus, {
+					startTime: runningStartTime,
+					t
+				}, "running")] : []
+			];
 		});
-		/**
-		* The chat view slot entry: pure component over the composed props; each
-		* ordered business Node crosses the keyed renderer seat.
-		*/
-        function ConversationManagementButton({sessionId}) {
-            return (0, react_jsx_runtime.jsx)("button", {type:"button",className:"dsh-ca-manage-trigger",children:"消息管理",onClick:event=>document.dispatchEvent(new CustomEvent("dsh:conversation-actions",{detail:{sessionId,origin:event.currentTarget.closest("[data-conversation-session]")}}))});
-        }
-		function ChatView({ useSession, useChat, useChatNode, useChatNodeProcess, useChatGroup, useConversation, useSessions, useStore, actions, renderSlot, sessionId, openFile, openSkill, openExternalLink, loadOlder, loadThrough, loadImage, inspectCall, chatScroll, forkAt, fileMentions, usePresentation, useProjection, t }) {
-			const order = useChat((s) => s.order);
-			const groupedEntries = useConversation((snapshot) => snapshot.views.grouped("chat")?.entries);
-			const entries = (0, react.useMemo)(() => groupedEntries ?? order.map((key) => ({
-				kind: "node",
-				key
-			})), [groupedEntries, order]);
-			const nodeStore = useChat((s) => s.nodes);
-			const turnNavigationItems = useChat((s) => s.navigation.items());
-			const latestTurnAnchor = turnNavigationItems.at(-1)?.anchorKey;
-			const runningStartTime = useChatNode(latestTurnAnchor ?? "", (node) => {
-				const location = node?.location;
-				return location?.kind === "turn" || location?.kind === "step" ? location.turn.status === "open" ? location.turn.start?.time : void 0 : void 0;
-			});
-			const turnOutline = useProjection("turnOutline");
-            const conversationEdited = useConversation(s => s.edited === true);
-			const railItems = (0, react.useMemo)(() => mergeTurnRailItems(turnNavigationItems, conversationEdited ? void 0 : turnOutline), [turnNavigationItems, turnOutline, conversationEdited]);
-			const inbox = useProjection("inbox");
-			const cwd = useSessions((s) => s.byId[sessionId]?.cwd);
-			const fileImages = (0, react.useMemo)(() => ({
-				resolve: (path) => fileMediaUrl(document.baseURI, resolveWorkspacePath(cwd, path)),
-				labels: {
-					open: t("image.open"),
-					loading: t("image.loading"),
-					failed: t("image.failed"),
-					dialog: t("image.dialog"),
-					close: t("image.close")
-				}
-			}), [cwd, t]);
-			const running = useSession((s) => s.running);
-			const openState = useSession((s) => s.openState);
-			const openError = useSession((s) => s.openError);
-			const hasMore = useSession((s) => s.hasMore);
-			const loadingOlder = useSession((s) => s.loadingOlder);
-			const [fileOpenError, setFileOpenError] = (0, react.useState)(null);
-			const [fileOpenBusy, setFileOpenBusy] = (0, react.useState)(false);
-			const fileOpenRequest = (0, react.useRef)(0);
-			const requestOpenFile = (0, react.useCallback)((path, options) => {
-				const id = ++fileOpenRequest.current;
-				setFileOpenBusy(true);
-				(options === void 0 ? openFile(path) : openFile(path, options)).then(() => {
-					if (id !== fileOpenRequest.current) return;
-					setFileOpenError(null);
-					setFileOpenBusy(false);
-				}, (error) => {
-					if (id !== fileOpenRequest.current) return;
-					setFileOpenError({
-						path,
-						message: openFailureMessage(error, t("fileOpen.unknown"))
-					});
-					setFileOpenBusy(false);
-				});
-			}, [openFile, t]);
-			const closeFileOpenError = (0, react.useCallback)(() => {
-				fileOpenRequest.current += 1;
-				setFileOpenError(null);
-				setFileOpenBusy(false);
-			}, []);
-			const inboxSteering = (0, react.useMemo)(() => inbox?.["next-step"].filter((message) => message.source.kind === "user") ?? [], [inbox]);
-			const pendingSubmissions = useSession((s) => s.pendingSubmissions);
-			const [visibleSubmissions, lastInputTurn] = (0, react.useMemo)(() => {
-				if (pendingSubmissions.length === 0) return [pendingSubmissions, void 0];
-				const observed = observedInputs(order, nodeStore);
-				return [pendingSubmissions.filter((submission) => submission.placement !== "queued" && !observed.rpcIds.has(submission.requestId)), observed.lastInputTurn];
-			}, [
-				pendingSubmissions,
-				order,
-				nodeStore
-			]);
-			const pendingInputs = (0, react.useMemo)(() => {
-				const local = new Map(visibleSubmissions.map((submission) => [submission.requestId, submission]));
-				const localIds = new Set(pendingSubmissions.filter((submission) => submission.placement !== "queued").map((submission) => submission.requestId));
-				return [...inboxSteering.flatMap((item) => {
-					const source = item.source;
-					if (source.kind !== "user" || !("rpcId" in source)) return [item];
-					const submission = local.get(source.rpcId);
-					if (submission === void 0) return localIds.has(source.rpcId) ? [] : [item];
-					local.delete(source.rpcId);
-					return [submission];
-				}), ...local.values()];
-			}, [
-				inboxSteering,
-				pendingSubmissions,
-				visibleSubmissions
-			]);
-			const renderMessageImages = (0, react.useCallback)((owner) => renderSlot("conversation.message.images", {
-				...owner,
-				loadImage
-			}), [loadImage, renderSlot]);
-			const firstKey = order[0];
-			const firstSeq = firstKey === void 0 ? null : nodeStore.get(firstKey)?.anchorSeq ?? null;
-			const lastKey = order.at(-1) ?? null;
-			const latestSteering = pendingInputs.findLast((item) => "source" in item);
-			const steeringId = latestSteering?.source.kind === "user" && "rpcId" in latestSteering.source ? latestSteering.source.rpcId : latestSteering?.id ?? null;
-			const scroll = useChatScroll({
-				ready: openState === "open",
-				order,
-				firstSeq,
-				lastKey,
-				running,
-				loadingOlder,
-				hasMore,
-				chatScroll,
-				loadOlder,
-				loadThrough,
-				lastIsUser: lastKey !== null && nodeStore.get(lastKey)?.kind === "user",
-				steeringId,
-				submissionId: visibleSubmissions.at(-1)?.requestId ?? null,
-				loadedTurns: turnNavigationItems
-			});
-			return (0, react_jsx_runtime.jsxs)("div", {
-				className: ChatView_module_css_default.frame,
-                "data-conversation-session": sessionId,
-				children: [
-                    (0, react_jsx_runtime.jsx)(ConversationManagementButton,{sessionId}),
-					scroll.initialized && (0, react_jsx_runtime.jsx)(TurnNavigator, {
-						items: railItems,
-						activeTurn: scroll.activeTurn,
-						busyTurn: scroll.busyTurn,
-						onNavigate: scroll.navigateToTurn,
-						t
-					}),
-					(0, react_jsx_runtime.jsx)("div", {
-						className: ChatView_module_css_default.root,
-						"data-chat-following-tail": scroll.followingTail ? "" : void 0,
-						children: (0, react_jsx_runtime.jsx)("div", {
-							ref: scroll.listRef,
-							className: ChatView_module_css_default.scroll,
-							children: (0, react_jsx_runtime.jsxs)("div", {
-								ref: scroll.columnRef,
-								className: ChatView_module_css_default.column,
-								"data-chat-flow": "",
-								children: [
-									openState === "loading" && (0, react_jsx_runtime.jsx)("div", {
-										className: ChatView_module_css_default.hint,
-										children: t("chat.loadingHistory")
-									}),
-									openState === "error" && openError !== null && (0, react_jsx_runtime.jsx)("div", {
-										className: ChatView_module_css_default.openError,
-										children: t("chat.loadError", {
-											message: openError.message,
-											code: openError.code
-										})
-									}),
-									hasMore && (0, react_jsx_runtime.jsx)("div", {
-										className: ChatView_module_css_default.older,
-										children: (0, react_jsx_runtime.jsx)("button", {
-											type: "button",
-											disabled: loadingOlder,
-											onClick: scroll.loadEarlier,
-											children: loadingOlder ? t("loading") : t("chat.loadOlder")
-										})
-									}),
-									(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownDelegateProvider, {
-										openExternalLink,
-										openFile: requestOpenFile,
-										fileImages,
-										children: (0, react_jsx_runtime.jsx)(ChatNodeList, {
-											entries,
-											pendingInputs,
-											lastInputTurn,
-											nodeStore,
-											useChatGroup,
-											useChatNode,
-											useChatNodeProcess,
-											usePresentation,
-											useStore,
-											actions,
-											cwd,
-											openFile: requestOpenFile,
-											openSkill,
-											inspectCall,
-											forkAt,
-											loadImage,
-											renderMessageImages,
-											fileMentions,
-											renderSlot,
-											t
-										})
-									}),
-									running && (0, react_jsx_runtime.jsx)(RunningStatus, {
-										startTime: runningStartTime,
-										t
-									})
-								]
-							})
-						})
-					}),
-					!scroll.followingTail && (0, react_jsx_runtime.jsx)("div", {
-						className: ChatView_module_css_default.toBottomSlot,
-						children: (0, react_jsx_runtime.jsx)("button", {
-							type: "button",
-							className: ChatView_module_css_default.toBottom,
-							"aria-label": t("chat.toBottom"),
-							onClick: scroll.returnToBottom,
-							children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.IconChevronDownOutlineRegular, {})
-						})
-					}),
-					fileOpenError !== null && (0, react_jsx_runtime.jsx)(FileOpenErrorDialog, {
-						message: fileOpenError.message,
-						busy: fileOpenBusy,
-						onClose: closeFileOpenError,
-						onRetry: () => {
-							requestOpenFile(fileOpenError.path);
-						},
-						t
-					})
-				]
-			});
-		}
-		/** In-page Host open-path refusal: the wire reason plus a retry of the same path. */
-		function FileOpenErrorDialog({ message, busy, onClose, onRetry, t }) {
-			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
-				open: true,
-				onClose,
-				closeLabel: t("close"),
-				title: t("fileOpen.title"),
-				description: message,
-				footer: (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "outline",
-					className: ChatView_module_css_default.modalAction,
-					onClick: onClose,
-					children: t("cancel")
-				}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "primary",
-					className: ChatView_module_css_default.modalAction,
-					disabled: busy,
-					onClick: onRetry,
-					children: t("retry")
-				})] })
-			});
-		}
 		//#endregion
 		//#region lib/types/client/locale.js
 		/** Chat-owned locale namespace and dictionaries. */
@@ -6143,6 +5866,10 @@ DSHConversationActions.installConversationActions();
 			"settings.links.newTab": "默认浏览器",
 			"settings.transcript.title": "工作步骤展示",
 			"settings.transcript.description": "选择希望看到多少工具调用细节",
+			"settings.collapse.title": "工作步骤收起时机",
+			"settings.collapse.description": "选择何时自动收起工作步骤",
+			"settings.collapse.completion": "回答结束后",
+			"settings.collapse.nextInput": "下次有新消息时",
 			"settings.transcript.compact": "简洁",
 			"settings.transcript.standard": "标准",
 			"settings.transcript.detailed": "详细",
@@ -6202,8 +5929,9 @@ DSHConversationActions.installConversationActions();
 			"message.retry.delay": "重试延迟：",
 			"message.retry.failure": "失败原因：",
 			"message.failure.auth": "API 密钥无效",
-			"message.accountStopped": "任务已停止",
+			"message.taskStopped": "任务已停止",
 			"message.failure.accountSignedOut": "任务已因退出 DeepSeek 登录而停止。",
+			"message.failure.interrupted": "DSH 进程在本轮完成前退出（例如被强制结束、崩溃或关闭超时），重新启动后本轮已中止。未完成的工具调用结果未知。",
 			"message.failure.accountSignInRequired": "请先登录 DeepSeek，并确认请求地址支持账号认证。",
 			"message.failure.quota": "当前请求的额度已用尽",
 			"message.turnError": "本轮运行失败",
@@ -6332,6 +6060,10 @@ DSHConversationActions.installConversationActions();
 			"settings.links.newTab": "Default Browser",
 			"settings.transcript.title": "Work details",
 			"settings.transcript.description": "Choose how much detail to show for tool calls",
+			"settings.collapse.title": "When to Collapse Work Details",
+			"settings.collapse.description": "Choose when to automatically collapse work details",
+			"settings.collapse.completion": "On completion",
+			"settings.collapse.nextInput": "On next message",
 			"settings.transcript.compact": "Compact",
 			"settings.transcript.standard": "Standard",
 			"settings.transcript.detailed": "Detailed",
@@ -6391,8 +6123,9 @@ DSHConversationActions.installConversationActions();
 			"message.retry.delay": "Retry delay: ",
 			"message.retry.failure": "Failure reason: ",
 			"message.failure.auth": "API key is invalid",
-			"message.accountStopped": "Task stopped",
+			"message.taskStopped": "Task stopped",
 			"message.failure.accountSignedOut": "Stopped because you signed out of DeepSeek.",
+			"message.failure.interrupted": "The DSH process exited before this turn finished (for example, it was killed, crashed, or timed out while shutting down), so the turn was closed when DSH restarted. Unfinished tool calls have unknown outcomes.",
 			"message.failure.accountSignInRequired": "Sign in to DeepSeek and ensure the request destination supports account authentication.",
 			"message.failure.quota": "Request quota exhausted.",
 			"message.turnError": "This turn failed",
@@ -6424,7 +6157,7 @@ DSHConversationActions.installConversationActions();
 		};
 		//#endregion
 		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/ReasoningRow.module.css.mjs
-		const css$9 = ".lcKema_root{flex-direction:column;display:flex}.lcKema_root:not([data-expanded]){contain:size layout;height:calc(24px + var(--dsh-content-font-delta,0px))}.lcKema_row{overflow:hidden}.lcKema_root[data-expanded] [data-open] [data-disclosure-row]{z-index:1;background:var(--dsw-alias-bg-base);position:sticky;top:0}.lcKema_leading{flex-shrink:0}.lcKema_title{font-weight:400}.lcKema_separator{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.lcKema_summary{min-width:0;font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));white-space:nowrap;flex:auto;overflow:hidden}.lcKema_summaryText{text-overflow:ellipsis;display:block;overflow:hidden}.lcKema_summary[data-streaming]{mask-image:linear-gradient(90deg,#000 calc(100% - 48px),#0000)}.lcKema_summary[data-streaming] .lcKema_summaryText{text-overflow:clip;overflow:visible}.lcKema_root:not([data-preview]) .lcKema_separator,.lcKema_root:not([data-preview]) .lcKema_summary{display:none}.lcKema_thinkBody{padding:4px 0 4px calc(22px + var(--dsh-content-font-delta,0px));min-width:0}";
+		const css$9 = ".lcKema_root{flex-direction:column;display:flex}.lcKema_root:not([data-expanded]){contain:size layout;height:calc(24px + var(--dsh-content-font-delta,0px))}.lcKema_row{overflow:hidden}.lcKema_root[data-expanded] [data-open] [data-disclosure-header]{z-index:1;background:var(--dsw-alias-bg-base);position:sticky;top:0}.lcKema_leading{flex-shrink:0}.lcKema_title{font-weight:400}.lcKema_separator{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.lcKema_summary{min-width:0;font-size:var(--dsh-content-font-size-secondary,13px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));white-space:nowrap;flex:auto;overflow:hidden}.lcKema_summaryText{text-overflow:ellipsis;display:block;overflow:hidden}.lcKema_summary[data-streaming]{mask-image:linear-gradient(90deg,#000 calc(100% - 48px),#0000)}.lcKema_summary[data-streaming] .lcKema_summaryText{text-overflow:clip;overflow:visible}.lcKema_root:not([data-preview]) .lcKema_separator,.lcKema_root:not([data-preview]) .lcKema_summary{display:none}.lcKema_thinkBody{padding:4px 0 4px calc(22px + var(--dsh-content-font-delta,0px));min-width:0}";
 		const tagId$9 = "@deepseek-ai/dsh-client-ui-chat/ReasoningRow.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$9) + "]") === null) {
 			const tag = document.createElement("style");
@@ -6477,12 +6210,12 @@ DSHConversationActions.installConversationActions();
 		* @param props.running - whether this block is the streaming tail.
 		* @param props.usePresentation - live display-policy selector for this reasoning row.
 		* @param props.useDisclosure - independent open state with enclosing-Turn resets.
-		* @param props.t - conversation locale seat for status and Markdown actions.
+		* @param props.renderSlot - framework renderer for the standard reasoning Body Slot.
+		* @param props.t - conversation locale seat for the disclosure and running status.
 		* @returns the reasoning disclosure.
 		*/
-		const ReasoningRow = (0, react.memo)(function ReasoningRow({ text, running, usePresentation, useDisclosure, t }) {
+		const ReasoningRow = (0, react.memo)(function ReasoningRow({ text, running, usePresentation, useDisclosure, renderSlot, t }) {
 			const { expanded, toggle } = useDisclosure();
-			const labels = (0, react.useMemo)(() => markdownLabels(t), [t]);
 			const summaryText = running ? latestCompletedParagraphFirstLine(text) : firstLine(text);
 			const summary = (0, react.useMemo)(() => summaryText.replaceAll("**", ""), [summaryText]);
 			const preview = usePresentation((policy) => !expanded && summary !== "" && (running || policy.settledReasoningPreview));
@@ -6500,15 +6233,13 @@ DSHConversationActions.installConversationActions();
 			})] }), [running, summary]);
 			const content = (0, react.useMemo)(() => expanded ? (0, react_jsx_runtime.jsx)("div", {
 				className: ReasoningRow_module_css_default.thinkBody,
-				children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
+				children: renderSlot("conversation.chat.reasoning.body", {
 					text,
-					streaming: running,
-					labels,
-					variant: "compact"
+					running
 				})
 			}) : void 0, [
 				expanded,
-				labels,
+				renderSlot,
 				running,
 				text
 			]);
@@ -6575,8 +6306,8 @@ DSHConversationActions.installConversationActions();
 			}
 			return fileMediaUrl(base, path);
 		}
-		/** Reasoning block as the Think variant summary row (figma 39:28304). */
-		const AssistantMarkdown = (0, react.memo)(function AssistantMarkdown({ blocks, streaming, interrupted, renderMessageImages, groupPart, useDisclosure, reasoningHidden = false, usePresentation, revealProcess, mentions, t }) {
+		/** Renders non-blank reasoning blocks as independent disclosures alongside the response. */
+		const AssistantMarkdown = (0, react.memo)(function AssistantMarkdown({ blocks, streaming, interrupted, loadImage, groupPart, useDisclosure, reasoningHidden = false, usePresentation, revealProcess, mentions, renderSlot, useGroupAction, t }) {
 			const labels = (0, react.useMemo)(() => markdownLabels(t), [t]);
 			const pathImages = (0, react.useMemo)(() => {
 				return { resolve: (value) => localPathMediaUrl(document.baseURI, value) };
@@ -6600,14 +6331,17 @@ DSHConversationActions.installConversationActions();
 						}, i));
 						break;
 					case "reasoning":
+						if (block.text.trim() === "") break;
 						rendered.push((0, react_jsx_runtime.jsx)(ProcessReasoning, {
 							hidden: reasoningHidden,
 							reveal: revealProcess,
+							useGroupAction,
 							children: (0, react_jsx_runtime.jsx)(ReasoningRow, {
 								text: block.text,
 								running: streaming && i === last,
 								usePresentation,
 								useDisclosure,
+								renderSlot,
 								t
 							})
 						}, i));
@@ -6621,8 +6355,9 @@ DSHConversationActions.installConversationActions();
 							group.push(next);
 							i += 1;
 						}
-						rendered.push((0, react_jsx_runtime.jsx)(react.Fragment, { children: renderMessageImages({
+						rendered.push((0, react_jsx_runtime.jsx)(react.Fragment, { children: renderSlot("conversation.chat.message.images", {
 							images: group.map(({ attachment }) => ({ attachment })),
+							loadImage,
 							align: "start"
 						}) }, start));
 						break;
@@ -6647,9 +6382,9 @@ DSHConversationActions.installConversationActions();
 				})
 			});
 		});
-		function ProcessReasoning({ hidden, reveal, children }) {
+		function ProcessReasoning({ hidden, reveal, useGroupAction, children }) {
 			return (0, react_jsx_runtime.jsx)("div", {
-				ref: useSearchableHidden(hidden, reveal ?? NOOP),
+				ref: useGroupAction(hidden, reveal ?? NOOP),
 				"data-turn-process-inline": hidden || void 0,
 				children
 			});
@@ -6658,7 +6393,7 @@ DSHConversationActions.installConversationActions();
 		//#endregion
 		//#region lib/types/client/chat/AssistantNodeView.js
 		/** Streaming, settled, and interrupted Assistant states share one keyed renderer instance. */
-		const AssistantNodeView = (0, react.memo)(function AssistantNodeView({ node, groupPart, useDisclosure, useTurnData, turnProcess, openFile, renderMessageImages, fileMentions, usePresentation, t }) {
+		const AssistantNodeView = (0, react.memo)(function AssistantNodeView({ node, groupPart, useDisclosure, useGroupAction, useTurnData, turnProcess, openFile, loadImage, fileMentions, usePresentation, renderSlot, t }) {
 			const data = node.data;
 			const turn = node.location.kind === "turn" || node.location.kind === "step" ? node.location.turn : void 0;
 			const tail = useTurnData("turn-tail");
@@ -6687,9 +6422,11 @@ DSHConversationActions.installConversationActions();
 				useDisclosure,
 				streaming: data.status === "running",
 				interrupted: data.status === "interrupted",
-				renderMessageImages,
+				loadImage,
 				reasoningHidden,
+				useGroupAction,
 				usePresentation,
+				renderSlot,
 				revealProcess,
 				mentions,
 				t
@@ -6841,6 +6578,33 @@ DSHConversationActions.installConversationActions();
 			});
 		});
 		//#endregion
+		//#region lib/types/client/chat/ReasoningContent.js
+		/** Official reasoning content and its default Body Slot adapter. */
+		/**
+		* Render compact reasoning with caller-supplied labels or Chat's defaults.
+		* @param props - display text, streaming state, optional localized labels, and the Factory's locale seat; no Session is required.
+		* @returns the standard reasoning content; supplied labels are used without merging defaults.
+		*/
+		const ReasoningContent = (0, react.memo)(function ReasoningContent({ text, running, labels, t }) {
+			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
+				text,
+				streaming: running,
+				labels: (0, react.useMemo)(() => labels ?? markdownLabels(t), [labels, t]),
+				variant: "compact"
+			});
+		});
+		/**
+		* Render the default Body through the same Factory available to third-party wrappers.
+		* @param props - original reasoning and the framework's Factory renderer.
+		* @returns an occurrence of the official reasoning Content Factory.
+		*/
+		function DefaultReasoningBody({ text, running, renderFactorySlot }) {
+			return renderFactorySlot("conversation.chat.reasoning.content", {
+				text,
+				running
+			});
+		}
+		//#endregion
 		//#region lib/types/client/chat/SystemPromptRow.js
 		/**
 		* Render one complete system prompt as a collapsed disclosure whose expanded
@@ -6912,10 +6676,11 @@ DSHConversationActions.installConversationActions();
 			if (turn?.status !== "closed") return null;
 			const canCollapse = turnProcess.foldable && turnProcess.hasContent && !turnProcessAlwaysOpen(node);
 			const reason = turn.end?.data.reason.kind;
+			const stopped = reason === "aborted" || reason === "interrupted";
 			const elapsedMs = turn.start === void 0 || turn.end === void 0 ? void 0 : Math.max(1e3, turn.end.time - turn.start.time);
-			const duration = elapsedMs === void 0 || reason === "aborted" || reason === "error" ? void 0 : formatRunDuration(elapsedMs, t);
-			const label = reason === "aborted" ? t("message.stopped") : reason === "error" ? t("message.turnProcess.failed") : duration === void 0 ? t("message.turnProcess.worked") : t("message.turnProcess.took");
-			const announcement = reason === "aborted" ? t("message.stopped") : reason === "error" ? t("message.turnProcess.failed") : t("message.turnProcess.worked");
+			const duration = elapsedMs === void 0 || stopped || reason === "error" ? void 0 : formatRunDuration(elapsedMs, t);
+			const label = stopped ? t("message.stopped") : reason === "error" ? t("message.turnProcess.failed") : duration === void 0 ? t("message.turnProcess.worked") : t("message.turnProcess.took");
+			const announcement = stopped ? t("message.stopped") : reason === "error" ? t("message.turnProcess.failed") : t("message.turnProcess.worked");
 			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)("span", {
 				className: accessibility_module_css_default.visuallyHidden,
 				role: "status",
@@ -7248,8 +7013,9 @@ DSHConversationActions.installConversationActions();
 			}
 		}
 		/** Turn-local actions and feature tail over the Location index, independent of Assistant placement. */
-		const TurnTailNodeView = (0, react.memo)(function TurnTailNodeView({ node, openFile, forkAt, renderSlot, t, useChat, usePerformanceUsage }) {
+		const TurnTailNodeView = (0, react.memo)(function TurnTailNodeView({ node, openFile, forkAt, renderSlot, t, useAccess, useChat, usePerformanceUsage }) {
 			const detailed = usePerformanceUsage((mode) => mode) === "detailed";
+			const forkAllowed = useAccess("session/fork");
 			const data = node.data;
 			const hasLaterChatNode = useChat((snapshot) => (lastContent(snapshot, data.turn, true)?.anchorSeq ?? -1) > (data.closing?.finalNode.seq ?? data.seq));
 			const endsWithResponse = useChat((snapshot) => {
@@ -7281,9 +7047,9 @@ DSHConversationActions.installConversationActions();
 					text: assistantText(closing.blocks),
 					time: closing.time,
 					clock: "end",
-					onBranch: () => {
+					onBranch: forkAllowed ? () => {
 						forkAt(data.seq);
-					},
+					} : void 0,
 					branchUnavailable: data.branchUnavailable || hasLaterChatNode,
 					className: TurnTailNodeView_module_css_default.actions,
 					extraActions: assistantActions,
@@ -7304,7 +7070,7 @@ DSHConversationActions.installConversationActions();
 			return typeof source[key] === "string" ? source[key] : "";
 		}
 		/**
-		* Describe a waking message using its source and recognized producer framing.
+		* Describe a waking message using its recorded source.
 		* @param node - durable context, including the original notification body.
 		* @returns localized title key and source-family icon.
 		*/
@@ -7460,6 +7226,15 @@ DSHConversationActions.installConversationActions();
 		* @param presentation - live presentation policy.
 		*/
 		function registerChatNodeRenderers(ctx, performanceUsage, presentation) {
+			ctx.effect(() => ctx.slots.registerFactory({
+				name: "conversation.chat.reasoning.content",
+				scope: "root",
+				locale: NS
+			}, ReasoningContent));
+			ctx.slots.inject("conversation.chat.reasoning.body", () => ctx.slots.register({
+				name: "conversation.chat.reasoning.body",
+				priority: 100
+			}, DefaultReasoningBody));
 			ctx.slots.inject("conversation.chat.node", () => ctx.slots.register({
 				name: "conversation.chat.node",
 				key: "user",
@@ -7489,6 +7264,16 @@ DSHConversationActions.installConversationActions();
 				name: "conversation.chat.node",
 				key: "assistant-step",
 				locale: NS,
+				children: {
+					"conversation.chat.reasoning.body": {
+						kind: "single",
+						scope: "session"
+					},
+					"conversation.chat.message.images": {
+						kind: "single",
+						scope: "session"
+					}
+				},
 				inject: () => ({ hooks: { presentation } })
 			}, AssistantNodeView));
 			ctx.slots.inject("conversation.chat.node", () => ctx.slots.register({
@@ -7553,6 +7338,70 @@ DSHConversationActions.installConversationActions();
 			}, UnknownNodeView));
 		}
 		//#endregion
+		//#region lib/types/client/chat/UserContent.js
+		/** Reusable user contents inside a caller-owned message row. */
+		const EMPTY_LABELS = [];
+		/**
+		* Render prepared text, ordered attachments, and references without message chrome.
+		* The caller owns row identity, pending/echo state, time, and message actions.
+		* @param props - prepared content, facts, authorized image loader, and framework Factory/locale seats.
+		* @returns the content stack using the existing user-message layout.
+		*/
+		function UserContent({ content, loadImage, facts, interactive = false, ellipsis = false, renderSlot, renderFactorySlot, t }) {
+			const { text, attachments, extraBlocks, referenceLabels = EMPTY_LABELS } = content;
+			const compactImages = attachments.length > 1;
+			const truncated = (total) => t("json.truncated", { total });
+			const showBubble = text !== "" || extraBlocks.length > 0;
+			return (0, react_jsx_runtime.jsxs)("div", {
+				className: MessageItem_module_css_default.userStack,
+				children: [
+					attachments.length > 0 && (0, react_jsx_runtime.jsx)("div", {
+						className: MessageItem_module_css_default.attachmentRow,
+						"data-message-attachments": true,
+						children: attachments.map((attachment, index) => attachment.type === "image" ? (0, react_jsx_runtime.jsx)(react.Fragment, { children: renderSlot("conversation.chat.user.images", {
+							images: [attachment.image],
+							loadImage,
+							align: "end",
+							compact: compactImages
+						}) }, `image:${index}`) : (0, react_jsx_runtime.jsxs)("span", {
+							className: MessageItem_module_css_default.fileCard,
+							title: attachment.file.name,
+							children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.FileTypeIcon, {
+								path: attachment.file.name,
+								className: MessageItem_module_css_default.fileIcon
+							}), (0, react_jsx_runtime.jsxs)("span", {
+								className: MessageItem_module_css_default.fileContent,
+								children: [(0, react_jsx_runtime.jsx)("span", {
+									className: MessageItem_module_css_default.fileName,
+									children: attachment.file.name
+								}), (0, react_jsx_runtime.jsx)("span", {
+									className: MessageItem_module_css_default.fileMeta,
+									children: [(0, _deepseek_ai_dsh_client_ui_primitives.fileExtension)(attachment.file.name).toUpperCase().slice(0, 8), (0, _deepseek_ai_dsh_client_ui_primitives.fileSizeText)(attachment.file.bytes)].filter(Boolean).join(" ")
+								})]
+							})]
+						}, `file:${index}`))
+					}),
+					showBubble && (0, react_jsx_runtime.jsxs)("div", {
+						className: MessageItem_module_css_default.bubble,
+						children: [renderFactorySlot("conversation.user.text", {
+							text,
+							facts,
+							interactive,
+							ellipsis
+						}), extraBlocks.map((block, index) => (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.JsonBlock, {
+							label: t("message.extraBlock"),
+							payload: block,
+							truncatedLabel: truncated
+						}, index))]
+					}),
+					referenceLabels.length > 0 && (0, react_jsx_runtime.jsx)("div", {
+						className: MessageItem_module_css_default.referenceSummary,
+						children: t("message.referenceSummary", { labels: referenceLabels.join(t("message.referenceSeparator")) })
+					})
+				]
+			});
+		}
+		//#endregion
 		//#region lib/types/client/contract/turn-metrics.js
 		function usageOutputTokens(usage) {
 			if (typeof usage !== "object" || usage === null) return null;
@@ -7574,7 +7423,7 @@ DSHConversationActions.installConversationActions();
 		}
 		//#endregion
 		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/chat/StatsPills.module.css.mjs
-		const css$1 = ".bOPqQW_anchor{min-width:0;font-size:calc(var(--dsh-content-font-size-secondary,13px) - 1px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));display:inline-flex}.bOPqQW_pill{box-sizing:border-box;corner-shape:round;max-width:100%;color:var(--dsw-alias-label-tertiary);font:inherit;font-variant-numeric:tabular-nums;line-height:inherit;white-space:nowrap;background:0 0;border:none;border-radius:999px;align-items:center;gap:6px;padding:1px 8px;display:inline-flex}.bOPqQW_pill svg{flex:none;width:14px;height:14px}button.bOPqQW_pill{cursor:pointer}button.bOPqQW_pill:hover,button.bOPqQW_pill[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.bOPqQW_label{text-overflow:ellipsis;min-width:0;overflow:hidden}.bOPqQW_sep{color:var(--dsw-alias-separator-primary);margin:0 6px}";
+		const css$1 = ".bOPqQW_anchor{min-width:0;font-size:calc(var(--dsh-content-font-size-secondary,13px) - 1px);line-height:calc(20px + var(--dsh-content-font-delta-secondary,0px));display:inline-flex}.bOPqQW_pill{box-sizing:border-box;border-radius:var(--dsw-radius-sm);max-width:100%;color:var(--dsw-alias-label-tertiary);font:inherit;font-variant-numeric:tabular-nums;line-height:inherit;white-space:nowrap;background:0 0;border:none;align-items:center;gap:6px;padding:1px 8px;display:inline-flex}.bOPqQW_pill svg{flex:none;width:14px;height:14px}button.bOPqQW_pill{cursor:pointer}button.bOPqQW_pill:hover,button.bOPqQW_pill[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.bOPqQW_label{text-overflow:ellipsis;min-width:0;overflow:hidden}.bOPqQW_sep{color:var(--dsw-alias-separator-primary);margin:0 6px}";
 		const tagId$1 = "@deepseek-ai/dsh-client-ui-chat/StatsPills.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -7865,12 +7714,25 @@ DSHConversationActions.installConversationActions();
 			return context.start?.location ?? context.matches[0]?.location ?? { kind: "unresolved" };
 		}
 		/**
+		* Read the Turn and Step a Location resolves to.
+		* @param location - engine-owned Location.
+		* @returns resolved coordinates; Session-level and unresolved Locations have none.
+		*/
+		function locationCoordinates(location) {
+			if (location.kind === "step") return {
+				turn: location.turn.turn,
+				step: location.step.step
+			};
+			if (location.kind === "turn") return { turn: location.turn.turn };
+			return {};
+		}
+		/**
 		* Build one final Chat target Node with the engine-owned stable key.
 		* @param context - assembled business Context.
 		* @param kind - Chat renderer dispatch key.
 		* @param anchorSeq - sortable render position.
 		* @param data - renderer-owned payload.
-		* @param options - optional Location and visibility overrides.
+		* @param options - optional Location, visibility, and group-tree overrides.
 		* @returns final Chat view Node.
 		*/
 		function chatNode(context, kind, anchorSeq, data, options = {}) {
@@ -7882,6 +7744,7 @@ DSHConversationActions.installConversationActions();
 				anchorSeq,
 				location: options.location ?? contextLocation(context),
 				visibility: options.visibility ?? "visible",
+				groupTree: options.groupTree,
 				data
 			};
 		}
@@ -8411,6 +8274,86 @@ DSHConversationActions.installConversationActions();
 			return node.visibility === "visible" && node.kind !== "system-prompt" && (node.kind !== "context" || node.data.content.some((block) => block.type === "tool-addition" || block.type === "tool-removal")) && !(node.kind === "command" && node.data.name === "permission");
 		}
 		//#endregion
+		//#region lib/types/client/conversation-nodes/group-tree-segments.js
+		const NO_TURNS = [];
+		/**
+		* Loaded Turns split into consecutive segments at the Turns holding a Node at
+		* one group-tree position, visible or hidden. The latest segment starts at the
+		* last such Turn, or at the first loaded Turn when none is loaded. Node changes
+		* update per-Turn counts without scanning the loaded Nodes; `settle` returns at
+		* once while the start holds and otherwise reads loaded Turns only from the
+		* earlier of the previous and new starts.
+		*/
+		var GroupTreeSegments = class {
+			position;
+			/** Opening Node count by owning Turn. */
+			openings = /* @__PURE__ */ new Map();
+			latestOpening;
+			latestStart;
+			/** @param position - group-tree position whose Nodes open a segment. */
+			constructor(position) {
+				this.position = position;
+			}
+			/**
+			* Account one Node change.
+			* @param previous - replaced Node; absent for an addition.
+			* @param next - replacing Node; absent for a removal.
+			*/
+			track(previous, next) {
+				const before = this.openingTurn(previous);
+				const after = this.openingTurn(next);
+				if (before === after) return;
+				if (before !== void 0 && this.adjust(before, -1) === 0 && before === this.latestOpening) this.latestOpening = this.lastOpeningTurn();
+				if (after !== void 0) {
+					this.adjust(after, 1);
+					if (this.latestOpening === void 0 || after > this.latestOpening) this.latestOpening = after;
+				}
+			}
+			/**
+			* Test latest-segment membership as of the last `settle`.
+			* @param turn - owning Turn, when resolved.
+			* @returns whether the Turn belongs to the latest segment.
+			*/
+			inLatest(turn) {
+				return turn !== void 0 && this.latestStart !== void 0 && turn >= this.latestStart;
+			}
+			/**
+			* Move the latest segment start for the currently loaded Turns.
+			* @param turnOrder - loaded Turns in ascending timeline order.
+			* @returns loaded Turns that entered or left the latest segment, in ascending order.
+			*/
+			settle(turnOrder) {
+				const previous = this.latestStart;
+				const start = this.latestOpening ?? turnOrder[0];
+				if (start === previous) return NO_TURNS;
+				this.latestStart = start;
+				const bounded = previous !== void 0 && start !== void 0;
+				const low = bounded ? Math.min(previous, start) : Number.NEGATIVE_INFINITY;
+				const high = bounded ? Math.max(previous, start) : Number.POSITIVE_INFINITY;
+				const changed = [];
+				for (const turn of turnOrder.slice(turnOrder.findLastIndex((turn) => turn < low) + 1)) {
+					if (turn >= high) break;
+					changed.push(turn);
+				}
+				return changed;
+			}
+			openingTurn(node) {
+				return node !== void 0 && isAtOrOutside(node, this.position) ? locationCoordinates(node.location).turn : void 0;
+			}
+			lastOpeningTurn() {
+				let last;
+				for (const turn of this.openings.keys()) if (last === void 0 || turn > last) last = turn;
+				return last;
+			}
+			/** @returns the Turn's opening count after the change; zero removes the Turn. */
+			adjust(turn, delta) {
+				const next = (this.openings.get(turn) ?? 0) + delta;
+				if (next > 0) this.openings.set(turn, next);
+				else this.openings.delete(turn);
+				return next;
+			}
+		};
+		//#endregion
 		//#region lib/types/client/conversation-nodes/turn-navigation.js
 		/**
 		* Preview budgets, sized to the rail card's clamps (one prompt line, up to
@@ -8499,7 +8442,7 @@ DSHConversationActions.installConversationActions();
 			let openingHumanAnchor;
 			for (const key of keys) {
 				const node = nodes.get(key);
-				if ((node?.kind === "user" || node?.kind === "steering" || node?.kind === "turn-trigger") && (spec.controlAnchorSeq === location.turn.start?.seq || node.anchorSeq < spec.controlAnchorSeq)) openingHumanAnchor = Math.max(openingHumanAnchor ?? node.anchorSeq, node.anchorSeq);
+				if (node !== void 0 && isAtOrOutside(node, "input") && (spec.controlAnchorSeq === location.turn.start?.seq || node.anchorSeq < spec.controlAnchorSeq)) openingHumanAnchor = Math.max(openingHumanAnchor ?? node.anchorSeq, node.anchorSeq);
 			}
 			let hasExternalProcess = false;
 			let hasInterleavedInput = false;
@@ -8507,11 +8450,11 @@ DSHConversationActions.installConversationActions();
 			for (const key of keys) {
 				const node = nodes.get(key);
 				if (node === void 0 || !isVisibleChatNode(node) || node.kind === "turn-process") continue;
-				if ((node.kind === "user" || node.kind === "steering" || node.kind === "turn-trigger") && (openingHumanAnchor === void 0 || node.anchorSeq > openingHumanAnchor)) {
+				if (isAtOrOutside(node, "input") && (openingHumanAnchor === void 0 || node.anchorSeq > openingHumanAnchor)) {
 					hasInterleavedInput = true;
 					if (spec.answerAnchorSeq === null || node.anchorSeq < spec.answerAnchorSeq) compactAnswer = false;
 				}
-				if (TURN_PROCESS_INDEPENDENT_KINDS.has(node.kind) || node.anchorSeq < spec.processStartSeq || spec.answerAnchorSeq !== null && node.anchorSeq >= spec.answerAnchorSeq) continue;
+				if (isAtOrOutside(node, "turn") || node.anchorSeq < spec.processStartSeq || spec.answerAnchorSeq !== null && node.anchorSeq >= spec.answerAnchorSeq) continue;
 				if (node.kind !== "assistant-step" || spec.answerStep === null || node.data.step !== spec.answerStep) hasExternalProcess = true;
 			}
 			return {
@@ -8648,7 +8591,11 @@ DSHConversationActions.installConversationActions();
 			turnProcesses = new ChatTurnProcessProjector();
 			sources = /* @__PURE__ */ new Map();
 			processSources = /* @__PURE__ */ new Map();
+			bottomSources = /* @__PURE__ */ new Map();
+			/** Bottom membership: the latest loaded exchange. */
+			exchanges = new GroupTreeSegments("exchange");
 			dirtyKeys = /* @__PURE__ */ new Set();
+			dirtyBottomKeys = /* @__PURE__ */ new Set();
 			dirtyProcessKeys = /* @__PURE__ */ new Set();
 			turnKinds = /* @__PURE__ */ new Map();
 			dirtyTurnKinds = /* @__PURE__ */ new Set();
@@ -8659,6 +8606,21 @@ DSHConversationActions.installConversationActions();
 			}
 			source(key) {
 				return cachedSource(this.sources, key, () => new MutableChatSource(() => this.get(key), `[ui-chat] node source ${key}`));
+			}
+			bottomSource(key) {
+				return cachedSource(this.bottomSources, key, () => new MutableChatSource(() => {
+					const node = this.get(key);
+					return node !== void 0 && isVisibleChatNode(node) && this.exchanges.inLatest(locationCoordinates(node.location).turn);
+				}, `[ui-chat] node bottom source ${key}`));
+			}
+			/**
+			* Settle the latest exchange for the loaded Turns and mark the Nodes of
+			* Turns that entered or left it.
+			* @param turnOrder - loaded Turns in ascending timeline order.
+			* @param locations - current Chat Location index.
+			*/
+			settleBottom(turnOrder, locations) {
+				for (const turn of this.exchanges.settle(turnOrder)) for (const key of locations.getTurn(turn)) this.dirtyBottomKeys.add(key);
 			}
 			turnDataSource(turn, kind) {
 				return this.turnKind(turn, kind).source();
@@ -8700,6 +8662,7 @@ DSHConversationActions.installConversationActions();
 					this.byKey.set(node.key, node);
 					if (previous.get(node.key) !== node) {
 						this.updateTurnKind(previous.get(node.key), node);
+						this.exchanges.track(previous.get(node.key), node);
 						this.dirtyKeys.add(node.key);
 						this.dirtyProcessKeys.add(node.key);
 					}
@@ -8707,6 +8670,7 @@ DSHConversationActions.installConversationActions();
 				}
 				for (const key of previous.keys()) {
 					this.updateTurnKind(previous.get(key), void 0);
+					this.exchanges.track(previous.get(key), void 0);
 					this.dirtyKeys.add(key);
 					this.dirtyProcessKeys.add(key);
 				}
@@ -8718,6 +8682,7 @@ DSHConversationActions.installConversationActions();
 				for (const node of nodes) {
 					if (this.byKey.get(node.key) === node) continue;
 					this.updateTurnKind(this.byKey.get(node.key), node);
+					this.exchanges.track(this.byKey.get(node.key), node);
 					this.byKey.set(node.key, node);
 					this.dirtyKeys.add(node.key);
 					this.dirtyProcessKeys.add(node.key);
@@ -8736,12 +8701,15 @@ DSHConversationActions.installConversationActions();
 			}
 			publish() {
 				const dirty = [...this.dirtyKeys];
+				const dirtyBottom = new Set([...this.dirtyBottomKeys, ...dirty]);
 				const dirtyProcesses = [...this.dirtyProcessKeys];
 				const dirtyTurnKinds = [...this.dirtyTurnKinds];
 				this.dirtyKeys.clear();
+				this.dirtyBottomKeys.clear();
 				this.dirtyProcessKeys.clear();
 				this.dirtyTurnKinds.clear();
 				for (const key of dirty) this.sources.get(key)?.publish();
+				for (const key of dirtyBottom) this.bottomSources.get(key)?.publish();
 				for (const key of dirtyProcesses) this.processSources.get(key)?.publish();
 				for (const collection of dirtyTurnKinds) collection.publish();
 			}
@@ -8873,14 +8841,6 @@ DSHConversationActions.installConversationActions();
 		function stepKey(turn, step) {
 			return `${turn}:${step}`;
 		}
-		function locationCoordinates(location) {
-			if (location.kind === "step") return {
-				turn: location.turn.turn,
-				step: location.step.step
-			};
-			if (location.kind === "turn") return { turn: location.turn.turn };
-			return {};
-		}
 		function locationTurnStatus(location) {
 			return location.kind === "turn" || location.kind === "step" ? location.turn.status : void 0;
 		}
@@ -8905,14 +8865,14 @@ DSHConversationActions.installConversationActions();
 				if (location.kind !== "turn" && location.kind !== "step") continue;
 				const current = presentations.get(location.turn.turn) ?? {};
 				const controlAnchor = current.control?.data.controlAnchorSeq;
-				if ((node.kind === "user" || node.kind === "turn-trigger" || node.kind === "steering") && controlAnchor !== void 0 && (controlAnchor === location.turn.start?.seq || node.anchorSeq < controlAnchor)) {
+				if (isAtOrOutside(node, "input") && controlAnchor !== void 0 && (controlAnchor === location.turn.start?.seq || node.anchorSeq < controlAnchor)) {
 					presentations.set(location.turn.turn, {
 						...current,
 						openingInputAnchor: Math.max(current.openingInputAnchor ?? node.anchorSeq, node.anchorSeq)
 					});
 					continue;
 				}
-				if (TURN_PROCESS_INDEPENDENT_KINDS.has(node.kind)) continue;
+				if (isAtOrOutside(node, "turn")) continue;
 				presentations.set(location.turn.turn, {
 					...current,
 					earliestProcessAnchor: Math.min(current.earliestProcessAnchor ?? node.anchorSeq, node.anchorSeq)
@@ -8935,7 +8895,7 @@ DSHConversationActions.installConversationActions();
 				originalAnchor: node.anchorSeq
 			};
 			const openingInputAnchor = presentation.openingInputAnchor;
-			if (openingInputAnchor !== void 0 && node.anchorSeq < openingInputAnchor && !TURN_PROCESS_INDEPENDENT_KINDS.has(node.kind)) return {
+			if (openingInputAnchor !== void 0 && node.anchorSeq < openingInputAnchor && !isAtOrOutside(node, "turn")) return {
 				anchor: openingInputAnchor,
 				rank: 2,
 				originalAnchor: node.anchorSeq
@@ -9451,6 +9411,7 @@ DSHConversationActions.installConversationActions();
 				this.order = orderedVisibleChatNodes(nodes).map((node) => node.key);
 				this.locations.rebuild(this.order, this.store);
 				this.store.replaceProcesses(this.order, this.locations);
+				this.store.settleBottom(input.timeline.turnOrder, this.locations);
 				this.navigation.rebuild(input.timeline, this.locations, this.store);
 				this.timeline = input.timeline;
 				this.latestGroupInput = {
@@ -9475,7 +9436,7 @@ DSHConversationActions.installConversationActions();
 						previous,
 						current: node
 					});
-					const nodeStructural = previous === void 0 || previous.kind !== node.kind || previous.anchorSeq !== node.anchorSeq || previous.visibility !== node.visibility || locationIdentity(previous.location) !== locationIdentity(node.location);
+					const nodeStructural = previous === void 0 || previous.kind !== node.kind || previous.anchorSeq !== node.anchorSeq || previous.visibility !== node.visibility || previous.groupTree !== node.groupTree || locationIdentity(previous.location) !== locationIdentity(node.location);
 					structural ||= nodeStructural;
 					if (!nodeStructural) contentOnly.push(node);
 					if (processPresentationInputChanged(previous, node, nodeStructural)) {
@@ -9494,6 +9455,7 @@ DSHConversationActions.installConversationActions();
 				}
 				this.locations.touch(contentOnly);
 				this.store.updateProcesses(processTurns, this.locations);
+				this.store.settleBottom(input.timeline.turnOrder, this.locations);
 				if (structural || input.timeline !== this.timeline) this.navigation.rebuild(input.timeline, this.locations, this.store);
 				else this.navigation.touch(turnsOf(contentOnly), this.locations, this.store);
 				this.timeline = input.timeline;
@@ -9994,7 +9956,14 @@ DSHConversationActions.installConversationActions();
 			update: (context) => context.state,
 			buildViewNode: (context) => {
 				if (context.state === void 0) return null;
-				return chatNode(context, context.state.kind === "context" && context.start?.event.type === "user/message" && context.state.waking === true ? "turn-trigger" : context.state.kind, context.state.seq, context.state);
+				const waking = context.state.kind === "context" && context.start?.event.type === "user/message" && context.state.waking === true;
+				const location = contextLocation(context);
+				const human = context.state.kind === "user" || context.state.kind === "steering";
+				const opensExchange = human && location.kind === "step" && location.step.step === 1;
+				return chatNode(context, waking ? "turn-trigger" : context.state.kind, context.state.seq, context.state, {
+					location,
+					groupTree: opensExchange ? "exchange" : human || waking ? "input" : void 0
+				});
 			}
 		};
 		/** Developer history uses the input-message lifecycle and context presentation. */
@@ -10200,7 +10169,7 @@ DSHConversationActions.installConversationActions();
 					attempts,
 					current
 				};
-				return chatNode(context, "model-retry", attempts[0]?.seq ?? current.seq, data);
+				return chatNode(context, "model-retry", attempts[0]?.seq ?? current.seq, data, { groupTree: "process" });
 			}
 		};
 		/**
@@ -10330,6 +10299,7 @@ DSHConversationActions.installConversationActions();
 				},
 				callTime: previous?.time ?? null,
 				content: data.content ?? [],
+				meta: data.meta,
 				isError: data.isError === true,
 				...data.error === void 0 ? {} : { error: data.error },
 				subCalls: []
@@ -10571,13 +10541,27 @@ DSHConversationActions.installConversationActions();
 			if (location?.kind !== "turn" && location?.kind !== "step") return 0;
 			return location.turn.steps.at(-1)?.step ?? 0;
 		}
+		/**
+		* Failure shown for a turn ending: a recorded error, a sign-out cancellation,
+		* or a turn that restart recovery closed because the DSH process exited mid-turn.
+		*/
+		function endFailure(reason) {
+			switch (reason.kind) {
+				case "error": return reason.error;
+				case "aborted": return reason.reason.kind === "hook" && reason.reason.reason === "deepseek-account/signed-out" ? {
+					message: "Stopped because you signed out of DeepSeek.",
+					code: "ACCOUNT_SIGNED_OUT"
+				} : void 0;
+				case "interrupted": return {
+					message: "The DSH process exited before this turn finished.",
+					code: "INTERRUPTED"
+				};
+				default: return;
+			}
+		}
 		function failureFrom(match) {
 			if (match.event.type !== "turn/end") return void 0;
-			const reason = match.event.data.reason;
-			const failure = reason.kind === "error" ? reason.error : reason.kind === "aborted" && reason.reason.kind === "hook" && reason.reason.reason === "deepseek-account/signed-out" ? {
-				message: "Stopped because you signed out of DeepSeek.",
-				code: "ACCOUNT_SIGNED_OUT"
-			} : void 0;
+			const failure = endFailure(match.event.data.reason);
 			if (failure === void 0) return void 0;
 			const display = displayFailure(failure);
 			return {
@@ -10610,7 +10594,7 @@ DSHConversationActions.installConversationActions();
 					id: String(event.data.turn),
 					role: "start"
 				};
-				if (event.type === "turn/end" && (event.data.reason.kind === "error" || event.data.reason.kind === "aborted" && event.data.reason.reason.kind === "hook" && event.data.reason.reason.reason === "deepseek-account/signed-out")) return {
+				if (event.type === "turn/end" && endFailure(event.data.reason) !== void 0) return {
 					id: String(event.data.turn),
 					role: "update"
 				};
@@ -10640,7 +10624,7 @@ DSHConversationActions.installConversationActions();
 					message: failure.message,
 					...failure.code === void 0 ? {} : { code: failure.code }
 				};
-				return chatNode(context, "turn-error", node.seq, node);
+				return chatNode(context, "turn-error", node.seq, node, { groupTree: "turn" });
 			}
 		};
 		/**
@@ -10704,7 +10688,7 @@ DSHConversationActions.installConversationActions();
 					turn: state.turn,
 					step: lastStep(context)
 				};
-				return chatNode(context, "turn-max-tokens", noticeAnchor(context, state.seq), node);
+				return chatNode(context, "turn-max-tokens", noticeAnchor(context, state.seq), node, { groupTree: "turn" });
 			}
 		};
 		/**
@@ -10906,7 +10890,7 @@ DSHConversationActions.installConversationActions();
 				const current = context.current.get("chat");
 				const state = context.state;
 				if (current?.kind === "turn-process" && state !== void 0 && current.data.answerAnchorSeq === null && current.data.controlAnchorSeq === state.controlAnchorSeq && current.data.messageCount === state.messageCount && current.data.toolCallCount === state.toolCallCount && current.data.subagentCount === state.subagentCount && turn.status !== "closed" && turn.steps.at(-1)?.status !== "closed" && current.location === (context.start?.location ?? context.matches[0]?.location)) return current;
-				return chatNode(context, "turn-process", data.controlAnchorSeq + CHAT_SYNTHETIC_SEQ_OFFSETS.processControl, data);
+				return chatNode(context, "turn-process", data.controlAnchorSeq + CHAT_SYNTHETIC_SEQ_OFFSETS.processControl, data, { groupTree: "turn" });
 			}
 		};
 		/**
@@ -11248,7 +11232,7 @@ DSHConversationActions.installConversationActions();
 			},
 			buildViewNode: (context) => {
 				const data = turnLocation(context)?.data.get("turn-tail");
-				return data === void 0 ? null : chatNode(context, "turn-tail", data.seq + CHAT_SYNTHETIC_SEQ_OFFSETS.finalizedFollowup, data);
+				return data === void 0 ? null : chatNode(context, "turn-tail", data.seq + CHAT_SYNTHETIC_SEQ_OFFSETS.finalizedFollowup, data, { groupTree: "turn" });
 			}
 		};
 		/**
@@ -11451,15 +11435,6 @@ DSHConversationActions.installConversationActions();
 		//#endregion
 		//#region lib/types/client/conversation-nodes/process-groups.js
 		/** Chat-owned segmentation and incremental summaries over materialized Node inputs. */
-		const INDEPENDENT = new Set([
-			"user",
-			"steering",
-			"turn-trigger",
-			"model-retry",
-			"turn-error",
-			"turn-max-tokens",
-			"turn-tail"
-		]);
 		function turnOf(node) {
 			const location = node.location;
 			return location.kind === "turn" || location.kind === "step" ? location.turn.turn : void 0;
@@ -11478,20 +11453,12 @@ DSHConversationActions.installConversationActions();
 		}
 		function structureChanged(previous, current) {
 			if (!isVisibleChatNode(current) && (previous === void 0 || !isVisibleChatNode(previous))) return false;
-			return previous === void 0 || previous.kind !== current.kind || turnOf(previous) !== turnOf(current) || isVisibleChatNode(previous) !== isVisibleChatNode(current) || reasoning(previous) !== reasoning(current) || reply(previous) !== reply(current);
+			return previous === void 0 || previous.kind !== current.kind || turnOf(previous) !== turnOf(current) || isVisibleChatNode(previous) !== isVisibleChatNode(current) || previous.groupTree !== current.groupTree || reasoning(previous) !== reasoning(current) || reply(previous) !== reply(current);
 		}
 		function readNode(input, key) {
 			const node = input.readNode(key);
 			if (node === void 0) throw new Error(`Chat grouping input is missing Node ${key}`);
 			return node;
-		}
-		function questionReplyIds(input, keys) {
-			const ids = /* @__PURE__ */ new Set();
-			for (const key of keys) {
-				const node = readNode(input, key);
-				if (node.kind === "question-reply") ids.add(node.id);
-			}
-			return ids;
 		}
 		/** One group's members and cached summary, refreshed together when its content changes. */
 		var ProcessGroup = class {
@@ -11606,26 +11573,19 @@ DSHConversationActions.installConversationActions();
 				};
 				let previous;
 				let followed = false;
-				const keys = input.readTurn(this.turn);
-				const replies = questionReplyIds(input, keys);
-				for (const key of keys) {
+				for (const key of input.readTurn(this.turn)) {
 					const position = readPosition(input, key);
 					if (previous !== void 0 && position.previous !== previous) flush(true);
 					previous = key;
 					followed = position.next !== void 0;
 					const node = readNode(input, key);
-					if (node.kind === "turn-trigger" && replies.has(node.id)) continue;
-					if (INDEPENDENT.has(node.kind)) {
+					if (isAtOrOutside(node, "process")) {
 						flush(true);
 						emit(key, {
 							kind: "node",
 							key
 						});
-					} else if (node.kind === "turn-process") emit(pending[0]?.key ?? key, {
-						kind: "node",
-						key
-					});
-					else if (node.kind === "assistant-step") {
+					} else if (node.kind === "assistant-step") {
 						if (reasoning(node)) pending.push({
 							kind: "node",
 							key,
@@ -11755,16 +11715,12 @@ DSHConversationActions.installConversationActions();
 				} : null;
 			}
 			rootEntries(input) {
-				const replies = questionReplyIds(input, input.order.filter((key) => readPosition(input, key).turn === void 0));
 				return input.order.flatMap((key) => {
 					const turn = readPosition(input, key).turn;
-					if (turn === void 0) {
-						const node = readNode(input, key);
-						return node.kind === "turn-trigger" && replies.has(node.id) ? [] : [{
-							kind: "node",
-							key
-						}];
-					}
+					if (turn === void 0) return [{
+						kind: "node",
+						key
+					}];
 					const groups = this.turns.get(turn);
 					if (groups === void 0) throw new Error(`Chat grouping order is missing Turn ${turn}`);
 					return groups.references(key);
@@ -12732,6 +12688,12 @@ DSHConversationActions.installConversationActions();
 		const CHAT_SETTINGS_NAMESPACE = "ui-chat";
 		/** Field carrying the work-details presentation mode. */
 		const TRANSCRIPT_VIEW_FIELD = "transcriptView";
+		/** Field carrying the independent work-details collapse timing. */
+		const COLLAPSE_TIMING_FIELD = "collapseTiming";
+		/** Available points when a completed Turn returns to its historical presentation. */
+		const COLLAPSE_TIMINGS = ["completion", "next-input"];
+		/** Preserve completion-time folding when no timing preference is saved. */
+		const DEFAULT_COLLAPSE_TIMING = "completion";
 		/** Work-details presentation modes a user can choose. */
 		const TRANSCRIPT_VIEW_MODES = [
 			"compact",
@@ -12758,13 +12720,100 @@ DSHConversationActions.installConversationActions();
 		const PERFORMANCE_USAGE_MODES = ["compact", "detailed"];
 		/** Preserve detailed accounting for users without an explicit preference. */
 		const DEFAULT_PERFORMANCE_USAGE = "detailed";
+		/** Preserve the built-in browser for users without an explicit preference. */
+		const DEFAULT_LINK_OPENING = "sidebar";
 		/** Durable Chat schema; also the wire envelope the browser scope validates against. */
 		const ChatSettingsFields = {
-			linkOpening: Schema.union(["sidebar", "new-tab"]).default("sidebar"),
+			[COLLAPSE_TIMING_FIELD]: Schema.union([...COLLAPSE_TIMINGS]).default(DEFAULT_COLLAPSE_TIMING),
+			linkOpening: Schema.union(["sidebar", "new-tab"]).default(DEFAULT_LINK_OPENING),
 			performanceUsage: Schema.union([...PERFORMANCE_USAGE_MODES]).default(DEFAULT_PERFORMANCE_USAGE),
 			[TRANSCRIPT_VIEW_FIELD]: Schema.union([...TRANSCRIPT_VIEW_SETTING_VALUES]).loose()
 		};
 		Schema.object(ChatSettingsFields);
+		//#endregion
+		//#region lib/types/client/presentation-policy.js
+		const POLICIES = {
+			compact: {
+				mode: "compact",
+				foldCompletedTurns: true,
+				stepGrouping: "collapsed",
+				liveProcessDetail: false,
+				settledReasoningPreview: false
+			},
+			standard: {
+				mode: "standard",
+				foldCompletedTurns: true,
+				stepGrouping: "collapsed",
+				liveProcessDetail: true,
+				settledReasoningPreview: true
+			},
+			detailed: {
+				mode: "detailed",
+				foldCompletedTurns: true,
+				stepGrouping: "history",
+				liveProcessDetail: true,
+				settledReasoningPreview: true
+			},
+			verbose: {
+				mode: "verbose",
+				foldCompletedTurns: false,
+				stepGrouping: "none",
+				liveProcessDetail: false,
+				settledReasoningPreview: true
+			}
+		};
+		function withTiming(collapseTiming) {
+			return {
+				compact: {
+					...POLICIES.compact,
+					collapseTiming
+				},
+				standard: {
+					...POLICIES.standard,
+					collapseTiming
+				},
+				detailed: {
+					...POLICIES.detailed,
+					collapseTiming
+				},
+				verbose: {
+					...POLICIES.verbose,
+					collapseTiming
+				}
+			};
+		}
+		const TIMING_POLICIES = {
+			completion: withTiming("completion"),
+			"next-input": withTiming("next-input")
+		};
+		/**
+		* Resolve a stable policy for one detail mode and collapse timing.
+		* @param mode - persisted work-details mode.
+		* @param collapseTiming - persisted timing; defaults to immediate completion folding.
+		* @returns the same policy object for the same pair of choices.
+		*/
+		function presentationPolicyFor(mode, collapseTiming = "completion") {
+			return TIMING_POLICIES[collapseTiming][mode];
+		}
+		/**
+		* Combine Host-backed detail and persisted timing without owning subscriptions.
+		* @param mode - live work-details mode.
+		* @param collapseTiming - live Host-backed collapse timing.
+		* @returns observable policy whose subscriptions follow both preferences.
+		*/
+		function derivePresentationPolicy(mode, collapseTiming) {
+			return {
+				getSnapshot: () => presentationPolicyFor(mode.getSnapshot(), collapseTiming.getSnapshot()),
+				subscribe: (listener) => {
+					const unsubscribeMode = mode.subscribe(listener);
+					const unsubscribeTiming = collapseTiming.subscribe(listener);
+					return () => {
+						unsubscribeMode();
+						unsubscribeTiming();
+					};
+				}
+			};
+		}
 		//#endregion
 		//#region \0dsh-css:/home/runner/work/deepseek-harness/deepseek-harness/packages/client/ui-chat/src/client/settings/PreferenceRow.module.css.mjs
 		const css = "._2XZxNq_row{border-bottom:.5px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;padding:16px 0;display:flex}._2XZxNq_rowText{flex-direction:column;flex:1;gap:4px;min-width:0;padding-right:48px;display:flex}._2XZxNq_title{color:var(--dsw-alias-label-primary);font-size:14px;font-weight:400;line-height:22px}._2XZxNq_desc{color:var(--dsw-alias-label-tertiary);font-size:12px;font-weight:400;line-height:18px}._2XZxNq_selector{border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-module-platform);height:36px;font:inherit;color:var(--dsw-alias-label-primary);cursor:pointer;border:none;align-items:center;gap:12px;padding:0 14px;font-size:14px;line-height:22px;display:inline-flex}._2XZxNq_selector:hover{background:var(--dsw-alias-interactive-bg-hover)}._2XZxNq_chevron{flex:none}";
@@ -12845,14 +12894,19 @@ DSHConversationActions.installConversationActions();
 			detailed: "settings.transcript.detailed",
 			verbose: "settings.transcript.verbose"
 		};
+		const COLLAPSE_LABELS = {
+			completion: "settings.collapse.completion",
+			"next-input": "settings.collapse.nextInput"
+		};
 		/**
-		* Render the work-details mode selector.
+		* Render the independent, Host-backed work-details and collapse-timing selectors.
 		* @param props - composed Settings slot props.
 		* @returns the preference row.
 		*/
-		function TranscriptViewRow({ useTranscriptView, setTranscriptView, t }) {
+		function TranscriptViewRow({ useTranscriptView, setTranscriptView, useCollapseTiming, setCollapseTiming, t }) {
 			const mode = useTranscriptView((value) => value);
-			return (0, react_jsx_runtime.jsx)(PreferenceRow, {
+			const timing = useCollapseTiming((value) => value);
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(PreferenceRow, {
 				title: t("settings.transcript.title"),
 				description: t("settings.transcript.description"),
 				value: mode,
@@ -12864,11 +12918,23 @@ DSHConversationActions.installConversationActions();
 				onSelect: (value) => {
 					setTranscriptView(value);
 				}
-			});
+			}), (0, react_jsx_runtime.jsx)(PreferenceRow, {
+				title: t("settings.collapse.title"),
+				description: t("settings.collapse.description"),
+				value: timing,
+				selectedLabel: t(COLLAPSE_LABELS[timing]),
+				options: COLLAPSE_TIMINGS.map((id) => ({
+					id,
+					label: t(COLLAPSE_LABELS[id])
+				})),
+				onSelect: (value) => {
+					setCollapseTiming(value);
+				}
+			})] });
 		}
 		//#endregion
 		//#region lib/types/client/transcript-view.js
-		/** Host-backed work-details presentation policy. */
+		/** Independent work-details preferences backed by the same Host configuration form. */
 		/** Live work-details preference consumed by Chat and its Settings row. */
 		var TranscriptViewPolicy = class {
 			host;
@@ -12876,6 +12942,8 @@ DSHConversationActions.installConversationActions();
 			unsubscribe;
 			/** Reactive current mode, including the client default before Host settings arrive. */
 			mode;
+			/** Reactive collapse timing, defaulting to completion until Host settings arrive. */
+			collapseTiming = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(DEFAULT_COLLAPSE_TIMING);
 			/**
 			* @param host - durable Chat settings scope.
 			* @param defaultMode - presentation used without an explicit saved mode.
@@ -12902,6 +12970,15 @@ DSHConversationActions.installConversationActions();
 				this.mode.set(mode);
 				this.host.set(TRANSCRIPT_VIEW_FIELD, mode);
 			}
+			/**
+			* Publish and persist collapse timing without changing the work-details mode.
+			* @param timing - immediate completion folding or deferred folding at the next input.
+			*/
+			setCollapseTiming(timing) {
+				if (this.collapseTiming.getSnapshot() === timing) return;
+				this.collapseTiming.set(timing);
+				this.host.set(COLLAPSE_TIMING_FIELD, timing);
+			}
 			/** Adopt the latest accepted Host section without writing it back. */
 			adopt() {
 				const section = this.host.getSnapshot().value;
@@ -12909,57 +12986,10 @@ DSHConversationActions.installConversationActions();
 				const saved = section.transcriptView;
 				const mode = saved === "normal" || saved === "expanded" ? "detailed" : saved ?? this.defaultMode;
 				if (this.mode.getSnapshot() !== mode) this.mode.set(mode);
+				const timing = section.collapseTiming ?? "completion";
+				if (this.collapseTiming.getSnapshot() !== timing) this.collapseTiming.set(timing);
 			}
 		};
-		//#endregion
-		//#region lib/types/client/presentation-policy.js
-		/**
-		* Runtime vocabulary derived from the persisted work-details mode. Renderers
-		* and seats select single fields of this policy; none of them compares the
-		* mode enum, so adding a mode changes only the table below.
-		*/
-		const POLICIES = {
-			compact: {
-				mode: "compact",
-				foldCompletedTurns: true,
-				stepGrouping: "collapsed",
-				liveProcessDetail: false,
-				settledReasoningPreview: false
-			},
-			standard: {
-				mode: "standard",
-				foldCompletedTurns: true,
-				stepGrouping: "collapsed",
-				liveProcessDetail: true,
-				settledReasoningPreview: true
-			},
-			detailed: {
-				mode: "detailed",
-				foldCompletedTurns: true,
-				stepGrouping: "history",
-				liveProcessDetail: true,
-				settledReasoningPreview: true
-			},
-			verbose: {
-				mode: "verbose",
-				foldCompletedTurns: false,
-				stepGrouping: "none",
-				liveProcessDetail: false,
-				settledReasoningPreview: true
-			}
-		};
-		/**
-		* Derive a policy observable from the mode observable without a subscription of
-		* its own: reads are a table lookup and change notifications are the mode's.
-		* @param mode - live work-details mode.
-		* @returns observable policy that changes exactly when the mode changes.
-		*/
-		function derivePresentationPolicy(mode) {
-			return {
-				getSnapshot: () => POLICIES[mode.getSnapshot()],
-				subscribe: (listener) => mode.subscribe(listener)
-			};
-		}
 		//#endregion
 		//#region lib/types/client/settings/LinkOpeningRow.js
 		/**
@@ -13020,14 +13050,14 @@ DSHConversationActions.installConversationActions();
 		}
 		//#endregion
 		//#region lib/types/client/performance-usage.js
-		/** Performance detail preference with process-local choices on memory-only settings scopes. */
+		/** Performance detail preference, live immediately and reconciled with accepted Host settings. */
 		/** Shared live preference for the settings row and chat statistics. */
 		var PerformanceUsagePolicy = class {
 			host;
 			unsubscribe;
 			/** Current choice, reconciled with accepted Host settings when available. */
 			mode = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(DEFAULT_PERFORMANCE_USAGE);
-			/** @param host - Chat settings scope, durable on loopback and memory-only elsewhere. */
+			/** @param host - Chat settings scope persisted through the Host. */
 			constructor(host) {
 				this.host = host;
 				const adopt = () => {
@@ -13042,7 +13072,7 @@ DSHConversationActions.installConversationActions();
 				this.unsubscribe();
 			}
 			/**
-			* Publish a choice immediately and persist it when the scope supports writes.
+			* Publish a choice immediately and queue its Host write.
 			* @param mode - Statistics detail selected by the user.
 			*/
 			setMode(mode) {
@@ -13069,11 +13099,22 @@ DSHConversationActions.installConversationActions();
 		}
 		//#endregion
 		//#region lib/types/client/apply.js
+		/** Bind group and header visibility to the viewport of one flow render. */
+		const CHAT_FLOW_INJECT = { hooks: {
+			groupAction: (_standard, { motion }) => function useGroupAction(hidden, reveal) {
+				return useFlowHidden(hidden, reveal, motion);
+			},
+			groupHeaderAction: (_standard, { motion }) => function useGroupHeaderAction(ref, hidden) {
+				useMotionHidden(ref, hidden, motion);
+			}
+		} };
+		/** Bind node-local sources and forward the flow's existing visibility hook. */
 		const CHAT_NODE_INJECT = { hooks: {
 			turnData: (_standard, { turnData }) => function useTurnData(key) {
 				return useTurnDataValue(turnData, key);
 			},
-			disclosure: (_standard, { disclosureReset }) => bindDisclosure(disclosureReset)
+			disclosure: (_standard, { disclosureReset }) => bindDisclosure(disclosureReset),
+			groupAction: (_standard, { useGroupAction }) => useGroupAction
 		} };
 		/** Services required by the Chat target and its presentation registrations. */
 		const inject = [
@@ -13176,7 +13217,7 @@ DSHConversationActions.installConversationActions();
 				}, LinkOpeningRow));
 			});
 			const transcriptView = new TranscriptViewPolicy(chatSettings, "dshDesktop" in globalThis ? "standard" : DEFAULT_TRANSCRIPT_VIEW_MODE);
-			const presentation = derivePresentationPolicy(transcriptView.mode);
+			const presentation = derivePresentationPolicy(transcriptView.mode, transcriptView.collapseTiming);
 			const performancePolicy = new PerformanceUsagePolicy(chatSettings);
 			ctx.effect(() => () => {
 				transcriptView.dispose();
@@ -13184,6 +13225,15 @@ DSHConversationActions.installConversationActions();
 			});
 			const performanceUsage = performancePolicy.mode;
 			registerChatNodeRenderers(ctx, performanceUsage, presentation);
+			ctx.slots.registerFactory({
+				name: "conversation.chat.user.content",
+				scope: "session",
+				locale: NS,
+				children: { "conversation.chat.user.images": {
+					kind: "single",
+					scope: "session"
+				} }
+			}, UserContent);
 			ctx.slots.inject("settings.general.item", () => ctx.slots.register({
 				name: "settings.general.item",
 				id: "performance-usage",
@@ -13202,12 +13252,46 @@ DSHConversationActions.installConversationActions();
 				order: 12,
 				locale: NS,
 				inject: () => ({
-					hooks: { transcriptView: transcriptView.mode },
+					hooks: {
+						transcriptView: transcriptView.mode,
+						collapseTiming: transcriptView.collapseTiming
+					},
 					setTranscriptView: (mode) => {
 						transcriptView.setMode(mode);
+					},
+					setCollapseTiming: (timing) => {
+						transcriptView.setCollapseTiming(timing);
 					}
 				})
 			}, TranscriptViewRow));
+			const nodeSources = (binding) => {
+				const chat = chatSource(binding);
+				const conversation = ctx.uiConversation.binding(binding);
+				return {
+					hooks: { presentation },
+					keyedHooks: {
+						chatNode: (key) => chat.getSnapshot().nodes.source(key),
+						chatNodeBottom: (key) => chat.getSnapshot().nodes.bottomSource(key),
+						chatNodeProcess: (key) => chat.getSnapshot().nodes.processSource(key),
+						chatGroup: (key) => conversation.snapshot.getSnapshot().views.grouped("chat")?.groupSource(key)
+					}
+				};
+			};
+			ctx.slots.inject("conversation.chat.flow", () => ctx.slots.register({
+				name: "conversation.chat.flow",
+				locale: NS,
+				store: chatStore,
+				children: { "conversation.chat.node": {
+					kind: "keyed",
+					scope: "session",
+					inject: CHAT_NODE_INJECT
+				} },
+				inject: (sessionId) => {
+					const binding = ctx.sessions.binding(sessionId);
+					if (binding === void 0) throw new Error(`ui-chat: unknown session "${sessionId}"`);
+					return nodeSources(binding);
+				}
+			}, ChatFlow));
 			ctx.slots.inject("conversation.view", () => {
 				return ctx.slots.register({
 					name: "conversation.view",
@@ -13215,31 +13299,19 @@ DSHConversationActions.installConversationActions();
 					order: 0,
 					label: () => t("view.chat"),
 					locale: NS,
-					children: {
-						"conversation.chat.node": {
-							kind: "keyed",
-							scope: "session",
-							inject: CHAT_NODE_INJECT
-						},
-						"conversation.message.images": {
-							kind: "single",
-							scope: "session"
-						}
-					},
+					children: { "conversation.chat.flow": {
+						kind: "single",
+						scope: "session",
+						inject: CHAT_FLOW_INJECT
+					} },
 					store: chatStore,
 					inject: (sessionId) => {
 						const binding = ctx.sessions.binding(sessionId);
 						if (binding === void 0) throw new Error(`ui-chat: unknown session "${sessionId}"`);
 						const session = binding.session;
 						const chat = chatSource(binding);
-						const conversation = ctx.uiConversation.binding(binding);
 						return {
-							hooks: { presentation },
-							keyedHooks: {
-								chatNode: (key) => chat.getSnapshot().nodes.source(key),
-								chatNodeProcess: (key) => chat.getSnapshot().nodes.processSource(key),
-								chatGroup: (key) => conversation.snapshot.getSnapshot().views.grouped("chat")?.groupSource(key)
-							},
+							...nodeSources(binding),
 							fileMentions: (owner) => ctx.get("chatFileMentions")?.forClosing(owner, sessionId),
 							openFile: async (path, options) => {
 								const cwd = ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd;
@@ -13247,11 +13319,6 @@ DSHConversationActions.installConversationActions();
 								if (options?.line === void 0) ctx.sidebarRight.openResource(url);
 								else ctx.sidebarRight.openResource(url, { params: { line: options.line } });
 								await Promise.resolve();
-							},
-							openSkill: (name) => {
-								const scope = ctx.sessions.scope(sessionId);
-								if (scope === void 0) return;
-								ctx.get("inputTriggers")?.sessionOf(scope).openReference("skill", { ref: `/${name}` });
 							},
 							openExternalLink: (url) => {
 								if (linkOpening.getSnapshot() === "sidebar" && ctx.get("sidebarRightTabs")?.get("browser") !== void 0) ctx.sidebarRight.openTab("browser", { params: { url } });

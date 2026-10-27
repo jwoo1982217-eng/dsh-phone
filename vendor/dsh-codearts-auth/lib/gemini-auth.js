@@ -4,7 +4,7 @@
  * 登录走**浏览器回调式 OAuth**（见 `gemini-oauth.ts`：本地 `createServer` 起回调、
  * 立即返回 `loginUrl`），续期走 `refresh_token` grant。
  *
- * ## ⚠️ `refreshAll` 照 `src/service.ts:406`（codearts）范式，**不照** `minimax-auth.ts:281`
+ * ## ⚠️ `refreshAll` 照 `src/service.ts`（codearts）范式，**不照** `minimax-auth.ts`
  *
  * 旧范式第一行是 `if (!entry.refreshable) continue` —— 那让这个布尔变成一道
  * **单向门**：任何一次把它写成 false 的路径都会让该账号此后**永远不进循环**，
@@ -18,13 +18,23 @@ import { Service } from '@deepseek-ai/cordis';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { refreshAccountWithReconcile, shouldRefreshNow, syncAccountExpiry, } from './expiry-sync.js';
 import { SerialQueue } from './serial-queue.js';
-import { GEMINI, geminiAccountLabel, geminiCredentialExpiresAtMs, isGeminiRefreshable, parseGeminiCredential, } from './gemini.js';
+import { GEMINI, GEMINI_OAUTH_TIMEOUT_MS, geminiAccountLabel, geminiCredentialExpiresAtMs, isGeminiRefreshable, parseGeminiCredential, } from './gemini.js';
 import { credentialFromGeminiGrant, fetchGeminiUserInfo, refreshGeminiCredential, startGeminiOAuthFlow, } from './gemini-oauth.js';
+import { geminiNetworkHint } from './gemini-proxy.js';
+/**
+ * 把诊断提示接在一段文案后面（`undefined` 时不加任何东西）。
+ *
+ * ⚠️ **唯一实现**：`geminiNetworkHint` 有三个消费点，每处都要
+ * 「有提示才加、没提示不加」这条小逻辑 —— 写成三份正是本仓库反复记录的那类漂移。
+ */
+function hintSuffix(hint) {
+    return hint === undefined ? '' : `；${hint}`;
+}
 /**
  * 过期信息提取器（供共享实现 `refreshAccountWithReconcile` 用）。
  *
  * ⚠️ `identityOf` 的语义是「**凭据内容**」（这里取 access_token）而**不是** ref 名
- * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts:67` 记录的坑）。
+ * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts` 记录的坑）。
  *
  * `refreshableOf` 是**诚实**的：Gemini 确实有 refresh 端点（`oauth2.googleapis.com/token`
  * 的 `refresh_token` grant），故提供它，让共享实现据此把池里的 `refreshable` 对账。
@@ -40,7 +50,7 @@ export class GeminiRefreshTokenExpiredError extends Error {
         super(message);
         // ⚠️ `name` **必须**是 `'RefreshTokenExpiredError'`（与其余九个 provider 一致）。
         //
-        // `src/refresh.ts:21` 的终态判据是结构化比较：
+        // `src/refresh.ts` 的终态判据是结构化比较：
         //   `if (error.name === 'RefreshTokenExpiredError') return true`
         //   `return /refresh[_ ]?token/i.test(error.message)`
         //
@@ -77,6 +87,22 @@ export class GeminiAuth extends Service {
     get fetchImpl() {
         return this.options.fetchImpl ?? fetch;
     }
+    /**
+     * 取某账号的 fetcher（Gitee issue IKLTZ2）。
+     *
+     * ⚠️ **空账号 id = 直连**：`refresh()` 的单凭据兜底路径拿不到账号 id，
+     * 此时不查池（查了也是空）⇒ 退回全局 fetch。
+     *
+     * ⚠️ `fetchImpl`（单测替身）**优先**于 `fetchFor`：否则单测注入的替身会被
+     * 生产接线里的账号解析器顶掉，用例就测不到真正被调用的那条腿了。
+     */
+    fetcherFor(accountId) {
+        if (this.options.fetchImpl !== undefined)
+            return this.options.fetchImpl;
+        if (this.options.fetchFor !== undefined)
+            return this.options.fetchFor(accountId);
+        return fetch;
+    }
     queueFor(refName) {
         let queue = this.refreshQueues.get(refName);
         if (queue === undefined) {
@@ -102,10 +128,14 @@ export class GeminiAuth extends Service {
      *
      * ⚠️ 不能在这里阻塞等授权完成 —— 前端 `window.open` 只在
      * transient activation 窗口内有效（见 AGENTS.md「两步式登录」）。
+     *
+     * @param options.accountId **占位账号的 id**（Gitee issue IKLTZ2）：
+     *   换 token 那一次请求必须能走该账号自己的代理，而登录开始时凭据还没落盘、
+     *   只有池里的占位条目认得它。缺省则直连。
      */
-    async startLogin() {
+    async startLogin(options = {}) {
         const started = await startGeminiOAuthFlow({
-            fetcher: this.fetchImpl,
+            fetcher: this.fetcherFor(options.accountId ?? ''),
             ...this.options.callbackPort === undefined ? {} : { callbackPort: this.options.callbackPort },
             // 身份正常情况下从令牌响应的 `id_token` 解出（零额外请求）；这里的
             // userinfo 只是兜底。**兜底失败必须留日志** —— 2026-10-03 用户报障
@@ -114,7 +144,7 @@ export class GeminiAuth extends Service {
                 this.ctx.logger?.warn?.(`[gemini] 登录时兜底拉取账号身份失败（不影响登录，但昵称可能退化成账号 id）：${reason}`);
             },
         });
-        // 与 `cline-auth.ts:230-233` 同理：结果可能早于调用方 `await` 而落定，
+        // 与 `cline-auth.ts` 同理：结果可能早于调用方 `await` 而落定，
         // 先挂空处理器避免「未处理的拒绝」告警（错误仍会传给真正的消费者）。
         started.result.catch(() => { });
         // 落盘交给调用方（RPC 的 `account.create` 分支要顺带回填 nickname/expiresAt/refreshable）。
@@ -136,7 +166,7 @@ export class GeminiAuth extends Service {
     async resolveDefaultCredential() {
         return await this.readCredential(this.credentialRefName);
     }
-    /** 续期默认单凭据（`refreshTargets` 的兜底路径）。 */
+    /** 续期默认单凭据（批量续期表的兜底路径）。 */
     async refresh() {
         const credential = await this.resolveDefaultCredential();
         if (credential === undefined) {
@@ -145,7 +175,7 @@ export class GeminiAuth extends Service {
         if (!isGeminiRefreshable(credential)) {
             throw new GeminiRefreshTokenExpiredError('凭据缺少 refresh_token，请重新登录');
         }
-        const next = await this.refreshCredential(credential);
+        const next = await this.refreshCredential(credential, '');
         await this.ctx.credentials.set(credentialRef(this.credentialRefName), JSON.stringify(next));
     }
     /**
@@ -154,8 +184,12 @@ export class GeminiAuth extends Service {
      * ⚠️ 只读写传入的 ref，**不碰**默认单凭据 ref。
      * ⚠️ **走共享实现 `refreshAccountWithReconcile`** —— 它保证「凭据仍有效」时
      * 也把池值对账（否则 UI 会永远显示「已过期」）。
+     *
+     * ⚠️ `accountId` **刻意不读 `refName`** 反查账号：账号 id 与 ref 名之间没有
+     * 可逆映射（ref 由 RPC 随机生成），只能由调用方传入。
      */
     async refreshAccountCredential(refName, pool, accountId) {
+        const id = accountId ?? '';
         await this.queueFor(refName).run(async () => {
             const credential = await this.readCredential(refName);
             if (credential === undefined)
@@ -166,7 +200,7 @@ export class GeminiAuth extends Service {
             const ref = credentialRef(refName);
             // 无账号池时退化为「直接续期 + 落盘」（单凭据路径）。
             if (pool === undefined) {
-                const next = await this.refreshCredential(credential);
+                const next = await this.refreshCredential(credential, id);
                 await this.ctx.credentials.set(ref, JSON.stringify(next));
                 return;
             }
@@ -174,10 +208,10 @@ export class GeminiAuth extends Service {
                 pool,
                 provider: this.product.id,
                 tag: `[${this.product.id}]`,
-                accountId: accountId ?? '',
+                accountId: id,
                 credential,
                 accessors: GEMINI_EXPIRY_ACCESSORS,
-                refresh: (c) => this.refreshCredential(c),
+                refresh: (c) => this.refreshCredential(c, id),
                 save: (c) => this.ctx.credentials.set(ref, JSON.stringify(c)),
                 warn: (message) => this.ctx.logger?.warn?.(message),
                 info: (message) => this.ctx.logger?.info?.(message),
@@ -200,6 +234,12 @@ export class GeminiAuth extends Service {
         for (const entry of accounts) {
             const ref = credentialRef(entry.credentialRef);
             let credential;
+            // ⚠️ 本账号这轮续期的 signal（IKLTZ2 审计 P2-2）：`refreshCredential`
+            // 内部 arm 了 `AbortSignal.timeout(GEMINI_OAUTH_TIMEOUT_MS)`，而判据在
+            // catch 里 ⇒ 必须经这个局部量把「是不是我们自己超时了」带出来，否则
+            // 墙外连接超时（**不带** `UND_ERR_*` 码）拿不到任何提示。
+            // ⚠️ **每个账号各有一个**（不是循环外共享）：共享会让 B 的日志引用 A 的 signal。
+            let refreshSignal;
             try {
                 const resolved = await this.ctx.credentials.resolve(ref);
                 if (!resolved) {
@@ -228,7 +268,9 @@ export class GeminiAuth extends Service {
                     credential,
                     accessors: GEMINI_EXPIRY_ACCESSORS,
                     current: entry,
-                    refresh: (c) => this.refreshCredentialUnderLock(entry.credentialRef, c),
+                    refresh: (c) => this.refreshCredentialUnderLock(entry.credentialRef, c, entry.id, (s) => {
+                        refreshSignal = s;
+                    }),
                     save: (c) => this.ctx.credentials.set(ref, JSON.stringify(c)),
                     warn: (message) => this.ctx.logger?.warn?.(message),
                     info: (message) => this.ctx.logger?.info?.(message),
@@ -277,8 +319,13 @@ export class GeminiAuth extends Service {
                 }
                 else {
                     // 非终态失败（网络抖动、5xx…）**必须留下日志**。
+                    // ⚠️ Gitee issue IKLTZ2：连不上 Google 时必须**点名代理**——
+                    // 缺了它，`fetch failed` 会退化成一句无信息量的话，用户与排障者都
+                    // 看不到「这需要代理」这个唯一出路（issue 原话：面板上完全看不出
+                    // 是网络/代理原因，用户只能看到授权失败）。
                     this.ctx.logger?.warn?.(`[gemini] 账号 ${entry.id} 续期失败：`
-                        + `${error instanceof Error ? error.message : String(error)}`);
+                        + `${error instanceof Error ? error.message : String(error)}`
+                        + hintSuffix(geminiNetworkHint(error, refreshSignal?.aborted === true)));
                 }
             }
         }
@@ -324,15 +371,39 @@ export class GeminiAuth extends Service {
                 // 缺身份时补一次 userinfo（只读 GET）。注意此处**不写日志失败**——
                 // 老账号的 access_token 可能早已过期，拿不到是常态，不值得刷告警。
                 if (geminiAccountLabel(credential) === undefined) {
-                    const info = await fetchGeminiUserInfo(credential.access_token, { fetcher: this.fetchImpl });
-                    if (info.sub === undefined && info.email === undefined)
-                        continue;
-                    credential = { ...credential };
-                    if (info.sub !== undefined)
-                        credential.sub = info.sub;
-                    if (info.email !== undefined)
-                        credential.email = info.email;
-                    await this.ctx.credentials.set(ref, JSON.stringify(credential));
+                    // ⚠️ **必须传 `signal`**（与 `refreshCredential` 同族的缺陷）：
+                    // `fetchGeminiUserInfo` 只在 `options.signal !== undefined` 时才设置
+                    //（`src/gemini-oauth.ts` 的 `if (options.signal !== undefined) init.signal = options.signal`），
+                    // 不传则这次 GET **完全没有超时**，卡住时只能等 undici 默认
+                    // `headersTimeout`（实测 305 秒）。本方法是启动期的账号修复循环，
+                    // 一个挂住的账号会把后面所有账号的修复一起拖住。
+                    //
+                    // ⚠️ signal 建在 try **之外**、错误在 catch 里判 ⇒ 它必须**跨 try 可见**
+                    //（IKLTZ2 审计 P2-2：原先 `aborted` 恒传字面量 `false`，于是这次自己
+                    // arm 的超时 —— 墙外连接超时的**主症状** —— 因不带 `UND_ERR_*` 码而
+                    // 拿不到任何提示；那形同「写进去却没人读」的死参数）。
+                    const userInfoSignal = AbortSignal.timeout(GEMINI_OAUTH_TIMEOUT_MS);
+                    try {
+                        const info = await fetchGeminiUserInfo(credential.access_token, {
+                            fetcher: this.fetcherFor(entry.id),
+                            signal: userInfoSignal,
+                        });
+                        if (info.sub !== undefined || info.email !== undefined) {
+                            credential = { ...credential };
+                            if (info.sub !== undefined)
+                                credential.sub = info.sub;
+                            if (info.email !== undefined)
+                                credential.email = info.email;
+                            await this.ctx.credentials.set(ref, JSON.stringify(credential));
+                        }
+                    }
+                    catch (error) {
+                        // ⚠️ 只读补字段，失败**不阻断**后面的流程（与文件头「失败不阻塞」约定
+                        // 一致）：拿不到身份就保持原样，绝不退回用池 id 重算昵称。
+                        this.ctx.logger?.debug?.(`[gemini] 账号 ${entry.id} 补拉账号身份失败（昵称将保持原样）：`
+                            + `${error instanceof Error ? error.message : String(error)}`
+                            + hintSuffix(geminiNetworkHint(error, userInfoSignal.aborted)));
+                    }
                 }
                 const target = geminiAccountLabel(credential);
                 // ⚠️ 只在**确实变化**时写账号池：`updateAccount` 是整体 replace，
@@ -343,8 +414,12 @@ export class GeminiAuth extends Service {
                 }
             }
             catch (error) {
+                // ⚠️ 这一层只覆盖**非网络**失败（凭据解析、池写入、userinfo 补字段
+                // 之外的路径）—— userinfo 那一腿有自己的 catch（带 signal）。
+                // 这里没有 arm 过超时 ⇒ `aborted` 恒为 false 是**如实**的（不是死参数）。
                 this.ctx.logger?.warn?.(`[gemini] 修复账号 ${entry.id} 的显示名失败（不影响使用）：`
-                    + `${error instanceof Error ? error.message : String(error)}`);
+                    + `${error instanceof Error ? error.message : String(error)}`
+                    + hintSuffix(geminiNetworkHint(error, false)));
             }
         }
         return repaired;
@@ -355,7 +430,7 @@ export class GeminiAuth extends Service {
      * 队列只保证同一 ref 的续期串行，管不到「另一个进程/另一条路径刚刷完」；
      * 那种情况下再发一次请求会白白消费一次 refresh_token（Google 有重放检测）。
      */
-    async refreshCredentialUnderLock(refName, credential) {
+    async refreshCredentialUnderLock(refName, credential, accountId, onSignal) {
         return await this.queueFor(refName).run(async () => {
             const latest = (await this.readCredential(refName)) ?? credential;
             if (!this.sameCredential(latest, credential)
@@ -363,7 +438,7 @@ export class GeminiAuth extends Service {
                 this.ctx.logger?.info?.('[gemini] 凭据已被他处续期，跳过本次续期请求（避免重复消费 refresh_token）');
                 return latest;
             }
-            return await this.refreshCredential(latest);
+            return await this.refreshCredential(latest, accountId, onSignal);
         });
     }
     /**
@@ -371,14 +446,35 @@ export class GeminiAuth extends Service {
      *
      * 抽出来供 `refresh` / `refreshAccountCredential` / `refreshAll` 共用 ——
      * 一旦字段合并逻辑分叉，就会出现「某条路径丢了 sub/email」。
+     *
+     * @param accountId 该凭据所属账号（空串 = 直连，见 `fetcherFor`）。
+     * @param onSignal 拿到本次请求 signal 的回调（IKLTZ2 审计 P2-2：调用方的
+     *   catch 需要区分「我们自己超时了」与「上游报错」—— 前者才是墙外症状，
+     *   而它**不带** `UND_ERR_*` 码，只能靠 `signal.aborted` 判）。
      */
-    async refreshCredential(credential) {
+    async refreshCredential(credential, accountId, onSignal) {
         const refreshToken = credential.refresh_token;
         if (!refreshToken) {
             throw new GeminiRefreshTokenExpiredError('凭据缺少 refresh_token，请重新登录');
         }
         try {
-            const grant = await refreshGeminiCredential(refreshToken, { fetcher: this.fetchImpl });
+            // ⚠️ **必须传 `signal`**（真实缺陷，对抗审计实测）：`refreshGeminiCredential`
+            // 只在 `options.signal !== undefined` 时才把它交给 `postGeminiForm`
+            //（`src/gemini-oauth.ts` 的 `if (signal !== undefined) init.signal = signal`），
+            // 不传则这次 `fetch` **完全没有超时**，只能等 undici 默认的
+            // `headersTimeout`（实测 **305 秒**）。
+            //
+            // 为什么这在本改动下变得关键：自愈把「续期」搬到了**用户点一下就等**的
+            // 积分查询主路径，且逐账号 `await` —— 一个卡住的 gemini 续期会让整条
+            // 积分行（乃至账号卡片）最长 5 分钟无响应；而其余九家都带 30~60s 超时。
+            // 顺带修好了既有缺陷：`GEMINI_OAUTH_TIMEOUT_MS` 此前**零引用**（只有定义），
+            // 现由本处用上。
+            const signal = AbortSignal.timeout(GEMINI_OAUTH_TIMEOUT_MS);
+            onSignal?.(signal);
+            const grant = await refreshGeminiCredential(refreshToken, {
+                fetcher: this.fetcherFor(accountId),
+                signal,
+            });
             // `credentialFromGeminiGrant` 保留 sub/email/cloudaicompanionProject，
             // 并在 Google 轮换 refresh_token 时回写新值。
             return credentialFromGeminiGrant(grant, credential);

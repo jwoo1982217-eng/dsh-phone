@@ -188,6 +188,158 @@ export function OpencodeProxyModal({ ctx, accountId, current, onClose }) {
 }
 
 /**
+ * Gemini 账号的「设置出口代理」弹窗（Gitee issue IKLTZ2）。
+ *
+ * ## ⚠️ 为什么不能直接复用 {@link OpencodeProxyModal}
+ *
+ * 两者**形态相同、语义不同**，而 UI 上必须说清的那句提示语也**完全不同**：
+ *
+ * - opencode：「不设代理 = 与其它账号共用同一出口 IP = 共用同一份额度」
+ *   （存在理由是**分份额度**）；
+ * - Gemini：「不设代理 = 这个面板在墙外可能**根本连不上**」（存在理由是
+ *   **能不能连通**）。
+ *
+ * 复用一个组件却按 provider 换文案，等于把两套语义塞进一个函数 ——
+ * 正是本仓库反复记录的那类漂移（同一判据两份实现）。故独立成组件，
+ * **复用**输入形态预设（`LOCAL_PORT_PRESETS`），**不复用**组件。
+ *
+ * ## ⚠️ 「测试连接」打的是 Google 而不是出口 IP 服务
+
+ * 见宿主侧 `src/gemini-rpc.ts` 的模块头：用出口 IP 服务会产生**假阳性**
+ * （代理能通 ip-api 却被 Google 拒），用户看到绿色以为配好了，面板依然失败。
+ *
+ * ⚠️ 同样必须用 `React.createElement` 渲染（hook 计数事故，见上方
+ * {@link OpencodeProxyModal} 的说明）。
+ *
+ * @param props { ctx: { rpc(payload) }, accountId, current, onClose }
+ */
+export function GeminiProxyModal({ ctx, accountId, current, onClose }) {
+  const [mode, setMode] = React.useState(guessMode(current))
+  const [url, setUrl] = React.useState(current || '')
+  const [busy, setBusy] = React.useState(false)
+  const [testing, setTesting] = React.useState(false)
+  const [error, setError] = React.useState('')
+  const [result, setResult] = React.useState(null)
+
+  const close = () => { if (onClose) onClose() }
+
+  const save = async (value) => {
+    setBusy(true)
+    setError('')
+    try {
+      await ctx.rpc({ method: 'gemini.setProxy', payload: { accountId, proxy: value } })
+      close()
+    } catch (err) {
+      setError(err && err.message ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const test = async () => {
+    setTesting(true)
+    setError('')
+    setResult(null)
+    try {
+      const r = await ctx.rpc({ method: 'gemini.testProxy', payload: { proxy: url } })
+      setResult(r)
+    } catch (err) {
+      setError(err && err.message ? err.message : String(err))
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  const activeHint = (MODES.find((m) => m.id === mode) || {}).hint || ''
+
+  return React.createElement('div', {
+    className: 'dim-jh-modalOverlay dim-jh-modalOverlay--top',
+    onClick: (e) => { if (e.target === e.currentTarget) close() },
+  },
+    React.createElement('div', {
+      className: 'dim-jh-modal',
+      role: 'dialog',
+      'aria-modal': 'true',
+      style: { maxWidth: '520px' },
+    },
+      React.createElement('div', { className: 'dim-jh-modalHead' },
+        React.createElement('div', { className: 'dim-jh-modalTitle' }, '设置 Gemini 出口代理'),
+        React.createElement('span', { className: 'dim-jh-modalSubtitle' },
+          current ? '当前：已配置' : '当前：直连（本机出口）'),
+      ),
+      // ⚠️ 这段提示是本功能的存在理由，且必须**诚实**：不说清「系统代理不生效」，
+      // 用户会以为自己开着 Clash 系统代理就万事大吉（浏览器能用 ≠ 插件能用）。
+      React.createElement('p', { className: 'dim-jh-modalHint' },
+        'Google 的登录与接口都在墙外。浏览器能打开授权页，是因为浏览器读系统代理；'
+        + '插件进程不读，所以「浏览器授权成功、面板里账号却一直不出现」是同一个原因。'
+        + '设置这里的代理后，该账号的登录、续期、积分与对话都会走它。'),
+      React.createElement('div', { className: 'dim-jh-modalBody' },
+        React.createElement('div', { className: 'dim-jh-fieldRow' },
+          MODES.map((m) => React.createElement('label', { key: m.id, className: 'dim-jh-radio' },
+            React.createElement('input', {
+              type: 'radio',
+              name: 'gemini-proxy-mode',
+              checked: mode === m.id,
+              onChange: () => {
+                setMode(m.id)
+                setError('')
+                setResult(null)
+              },
+            }),
+            m.label,
+          )),
+        ),
+        React.createElement('p', { className: 'dim-jh-hint' }, activeHint),
+        mode === 'local' && React.createElement('div', { className: 'dim-jh-presetRow' },
+          LOCAL_PORT_PRESETS.map((p) => React.createElement('button', {
+            key: p.port,
+            type: 'button',
+            className: 'dim-jh-btn',
+            title: p.hint,
+            onClick: () => { setUrl(p.url); setError(''); setResult(null) },
+          }, p.label)),
+        ),
+        React.createElement('input', {
+          className: 'dim-jh-input',
+          placeholder: mode === 'socks5' ? 'socks5://user:pass@host:port' : 'http://user:pass@host:port',
+          value: url,
+          // ⚠️ 含认证信息时用 password 类型：代理口令不该裸显在屏幕上。
+          type: url.includes('@') ? 'password' : 'text',
+          onChange: (e) => { setUrl(e.target.value); setResult(null) },
+        }),
+        // ⚠️ **不说「出口 IP」**：这里测的是「能不能连上 Google」，
+        // 回显 HTTP 状态码（400 也是通的，见宿主侧注释）。
+        result && React.createElement('p', { className: 'dim-jh-hint' },
+          `已连通 Google（HTTP ${result.status}）· ${result.latencyMs}ms`),
+        error && React.createElement('p', { className: 'dim-jh-error' }, error),
+      ),
+      React.createElement('div', { className: 'dim-jh-modalActions' },
+        React.createElement('button', {
+          type: 'button',
+          className: 'dim-jh-btn',
+          disabled: testing || busy || url.trim().length === 0,
+          onClick: test,
+        }, testing ? '测试中…' : '测试连接'),
+        // 只有已配置过才显示「清除」：没配过就没有可清除的东西。
+        current ? React.createElement('button', {
+          type: 'button',
+          className: 'dim-jh-btn',
+          disabled: busy,
+          onClick: () => save(''),
+        }, '清除代理') : null,
+        React.createElement('button', {
+          type: 'button',
+          className: 'dim-jh-btn dim-jh-btnPrimary',
+          disabled: busy || url.trim().length === 0,
+          onClick: () => save(url),
+        }, '保存'),
+        React.createElement('button', { type: 'button', className: 'dim-jh-btn', onClick: close }, '取消'),
+      ),
+    ),
+  )
+}
+
+/**
  * 「添加 OpenCode 账号」弹窗（**组件**，用 `React.createElement(OpencodeKeyModal, props)` 渲染）。
  *
  * ## ⚠️⚠️ 同样是组件，不能直接函数调用

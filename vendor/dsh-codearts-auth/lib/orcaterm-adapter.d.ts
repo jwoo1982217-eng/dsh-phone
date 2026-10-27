@@ -129,6 +129,7 @@ export declare class OrcaTermAdapter {
         /** 取该 provider 的可用账号（账号池 + 凭据解析）。 */
         resolveCredential: (modelId: string) => Promise<OrcaTermCredential | undefined>;
         /** 记录一次用量（失败也要记），供面板展示。 */
+        providerClosed?: () => boolean;
         recordUsage?: (record: {
             at: number;
             model: string;
@@ -178,6 +179,7 @@ export declare class OrcaTermAdapter {
  */
 export declare function registerOrcaTermLlm(ctx: Context, options: {
     resolveCredential: (modelId: string) => Promise<OrcaTermCredential | undefined>;
+    providerClosed?: () => boolean;
     recordUsage?: (record: {
         at: number;
         model: string;

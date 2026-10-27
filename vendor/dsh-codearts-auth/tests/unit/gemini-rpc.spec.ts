@@ -20,9 +20,13 @@
  *
  * ## 本文件锁死的三个已知坑
  *
- * 1. **位置参数错位**：`registerJetHubRpc` 的 provider 形参是按顺序传的，
- *    新 provider 一律**追加在末尾**（gemini 排在 zcode 之后），少传/插队会让
- *    后面的 `modelAdapters` 整体错位 —— 本仓库已复发 6 次。
+ * 1. ~~**位置参数错位**：`registerJetHubRpc` 的 provider 形参是按顺序传的，~~
+ *    ~~新 provider 一律**追加在末尾**（gemini 排在 zcode 之后），少传/插队会让~~
+ *    ~~后面的 `modelAdapters` 整体错位 —— 本仓库已复发 6 次。~~
+ *    **已消除**（2026-10-08，Task 9）：auth 实例改成**命名对象**（键是 provider id），
+ *    错位在类型层面不可能，`modelAdapters` 也成了独立形参。
+ *    ⚠️ 这是**历史坑**，留在这里是为了解释本文件为何大量使用「显式摆出 13 个键」的桩；
+ *    别再据此以为现在还有位置顺序可数。
  * 2. **必须立刻返回 loginUrl**：`window.open` 只在用户手势窗口内有效。
  * 3. **`login.poll` 靠「凭据是否已写入」判定**，与 provider 无关；故占位账号
  *    存在但凭据未写时必须回 `done:false`（前端据此继续轮询，而不是提前关窗）。
@@ -37,6 +41,8 @@ import { registerJetHubRpc, JET_HUB_API_PATH } from '../../src/jet-hub-rpc.js'
 import { AccountPool } from '../../src/account-pool.js'
 import { GeminiAuth } from '../../src/gemini-auth.js'
 import { GEMINI, GEMINI_ENDPOINT_SANDBOX, GEMINI_QUOTA_PATH } from '../../src/gemini.js'
+import { descriptorOf } from '../../src/provider-registry.js'
+import { jetHubAuthsCallKeys } from '../helpers/jet-hub-auths.js'
 import { clearGeminiCreditCache } from '../../src/gemini-credits.js'
 
 /** 内存凭据存储（与其它 provider 的 spec 同款）。 */
@@ -151,20 +157,25 @@ function makeRpc(options: { withIdToken?: boolean; gemini?: unknown } = {}) {
   const gemini = options.gemini ?? new GeminiAuth(ctx, { fetchImpl: makeFetchStub(calls, options) })
   registerJetHubRpc(
     ctx, pool,
-    // ⚠️ **13 个 provider 形参**，逐个具名 —— 少一个就错位（见文件头第 1 条）。
-    {} as never, // codearts
-    {} as never, // buddy
-    {} as never, // workbuddy
-    {} as never, // lobsterai
-    {} as never, // qoder
-    {} as never, // qoderCn
-    {} as never, // trae
-    {} as never, // cline
-    {} as never, // loomy
-    {} as never, // raccoon
-    {} as never, // minimax
-    {} as never, // zcode
-    gemini as never, // gemini（追加在末尾）
+    // ⚠️ **命名对象**（2026-10-08 改，原为 13 个位置参数）：键是 **provider id**
+    //（`qodercn` 全小写），值是实例。位置参数时代这里必须逐个具名摆 13 个槽位，
+    // 少一个就整体错位（见文件头第 1 条）。
+    {
+      codearts: {} as never,
+      buddy: {} as never,
+      workbuddy: {} as never,
+      lobsterai: {} as never,
+      qoder: {} as never,
+      qodercn: {} as never,
+      trae: {} as never,
+      cline: {} as never,
+      loomy: {} as never,
+      raccoon: {} as never,
+      minimax: {} as never,
+      zcode: {} as never,
+      gemini: gemini as never,
+      officeace: {} as never,
+    } as never,
     undefined,
   )
   const h = handler()
@@ -237,6 +248,13 @@ async function waitForGone(
     return !(listed.value.accounts as Array<{ id: string }>).some((a) => a.id === accountId)
   }, `占位账号被清理（${accountId}）`)
 }
+
+/**
+ * ⚠️ 实现已迁到 `tests/helpers/strip-comments.ts`（两个 spec 共用一份 ——
+ * IKLZ2 对抗审计实测：不剥注释时，「把接线删掉、只留注释里的字面量」这类
+ * 变异能让判据全绿）。
+ */
+import { stripComments } from '../helpers/strip-comments.js'
 
 describe('Gemini Jet Hub 登录接入', () => {
   it('★ account.create 立刻返回真实 Google 授权 URL，并登记一个不可续期的占位账号', async () => {
@@ -371,6 +389,7 @@ describe('Gemini account.refresh 分派', () => {
     const seen: Array<{ ref: string; accountId?: string; withPool: boolean }> = []
     const { call, pool } = makeRpc({
       gemini: {
+      officeace: {} as never,
         async refreshAccountCredential(ref: string, p?: unknown, accountId?: string) {
           seen.push({ ref, accountId, withPool: p !== undefined })
         },
@@ -390,6 +409,56 @@ describe('Gemini account.refresh 分派', () => {
     // 界面会一直显示「已过期」。
     expect(seen[0]?.accountId).toBe('gemini-1')
     expect(seen[0]?.withPool).toBe(true)
+  })
+})
+
+/**
+ * ★ Gemini 续期的**超时**（真实缺陷，对抗审计实测）。
+ *
+ * 缺陷：`GeminiAuth.refreshCredential` 原先调 `refreshGeminiCredential` 时
+ * **不传 `signal`**，而 `gemini-oauth.ts` 的 `postGeminiForm` 只在
+ * `signal !== undefined` 时才设置 `init.signal` ⇒ 这次 fetch **完全没有超时**，
+ * 卡住时只能等 undici 默认 `headersTimeout`（实测 **305 秒**）。
+ * `GEMINI_OAUTH_TIMEOUT_MS` 当时**零引用**（只有定义）。
+ *
+ * 为什么这条在本插件里重要：自愈把续期搬到了**用户点一下就等**的积分查询
+ * 主路径，且逐账号 `await` —— 一个卡住的 gemini 续期会让整条积分行
+ * （乃至账号卡片）最长 5 分钟无响应；而其余九家都带 30~60s 超时。
+ *
+ * ⚠️ 断言选「signal 存在**且真的会中断**」，而不是「signal instanceof AbortSignal」
+ * 之类的形状断言 —— 后者对「传了个永不触发的 signal」也会通过。
+ */
+describe('Gemini 续期必须带超时', () => {
+  it('★ 续期请求带 signal（否则完全没有超时，卡住要等 undici 默认 300+ 秒）', async () => {
+    const { ctx, credentials } = makeCtx()
+    let seen: AbortSignal | undefined
+    const auth = new GeminiAuth(ctx, {
+      fetchImpl: (async (_input: string | URL | Request, init?: RequestInit) => {
+        seen = init?.signal ?? undefined
+        return new Response(JSON.stringify({
+          access_token: 'AT-NEW', refresh_token: 'RT-NEW', expires_in: 3600,
+        }), { status: 200 })
+      }) as unknown as typeof fetch,
+    })
+
+    // ⚠️ `refreshCredential` 是**私有**方法，故走公开的按账号续期入口
+    // （`account.refresh` 端点与积分自愈用的就是它）。
+    await credentials.set('GEMINI_ACCOUNT_SPEC', JSON.stringify({
+      access_token: 'AT-OLD', refresh_token: 'RT-OLD', expiry: new Date(0).toISOString(),
+    }))
+    await auth.refreshAccountCredential('GEMINI_ACCOUNT_SPEC')
+
+    expect(seen, 'gemini 续期必须带 signal（否则完全没有超时）').toBeInstanceOf(AbortSignal)
+  })
+
+  it('★ `GEMINI_OAUTH_TIMEOUT_MS` 真的被引用（此前零引用、只有定义）', () => {
+    // 防止有人把 signal 删掉、退回「靠 undici 默认超时」的状态。
+    const here = dirname(fileURLToPath(import.meta.url))
+    const source = readFileSync(resolve(here, '../../src/gemini-auth.ts'), 'utf8')
+    expect(source).toContain('AbortSignal.timeout(GEMINI_OAUTH_TIMEOUT_MS)')
+    // 两处：续期 + 启动期昵称修复的 userinfo（同族缺陷一并修）。
+    const uses = source.match(/AbortSignal\.timeout\(GEMINI_OAUTH_TIMEOUT_MS\)/g) ?? []
+    expect(uses.length, '续期与 userinfo 两处都要带超时').toBeGreaterThanOrEqual(2)
   })
 })
 
@@ -456,29 +525,99 @@ describe('Gemini credits.balances', () => {
 
 describe('Gemini 接线点（源码断言）', () => {
   const here = dirname(fileURLToPath(import.meta.url))
-  const indexSource = readFileSync(resolve(here, '../../src/index.ts'), 'utf8')
+  const indexSource = stripComments(readFileSync(resolve(here, '../../src/index.ts'), 'utf8'))
   const rpcSource = readFileSync(resolve(here, '../../src/jet-hub-rpc.ts'), 'utf8')
-  const probeSource = readFileSync(resolve(here, '../../src/account-probe.ts'), 'utf8')
+  // ⚠️ Task 8 起：探测适配器的构造在 `index.ts` 的 `probeById`（account-probe 已改为
+  //    查能力注册表），故这里读的是 `index.ts`。
+  const probeSource = readFileSync(resolve(here, '../../src/index.ts'), 'utf8')
 
   it('⚠️ index.ts 接线点齐全，且签名缓存在卸载时落盘', () => {
     expect(indexSource).toContain("from './gemini-auth.js'")
-    expect(indexSource).toContain("'llm-gemini'")
-    expect(indexSource).toContain('new GeminiAuth(ctx)')
+    // ⚠️ 2026-10-08 改：原先扫 index.ts 源码文本找 `'llm-gemini'`。本次重构把 13 个
+    //    字面量收敛成从 `PROVIDER_REGISTRY` 派生 ⇒ 文本断言变红而行为没变。
+    //    改为断言声明值；「index.ts 真的按它注册了」由
+    //    `provider-registry-consumers.spec.ts` 的 `apply()` 行为用例守。
+    expect(descriptorOf('gemini')?.settingsNamespace).toBe('llm-gemini')
+    // ⚠️ 2026-10-18（Gitee IKLTZ2）：原先断言逐字串 `new GeminiAuth(ctx)`，
+    // 而修复把构造改成 `new GeminiAuth(ctx, { fetchFor: … })`（注入按账号的
+    // 代理感知 fetcher）⇒ 文本断言变红而行为变好了。
+    // ⇒ 改为断言**两件更强的事**：确实构造了 GeminiAuth，且**带了 fetcher**。
+    //    「带上了」才是这条断言真正要守的东西（漏掉它 = 全链路恒直连，
+    //    症状与 issue 原话逐字同形）。
+    expect(indexSource).toMatch(/new GeminiAuth\(ctx,\s*\{\s*fetchFor:/)
+    expect(indexSource, 'index.ts 必须把账号代理解析器注入探测适配器')
+      .toMatch(/fetchFor:\s*geminiFetchForAccount/)
     expect(indexSource).toContain('registerGeminiLlm(ctx, {')
     // ⚠️ 漏了这一条 ⇒ 续期定时器**永不武装**（不是「刷得慢」，是压根不刷）。
-    expect(indexSource).toContain("['gemini', (p) => gemini.refreshAll(p)]")
+    // ⚠️ **2026-10-08 改（Task 10）**：原先断言 `src/index.ts` 的源码文本含手抄清单
+    //    字面量（`['x', (p) => x.refreshAll(p)]`）—— 那张清单已被
+    //    `wiredRefreshTargets()` 从**能力注册表**派生取代 ⇒ 该文本形态**不存在了**，
+    //    而它守的意图（该 provider 在续期调度里）**与文本无关**。
+    // ⇒ 改为**结构断言**（注册循环挂了 refreshAll + 派生表被使用）。
+    // ⚠️ 行为断言（真跑 `apply()` 逐个驱动 `auth.refreshAll` 并断言打到**自己那个**
+    //    实例）在 `provider-runtime-wiring.spec.ts` 的「★ 13 家都挂上了
+    //    `auth.refreshAll`」一条里，**比本条更强**。
+    expect(indexSource, '注册循环没有挂 refreshAll（派生表会恒为空）')
+      .toMatch(/refreshAll:\s*\(pool\)\s*=>\s*auth\.refreshAll\(pool\)/)
+    expect(indexSource, 'refreshTargets 又回到手抄清单了')
+      .toMatch(/wiredRefreshTargets\(\)/)
     expect(indexSource).toMatch(/gemini: pruned\([^)]*,\s*geminiAdapter\)/)
-    expect(indexSource).toMatch(/loomy, raccoon, minimax, zcode, gemini, modelAdapters/)
+    // ⚠️ 2026-10-08 改：原先这里断言**位置参数**的尾部顺序
+    //    `/loomy, raccoon, minimax, zcode, gemini, modelAdapters/`。
+    //    13 个形参改成**命名对象**后必然变红，而它守的意图（gemini 接上了）
+    //    **与位置无关**。⇒ 改为断言**键存在**（键是 provider id）；
+    //    「端到端分派真的落到 gemini 实例上」由行为用例守：
+    //    `tests/unit/jet-hub-rpc-auth-wiring.spec.ts` 的
+    //    「★★ 每个 provider id 的续期都分派到自己的 auth 实例」。
+    //
+    // ⚠️⚠️ **2026-10-08 复审 Finding 2：这里曾写成相邻性正则**
+    //    `/\bzcode,\s*gemini,/` —— 命名对象下**键的相邻关系零语义**：
+    //    重排成 `… gemini, …, zcode,`（语义等价）或在这两个键之间插入新键都会
+    //    **假失败**。⇒ 改为按 **AST** 取调用点第三个实参的属性名
+    //   （见 `tests/helpers/jet-hub-auths.ts`）后断言键存在。
+    const authKeys = jetHubAuthsCallKeys(indexSource)
+    expect(
+      Object.keys(authKeys),
+      'gemini 必须出现在 registerJetHubRpc 的 auths 命名对象里（键 = provider id）',
+    ).toContain('gemini')
     // 丢的是下一轮能不能带签名。
     expect(indexSource).toContain('geminiSigStore.flush()')
   })
 
-  it('⚠️ jet-hub-rpc 三处分支齐全；account-probe 的分派表已含 gemini', () => {
+  it('⚠️ jet-hub-rpc 的分支齐全；account-probe 的分派表已含 gemini', () => {
     expect(rpcSource).toContain('provider === GEMINI.id')
-    expect(rpcSource).toContain('case GEMINI.id:')
-    expect(rpcSource).toContain('fetchGeminiCreditBalance(credential, GEMINI)')
-    // ⚠️ 漏了会被华为云 HMAC 签名发 Google 凭据。
-    expect(probeSource).toContain('entry.provider === GEMINI.id')
-    expect(probeSource).toContain('new GeminiAdapter({')
+    // ⚠️ 2026-10-08 改（Task 2）：原先这里断言 `case GEMINI.id:` —— 那是
+    //    `account.refresh` 的 13 个同构 case 之一，Task 2 已把它们收敛成一处
+    //    查表（`authOf(auths, entry.provider)`）⇒ 该文本形态**不存在了**，
+    //    而它守的意图（gemini 的续期接上了）**与文本无关**。
+    //    ⇒ 改为断言**结构**（真的走查表）；「gemini 的续期落到 gemini 实例上」
+    //    由行为用例守：`lobsterai-rpc-dispatch.spec.ts` 的
+    //    「13 个 provider 逐个覆盖」组（从 `REFRESH_PROVIDERS` 派生，含 gemini）。
+    const refreshStart = rpcSource.indexOf("case 'account.refresh':")
+    expect(refreshStart, '找不到 account.refresh 分支').toBeGreaterThan(-1)
+    expect(rpcSource.slice(refreshStart, refreshStart + 4000))
+      .toMatch(/authOf\(auths, entry\.provider\)/)
+    // ⚠️ 2026-10-08 改（Task 3）：原先这条断言 `src/jet-hub-rpc.ts` 的源码文本里
+    //    含 `fetchGeminiCreditBalance(credential, GEMINI)`。Task 3 把余额调用搬进了
+    //    `src/provider-credits.ts` 的积分表 ⇒ 该文本**不存在了**，而它守的意图
+    //    （gemini 的余额走它自己的配额原语、且端到端打到自己的上游路径）
+    //    **与文本无关**。⇒ 行为断言搬到了唯一一处：
+    //    `credits-runtime-parity.spec.ts` 的
+    //    「★★ 逐家余额都走自己的上游端点」（含 gemini 的配额路径）+
+    //    下面那条真跑 `credits.balances` 的用例（配额窗口转两个包）。
+    // ⚠️ 2026-10-08 改（Task 8）：原先这两条断言 `src/account-probe.ts` 的源码文本
+    //    含 `entry.provider === GEMINI.id` 与 `new GeminiAdapter({`。Task 8 把
+    //    探测适配器的构造搬进了 `src/index.ts` 的 `probeById`（account-probe 改为
+    //    查能力注册表）⇒ 那两段文本**不在原文件里了**，而它们守的意图
+    //    （gemini 的重测走 GeminiAdapter，**不漏到**华为云 HMAC 签名的 CodeArts）
+    //    **与文本无关**。⇒ 改为**行为断言**，唯一一处：
+    //    `account-probe-adapter.spec.ts` 的「gemini 账号走 GeminiAdapter 而非
+    //    CodeArtsAdapter」+ `account-probe-runtime.spec.ts` 的
+    //    「未注册 probe 的 provider 抛可读错误，不得落回 CodeArtsAdapter」。
+    //
+    // ⚠️ 此处只保留「**结构**」断言：`probeById` 必须真的登记了 gemini
+    //    （少一条就会在「将来给 gemini 之外开入口」时复发旧缺陷）。
+    expect(probeSource).toMatch(/gemini:\s*\{/)
+    expect(probeSource).toMatch(/new GeminiAdapter\(\{/)
   })
 })

@@ -4,12 +4,14 @@ import { FreeModelAdapter, ROUTE_MAIN, ROUTE_REGION } from '../adapter.js'
 import { buildCatalog, buildEacCatalog, buildKiloCatalog, isEacEntry, isKiloEntry, parseListing, reviveKiloCatalog } from '../catalog.js'
 import { buildAggregateCatalog, isAggregateEntry } from '../aggregate.js'
 import { buildComboCatalog, isComboEntry, normalizeCombos, pruneRotation } from '../combos.js'
-import { JsonStore, SETTINGS_INITIAL, STATS_INITIAL, STATS_VERSION, migrateStats, pruneDays, recordTurn, recordUsage } from '../store.js'
+import { JsonStore, SETTINGS_INITIAL, STATS_INITIAL, STATS_VERSION, migrateStats, pruneDays, recordTurn, recordUsage, isModelHidden } from '../store.js'
 import { STATE, detectEgress, probeCatalog } from '../probe.js'
-import { CODE, getJson } from '../http.js'
+import { CODE, UpstreamError, getJson } from '../http.js'
+import { runModelTest, modelAvailability } from '../model-test.js'
+import { DEFAULT_LEVEL } from '../effort.js'
 import { fetchSealedListing } from '../eac.js'
 import { fetchKiloListing } from '../kilo.js'
-import { mintRequestId, sessionForConversation } from '../upstream.js'
+import { sessionForConversation } from '../upstream.js'
 import { createForwardCompletion, publicModelRows } from './completion.js'
 
 const FALLBACK_CATALOG = buildCatalog([
@@ -27,7 +29,16 @@ export function createRuntimeStores({ dataDir, logger = console }) {
   const open = (file, initial) => new JsonStore(path.join(dataDir, file), structuredClone(initial), {
     log: message => logger.warn?.(message),
   })
-  const settings = open('settings.json', SETTINGS_INITIAL)
+  // Seed the recommended combo only for a genuinely fresh install. Existing
+  // settings files that predate combos must not gain a new advertised model
+  // merely because a new default was added to SETTINGS_INITIAL; user edits to
+  // an existing `combos` field still win through JsonStore's normal merge.
+  const settingsInitial = structuredClone(SETTINGS_INITIAL)
+  const settingsPath = path.join(dataDir, 'settings.json')
+  if (fs.existsSync(settingsPath)) settingsInitial.combos = []
+  const settings = new JsonStore(settingsPath, settingsInitial, {
+    log: message => logger.warn?.(message),
+  })
   const stats = open('stats.json', STATS_INITIAL)
   const availability = open('availability.json', { version: 1, at: 0, egress: null, results: {} })
   const catalogStore = open('catalog.json', { version: 1, at: 0, entries: FALLBACK_CATALOG.map(entry => entry.id) })
@@ -238,9 +249,8 @@ export function createModelRuntime({
   async function fetchListing() {
     if (disposed) return { data: [] }
     const started = Date.now()
-    const listing = await getJson('/zen/v1/models', {
+    const listing = await getJson('/inference/v1/models', {
       session: sessionForConversation('catalog:our-free-model'),
-      requestId: mintRequestId(),
       attributionUserAgent,
       signal: lifetime.signal,
     })
@@ -272,7 +282,7 @@ export function createModelRuntime({
             state: result.state,
             ...result.detail === undefined ? {} : { detail: result.detail },
             ...result.ttftMs === undefined ? {} : { ttftMs: result.ttftMs },
-            latencyMs: result.latencyMs, at: Date.now(),
+            latencyMs: result.latencyMs, startedAt: result.startedAt, at: Date.now(),
           },
         },
       }))
@@ -320,9 +330,55 @@ export function createModelRuntime({
     return true
   }
 
+  const latestTests = new Map()
+  async function testModel(id, effort = DEFAULT_LEVEL, { signal } = {}) {
+    if (disposed) throw new UpstreamError('Model runtime stopped', CODE.aborted)
+    if (settings.get().enabled === false) throw new UpstreamError('Inference is paused', CODE.client)
+    const entry = catalog.find(candidate => candidate.id === id)
+    if (!entry) throw new UpstreamError('Unknown model "' + id + '"', CODE.client, { status: 404 })
+    const token = {}
+    latestTests.set(id, token)
+    const selectedEffort = effort === undefined || effort === '' ? DEFAULT_LEVEL : effort
+    const linkedSignal = signal ? AbortSignal.any([signal, lifetime.signal]) : lifetime.signal
+    const persist = row => {
+      if (disposed || linkedSignal.aborted || latestTests.get(id) !== token) return false
+      availability.edit(value => ({ ...value, manualResults: { ...value.manualResults, [id]: row } }))
+      availability.flush()
+      emitTopology()
+      return !availability.writeFailed
+    }
+    try {
+      const measured = await runModelTest(testSignal => adapter.stream({
+        provider: ROUTE_MAIN, model: entry.id,
+        messages: [{ role: 'user', content: 'Reply with exactly: OK' }],
+        reasoningEffort: selectedEffort, sessionId: 'bench:' + entry.id + ':' + selectedEffort,
+        signal: testSignal,
+      }, entry, state()), { signal: linkedSignal })
+      if (linkedSignal.aborted || disposed) throw new UpstreamError('Text test cancelled', CODE.aborted)
+      const persisted = persist({ state: STATE.available, source: 'manual', at: Date.now(), ttftMs: measured.ttftMs, latencyMs: measured.totalMs })
+      return { model: entry.id, effort: selectedEffort, ok: true, ...measured, persisted }
+    } catch (error) {
+      // Cancellation is a user action, not a fresh availability verdict. Other failures
+      // remain unknown instead of silently banning a paid/region-gated route.
+      if (error?.code !== CODE.aborted) persist({ state: STATE.unknown, source: 'manual', at: Date.now(), detail: String(error?.message ?? error).slice(0, 200) })
+      throw error
+    } finally {
+      if (latestTests.get(id) === token) latestTests.delete(id)
+    }
+  }
+
   return {
-    state, adapter, refreshCatalog, refreshSealedLane, refreshAvailability, watchEgress, fetchListing,
-    complete: createForwardCompletion({ adapter, state, signal: lifetime.signal }),
+    testModel, state, adapter, refreshCatalog, refreshSealedLane, refreshAvailability, watchEgress, fetchListing,
+    complete: createForwardCompletion({
+      adapter, signal: lifetime.signal,
+      state: () => {
+        const snapshot = state()
+        // Hiding advertisements must not invalidate requests using a saved id.
+        return { ...snapshot, membership: computeMembership(snapshot.catalog, availability.get(), {
+          ...snapshot.settings, hiddenModelIds: [], hideFreeModels: false, hideEacModels: false,
+        }) }
+      },
+    }),
     publicModelRows: () => publicModelRows(state()),
     // A settings write that changes the aggregate lane or the chains (a key
     // saved, a provider switched off, a combo edited) rebuilds the merged view
@@ -352,9 +408,8 @@ function materializeCatalog(ids) {
 }
 
 export function computeMembership(catalog, availabilitySnapshot, settings) {
-  const results = availabilitySnapshot?.results ?? {}
   const expose = settings?.exposeRegionModels !== false
-  const verdictOf = entry => results[entry.id]?.state
+  const verdictOf = entry => modelAvailability(entry.id, availabilitySnapshot, Boolean(entry.channel)).availability
   const probeable = catalog.filter(entry => !entry.channel)
   const refusedAll = probeable.length > 0 && probeable.every(entry => verdictOf(entry) === STATE.unavailable)
   let usable = catalog.filter(entry => verdictOf(entry) !== STATE.unavailable)
@@ -362,6 +417,7 @@ export function computeMembership(catalog, availabilitySnapshot, settings) {
   const main = []
   const region = []
   for (const entry of usable) {
+    if (isModelHidden(entry, settings)) continue
     const verdict = verdictOf(entry)
     if (verdict !== STATE.regionBlocked) main.push(entry.id)
     else if (expose) region.push(entry.id)

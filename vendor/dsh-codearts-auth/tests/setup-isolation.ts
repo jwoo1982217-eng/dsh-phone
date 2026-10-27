@@ -48,10 +48,73 @@ const stateDir = mkdtempSync(join(tmpdir(), 'dsh-jet-hub-'))
 process.env.DSH_JET_HUB_STATE_DIR = stateDir
 
 /**
+ * ⚠️⚠️ **OfficeAce 的用户级目录必须隔离**（2026-10-14，IKLPTZ 修复时实测到的
+ * **真实事故路径**，不是理论风险）。
+ *
+ * `src/officeace-auth.ts` 的三条用户级路径都由本变量覆盖：
+ * `~/.dsh-officeace`（凭据 `session.json` + 兼容文件 + 余额缓存）
+ * 与 `~/.office-claw`（客户端 cookie + CA）。其中 `session.json` 是
+ * **用户真实的华为云凭据**，而其 `refresh_token` **一次性** —— 读进来续一次
+ * 就烧掉了，用户只能重新登录。
+ *
+ * ## 为什么「在 spec 里改 `USERPROFILE`」不够
+ *
+ * `src/index.ts` 的 `apply()` 内部有 `void refreshAllCredentials()`
+ * 的 **fire-and-forget 首轮续期**。spec 的 `afterEach` 把 `USERPROFILE`
+ * 恢复成真实值**之后**，那条后台链才跑到 OfficeAce 的「池为空 ⇒ 续期本机
+ * 凭据」兜底分支 ⇒ 用**真实 home** 读凭据并真发 STS 请求。
+ *
+ * 实测证据：修复 IKLPTZ 前 `refreshAll` 恒抛 `TypeError`，这条路径**被遮蔽**；
+ * 修好之后它**被打通**，vitest 输出里随即出现真实上游报文
+ * `STS5.1806 has been used`（一次性 token 已被消费的专属错误码）。
+ *
+ * ⇒ 唯一可靠的做法是**进程级**把该目录指向临时目录（与上面
+ * `DSH_JET_HUB_STATE_DIR` 同型），而不是靠用例自己改环境变量抢时序。
+ * 这样 `apply()` 的后台链无论何时跑、跑多少次，都只会看临时目录。
+ *
+ * ⚠️ **必须覆盖全部三条腿**（2026-10-14 对抗性审计打穿后补）：凭据目录、
+ * 兼容文件目录、以及 `.office-claw`。审计实测：漏掉 `.office-claw` 时
+ * `readSessionCookie()` 会读到用户**真实**的 `~/.office-claw/session.cookie`
+ * 并**成功 DPAPI 解密**（耗时约 1.1s，真跑 powershell）。当时它**不可达**
+ * （生产调用点都传了 `ref` ⇒ 走云侧直读），但那是**脆弱的绿** ——
+ * 任何新测试调 `readSessionCookie()` / `fetchModelTokenRates()` 就会踩到。
+ * ⇒ 现已收进同源覆盖（`officeAceClientHome()` 复用本变量）。
+ */
+if (process.env.DSH_OFFICEACE_HOME === undefined) {
+  process.env.DSH_OFFICEACE_HOME = mkdtempSync(join(tmpdir(), 'dsh-officeace-'))
+}
+
+/**
  * Qoder 设备身份：**测试里绝不能真的 spawn `runtime-info.exe`**
  * （单次约 3.8 秒，且结果随开发机是否装了桌面端而变）。
  * 指向不存在的路径即等价于「未安装」。
  */
 if (process.env.QODER_RUNTIME_INFO === undefined) {
   process.env.QODER_RUNTIME_INFO = join(stateDir, 'no-such-runtime-info')
+}
+
+/**
+ * AutoClaw（智谱）：**桌面端凭据读取的进程级隔离**（2026-10-17 审计 P0 修复）。
+ *
+ * ## 它防的是什么
+ *
+ * `probeAutoclawLocalCredential()` 会真读 `%APPDATA%\AutoClaw-official\` 并
+ * **真跑 powershell 解 DPAPI**（约 1s）—— 读到的是用户**真实**的
+ * access/refresh token。`resolveDeviceId()` 同款（读真实设备号，而它会进
+ * 登录/签到请求体 ⇒ 断言结果随开发机状态漂移）。
+ *
+ * ⚠️ 与上面 OfficeAce 那次事故**同型**：`apply()` 内部有 fire-and-forget 的
+ * 后台链，用例的 `afterEach` 恢复环境变量**之后**那条链才跑到本分支 ⇒
+ * 「在用例里改 `APPDATA`」不可靠，**只能进程级**。
+ *
+ * ## ⚠️ 为什么修复前这条缺失却仍然「全绿」
+ *
+ * 当时唯一的用例显式传了 `customAppData: 'F:/non_existent_path_test'`
+ * ⇒ 恰好绕开了 env 读取。**那是脆弱的绿**：任何新用例走「不传参读 env」
+ * 就会真读用户凭据 + 真跑 powershell（本仓库吃过两次亏，故在此显式登记）。
+ *
+ * 守卫见 `tests/unit/autoclaw-isolation.spec.ts`。
+ */
+if (process.env.DSH_AUTOCLAW_APPDATA === undefined) {
+  process.env.DSH_AUTOCLAW_APPDATA = mkdtempSync(join(tmpdir(), 'dsh-autoclaw-'))
 }

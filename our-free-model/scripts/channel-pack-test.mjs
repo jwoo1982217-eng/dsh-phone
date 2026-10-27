@@ -1,5 +1,5 @@
 /**
- * Mount the actual published bundle against host contracts in isolation.
+ * Mount the published bundle or --source TypeScript against isolated host contracts.
  * No real credentials, profile directories or upstream calls are used.
  */
 import assert from 'node:assert/strict'
@@ -7,6 +7,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { registerHooks } from 'node:module'
+import { fileURLToPath } from 'node:url'
 import { verifyChannelModelActions } from './channel-model-actions-test.mjs'
 import { verifyChannelCreditsUi } from './channel-credits-ui-test.mjs'
 import { verifyChannelCreditsRpc } from './channel-credits-rpc-test.mjs'
@@ -14,10 +15,45 @@ import { verifyChannelImagePricing } from './channel-image-pricing-test.mjs'
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-channel-pack-'))
 const kernel = new URL('./lib/channel-pack-kernel.mjs', import.meta.url).href
+const sourceMode = process.argv.includes('--source')
+const ts = sourceMode ? (await import('typescript')).default : undefined
+const RealContext = sourceMode ? (await import('@deepseek-ai/cordis')).Context : undefined
+const RealBlockAssembler = sourceMode ? (await import('@deepseek-ai/dsh-llm')).BlockAssembler : undefined
+const hostLlm = sourceMode ? await import('@deepseek-ai/dsh-llm') : undefined
+const hostLlmVersion = sourceMode ? JSON.parse(fs.readFileSync(fileURLToPath(import.meta.resolve('@deepseek-ai/dsh-llm/package.json')), 'utf8')).version : undefined
+// rc.2 removed the old invariant subpath. Exercise its actual durable-stream boundary instead.
+const realLlmInvariant = sourceMode && hostLlmVersion !== '0.2.1-rc.2' ? await import('@deepseek-ai/dsh-llm/invariant') : undefined
+const sourceRoot = new URL('../vendor/channel-pack/src/', import.meta.url).href
+const llmKernel = `data:text/javascript,${encodeURIComponent(`
+export * from ${JSON.stringify(kernel)}
+export class LlmError extends Error {
+  constructor(message, code, options) { super(message, options); this.code = code; this.status = options?.status }
+}
+let nextMessage = 0
+export function createUserMessage(value) { return { id: 'fixture-message-' + ++nextMessage, ...value } }
+`)}`
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
+    if (specifier === '@deepseek-ai/dsh-llm') return { url: llmKernel, shortCircuit: true }
     if (specifier.startsWith('@deepseek-ai/')) return { url: kernel, shortCircuit: true }
+    if (sourceMode && context.parentURL?.startsWith(sourceRoot) && specifier.endsWith('.js')) {
+      const url = new URL(specifier.replace(/\.js$/, '.ts'), context.parentURL).href
+      if (fs.existsSync(fileURLToPath(url))) return { url, shortCircuit: true }
+    }
     return nextResolve(specifier, context)
+  },
+  load(url, context, nextLoad) {
+    if (sourceMode && url.startsWith(sourceRoot) && url.endsWith('.ts')) {
+      let source = fs.readFileSync(fileURLToPath(url), 'utf8')
+      const name = url.slice(sourceRoot.length)
+      if (['buddy-adapter.ts', 'lobsterai-adapter.ts'].includes(name)) source += '\nexport { serializeMessages }\n'
+      if (name === 'trae-adapter.ts') source += '\nexport { serializeTraeMessages as serializeMessages }\n'
+      return { format: 'module', source: ts.transpileModule(source, {
+        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+        fileName: fileURLToPath(url),
+      }).outputText, shortCircuit: true }
+    }
+    return nextLoad(url, context)
   },
 })
 process.env.DSH_CHANNEL_PACK_STATE_DIR = scratch
@@ -27,10 +63,16 @@ process.env.QODER_MACHINE_TOKEN_PATH = path.join(scratch, 'machine-token.json')
 process.env.QODER_RUNTIME_INFO = path.join(scratch, 'missing-runtime-info.exe')
 const savedFetch = globalThis.fetch
 const fetched = []
-globalThis.fetch = async url => {
+let auditFetch
+let signedLane
+let savedSignedFetch
+const offlineFetch = async (url, init) => {
+  if (auditFetch) return auditFetch(url, init)
+  if (sourceMode && globalThis.fetch !== offlineFetch) return globalThis.fetch(url, init)
   fetched.push(String(url))
   throw new Error('external network is disabled in the channel mount test')
 }
+globalThis.fetch = offlineFetch
 const dispose = []
 const routes = []
 const adapters = new Map()
@@ -69,7 +111,10 @@ const state = {
 fs.mkdirSync(path.join(scratch, 'channel-pack'))
 fs.writeFileSync(path.join(scratch, 'channel-pack/state.json'), JSON.stringify(state))
 try {
-  const { apply } = await import('../vendor/channel-pack/pack.js')
+  const pack = await import(sourceMode ? '../vendor/channel-pack/src/index.ts' : '../vendor/channel-pack/pack.js')
+  const { apply } = pack
+  signedLane = pack.directLane
+  if (signedLane) { savedSignedFetch = signedLane.fetch; signedLane.fetch = offlineFetch }
   apply(ctx, { disableOpencode: true })
   await new Promise(resolve => setImmediate(resolve))
   assert.equal(adapters.has('opencode'), false, 'disabled account provider is not registered')
@@ -101,7 +146,8 @@ try {
   }
   assert.equal((await call('account.list', { provider: 'opencode' })).value.accounts.length, 1)
   assert.equal(writes.length, 0, 'rejected RPCs leave credentials untouched')
-  console.log('ok  generated pack: 13 providers, no OpenCode registration/warmup, historical data retained, account RPCs refused')
+  console.log(`ok  ${sourceMode ? 'source modules' : 'generated pack'}: 13 providers, no OpenCode registration/warmup, historical data retained, account RPCs refused`)
+  if (sourceMode) await verifySourceRegressions({ ctx, adapters, call, creds })
   await verifyChannelCreditsRpc({ ctx, call, creds })
   console.log('ok  实际渠道 RPC：七渠道仅账号池凭据即可查余额，ZCode 账号池回退及缺凭据反馈')
 
@@ -110,8 +156,13 @@ try {
   // `login.poll` returned `{ done: false }` forever, so the UI could only show
   // its ten-minute timeout even when Google had already rejected the exchange.
   const fetchBeforeGemini = globalThis.fetch
+  let releaseToken, tokenEntered
+  const tokenGate = new Promise(resolve => { releaseToken = resolve })
+  const tokenStarted = new Promise(resolve => { tokenEntered = resolve })
   globalThis.fetch = async (input, init) => {
     if (String(input).startsWith('https://oauth2.googleapis.com/token')) {
+      tokenEntered()
+      await tokenGate
       return new Response(JSON.stringify({ error: 'invalid_grant', error_description: 'fixture token exchange failed' }), {
         status: 400, headers: { 'content-type': 'application/json' },
       })
@@ -127,11 +178,23 @@ try {
     callback.searchParams.set('code', 'fixture-code')
     const callbackResponse = await savedFetch(callback)
     assert.equal(callbackResponse.status, 200)
-    await new Promise(resolve => setTimeout(resolve, 50))
-    const failed = (await call('login.poll', { accountId: started.accountId, provider: 'gemini' })).value
+    await Promise.race([
+      tokenStarted,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('fixture token exchange did not start')), 5000).unref()),
+    ])
+    assert.deepEqual((await call('login.poll', { accountId: started.accountId, provider: 'gemini' })).value, { done: false },
+      'callback HTTP 200 precedes asynchronous token settlement')
+    releaseToken()
+    let failed
+    for (let i = 0; i < 100; i++) {
+      failed = (await call('login.poll', { accountId: started.accountId, provider: 'gemini' })).value
+      if (failed.done) break
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
     assert.deepEqual(failed, { done: true, success: false, error: 'invalid_grant: fixture token exchange failed' })
-    console.log('ok  Gemini OAuth failure: login.poll returns a terminal reason instead of waiting forever')
+    console.log('ok  Gemini OAuth: callback 200 stays pending until token settlement, then poll returns terminal failure')
   } finally {
+    releaseToken()
     globalThis.fetch = fetchBeforeGemini
   }
 
@@ -148,8 +211,11 @@ try {
   }
   new Function('window', fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8'))(window)
   const { ChannelsPage } = bundle.factory(name => {
-    assert.equal(name, 'react')
-    return react
+    if (name === 'react') return react
+    if (name === 'react-dom') {
+      return { createPortal: (children, container) => ({ type: 'portal', children, container }) }
+    }
+    throw new Error(`the browser half may only require react or react-dom; it asked for "${name}"`)
   }).__test
   const tree = ChannelsPage({ t: key => key, ctx: {}, summary: { channels: { state: 'ready' } } })
   const cards = []
@@ -171,6 +237,7 @@ try {
 
   // The retained OFM anonymous lane still enumerates and streams without any
   // account, independently of the disabled vendored OpenCode provider.
+  if (!process.argv.includes('--channels-only')) {
   globalThis.fetch = savedFetch
   const { stubUpstream, chatFrames } = await import('./lib/fake-kernel.mjs')
   const stub = await stubUpstream({ listing: ['mimo-v2.6-flash-free'], answer: () => ({ body: chatFrames('anonymous-ok') }) })
@@ -197,9 +264,398 @@ try {
   } finally {
     await stub.close()
   }
+  }
 } finally {
   for (const cleanup of dispose.reverse()) await cleanup()
   globalThis.fetch = savedFetch
+  if (signedLane) signedLane.fetch = savedSignedFetch
   hooks.deregister()
   fs.rmSync(scratch, { recursive: true, force: true })
+}
+
+async function verifySourceRegressions({ ctx, adapters, call, creds }) {
+  const { verifyChannelPrFixes } = await import('./channel-pr-fixes-test.mjs')
+  await verifyChannelPrFixes()
+  await verifyLoopResumeEvents()
+  let hostValidate
+  if (realLlmInvariant) await realLlmInvariant.apply({ invariants: { register(_name, install) {
+    install({ on(name, callback) { if (name === 'llm/stream') hostValidate = callback } },
+      message => { throw new Error(message) })
+  } } })
+  const validate = hostLlmVersion === '0.2.1-rc.2' ? async function* (stream) {
+    const accumulator = new hostLlm.AssistantStreamAccumulator(), original = [];
+    for await (const chunk of stream) { original.push(chunk); accumulator.push({ time: original.length, chunk }); yield chunk; }
+    assert.deepEqual(hostLlm.expandAssistantStream(accumulator.snapshot()).map(item => item.chunk), original, 'rc.2 durable stream preserves every emitted chunk');
+  } : stream => hostValidate({}, () => stream)
+  const assemble = chunks => {
+    const assembler = new RealBlockAssembler()
+    for (const chunk of chunks) assembler.push(chunk)
+    return assembler.blocks()
+  }
+  const collect = async iterable => { const out = []; for await (const item of iterable) out.push(item); return out }
+  const frame = (delta, finish_reason = 'stop') => ({ choices: [{ delta, finish_reason }] })
+  const sse = (...frames) => new Response(frames.map(row => `data: ${JSON.stringify(row)}\n\n`).join('') + 'data: [DONE]\n\n')
+  const options = { model: 'fixture-model', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] }
+  const shared = await import('../vendor/channel-pack/src/openai-compat.ts')
+  for (const [file, provider] of [
+    ['openai-compat', 'shared'], ['buddy-adapter', 'buddy'], ['lobsterai-adapter', 'lobsterai'],
+    ['trae-adapter', 'trae'], ['llm-adapter', 'codearts'],
+  ]) {
+    const module = await import(new URL(`../vendor/channel-pack/src/${file}.ts`, import.meta.url))
+    const serialize = module.serializeMessages
+    const history = [
+      { role: 'user', content: [{ type: 'text', text: 'task' }] },
+      { role: 'assistant', content: [{ type: 'reasoning', text: 'interrupted thinking' }] },
+      { role: 'assistant', content: [{ type: 'text', text: ' \n ' }] },
+      { role: 'user', content: [] },
+      { role: 'user', content: [{ type: 'text', text: ' \n ' }] },
+      { role: 'assistant', content: [{ type: 'tool-call', id: 'call-1', name: 'read', arguments: '{}' }] },
+      { role: 'tool', toolCallId: 'call-1', content: [{ type: 'text', text: 'result' }] },
+      { role: 'user', content: [{ type: 'text', text: 'next' }] },
+    ]
+    const before = JSON.stringify(history)
+    const wire = serialize(history)
+    assert.deepEqual(wire.map(row => row.role), ['user', 'assistant', 'tool', 'user'], provider)
+    assert.equal(wire[1].tool_calls[0].function.name, 'read')
+    assert.equal(wire[2].tool_call_id, 'call-1')
+    assert.equal(wire[2].content, 'result')
+    assert.equal(JSON.stringify(history), before, 'history is projected without mutating user data')
+    const poison = serialize([
+      { role: 'assistant', content: [{ type: 'tool-call', id: 'poison', name: '', arguments: '{}' }] },
+      { role: 'tool', toolCallId: 'poison', content: [{ type: 'text', text: 'unknown tool' }] },
+      history[0],
+    ])
+    assert.deepEqual(poison.map(row => row.role), ['user'], `${provider}: old unnamed calls are not replayed`)
+    if (provider !== 'codearts') {
+      const image = serialize([{ role: 'user', content: [{ type: 'image', attachment: { attachmentId: 'image-1' } }] }], new Map())
+      assert.ok(JSON.stringify(image).includes('[image unavailable]'), provider)
+      const images = ['image-1', 'image-2']
+      const parallel = [
+        { role: 'assistant', content: images.map(id => ({ type: 'tool-call', id, name: 'read_image', arguments: '{}' })) },
+        ...images.map(id => ({
+          role: 'tool', toolCallId: id, content: [{ type: 'image', attachment: { attachmentId: id } }],
+        })),
+      ]
+      const imageUrls = new Map(images.map(id => [id, `data:image/png;base64,${id}`]))
+      for (const messages of [parallel, [parallel[0], ...parallel.slice(1).map(row => ({
+        role: 'user', content: [{ type: 'tool-result', toolCallId: row.toolCallId, content: row.content }],
+      }))]]) {
+        const projected = serialize(messages, imageUrls)
+        assert.deepEqual(projected.map(row => row.role), ['assistant', 'tool', 'tool', 'user'], provider)
+        assert.equal(projected.at(-1).content.filter(part => part.type === 'image_url').length, 2)
+      }
+    }
+    const consume = response => validate(provider === 'shared'
+      ? shared.consumeOpenAiSse(response, {}, { label: 'fixture', firstTokenTimeoutMs: 1000, chunkTimeoutMs: 1000 })
+      : adapters.get(provider).consumeSse(response, options, ''))
+    const response = (...data) => provider !== 'trae' ? sse(...data) : new Response(
+      data.map(row => `event: output\ndata: ${JSON.stringify({
+        response: row.choices[0].delta.content,
+        reasoning_content: row.choices[0].delta.reasoning_content,
+        tool_calls: row.choices[0].delta.tool_calls,
+      })}\n\n`).join('') + `event: done\ndata: ${JSON.stringify({ finish_reason: data.at(-1).choices[0].finish_reason })}\n\n`,
+    )
+    for (const text of ['  ', '\n', '\n\n', '\t \r\n']) {
+      const chunks = await collect(consume(response(frame({ content: text }))))
+      assert.equal(chunks.at(-1).reason.kind, 'error', `${provider}: blank stop must fail`)
+      assert.equal(chunks.at(-1).reason.failure.code, 'EMPTY_RESPONSE')
+      assert.equal(chunks.some(row => row.type === 'block-end' && row.block.type === 'text'), false)
+      assert.deepEqual(assemble(chunks), [], `${provider}: assembler cannot retain whitespace partials`)
+    }
+    const visible = await collect(consume(response(frame({ content: '  ok\n' }))))
+    assert.equal(visible.at(-1).reason.kind, 'stop')
+    assert.ok(visible.some(row => row.type === 'block-end' && row.block.text === '  ok\n'))
+    assert.equal((await collect(consume(response(frame({ content: ' ' }, 'length'))))).at(-1).reason.kind, 'max-tokens')
+    const tools = await collect(consume(response(frame({ tool_calls: [
+      { index: 0, id: 'call-1', function: { name: 'read', arguments: '{}' } },
+    ] }, 'tool_calls'))))
+    assert.equal(tools.at(-1).reason.kind, 'tool-calls', `${provider}: tools remain valid`)
+    const callDelta = { tool_calls: [{ index: 0, id: 'call-1', function: { name: 'read', arguments: '{}' } }] }
+    for (const rows of [
+      [frame({ content: ' \n', ...callDelta }, 'tool_calls')],
+      [frame({ content: ' \n' }, null), frame(callDelta, 'tool_calls')],
+    ]) {
+      const chunks = await collect(consume(response(...rows)))
+      assert.equal(chunks.at(-1).reason.kind, 'tool-calls')
+      assert.deepEqual(assemble(chunks).map(block => block.type), ['tool-call'], `${provider}: whitespace plus tools leaves no text block`)
+    }
+    const thinking = await collect(consume(response(frame({ content: ' \n', reasoning_content: 'thinking' }))))
+    const thinkingBlocks = assemble(thinking)
+    assert.ok(thinkingBlocks.some(block => block.type === 'reasoning' && block.text === 'thinking'))
+    assert.equal(thinkingBlocks.some(block => block.type === 'text' && block.text.trim() === ''), false)
+    const splitProse = await collect(consume(response(frame({ content: ' \n' }, null), frame({ content: 'answer' }))))
+    assert.equal(assemble(splitProse).find(block => block.type === 'text').text, ' \nanswer')
+    console.log(`ok  source ${provider}: real host stream boundary/assembler, whitespace stop/tools/reasoning and preserved prose`)
+  }
+
+  const { RaccoonAdapter } = await import('../vendor/channel-pack/src/raccoon-adapter.ts')
+  const { LoomyAdapter } = await import('../vendor/channel-pack/src/loomy-adapter.ts')
+  const { nextUtc8DayStartMs } = await import('../vendor/channel-pack/src/model-queue.ts')
+  const credential = token => ({ access_token: token, refresh_token: `refresh-${token}` })
+  for (const [provider, Adapter] of [['raccoon', RaccoonAdapter], ['loomy', LoomyAdapter]]) {
+  for (const kind of ['http', 'business', 'nested', 'json-quota', 'json-long-quota', 'json-nonquota', 'all', 'partial', 'server', 'abort', 'limit']) {
+    const marked = [], sent = [], selected = []
+    const controller = new AbortController()
+    const adapter = new Adapter({
+      credentialRef: 'FIXTURE',
+      resolveCredential: async () => credential('a'),
+      refresh: async () => { throw new Error('unexpected refresh') },
+      accountPool: {
+        findAccountIdByCredential: async () => 'a',
+        updateModelRateLimit: async (...args) => marked.push(args),
+      },
+      nextAccount: async (_model, tried) => {
+        selected.push([...tried])
+        const next = (kind === 'all' ? ['a', 'b'] : ['a', 'b', 'c', 'd']).find(id => !tried.has(id))
+        return next ? { accountId: next, credential: credential(next) } : undefined
+      },
+      fetchImpl: async (_url, init) => {
+        const token = new Headers(init.headers).get('authorization').slice(7)
+        sent.push(token)
+        if (kind === 'abort') { controller.abort(); throw new DOMException('aborted', 'AbortError') }
+        if (kind === 'server') return new Response('temporary failure', { status: 503 })
+        if (kind === 'json-nonquota') return Response.json({ code: 500, message: 'temporary upstream failure' })
+        if (kind === 'partial') return sse(frame({ content: 'partial' }, null), { code: 402, message: '积分不足' })
+        if (kind === 'all' || kind === 'limit' || token === 'a') {
+          if (kind === 'business') return sse({ code: 402, message: '积分不足' })
+          if (kind === 'nested') return sse({ error: { message: '余额不足' } })
+          if (kind === 'json-quota' || kind === 'json-long-quota') {
+            return Response.json({
+              code: 402, padding: kind === 'json-long-quota' ? 'x'.repeat(2000) : '', message: '积分不足',
+            })
+          }
+          return new Response(JSON.stringify({ code: 402, message: '积分不足' }), { status: 402 })
+        }
+        return sse(frame({ content: 'rotated-ok' }))
+      },
+    })
+    const chunks = []
+    let failure
+    try { for await (const chunk of adapter.stream({ ...options, signal: controller.signal })) chunks.push(chunk) }
+    catch (error) { failure = error }
+    if (['http', 'business', 'nested', 'json-quota', 'json-long-quota'].includes(kind)) {
+      assert.equal(failure, undefined)
+      assert.deepEqual(sent, ['a', 'b'])
+      assert.deepEqual(marked.map(row => row[0]), ['a'])
+      assert.ok(chunks.some(row => row.type === 'text-delta' && row.text === 'rotated-ok'))
+    } else if (kind === 'all' || kind === 'limit') {
+      assert.equal(failure.code, 'QUOTA_EXCEEDED')
+      const expected = kind === 'all' ? ['a', 'b'] : ['a', 'b', 'c']
+      assert.deepEqual(sent, expected, 'rotation stops at pool exhaustion or three attempts')
+      assert.deepEqual(marked.map(row => row[0]), expected)
+    } else {
+      assert.ok(failure)
+      assert.equal(sent.length, 1)
+      assert.equal(selected.length, 0, 'partial output, transport and abort do not replay')
+      if (kind !== 'partial') assert.equal(marked.length, 0, 'non-quota errors do not lock accounts')
+    }
+    for (const row of marked) {
+      assert.equal(row[1], options.model)
+      assert.equal(row[2], nextUtc8DayStartMs())
+    }
+  }
+  console.log(`ok  source ${provider}: HTTP/SSE quota rotation, attribution, bounded retries, no replay after output/abort/5xx`)
+  }
+
+  const originalFetch = globalThis.fetch
+  const added = []
+  try {
+    for (const provider of ['raccoon', 'qoder', 'qodercn', 'loomy']) {
+      for (const id of ['a', 'b']) {
+        const accountId = `audit-${provider}-${id}`, ref = `AUDIT_${provider}_${id}`
+        added.push({ accountId, ref })
+        creds.set(ref, { value: JSON.stringify(credential(id)) })
+        await ctx.accountPool.addAccount({
+          id: accountId, provider, nickname: id, credentialRef: ref, enabled: true, refreshable: true, createdAt: 1,
+          modelRateLimits: { [options.model]: Date.now() + 3600000 },
+        })
+      }
+      await assert.rejects(collect(adapters.get(provider).stream({ ...options, provider })), error => {
+        assert.equal(error.code, 'QUOTA_EXCEEDED')
+        assert.match(error.message, /无需重新登录/)
+        return true
+      })
+    }
+    await ctx.accountPool.clearModelRateLimits('audit-raccoon-b')
+    const refreshes = [], sends = []
+    auditFetch = async (input, init) => {
+      const url = String(input)
+      if (url.endsWith('/refresh')) {
+        refreshes.push(JSON.parse(init.body).refresh_token)
+        return Response.json({ code: 0, data: { access_token: 'b-new', refresh_token: 'refresh-b-new' } })
+      }
+      if (url.endsWith('/chat/completions')) {
+        const auth = init.headers.Authorization
+        sends.push(auth)
+        return auth === 'Bearer b-new' ? sse(frame({ content: 'refreshed-ok' })) : new Response('{}', { status: 401 })
+      }
+      throw new Error(`unexpected offline request: ${url}`)
+    }
+    const chunks = await collect(adapters.get('raccoon').stream({ ...options, provider: 'raccoon' }))
+    assert.deepEqual(refreshes, ['refresh-b'], 'refresh uses the actual model-filtered account')
+    assert.deepEqual(sends, ['Bearer b', 'Bearer b-new'])
+    assert.ok(chunks.some(row => row.type === 'text-delta' && row.text === 'refreshed-ok'))
+    assert.equal(JSON.parse(creds.get('AUDIT_raccoon_a').value).access_token, 'a')
+    creds.set('AUDIT_raccoon_b', { value: JSON.stringify({ ...credential('b'), expires_at: String(Date.now() - 1000) }) })
+    refreshes.length = 0
+    sends.length = 0
+    await collect(adapters.get('raccoon').stream({ ...options, provider: 'raccoon' }))
+    assert.deepEqual(refreshes, ['refresh-b'], 'expired credentials refresh B before sending')
+    assert.deepEqual(sends, ['Bearer b-new'])
+    console.log('ok  source wiring: qoder/qodercn/raccoon/loomy quota is not missing credentials; expiry and 401 refresh target B')
+    await ctx.accountPool.clearModelRateLimits('audit-loomy-a')
+    await ctx.accountPool.clearModelRateLimits('audit-loomy-b')
+    await ctx.accountPool.setPermanentLocked('loomy', true)
+    const loomySends = []
+    auditFetch = async (input, init) => {
+      const url = String(input)
+      const token = new Headers(init?.headers).get('token')
+      if (url.includes('/points/records')) {
+        return Response.json({ code: '000000', data: {
+          balance: token === 'b' ? 100 : 0, dailyBalance: token === 'a' ? 100 : 0, availableBalance: 100,
+        } })
+      }
+      if (url.endsWith('/models')) return Response.json({ code: '000000', data: [] })
+      if (url.endsWith('/chat/completions')) {
+        loomySends.push(token)
+        return token === 'a' ? new Response('{"message":"积分不足"}', { status: 402 }) : sse(frame({ content: 'loomy-ok' }))
+      }
+      throw new Error(`unexpected offline request: ${url}`)
+    }
+    await assert.rejects(collect(adapters.get('loomy').stream({ ...options, provider: 'loomy' })), { code: 'QUOTA_EXCEEDED' })
+    assert.deepEqual(loomySends, ['a'], 'rotation must not consume locked permanent credits on B')
+    await ctx.accountPool.setPermanentLocked('loomy', false)
+    await collect(adapters.get('loomy').stream({ ...options, provider: 'loomy' }))
+    assert.deepEqual(loomySends, ['a', 'b'], 'unlocked B remains usable while A is limited')
+    console.log('ok  source loomy wiring: rotation preserves permanent-credit locks and model cooldowns')
+  } finally {
+    auditFetch = undefined
+    globalThis.fetch = originalFetch
+    await ctx.accountPool.setPermanentLocked('loomy', false)
+    for (const { accountId, ref } of added) { await ctx.accountPool.removeAccount(accountId); creds.delete(ref) }
+  }
+}
+
+async function verifyLoopResumeEvents() {
+  const { installLoopResume } = await import('../vendor/channel-pack/src/loop-recovery.ts')
+  const savedFlag = process.env.DSH_REASONING_LOOP_AUTO_RESUME
+  const savedMax = process.env.DSH_REASONING_LOOP_AUTO_RESUME_MAX
+  process.env.DSH_REASONING_LOOP_AUTO_RESUME = '1'
+  process.env.DSH_REASONING_LOOP_AUTO_RESUME_MAX = '2'
+  const flush = () => new Promise(resolve => queueMicrotask(resolve))
+  try {
+    for (const order of ['plugin-first', 'host-first']) {
+      for (const action of ['resume-stop', 'input', 'pending-inbox', 'queued-next-turn', 'queued-next-step', 'modern-empty',
+        'abort', 'abort-before-idle', 'completed', 'other-error', 'new-turn',
+        'discarded', 'canceled-splice', 'agent-dispose', 'scope-dispose', 'replaced-agent', 'budget']) {
+        const ctx = new RealContext()
+        const statuses = [], delivered = []
+        let withoutInitiator = 0
+        ctx.provide('agents', { withoutInitiator(run) { withoutInitiator++; return run() } })
+        ctx.on('api-session/status', (_id, running) => statuses.push(running))
+        const forward = () => ctx.on('agent/status', ({ agent, status }) => ctx.emit('api-session/status', agent.id, status === 'running'))
+        if (order === 'host-first') forward()
+        const fiber = ctx.plugin(scope => installLoopResume(scope))
+        await new Promise(resolve => setImmediate(resolve))
+        if (order === 'plugin-first') forward()
+        const makeAgent = () => {
+          const agent = {
+            id: 'fixture-loop-agent', session: { id: 'fixture-loop-agent' }, status: 'running',
+            inbox: { hasPending: false },
+            followup(message) {
+              assert.equal(agent.status, 'idle')
+              delivered.push({ agent, message })
+              ctx.emit('agent/inbox/inserted', { agent, message })
+              ctx.emit('session/event', agent.session, { type: 'turn/start', data: { turn: delivered.length + 1 } })
+              agent.status = 'running'
+              ctx.emit('agent/status', { agent, status: 'running' })
+            },
+            cancel() {
+              ctx.emit('session/event', agent.session, { type: 'agent/inbox/spliced', data: { outcome: 'canceled' } })
+              ctx.emit('session/event', agent.session, { type: 'turn/end', data: { reason: { kind: 'aborted', reason: { kind: 'user' } } } })
+              agent.status = 'idle'
+              ctx.emit('agent/status', { agent, status: 'idle' })
+            },
+          }
+          return agent
+        }
+        const agent = makeAgent()
+        const failAndIdle = target => {
+          target.status = 'running'
+          ctx.emit('agent/error', { agent: target, error: { code: 'REASONING_LOOP' }, turn: 1, step: 1 })
+          ctx.emit('session/event', target.session, {
+            type: 'turn/end', data: { reason: { kind: 'error', error: { code: 'REASONING_LOOP' } } },
+          })
+          if (action === 'abort-before-idle') {
+            ctx.emit('session/event', target.session, {
+              type: 'turn/end', data: { reason: { kind: 'aborted', reason: { kind: 'user' } } },
+            })
+          }
+          target.status = 'idle'
+          ctx.emit('agent/status', { agent: target, status: 'idle' })
+        }
+        try {
+          failAndIdle(agent)
+          assert.equal(delivered.length, 0, 'followup never reenters synchronous idle dispatch')
+          if (action === 'input') {
+            agent.inbox.hasPending = true
+            ctx.emit('agent/inbox/inserted', { agent, message: { id: 'human-input' } })
+          } else if (action === 'pending-inbox') agent.inbox.hasPending = true
+          else if (action === 'queued-next-turn') agent.inbox = { nextTurn: [{ id: 'human-turn' }], nextStep: [] }
+          else if (action === 'queued-next-step') agent.inbox = { nextTurn: [], nextStep: [{ id: 'human-step' }] }
+          else if (action === 'modern-empty') agent.inbox = { nextTurn: [], nextStep: [] }
+          else if (action === 'abort') agent.cancel()
+          else if (action === 'completed') ctx.emit('session/event', agent.session, { type: 'turn/end', data: { reason: { kind: 'completed' } } })
+          else if (action === 'other-error') ctx.emit('agent/error', { agent, error: { code: 'TRANSPORT' } })
+          else if (action === 'new-turn') {
+            agent.status = 'running'
+            ctx.emit('agent/status', { agent, status: 'running' })
+            agent.status = 'idle'
+            ctx.emit('agent/status', { agent, status: 'idle' })
+          } else if (action === 'discarded') ctx.emit('agent/inbox/discarded', { agent, message: { id: 'discarded' } })
+          else if (action === 'canceled-splice') ctx.emit('session/event', agent.session, { type: 'agent/inbox/spliced', data: { outcome: 'canceled' } })
+          else if (action === 'agent-dispose') {
+            ctx.emit('agent/disposed', { agent })
+            failAndIdle(agent)
+          } else if (action === 'scope-dispose') {
+            await fiber.dispose()
+          } else if (action === 'replaced-agent') {
+            ctx.emit('agent/disposed', { agent })
+            const replacement = makeAgent()
+            failAndIdle(replacement)
+            ctx.emit('agent/inbox/inserted', { agent, message: { id: 'stale-old-agent-input' } })
+            ctx.emit('session/event', agent.session, { type: 'turn/end', data: { reason: { kind: 'completed' } } })
+          }
+          await flush()
+          if (action === 'resume-stop' || action === 'budget' || action === 'replaced-agent' || action === 'modern-empty') {
+            assert.equal(delivered.length, 1, `${order}/${action}`)
+            assert.deepEqual(statuses.slice(-2), [false, true], 'host sees idle then running, never stale idle last')
+            assert.equal(withoutInitiator, 1)
+            if (action === 'replaced-agent') assert.notEqual(delivered[0].agent, agent)
+            if (action === 'resume-stop') {
+              agent.cancel()
+              await flush()
+              assert.equal(delivered.length, 1, 'user stop does not restart recovery')
+              assert.equal(statuses.at(-1), false)
+            } else if (action === 'budget') {
+              failAndIdle(agent)
+              await flush()
+              assert.equal(delivered.length, 2)
+              failAndIdle(agent)
+              await flush()
+              assert.equal(delivered.length, 2, 'self-inserted messages preserve the consecutive budget')
+            }
+          } else assert.equal(delivered.length, 0, `${order}/${action}: terminal/input/disposal invalidates queued recovery`)
+        } finally {
+          await fiber.dispose()
+        }
+      }
+    }
+    console.log('ok  source loop recovery: real Cordis listener ordering, user stop, terminal events, new turns, disposal and replacement')
+  } finally {
+    if (savedFlag === undefined) delete process.env.DSH_REASONING_LOOP_AUTO_RESUME
+    else process.env.DSH_REASONING_LOOP_AUTO_RESUME = savedFlag
+    if (savedMax === undefined) delete process.env.DSH_REASONING_LOOP_AUTO_RESUME_MAX
+    else process.env.DSH_REASONING_LOOP_AUTO_RESUME_MAX = savedMax
+  }
 }

@@ -497,12 +497,12 @@ function modelIdsFrom(payload) {
  * POST one streaming completion to the provider and push raw SSE `data:`
  * payloads to `onData`.
  *
- * Mirrors `postKiloStreamed`'s contract exactly: the body is posted as given —
- * a plain object gets `stream:true` forced, because this is the streaming wire
- * and a caller that forgot the flag would otherwise collect the JSON fallback —
- * the response's shape, not its Content-Type, decides how it is read, and the
- * caller's signal is the only deadline owner besides the shared readers' idle
- * budget.
+ * Catalog ids include the provider namespace; the provider only accepts its
+ * own bare model id. When modelId is supplied it overrides body.model for
+ * object and serialized JSON bodies alike. Routed bodies get `stream:true`;
+ * a serialized body without modelId is posted as given. The response's shape,
+ * not its Content-Type, decides how it is read, and the caller's signal is
+ * the only deadline owner besides the shared readers' idle budget.
  *
  * A JSON answer to a streamed request is normalised into the frame sequence
  * the row's wire decodes: chat chunks for `chat`, Anthropic events for
@@ -511,7 +511,7 @@ function modelIdsFrom(payload) {
  * @param {object} options
  * @param {object} options.config - the plugin settings' `aggregate` section
  * @param {string} options.providerId - registry provider id
- * @param {string} [options.modelId] - the bare model id, used to label synthesised frames
+ * @param {string} [options.modelId] - the bare outbound model id and label for synthesised frames
  * @param {object|string} options.body - the request body the caller built for this wire
  * @param {AbortSignal} [options.signal]
  * @param {(payload: string) => void} options.onData - one `data:` payload, in order
@@ -521,7 +521,14 @@ function modelIdsFrom(payload) {
 export async function postAggregateStreamed({ config, providerId, modelId, body, signal, onData, timeoutMs = TURN_TIMEOUT_MS }) {
   const resolved = resolveProvider(config, providerId)
   const model = text(modelId)
-  const bodyText = typeof body === 'string' ? body : JSON.stringify({ ...body, stream: true })
+  let outbound = body
+  if (typeof outbound === 'string' && model !== '') {
+    try { outbound = JSON.parse(outbound) }
+    catch { throw new UpstreamError('aggregate request body is not valid JSON', CODE.client) }
+    if (!isRecord(outbound)) throw new UpstreamError('aggregate request body must be a JSON object', CODE.client)
+  }
+  const bodyText = typeof outbound === 'string' ? outbound
+    : JSON.stringify({ ...outbound, ...(model === '' ? {} : { model }), stream: true })
   let response
   try {
     response = await egressFetch(resolved.chatUrl, {

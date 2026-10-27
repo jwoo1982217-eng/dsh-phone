@@ -1,0 +1,13 @@
+{
+  "stableIndexSha256": "c1053aeee6e0661187ac77b186bb7471df4232a7e444d47a03c6817ff32cbdf3",
+  "canonicalSourceSha256": {
+    "peer/index.mjs": "ed976cae0ff6652f7e76cffe85be1876af0d5850386fe9da940cbfb9b2e8d976",
+    "peer/tunnel.mjs": "d03f5dc4c5d34cb4de269444d9f74543ea8e74def1e57a1b72013d8686fa3b26",
+    "peer/relay.mjs": "f9247ee269ea4a719b824d8f909519bebbf8e62e23e68505d9aefb3ce42888bf",
+    "peer/page.html": "c43041616f55beb47a9873c0bbe9c759c7c70c8035ee184f574bc61e5ae25140",
+    "peer/protocol.mjs": "bf398f21419fe3eb8418d359ed1fe495a8450b71c55ee015c5ad969bdd0e3d55",
+    "peer/remote-service.mjs": "39a9a110b418452e1d0f64dff552fc947e555b8caf55b887c581717b3b82320c",
+    "peer/transport-proxy.mjs": "fa96246dde9a80fbb65e5c7f2d3e85c62002bc3b0f0481c1207b7864e1388837"
+  },
+  "scope": "Stable119 peer entry plus reviewed persistent-connection delta; canonical incoming-workspace WIP is deliberately excluded from this maintenance line."
+}

@@ -35,3 +35,11 @@ stats.json
 # AOCI agent host integration (machine-bound; do not commit)
 .codex/config.toml
 .codex/config.toml.backup.*
+
+# Desktop build artifacts
+packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/resources/
+packages/desktop/src-tauri/.node-license-cache/
+packages/desktop/node_modules/
+
+_audit/

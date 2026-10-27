@@ -27,6 +27,7 @@
     },
     {
       "path": "lib/llm-adapter.js",
+      "codeartsSignedTransport257": "be929a01f7548e1e78b2d58b2000cad9bc1f0e172b3c98bca2e585ab76d7c68f",
       "old": "bc2b5a76d88a51cc8b41d44bbf8b7c470b7e6d83b958eef3af00d32ca48a6eb7",
       "new": "bd746e043e0b539aecf72dfc50534a3a7a127340b3d78475efb2a991c49539d7",
       "upstreamRc3": "3684c5e4f48a0f2d4089ba86d80a73469258d638affbc3835219c06fb7bfe749"
@@ -52,6 +53,7 @@
     },
     {
       "path": "src/llm-adapter.ts",
+      "codeartsSignedTransport257": "8b3fb13f33e2ba21831532bcf5ffe242ef80df07dbbe8cb415eaac373aa26c27",
       "old": "7e93888a84855b15e805786240a499553ec678ca7b4e31fe488f964b0cec0f65",
       "new": "b7d4bc98aa9ee8be581853998a2cfd5413c722fd303ad7d0c03bec43f436722e",
       "upstreamRc3": "73eb1aa7af34768b65d2df7ebdbf4e3f110fcdd52f020cf0d498098f0e1eb45c"
@@ -124,5 +126,11 @@
       "upstreamRc3": "b6b2579d4d6e8f0e7c03158d350adac7a093d4fb37aff2f8f9e76fb9987dce9f"
     }
   ],
-  "jetHubUpstream": "8bf1c6f82ea977267c4b95575d706b835d20ef64"
+  "jetHubUpstream": "8bf1c6f82ea977267c4b95575d706b835d20ef64",
+  "codeartsSignedTransport257": {
+    "source": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.7",
+    "adaptation": "docs/mobile-completion/ofm-2.5.7.md",
+    "verification": "scripts/codearts-signed-transport.test.mjs",
+    "changes": "CodeArtsAdapter imports package-owned directFetch and selects it only when fetchImpl is not explicitly supplied. Existing provider/account-pool behavior is retained."
+  }
 }

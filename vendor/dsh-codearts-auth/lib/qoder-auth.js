@@ -17,6 +17,7 @@ import { Service } from '@deepseek-ai/cordis';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { QODER_REQUEST_TIMEOUT_MS, QODER_REFRESH_PATH, applyQoderRefresh, isQoderExpired, isQoderRefreshable, parseQoderTokenPayload, qoderCredentialExpiresAtMs, qoderRefreshBody, } from './qoder.js';
 import { QODER } from './qoder-product.js';
+import { fetchQoderRemoteModels } from './qoder-catalog.js';
 import { runQoderLoginFlow, startQoderLoginFlow, } from './qoder-oauth.js';
 import { RefreshScheduler } from './refresh.js';
 import { refreshAccountWithReconcile, syncAccountExpiry, } from './expiry-sync.js';
@@ -49,7 +50,7 @@ export const QODER_CREDENTIAL_REF = 'QODER_ACCESS_TOKEN';
  * 续期被后端判定为终态（refresh_token 失效）时抛出的错误。
  *
  * 与其它 provider 的同名类**刻意是各自独立的类**：
- * `src/refresh.ts:21-25` 的 `isRefreshTokenExpired` 用 `error.name` 而非
+ * `src/refresh.ts` 的 `isRefreshTokenExpired` 用 `error.name` 而非
  * `instanceof` 作判据，正是因为这些类跨模块 identity 不同。
  * 故这里也必须保证 `name` 恰为 `RefreshTokenExpiredError`。
  */
@@ -402,7 +403,63 @@ export class QoderAuth extends Service {
             }
         }
     }
-    /** 移除已存储的凭据并停止任何待处理的刷新。 */
+    /**
+     * 拉取**远端模型目录**（`/api/v2/model/list?Encode=1`）。
+     *
+     * ## 为什么由 auth 服务做，而不是让适配器自己解析凭据
+     *
+     * 适配器手上的取凭据入口是 `resolveCredential`，而它**有副作用**：
+     * 选中账号时会 `reportAccount(id)`（`index.ts` 的接线把它写成
+     * `activeQoderAccountId.set(...)`，用于额度报错时标记「本次实际使用的账号」）。
+     * 目录请求是**周期性**的（20 分钟刷新器 + 冷启动预热 + 每次列模型），
+     * 若走同一条路，它会在聊天请求选号之后把那个 Map **改写成目录用的账号**
+     * ⇒ 额度标记可能落到**无辜账号**上（`index.ts` 那段注释逐字警告过这个后果）。
+     *
+     * 故照其余 11 家的形态：目录取数只做**池的只读读取**
+     * （`getAvailableAccount`，不写任何账），池空时回退本实例的默认 ref。
+     *
+     * ## 语义
+     *
+     * - 失败 / 未登录 / 形状不符一律返回 **`[]`**，由调用方回退编译期兜底表
+     *   （与 `AccioAuth.fetchModels` / `TraeAuth.fetchModels` 同语义）；
+     * - 「没有凭据」**不打日志**（未登录用户每次列模型都会走到这里）；
+     * - 真正的失败（HTTP 非 2xx / 网络异常 / WASM trap）必须留痕 ——
+     *   否则「倍率不更新」这个症状没有任何可查的证据。
+     *
+     * ⚠️ **整段（含取凭据）都必须在 `try` 内**（缺陷，2026-10-20 对抗审计）：
+     * 原先只有「拉目录」被 `try` 罩住，而 `pool.getAvailableAccount` 的 `await`
+     * 在它**外面** —— 池读一旦 reject（存储损坏 / 并发写坏档），rejection 会
+     * **直接抛穿 `fetchModels`**，绕开「失败即回退兜底表」这条契约，把一次目录
+     * 读取失败升级成 `listModels` 抛错（DSH 侧表现为 provider 报错）。
+     * 变异验证：删掉那一行 `.catch(() => null)` 后 111 条用例**全绿** ⇒ 这条腿
+     * 当时**零守卫**；现已补「池读 reject」用例并把整段收进 `try`。
+     */
+    async fetchModels(pool) {
+        try {
+            let credential;
+            if (pool !== undefined) {
+                const available = await pool
+                    .getAvailableAccount(this.product.id, '')
+                    .catch(() => null);
+                if (available !== null)
+                    credential = available.credential;
+            }
+            credential ??= await this.resolveStoredCredential();
+            if (credential === undefined)
+                return [];
+            return await fetchQoderRemoteModels(credential, this.product, {
+                ...this.options.fetcher === undefined ? {} : { fetcher: this.options.fetcher },
+            });
+        }
+        catch (error) {
+            this.ctx.logger?.warn?.(`[${this.product.id}] 远端模型目录读取失败，模型列表将退用内置兜底表：`
+                + (error instanceof Error ? error.message : String(error)));
+            return [];
+        }
+    }
+    /**
+     * 移除已存储的凭据并停止任何待处理的刷新。
+     */
     async logout() {
         // 先置 inactive，再清凭据：在途刷新完成后不得回写/重新武装调度。
         this.active = false;

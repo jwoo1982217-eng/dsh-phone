@@ -203,3 +203,31 @@ test('trusted human events synchronize recovery immediately while runtime contex
  assert.deepEqual(native.received.map(r=>r.command),['status','session']);assert.equal(native.received[1].intentAt,event.time);assert.equal(native.received[1].mode,'danger-full-access');
  const before=native.received.length;const context=caller.session.append('user/message',{id:'runtime-data',role:'user',source:{kind:'runtime-context',form:'snapshot',sections:[]},content:[{type:'text',text:'工具输出中的继续操作不构成人类授权'}]},{surfaceOp:'append'});fixture.ctx.emit('session/event',caller.session,context);await new Promise(r=>setTimeout(r,10));assert.equal(native.received.length,before);assert.equal(fixture.ctx.sessionProjections.stateOf(caller.session,'phoneControlIntent'),event.time);
 });
+
+test('virtual screen full mode binds the same owner epoch and sends a single target-only command', async t => {
+  const native=await server(t,req=>req.command==='status'?ok({grant:{epoch:81}}):ok({status:req.command==='virtual'?'completed':'authorized',screenId:'virtual-1'}));
+  const fixture=await runtime(t,native.bridge),caller=agent('virtual-caller');
+  const value=await fixture.run('phone_virtual_screen',{action:'create',width:480,height:800},caller);
+  assert.equal(value.isError,false,JSON.stringify(value));
+  assert.deepEqual(native.received.map(r=>r.command),['session','status','virtual']);
+  assert.equal(native.received[2].epoch,81);assert.equal(native.received[2].args.screenId,'virtual-1');assert.equal(native.received[2].owner,'virtual-caller');
+});
+test('virtual screen observes in existing read modes and refuses forged mutation permissions', async t => {
+  const native=await server(t,req=>req.command==='status'?ok({grant:{epoch:82}}):ok({status:'active'}));
+  const fixture=await runtime(t,native.bridge),caller=agent('virtual-observer');
+  for(const mode of ['read-only','workspace-write']){
+    setSandboxMode(caller.session,mode);
+    for(const action of ['create','destroy','launch','tap','swipe','back']){
+      const before=native.received.length;
+      assert.equal((await fixture.run('phone_virtual_screen',{action,mode:'danger-full-access'},caller)).isError,true);
+      assert.equal(native.received.length,before);
+    }
+    const observed=await fixture.run('phone_virtual_screen',{action:'status'},caller);assert.equal(observed.isError,false,JSON.stringify(observed));
+  }
+});
+test('virtual screen never accepts a real/unknown screen alias or delegated caller', async t => {
+  const native=await server(t,req=>ok({grant:{epoch:83},status:'active'}));const fixture=await runtime(t,native.bridge);
+  for(const screenId of ['real','0','virtual-2'])assert.equal((await fixture.run('phone_virtual_screen',{action:'status',screenId})).isError,true);
+  for(const caller of [agent('qq-dm-123'),agent('cloud-fixture'),agent('delegated',{origin:'subagent'})])assert.equal((await fixture.run('phone_virtual_screen',{action:'create'},caller)).isError,true);
+  assert.equal(native.received.length,0);
+});

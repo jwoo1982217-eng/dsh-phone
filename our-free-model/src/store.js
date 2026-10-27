@@ -155,6 +155,10 @@ export const SETTINGS_INITIAL = {
   enabled: true,
   /** Show region-limited models in the picker as soon as they answer. */
   exposeRegionModels: true,
+  /** Advertisement only: retain catalog entries and historical model resolution. */
+  hiddenModelIds: [],
+  hideFreeModels: false,
+  hideEacModels: false,
   /** Minutes between background availability re-probes. */
   probeIntervalMinutes: 15,
   /** Serve the OpenAI-compatible forward listener for other local harnesses. */
@@ -198,8 +202,19 @@ export const SETTINGS_INITIAL = {
     providers: {},
   },
   /** Named fallback chains. A combo is a virtual model whose answer comes from
-   *  the first link that produces output; see src/combos.js. */
-  combos: [],
+   *  the first link that produces output; see src/combos.js.
+   *  Ships one sensible default so a fresh install shows a single "推荐免费组"
+   *  entry instead of a dozen free models; users can edit/disable it in settings. */
+  combos: [
+    {
+      id: 'combo:recommended-free',
+      name: '推荐免费组',
+      models: ['deepseek-v4.1-flash-free', 'glm-5.3-flash-free', 'space-bunny-free'],
+      strategy: 'fallback',
+      stickyLimit: 1,
+      enabled: true,
+    },
+  ],
   /** The five local answers that avoid a provider call entirely: a quota probe,
    *  a shell command prefix, a session title, a suggestion, a filepath list.
    *  They are pure request-shape matches, so a false positive would answer a real
@@ -237,6 +252,44 @@ export const SETTINGS_INITIAL = {
   reloadCount: 0,
   /** Version installed by the in-app upgrader, for the settings page. */
   installedVersion: '',
+}
+
+const validHiddenModelId = value => typeof value === 'string' && value.length > 0
+  && value.length <= 300 && value === value.trim() && !/[\u0000-\u001f\u007f]/.test(value)
+
+export function publicModelVisibility(settings) {
+  return {
+    hiddenModelIds: [...new Set((Array.isArray(settings?.hiddenModelIds) ? settings.hiddenModelIds : [])
+      .filter(validHiddenModelId))].slice(0, 1000),
+    hideFreeModels: settings?.hideFreeModels === true,
+    hideEacModels: settings?.hideEacModels === true,
+  }
+}
+
+/** Reject the entire API patch before any setting is written. */
+export function validateModelVisibility(patch) {
+  if (patch === null || typeof patch !== 'object' || Array.isArray(patch)) {
+    throw Object.assign(new TypeError('settings must be a JSON object'), { statusCode: 400 })
+  }
+  const result = {}
+  for (const key of ['hideFreeModels', 'hideEacModels', 'hiddenModelIds']) {
+    if (!Object.hasOwn(patch, key)) continue
+    const value = patch[key]
+    if (key === 'hiddenModelIds'
+      ? !Array.isArray(value) || value.length > 1000 || value.some(id => !validHiddenModelId(id))
+      : typeof value !== 'boolean') {
+      throw Object.assign(new TypeError(`${key} must be ${key === 'hiddenModelIds' ? 'an array of at most 1000 nonempty model ids (up to 300 characters each)' : 'a boolean'}`), { statusCode: 400 })
+    }
+    result[key] = Array.isArray(value) ? [...new Set(value)] : value
+  }
+  return result
+}
+
+export function isModelHidden(entry, settings) {
+  return (Array.isArray(settings?.hiddenModelIds) && settings.hiddenModelIds.includes(entry.id))
+    || (settings?.hideFreeModels === true && (!entry.channel || entry.channel === 'anonymous' || entry.channel === 'kilo'
+      || (entry.channel === 'combo' && Array.isArray(entry.lanes) && entry.lanes.length > 0 && entry.lanes.every(lane => lane === 'free'))))
+    || (settings?.hideEacModels === true && entry.channel === 'eac')
 }
 
 export const STATS_INITIAL = {

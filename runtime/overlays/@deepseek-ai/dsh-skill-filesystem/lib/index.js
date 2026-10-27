@@ -1,11 +1,10 @@
 import { access, lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { existsSync, unwatchFile, watchFile } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { homedir } from "node:os";
 import chokidar from "chokidar";
 import z from "@deepseek-ai/schemastery";
 import { parse } from "yaml";
-import { canonicalizeWatchPath, resolveDshHome } from "@deepseek-ai/dsh-home-paths";
+import { canonicalizeWatchPath, resolveAgentsHome, resolveDshHome } from "@deepseek-ai/dsh-home-paths";
 import { BUNDLED_SKILL_RANK, isSkillName } from "@deepseek-ai/dsh-skill";
 //#region lib/types/index.js
 /**
@@ -75,7 +74,7 @@ var FileSystemSkillProvider = class {
 		this.name = config.providerName ?? "filesystem";
 		this.includeDefaultRoots = config.includeDefaultRoots ?? true;
 		this.dshHome = resolveDshHome(config.dshHome);
-		this.agentsHome = resolve(config.agentsHome ?? process.env.DSH_AGENTS_HOME ?? join(homedir(), ".agents"));
+		this.agentsHome = resolveAgentsHome(config.agentsHome);
 		this.customSkillDirs = (config.customSkillDirs ?? []).map((root) => resolve(root));
 		this.watchManager = new SkillWatchManager(ctx, control.invalidate, resolveWatchConfig(config));
 		control.signal.addEventListener("abort", () => {
@@ -383,13 +382,24 @@ var SkillWatchManager = class {
 			usePolling: this.config.usePolling,
 			interval: this.config.pollIntervalMs
 		});
-		const handle = {
-			mode,
-			close: () => watcher.close()
-		};
 		let ready = false;
 		const readiness = Promise.withResolvers();
 		const signal = this.lifecycle.signal;
+		const onError = (error) => {
+			if (!ready) {
+				readiness.reject(error);
+				return;
+			}
+			this.handleWatcherError(state, error);
+		};
+		const handle = {
+			mode,
+			close: () => {
+				const closing = watcher.close();
+				watcher.on("error", onError);
+				return closing;
+			}
+		};
 		if (signal.aborted) {
 			await this.closeWatcher(handle);
 			signal.throwIfAborted();
@@ -398,13 +408,6 @@ var SkillWatchManager = class {
 			readiness.reject(signal.reason);
 		};
 		signal.addEventListener("abort", onAbort, { once: true });
-		const onError = (error) => {
-			if (!ready) {
-				readiness.reject(error);
-				return;
-			}
-			this.handleWatcherError(state, error);
-		};
 		watcher.on("error", onError);
 		watcher.once("ready", () => {
 			ready = true;

@@ -43,8 +43,8 @@ import {
   type OpencodeErrorInfo, type OpencodeErrorKind, type OpencodeFallbackModel,
 } from './opencode-product.js'
 import { listIdentitySlots, type IdentitySlot } from './opencode-auth.js'
-import { deriveRequestId, deriveSessionId, opencodeHeaders, opencodeUserAgent } from './opencode.js'
-import { buildOpencodePayload } from './opencode-messages.js'
+import { deriveSessionId, opencodeHeaders, opencodeUserAgent } from './opencode.js'
+import { buildOpencodePayloadWithToolMap } from './opencode-messages.js'
 import {
   getOpencodeCapabilitiesSync, opencodeEffortName, supportsOpencodeImage,
   type OpencodeModelCapability,
@@ -52,6 +52,7 @@ import {
 import { buildProxyDispatcher } from './opencode-proxy.js'
 import { consumeOpenAiSse, collectImages, httpErrorCode, serializeMessages } from './openai-compat.js'
 import { registerAdapterIdempotent } from './llm-register-compat.js'
+import { translateReasoningEffort } from './reasoning-ladder.js'
 import { reportLedgerAccount } from './token-ledger.js'
 import { retryAfterMsFromResponse } from './retry-after.js'
 
@@ -204,6 +205,44 @@ export function opencodeRetryAfterMs(
   if (kind === 'quota') return 24 * 60 * 60_000
   if (kind === 'auth') return RATE_LIMIT_BASE_MS
   return Math.min(RATE_LIMIT_BASE_MS * 2 ** Math.max(0, attempt - 1), RETRY_AFTER_CAP_MS)
+}
+
+/**
+ * 把一个请求档位收敛到该模型**声明过的**档位上。
+ *
+ * ## 为什么必须收敛（不是可选的美化）
+ *
+ * 上游会**校验** `reasoning_effort`：值不在模型接受的集合里就是 400，整轮对话
+ * 直接失败（2026-10-02 实测：非法值让错误信息变成 `[400] reasoning_…`）。
+ * 档位菜单来自 models.dev，而它是**会被远端刷新的**：用户在选择器里选了
+ * 「高」，刷新后该模型的档位集合变了（或会话恢复出一份旧选择），线上就会发出
+ * 一个现在非法的值。9router 对同一问题用 `normalizeOpenAILevel` 兜底
+ * （`max`/`ultra` 越界时降到 `xhigh`），这里改用本仓库自己的强度序
+ * （`reasoning-ladder.ts`）做同一件事，规则一致且两处不会漂移：
+ *
+ * - `exact` → 原样下发；
+ * - `mapped` → 就近落到**同族**的声明档（同距取更强，绝不在「关」与「开」
+ *   之间翻译）；
+ * - `unexpressible` / `unknown` → **不下发**该字段（模型的默认思考行为接管），
+ *   并由调用方记一条 warn。
+ *
+ * ⚠️ 能力表里**没有**这个模型（冷启动、远端表未覆盖）时**原样放行**：那表示
+ * 「我们不知道它接受什么」，此时拦下来等于把调用方的显式选择静默丢掉；这与
+ * 「能力表拿到了、且明确声明了集合」是两种不同的处境。
+ */
+export function resolveOpencodeEffort(
+  model: string,
+  requested: string | undefined,
+  capabilities: readonly OpencodeModelCapability[],
+): { effort?: string; outcome: 'passthrough' | 'exact' | 'mapped' | 'dropped' } {
+  if (typeof requested !== 'string' || requested.length === 0) return { outcome: 'passthrough' }
+  const capability = capabilities.find((c) => c.id === model)
+  if (capability === undefined) return { effort: requested, outcome: 'passthrough' }
+  if (capability.efforts.length === 0) return { outcome: 'dropped' }
+  const translated = translateReasoningEffort(requested, capability.efforts)
+  if (translated.kind === 'exact') return { effort: translated.effort, outcome: 'exact' }
+  if (translated.kind === 'mapped') return { effort: translated.effort, outcome: 'mapped' }
+  return { outcome: 'dropped' }
 }
 
 export class OpencodeAdapter extends LlmAdapter {
@@ -515,21 +554,31 @@ export class OpencodeAdapter extends LlmAdapter {
     // 否则图片会被静默丢掉（Qoder 图片丢失事故的同型缺陷）。
     const imageUrls = await this.resolveImageUrls(options.model, options.messages)
     const messages = serializeMessages(options.messages, imageUrls)
-    const payload = buildOpencodePayload({
+    // ⚠️ 思考档位（issue IKJJ0V）：`ReasoningEffortId` 是品牌类型，转普通字符串；
+    // 再按模型的声明集合收敛一次（见 `resolveOpencodeEffort`）—— 上游对集合外的
+    // 值是 400，拿整轮对话赌一个刷新前选定的档位不划算。
+    const effort = resolveOpencodeEffort(
+      options.model,
+      options.reasoningEffort === undefined ? undefined : String(options.reasoningEffort),
+      getOpencodeCapabilitiesSync(),
+    )
+    if (effort.outcome === 'mapped' || effort.outcome === 'dropped') {
+      this.options.warn?.(
+        `opencode: 模型 "${options.model}" 不接受档位 "${String(options.reasoningEffort)}"`
+        + `${effort.outcome === 'mapped' ? `，就近改用 "${effort.effort}"` : '，本轮不下发该参数'}`,
+      )
+    }
+    const { payload, toolNameMap } = buildOpencodePayloadWithToolMap({
       model: options.model,
       messages,
       ...options.system !== undefined && options.system.length > 0 ? { system: options.system } : {},
       ...options.tools !== undefined ? { tools: options.tools } : {},
       ...options.temperature !== undefined ? { temperature: options.temperature } : {},
       ...options.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {},
-      // ⚠️ 思考档位（issue IKJJ0V）：`ReasoningEffortId` 是品牌类型，转普通字符串。
-      // `none`（关闭思考）也照发 —— models.dev 的 toggle 形态就产出这一档。
-      ...options.reasoningEffort !== undefined
-        ? { reasoningEffort: String(options.reasoningEffort) }
-        : {},
+      ...effort.effort !== undefined ? { reasoningEffort: effort.effort } : {},
     })
     const headers: Record<string, string> = {
-      ...opencodeHeaders(slot.fingerprint, sessionIdOf(options), deriveRequestId(), opencodeUserAgent(slot.userAgent)),
+      ...opencodeHeaders(slot.fingerprint, sessionIdOf(options), opencodeUserAgent(slot.userAgent)),
       'content-type': 'application/json',
       accept: 'text/event-stream',
       authorization: `Bearer ${slot.apiKey}`,
@@ -570,6 +619,7 @@ export class OpencodeAdapter extends LlmAdapter {
       firstTokenTimeoutMs: OPENCODE.chatHeaderTimeoutMs,
       chunkTimeoutMs: OPENCODE.chatChunkTimeoutMs,
       ...options.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {},
+      restoreToolName: (name) => toolNameMap.get(name) ?? name,
     })
   }
 }

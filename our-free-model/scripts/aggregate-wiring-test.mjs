@@ -152,7 +152,7 @@ const post = (url, body) => callRoute(api(), 'POST', `/api/our-free-model${url}`
   checkThat('an aggregate row reached the catalog', aggregate !== undefined, [...byId.keys()].join(', '))
   check('the aggregate row names its lane', aggregate?.channel, 'aggregate')
   check('and carries its provider and model separately', [aggregate?.providerId, aggregate?.modelId], ['open_router', 'alpha-model'])
-  check('an aggregate row is not reported as unprobed-unknown', aggregate?.availability, 'available')
+  check('a listed aggregate row is not presented as verified', [aggregate?.availabilitySource, aggregate?.availability], ['listing', 'unknown'])
 
   const keyless = byId.get('groq/llama-3.3-70b-versatile')
   checkThat('a provider with no key contributes no row', keyless === undefined, 'a keyless apiKey provider was advertised')
@@ -165,7 +165,7 @@ const post = (url, body) => callRoute(api(), 'POST', `/api/our-free-model${url}`
   // the aggregate row 131072, so the chain must advertise the smaller of the two.
   check('the combo advertises the intersection window, not the largest', combo?.contextWindow, 128000)
   check('a combo whose links lack vision advertises no vision', combo?.vision, false)
-  check('a combo is not reported as unprobed-unknown', combo?.availability, 'available')
+  check('a listed combo is not presented as verified', [combo?.availabilitySource, combo?.availability], ['listing', 'unknown'])
   checkThat('the combo detail line names the chain', String(byId.get('combo:never-fails')?.detail ?? '').includes('chain') === false || true, '')
 }
 
@@ -188,12 +188,13 @@ const post = (url, body) => callRoute(api(), 'POST', `/api/our-free-model${url}`
   checkThat('the turn answered through the adapter', answer.includes('answered by the free lane'), JSON.stringify(chunks).slice(0, 300))
 
   await until(() => freeLane.requests.length > before, { what: 'the upstream request', timeoutMs: 5000 })
-  const sent = freeLane.requests[freeLane.requests.length - 1]
-  const toolRow = sent.body.messages.find(message => message.role === 'tool')
+  const sent = freeLane.requests.slice(before).find(request => request.body?.messages?.some(message => message.role === 'tool'))
+  checkThat('the captured request carries this turn’s tool result', sent !== undefined)
+  const toolRow = sent?.body.messages.find(message => message.role === 'tool')
   checkThat('the tool result was compacted on the wire', String(toolRow?.content ?? '').length < BIG_DIFF.length,
     `sent ${String(toolRow?.content ?? '').length} bytes of ${BIG_DIFF.length}`)
   checkThat('and the compaction kept the file header', String(toolRow?.content ?? '').includes('src/app.js'), String(toolRow?.content ?? '').slice(0, 200))
-  const system = sent.body.messages.find(message => message.role === 'system')
+  const system = sent?.body.messages.find(message => message.role === 'system')
   checkThat('the prompt saver injected a system instruction', String(system?.content ?? '').includes('<!-- ofm-token-saver -->'),
     String(system?.content ?? '').slice(0, 200))
 
@@ -228,6 +229,7 @@ const post = (url, body) => callRoute(api(), 'POST', `/api/our-free-model${url}`
   checkThat('the second link answered', answer.includes('answered by the free lane'), answer)
   check('and the turn finished cleanly', finish?.reason?.kind, 'stop')
   checkThat('the free lane saw the retry', freeLane.requests.length > beforeFree, '')
+  check('the aggregate link sends its bare model id (#323)', refusing.requests.at(-1)?.body.model, 'alpha-model')
 
   const stats = (await get('/stats')).json
   const comboRow = stats.models.find(row => row.model === 'combo:never-fails')
@@ -409,11 +411,19 @@ let boundPort = 0
   check('with the stored chain', combos.json.combos[0].id, 'combo:never-fails')
   checkThat('and a model list to pick from', combos.json.models.length >= 3, String(combos.json.models.length))
   check('offering both strategies', combos.json.strategies, ['fallback', 'round-robin'])
+  checkThat('model picker projection preserves context and output limits',
+    combos.json.models.every(row => Number.isFinite(row.contextWindow) && Number.isFinite(row.maxOutput)), 'missing capacity metadata')
+  const preview = await post('/combos/preview', { models: ['deepseek-v4-flash-free', 'mimo-v2.6-flash-free'] })
+  const picked = combos.json.models.filter(row => ['deepseek-v4-flash-free', 'mimo-v2.6-flash-free'].includes(row.id))
+  check('chain preview uses the runtime context intersection', preview.json.capacity.contextWindow, Math.min(...picked.map(row => row.contextWindow)))
+  check('chain preview uses the runtime output intersection', preview.json.capacity.maxOutput, Math.min(...picked.map(row => row.maxOutput)))
+  check('preview leaves stored chains untouched', (await get('/combos')).json.combos[0].id, 'combo:never-fails')
 
   const savedCombo = await post('/combos', { combos: [{ name: 'Second Chain', models: ['deepseek-v4-flash-free', 'mimo-v2.6-flash-free'], strategy: 'round-robin', stickyLimit: 2 }] })
   check('saving chains answers', savedCombo.status, 200)
   check('with the normalized id', savedCombo.json.combos[0].id, 'combo:second-chain')
   check('and the chosen strategy', savedCombo.json.combos[0].strategy, 'round-robin')
+  check('saved chains expose the same intersection as preview', savedCombo.json.usable[0].contextWindow, preview.json.capacity.contextWindow)
   checkThat('and the new chain is usable', (await summary()).json.catalog.some(entry => entry.id === 'combo:second-chain'), 'the new chain is not in the catalog')
 
   const saver = await get('/token-saver')

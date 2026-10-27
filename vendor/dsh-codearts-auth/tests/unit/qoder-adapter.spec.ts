@@ -5,11 +5,14 @@ import { dirname, resolve } from 'node:path'
 import {
   QoderAdapter,
   QODER_QUEUE_MAX_ATTEMPTS,
+  isBillingBusinessCode,
+  looksLikeBillingError,
   nextUtc8DayStartMs,
   parseQoderQueueError,
   qoderQueueDelayMs,
 } from '../../src/qoder-adapter.js'
 import { QODER, QODER_CN } from '../../src/qoder-product.js'
+import type { QoderFallbackModel } from '../../src/qoder-product.js'
 import { buildQoderCredential, parseQoderTokenPayload, type QoderCredential } from '../../src/qoder.js'
 
 /** 源码级断言的路径基准（与 `jet-hub-rpc.spec.ts` 同款）。 */
@@ -21,7 +24,20 @@ const cred: QoderCredential = buildQoderCredential(
   parseQoderTokenPayload({ token: 'tok', refresh_token: 'ref', user_id: 'uid-1' }),
   { machineId: 'm-1' })
 
-/** 构造适配器（默认注入可用凭据与 noop refresh）。 */
+/**
+ * 构造适配器（默认注入可用凭据与 noop refresh）。
+ *
+ * ⚠️ **默认刻意不注入 `fetchRemoteModels`** ⇒ 本家「不发远端目录请求、恒用兜底表」，
+ * 各用例看到的就是改造前那份静态快照。远端路径由本文件的「远端目录」一组
+ * 与 `qoder-catalog.spec.ts`（协议 + 条目映射）分别覆盖。
+ *
+ * ⚠️⚠️ **目录取数绝不能退化成适配器自己发请求**（2026-10-20 实测教训）：
+ * 中途的一版实现把它放在适配器内解析凭据 + 走全局 `fetch`，于是**每一个**用例
+ * 都真的发了一次 HTTPS —— 而该端点实测对**伪造凭据也回 200**（返回真实目录！），
+ * 「自定义 product + 单条兜底表」的几个用例因此静默拿到上游真表、断言变成
+ * 随机真值（实测 4 条以 `Auto · x0.5` 而非 `Unknown` 失败）。
+ * 这也正是最终把取数改成**注入式**（`QoderAuth.fetchModels(pool)`）的原因之一。
+ */
 function makeAdapter(overrides: Partial<ConstructorParameters<typeof QoderAdapter>[0]> = {}): QoderAdapter {
   return new QoderAdapter({
     credentialRef: { name: 'QODER_ACCESS_TOKEN' } as never,
@@ -79,11 +95,171 @@ async function collectWith(
 }
 
 describe('QoderAdapter 模型目录', () => {
-  it('listModels 返回兜底表（本插件不发远端请求）', async () => {
+  it('远端不可用时回退兜底表（静态快照，不再是唯一来源）', async () => {
     const models = await makeAdapter().listModels('qoder')
     expect(models.length).toBe(QODER.fallbackModels.length)
     expect(models.some((m) => m.id === 'auto')).toBe(true)
     expect(models.every((m) => m.provider === 'qoder')).toBe(true)
+  })
+
+  // ── 远端目录（2026-10-20 接入 `/api/v2/model/list?Encode=1`）──
+  //
+  // 背景：改造前本家**恒用编译期兜底表**，上游改价/改免费额度都不反映
+  // （用户报障「DeepSeek-Flash 上游已 0×，插件还显示 0.1」）。
+  describe('远端目录优先、兜底表回退', () => {
+    /**
+     * 远端条目 fixture（**已是归一后的形状**，与 `QoderFallbackModel` 同形）。
+     *
+     * ⚠️ 原始响应 → 归一形状的映射（`price_factor` / `context_config` /
+     * `thinking_config` / `promotion` …）由 `qoder-catalog.spec.ts` 覆盖；
+     * 本组只验适配器**拿了远端目录之后**的行为（谁优先、TTL、回退、广播）。
+     */
+    const remoteDfmodel: QoderFallbackModel = {
+      id: 'dfmodel', name: 'DeepSeek-Flash', contextWindow: 1_000_000,
+      supportsImage: true, supportsThinking: false,
+      isFree: true, priceFactor: 0, originalPriceFactor: 0.1,
+      efforts: ['high', 'max', 'low'], defaultEffort: 'max', supportsDisable: true,
+    }
+    /** 只存在于远端的模型（本仓兜底表里没有）—— 用来证明目录真的换了来源。 */
+    const remoteFast: QoderFallbackModel = {
+      id: 'fast', name: 'Fast', contextWindow: 1_000_000,
+      supportsImage: true, supportsThinking: true, priceFactor: 0.8,
+    }
+
+    it('远端成功 ⇒ 用远端目录（含远端独有的模型与免费标记）', async () => {
+      const fetchRemoteModels = vi.fn(async () => [remoteDfmodel, remoteFast])
+      const adapter = makeAdapter({ fetchRemoteModels })
+      const models = await adapter.listModels('qoder')
+      expect(models.map((m) => m.id)).toEqual(['dfmodel', 'fast'])
+      // ⚠️ 用户报障的那一格：上游 `price_factor: 0` ⇒ 显示「免费」而不是 `x0.1`。
+      expect(models[0]?.name).toBe('DeepSeek-Flash · 免费')
+      // 倍率格式与能力同样来自远端条目。
+      expect(models[1]?.name).toBe('Fast · x0.8')
+      expect(models[1]?.inputModalities).toEqual(['text', 'image'])
+    })
+
+    it('远端独有的模型，能力判据也必须走它（不能回退静态表）', async () => {
+      const adapter = makeAdapter({ fetchRemoteModels: async () => [remoteFast] })
+      const resolved = await adapter.resolveModel('qoder', 'fast')
+      expect(resolved.name).toBe('Fast')
+      expect(resolved.inputModalities).toEqual(['text', 'image'])
+      expect(resolved.context).toEqual({ contextWindow: 1_000_000 })
+    })
+
+    it('⚠️ 远端目录按账号收缩后，静态表里的模型能力/元数据**不得**退化（审计缺陷 1）', async () => {
+      // 实景：国际版有个免费额度号，上游只给它 2 条（qfmodel + dfmodel），
+      // 而目录缓存就是「上次成功那个账号的目录」。改造前 `catalogModel()` 只查
+      // 远端 ⇒ 静态表里其余 15 条全被判成「未知」：图片被硬拒、名字退化成裸 id、
+      // 窗口与档位消失、请求体元数据一并退化。
+      const adapter = makeAdapter({ fetchRemoteModels: async () => [remoteFast] })
+      const resolved = await adapter.resolveModel('qoder', 'dmodel')
+      expect(resolved.name, '名字不得退化成裸 id').toBe('DeepSeek-V4-Pro')
+      expect(resolved.inputModalities).toEqual(['text', 'image'])
+      expect(resolved.context).toEqual({ contextWindow: 1_000_000 })
+      expect(resolved.reasoning?.defaultEffort).toBe('max')
+    })
+
+    it('⚠️ 同一形态下带图请求不得被图片门禁硬拒（能力判据取并集）', async () => {
+      const fetchImpl = vi.fn(async () => envelopeResponse([textFrame('你好'), finishFrame])) as never
+      const adapter = makeAdapter({
+        // 目录里没有 dmodel —— 只有远端时不支持图片，会抛 UNSUPPORTED_CONTENT
+        fetchRemoteModels: async () => [remoteFast],
+        fetchImpl,
+        readImage: async () => ({ data: new Uint8Array([1, 2, 3]), mediaType: 'image/png' }),
+      })
+      // ⚠️ **必须先把远端目录读进缓存**：`stream()` 自己不拉目录，直接发请求时
+      //    `catalogSource()` 还是静态表 ⇒ 这条用例会**假绿**（变异打不中它）。
+      //    （第一版就漏了这一步，变异验证当场发现。）
+      await adapter.listModels('qoder')
+      const chunks = await collectWith(adapter, {
+        model: 'dmodel',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: 'hi' },
+            { type: 'image', attachment: { attachmentId: 'a1' } },
+          ],
+        }],
+      })
+      expect(chunks.some((c) => c.type === 'text-delta'), '应走到上游而不是被门禁拒').toBe(true)
+    })
+
+    it('免费标记必须透出到 listAllModels（Jet Hub「免费额度」分组只认 isFree）', async () => {
+      const adapter = makeAdapter({
+        fetchRemoteModels: async () => [remoteDfmodel, remoteFast],
+      })
+      await adapter.listModels('qoder')
+      const all = adapter.listAllModels()
+      expect(all.find((m) => m.id === 'dfmodel')?.isFree, 'dfmodel 是 is_free 模型').toBe(true)
+      // 反面：非免费模型不得被标成免费（否则整个分组失真）。
+      expect(all.find((m) => m.id === 'fast')?.isFree).toBeUndefined()
+    })
+
+    it('20 分钟 TTL：第二次读命中缓存，不再打上游', async () => {
+      const fetchRemoteModels = vi.fn(async () => [remoteFast])
+      const adapter = makeAdapter({ fetchRemoteModels })
+      await adapter.listModels('qoder')
+      await adapter.listModels('qoder')
+      expect(fetchRemoteModels).toHaveBeenCalledTimes(1)
+    })
+
+    it('refresh() 强制重拉（无视 TTL），供后台 20 分钟刷新器调用', async () => {
+      const fetchRemoteModels = vi.fn(async () => [remoteFast])
+      const adapter = makeAdapter({ fetchRemoteModels })
+      await adapter.listModels('qoder')
+      await adapter.refresh()
+      expect(fetchRemoteModels).toHaveBeenCalledTimes(2)
+    })
+
+    it('远端失败 ⇒ 回退兜底表，并且**必须有告警**（否则是一次零日志的静默回退）', async () => {
+      const warn = vi.fn()
+      const adapter = makeAdapter({
+        fetchRemoteModels: async () => { throw new Error('boom') },
+        warn,
+      })
+      const models = await adapter.listModels('qoder')
+      expect(models.length).toBeGreaterThan(0)
+      // ⚠️ **不得只断言 `toBe(QODER.fallbackModels.length)`**（2026-10-20 对抗审计）：
+      //    那是同义反复 —— 把兜底表置空后它变成 `0 === 0`，**整组 9 条全绿而菜单是空的**。
+      //    判据必须锚在**具体内容**上（空表满足不了 `dmodel` 存在）。
+      expect(models.map((m) => m.id)).toContain('dmodel')
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(String(warn.mock.calls[0]?.[0])).toContain('退用内置兜底表')
+    })
+
+    it('远端读出**空目录**（未登录 / 形状不符）⇒ 回退兜底表，不把菜单变空', async () => {
+      const adapter = makeAdapter({ fetchRemoteModels: async () => [] })
+      const models = await adapter.listModels('qoder')
+      expect(models.length).toBeGreaterThan(0)
+      expect(models.map((m) => m.id)).toContain('dmodel')
+    })
+
+    it('未接线 `fetchRemoteModels` ⇒ 不发任何请求，恒用兜底表', async () => {
+      const adapter = makeAdapter()
+      const models = await adapter.listModels('qoder')
+      expect(models.length).toBeGreaterThan(0)
+      expect(models.map((m) => m.id)).toContain('dmodel')
+    })
+
+    it('远端目录落地后广播（否则客户端永久停在冷启动那份兜底表）', async () => {
+      const onCatalogLoaded = vi.fn()
+      const adapter = makeAdapter({
+        fetchRemoteModels: async () => [remoteFast],
+        onCatalogLoaded,
+      })
+      await adapter.listModels('qoder')
+      expect(onCatalogLoaded).toHaveBeenCalledTimes(1)
+    })
+
+    it('⚠️ 目录取数**不得**走 `resolveCredential`（它会把「活动账号」改写成目录用的号）', async () => {
+      const resolveCredential = vi.fn(async () => cred)
+      const adapter = makeAdapter({
+        resolveCredential: resolveCredential as never,
+        fetchRemoteModels: async () => [remoteFast],
+      })
+      await adapter.listModels('qoder')
+      expect(resolveCredential).not.toHaveBeenCalled()
+    })
   })
 
   it('listModels 应用 Jet Hub 黑名单', async () => {
@@ -1058,6 +1234,122 @@ describe('QoderAdapter 排队错误（10605 model_queued）', () => {
       expect(CLIENT_MAPPING('rate_limit')).toBe('rate_limited')
       expect(CLIENT_MAPPING('billing_error')).not.toBe(CLIENT_MAPPING('rate_limit'))
     })
+
+    /**
+     * 🔴 **兄弟码 `112`（2026-10-10 用户报障实测，Gitee issue IKKJFH）**。
+     *
+     * 现场报文（GUI 失败原因那一行）：
+     * ```
+     * 本轮运行失败  qoder: {"pricingUrl":"https://qoder.com.cn/pricing?client=qoder"} (112/model_error)
+     * 模型请求重试已取消 (2/5)
+     * ```
+     * 后缀 `(112/model_error)` 由本仓 `openai-compat` 的 `[code, type].join('/')`
+     * 拼出 ⇒ 真实帧是
+     * `{ code: 112, message: '{"pricingUrl":"…"}', type: 'model_error' }`。
+     *
+     * ## 它为什么是 `110` 的同族
+     * 报文 payload 是**定价页链接** —— 语义是「要付费/升级才能用」，
+     * 与 `110`（`Billing daily count exceeded`，当日额度耗尽）同属**额度类**：
+     * 都是**确定性**失败，重试一百次结果一样。
+     *
+     * ## 不修的后果（IKKJFH 实测形状）
+     * 三个判据全 false ⇒ 落 `SERVER` ⇒ `SERVER` **在** harness 的
+     * `DEFAULT_RETRYABLE_CODES` 里 ⇒ 白退避 5 次；且
+     * `isQuotaExceededError(SERVER) = false` ⇒ `switchAccountOnQuota`
+     * **永不被调用** ⇒ **既不换号、也不换 provider**，用户侧表现为
+     * 「等一段必然失败的退避，只好手动取消」。
+     * ⚠️ 这与 `110` 当初那个缺陷**完全同型**，只是换了码值 —— 证明「只认码值」
+     * 这条判据本身不够，必须同时有文案兜底（见本组末尾的纯函数用例）。
+     */
+    it('业务码 112（payload 是 pricingUrl）同样归为不可重试', async () => {
+      const inner = JSON.stringify({
+        code: 112,
+        message: JSON.stringify({ pricingUrl: 'https://qoder.com.cn/pricing?client=qoder' }),
+        type: 'model_error',
+      })
+      const fetchImpl = vi.fn(billingFrame(inner)) as unknown as typeof fetch
+
+      const sleeps: number[] = []
+      let thrown
+      try {
+        await collectWith(makeAdapter({
+          fetchImpl, sleep: async (ms) => { sleeps.push(ms) },
+        }), { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
+      } catch (error) { thrown = error }
+
+      // ⚠️ 核心断言：与 110 同一档 —— 不可重试，且**不能**在适配器内部等待
+      expect(thrown?.code, '112 必须归为不可重试的额度错误').toBe('QUOTA_EXCEEDED')
+      expect(sleeps, '额度类不该在适配器内部等待').toEqual([])
+    })
+
+    it('字符串 "112" 同样识别（与 110 的两种编码口径一致）', async () => {
+      const inner = JSON.stringify({
+        code: '112',
+        message: JSON.stringify({ pricingUrl: 'https://qoder.com.cn/pricing?client=qoder' }),
+        type: 'model_error',
+      })
+      const fetchImpl = vi.fn(billingFrame(inner)) as unknown as typeof fetch
+      await expect(collectWith(makeAdapter({ fetchImpl, sleep: async () => {} }),
+        { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] }))
+        .rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' })
+    })
+
+    /**
+     * 文案兜底必须**自己**能认 `pricingUrl` —— 不能只靠码值。
+     *
+     * 判据（本仓既有条款原文）：「若上游哪天改用别的码值表达同一语义，
+     * 只认码就会漏判 —— 故两者都认」。`112` 就是这句话的实例。
+     * 故这里**故意不给 `code`**，只留 `pricingUrl` 文案，验证兜底这条腿独立成立。
+     */
+    it('无业务码、只有 pricingUrl 文案时也归为额度（文案兜底独立成立）', async () => {
+      const inner = JSON.stringify({
+        message: JSON.stringify({ pricingUrl: 'https://qoder.com.cn/pricing?client=qoder' }),
+        type: 'model_error',
+      })
+      const fetchImpl = vi.fn(billingFrame(inner)) as unknown as typeof fetch
+      const sleeps: number[] = []
+      let thrown
+      try {
+        await collectWith(makeAdapter({ fetchImpl, sleep: async (ms) => { sleeps.push(ms) } }),
+          { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
+      } catch (error) { thrown = error }
+
+      expect(thrown?.code, '仅凭文案也必须归为额度').toBe('QUOTA_EXCEEDED')
+      expect(sleeps).toEqual([])
+    })
+  })
+
+  /**
+   * 判据本身的可执行断言（**别只测调用点**）。
+   *
+   * ⚠️ 为什么单开一组：`112` 那次漏判的根因就在这两个纯函数里，
+   * 而调用点测试只覆盖「某一条路径」。这里把判据本身钉死，
+   * 防止后人改窄正则/改回单码值时**调用点测试仍绿**。
+   */
+  describe('额度判据（纯函数）', () => {
+    it('110 与 112 都算额度（数字与字符串两种编码）', () => {
+      for (const code of [110, '110', 112, '112']) {
+        expect(isBillingBusinessCode(code), `code=${String(code)}`).toBe(true)
+      }
+    })
+
+    it('排队码 10605 不算额度 —— 两类必须分开（语义不同：等待 vs 当天耗尽）', () => {
+      expect(isBillingBusinessCode('10605')).toBe(false)
+      expect(isBillingBusinessCode(10605)).toBe(false)
+    })
+
+    it('pricingUrl 报文算额度（112 的真实 payload 形态）', () => {
+      expect(looksLikeBillingError(JSON.stringify({
+        pricingUrl: 'https://qoder.com.cn/pricing?client=qoder',
+      }))).toBe(true)
+    })
+
+    it('泛词不得误伤：balance / quota 这类仍不算（防正文误判）', () => {
+      // 本仓既有条款：「关键词必须窄」—— 正文里讨论「余额」不得被判成额度错误
+      expect(looksLikeBillingError('your balance is 42 credits')).toBe(false)
+      expect(looksLikeBillingError('quota')).toBe(false)
+      expect(looksLikeBillingError('the model explained how pricing works')).toBe(false)
+    })
   })
 
   /**
@@ -1181,6 +1473,53 @@ describe('QoderAdapter 排队错误（10605 model_queued）', () => {
 
       // ③ 确实换账号重发（第二次请求存在）并拿到内容
       expect(call, '应换账号重发').toBe(2)
+      expect(chunks.some((c) => c.type === 'text-delta')).toBe(true)
+    })
+
+    /**
+     * ⚠️ **IKKJFH 的用户观感就落在这条上**：issue 原文是
+     * 「轮换没生效 —— 既没有换到号池里的下一个账号，也没有换到别的 provider」。
+     *
+     * 光验「`112` 归 `QUOTA_EXCEEDED`」**不够** —— 上面那组只证明错误码对了，
+     * 而 `QUOTA_EXCEEDED` 与「真的切了号」是两件事（`switchAccountOnQuota`
+     * 在无池/无候选时会 `undefined` 返回，码仍然是对的）。
+     * 故这里把 `112` 走一遍完整行为链：**标记 → 取号传 tried → 换号重发 → 拿到内容**。
+     *
+     * ⚠️ 与 `110` 那条行为用例是**同一形状的两份**，不是重复：
+     * 若后人把 `112` 从 `BILLING_BUSINESS_CODES` 里删掉，只有这条会红。
+     */
+    it('112 同样触发换号（issue 现象的另一半：不修则既不换号也不换 provider）', async () => {
+      const { pool, marks, picks } = makePoolStub([
+        { id: 'acct-A', token: 'tokA' },
+        { id: 'acct-B', token: 'tokB' },
+      ])
+
+      let call = 0
+      const fetchImpl = vi.fn(async () => {
+        call += 1
+        if (call === 1) {
+          const inner = JSON.stringify({
+            code: 112,
+            message: JSON.stringify({ pricingUrl: 'https://qoder.com.cn/pricing?client=qoder' }),
+            type: 'model_error',
+          })
+          return new Response(
+            `data:${JSON.stringify({ headers: {}, body: inner, statusCodeValue: 200 })}\n\n`,
+            { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+          )
+        }
+        return envelopeResponse([textFrame('新账号可用'), finishFrame])
+      }) as unknown as typeof fetch
+
+      const chunks = await collectWith(makeAdapter({
+        fetchImpl,
+        accountPool: pool as never,
+        currentAccountId: () => 'acct-A',
+      }), { model: 'qfmodel', messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }] })
+
+      expect(marks.map((m) => m.accountId), '应标记 acct-A 该模型受限').toEqual(['acct-A'])
+      expect(picks[0]?.has('acct-A'), 'tried 必须含刚失败的账号').toBe(true)
+      expect(call, '112 必须换账号重发').toBe(2)
       expect(chunks.some((c) => c.type === 'text-delta')).toBe(true)
     })
 

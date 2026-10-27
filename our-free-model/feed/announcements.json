@@ -2,6 +2,153 @@
   "$schema": "./announcements.schema.md",
   "announcements": [
     {
+      "id": "2026-10-20-v2.5.7-plugin-release",
+      "title": "v2.5.7：修复 CodeArts 签名、托管更新提示与模型测速",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-20T13:59:07Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.7",
+        "label": "查看插件更新说明"
+      },
+      "html": "<p><b>2.5.7 更新 DSH 插件端。</b>CodeArts 使用独立签名传输，保留代理、超时与取消，并修复积分/签到跨插件实例出口串线；托管安装明确提示通过原安装方式更新。模型测速要求非空正文和正常结束，保存成功与失败结果，防止旧探测覆盖新实测。本版保留正常动画和现有赞助卡片，不包含低性能模式。</p>"
+    },
+    {
+      "id": "2026-10-20-v2.5.6-plugin-release",
+      "title": "v2.5.6：插件赞助卡片精简，免费模型与 EAC 页面统一展示",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-19T16:24:31Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.6",
+        "label": "查看插件更新说明"
+      },
+      "html": "<p><b>2.5.6 更新 DSH 插件端。</b>免费模型与 EAC 模型页面上方统一展示紧凑的北辰 API 赞助卡片，文案更新为“邀请可获百分之十的返现”。移除“来自赞助商的广告”导航和详情路由，保留卡片及其查看链接；同时修复部分路径下热重载依赖未刷新导致的旧模块继续运行问题。</p>"
+    },
+    {
+      "id": "2026-10-19-v2.5.5-plugin-release",
+      "title": "v2.5.5：插件端移除交流群区块与开屏赞助广告",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-19T16:00:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.5",
+        "label": "查看插件更新说明"
+      },
+      "html": "<p><b>2.5.5 只更新 DSH 插件端。</b>已删除赞助说明中的交流群、群号和复制按钮，并关闭 desktop 插件启动时自动弹出的赞助开屏广告。赞助页面入口和邀请码功能保留；独立服务与桌面壳不随本版本更新。</p>"
+    },
+    {
+      "id": "2026-10-19-v2.5.4-release",
+      "title": "v2.5.4：优化新桌面端，优化插件端 UI 和广告",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-19T04:30:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.4",
+        "label": "查看更新说明与下载"
+      },
+      "html": "<p><b>2.5.4 优化新桌面端和插件端 UI，并完善广告展示。</b></p><ul><li>桌面端完善赞助入口、浅色与深色主题及窄窗口显示。</li><li>插件端增加「来自赞助商的广告」菜单，完整说明和附图可随时查看。</li><li>每日公告按本地日期展示一次，可随时收起；修复宿主设置弹窗中无法展示公告的问题，Esc 只收起公告并将焦点返回菜单。</li></ul><p>插件、独立服务和 Windows 桌面端统一更新至 <b>2.5.4</b>。托管安装请更新可信 tarball；Windows 用户请先退出托盘中的旧程序，再安装新版。</p>"
+    },
+    {
+      "id": "2026-10-18-v2.5.3-eac-wait",
+      "title": "v2.5.3 紧急修复：移除 EAC 60 秒无输出截止",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-18T00:30:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.3",
+        "label": "查看修复说明与下载"
+      },
+      "html": "<p><b>2.5.3 移除了 2.5.2 新增的 EAC 60 秒无有效输出截止。</b>排队、静默思考和只有心跳的等待不再因该规则被提前终止。旧配置中的 <code>progressTimeoutMs</code> 不再生效；用户取消和既有传输断线检测仍然有效。</p><p>本次没有修改 OpenCode 指纹或准入逻辑，匿名渠道的 <code>403 / LANE_LOCKED</code> 仍须与 EAC 等待问题分别排查。</p>"
+    },
+    {
+      "id": "2026-10-18-v2.5.2-release",
+      "title": "v2.5.2：升级、账号登录与流式错误修复；Windows 安装包更新",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-17T16:30:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.2",
+        "label": "查看版本说明与下载产物"
+      },
+      "html": "<p><b>2.5.2 已发布插件 tarball 与 Windows x64 完整安装包。</b>修复 GitHub API 限流导致的更新失败、旧模块缓存、公告反复通知、桌面账号登录与 WorkBuddy 请求误冷却；补齐系统提示词、空白响应和流式错误处理。</p><p>新增模型隐藏、链路能力交集显示和独立服务 LAN 推理中继。包管理器安装请使用 <code>distribution: managed</code> 并更新可信 tarball 路径。</p><p><b>匿名渠道的上游 403 / LANE_LOCKED 并未被宣称修复。</b>真实可用性仍取决于上游准入、配额和网络；EAC 60 秒无有效输出会明确失败，不自动重试。请查看完整发布说明。</p>"
+    },
+    {
+      "id": "2026-10-17-v2.5.1-release",
+      "title": "v2.5.1：修复升级失败（新增国内可达镜像源）；EAC 卡片不再显示 org 前缀",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-17T18:00:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.1",
+        "label": "查看完整说明"
+      },
+      "html": "<p><b>修复「检查更新」失败。</b>部分网络下 <code>raw.githubusercontent.com</code> 与 <code>cdn.jsdelivr.net</code> 很慢或间歇不可达，升级检查会报 <code>no manifest source answered</code>。本版为升级清单与公告订阅都新增一个 <b>raw.githubusercontent.com 代理镜像</b>（实测约 1.3 秒返回同样字节，而直连源单次可要 16 秒并超时）。</p><p>镜像<b>不从可变分支取件</b>：与直连源一样先解析成完整 commit SHA，再按 SHA 取清单与每个文件；签名与逐文件 SHA-256 校验照常执行。</p><p><b>EAC 卡片小字不再显示 <code>org/</code> 前缀</b>（如 <code>deepseek-v4.1-flash-free</code>）；名称行仍显示 <code>EAC DeepSeek V4.1 Flash Free</code>。同时服务端 EAC 渠道的对外模型名已改回前缀形式，<b>置顶 / NEW / 爆 / 高速</b> 标签与 1M 上下文、思考档位现已全部生效。</p><p>请在设置 → 插件升级中检查更新到 <b>2.5.1</b>。</p>"
+    },
+    {
+      "id": "2026-10-17-v2.5.0-release",
+      "title": "v2.5.0：免费车道 403 修复（会话 ID 编码校验）；推荐项目新增 EAC-design-world",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-17T16:00:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.5.0",
+        "label": "查看完整说明"
+      },
+      "html": "<p><b>免费车道 403 已修复。</b>上游 2026-10-17 起对会话 ID 追加<b>编码校验</b>：十二位十六进制必须是官方客户端的<b>降序时间戳</b>（<code>~(毫秒 &lt;&lt; 12 | 计数器)</code>，计数器 1–63，低十二位落在 <code>0xfc0–0xfff</code>）。升序写法或哈希摘要一律 <code>403 FreeTierError</code>。</p><p>插件现在按编码校验会话 ID，并把调用方传来的非降序 ID <b>确定性地重编码</b>成合规形状，而不是原样透传——同一段对话仍对应同一个上游会话。实测同 IP 下：原始升序 ID 403，重编码后 200。</p><p><b>推荐项目页新增第三个项目：EAC-design-world</b>——DeepSeek Harness 的本地视频制作与设计插件：多轨剪辑、模板与设计体系、原生预览画布、真实文件导出，全程在本机完成。用得上就顺手点个 Star。</p><p>插件、独立本地服务与 Windows 桌面壳统一升级到 <b>2.5.0</b>。请在设置 → 插件升级中检查更新。</p>"
+    },
+    {
+      "id": "2026-10-17-session-encoding-gate-fix",
+      "title": "免费车道 403 已修复：会话 ID 编码校验；EAC 免费模型改走服务器 IP 池",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-17T14:30:00Z",
+      "expiresAt": "2026-12-31T00:00:00Z",
+      "html": "<p><b>免费车道恢复可用。</b>上游 2026-10-17 起对会话 ID 追加了<b>编码校验</b>，不再只看 <code>ses_</code> 形状：十二位十六进制必须是<b>降序时间戳</b>（<code>~(毫秒 &lt;&lt; 12 | 计数器)</code>，计数器 1–63，低十二位落在 <code>0xfc0–0xfff</code>）。升序写法或哈希摘要一律 403 FreeTierError。</p><p><b>插件已修：</b>会话 ID 现在按编码校验，调用方传来的非降序 ID 会被确定性地重编码成合规形状，而不是原样透传——同一段对话仍然对应同一个上游会话。实测同 IP 下：原始升序 ID 403，重编码后 200。</p><p><b>EAC 免费模型改走服务器侧 IP 池：</b>服务器上部署了匿名车道网关，出口经<b>免费代理池</b>轮换（每 30 分钟自动刷新存活节点），单 IP 限流不再影响可用性；EAC 渠道的 <code>deepseek-v4.1-flash-free</code> 与 <code>glm-5.3-flash-free</code> 已切到这条链路，20 次连续请求全部成功。</p><p>请升级插件后使用。</p>"
+    },
+    {
+      "id": "2026-10-17-eac-opencode-free-models",
+      "title": "EAC 渠道新上两个 OpenCode 免费模型：DeepSeek V4.1 Flash Free 与 GLM 5.3 Flash Free",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-17T13:00:00Z",
+      "expiresAt": "2026-12-31T00:00:00Z",
+      "html": "<p><b>两个新模型已通过 EAC 渠道上线</b>，由 <b>OpenCode 免费车道</b>转发，在 EAC 模型页<b>排在最前面</b>，带红色 <b>NEW</b> / <b>爆</b> 徽标与「<b>高速</b>」标签：</p><p><b>DeepSeek V4.1 Flash Free</b>（<code>opencode/deepseek-v4.1-flash-free</code>）<br/>支持图片输入；思考档位为<b>关闭 / 低 / 高 / 最大</b>——「关闭」真实生效（推理 token 归零），四档直接下发到上游。</p><p><b>GLM 5.3 Flash Free</b>（<code>opencode/glm-5.3-flash-free</code>）<br/>原生多模态（图片 / 视频 / PDF）；思考档位为<b>低 / 高 / 最大</b>三档，同样真实下发。</p><p>两个模型都经服务器侧 EAC 网关签名转发，与免费车道互不影响；使用前需按 EAC 渠道要求完成 GitHub 授权并 star 仓库。</p>"
+    },
+    {
+      "id": "2026-10-17-v2.4.0-release",
+      "title": "v2.4.0：免费车道对齐 OpenCode v2 客户端指纹；推荐项目页；聚合渠道行修正",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-17T12:00:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.4.0",
+        "label": "查看完整说明"
+      },
+      "html": "<p><b>免费车道</b>：按上游 2026-10-14 起的 <b>v2 客户端</b>重做指纹——User-Agent 换成 <code>opencode/latest/2.0.26/cli</code>，会话头补齐四个同值镜像并去掉 v1 专用的 <code>x-opencode-request</code>，工具闸门改为 <code>read</code>/<code>shell</code> 两个名字且定义逐字对齐官方客户端，<code>tool_choice: none</code> 不再下发。调用方若正好用了这两个名字，会改名成 <code>_client</code> 并在响应侧还原。</p><p><b>推荐项目页</b>：设置页新增「推荐项目」页，两张卡片分别指向 EAC-Desktop 与 EAC-Pack，Star / Fork / 最近提交数实时取自 GitHub，取不到就整块不显示，绝不用占位数字。</p><p><b>聚合渠道</b>：移除 OpenCode 免密池这一行——它要求每请求的会话指纹，聚合车道的通用传输承载不了；这 10 个模型本来就在免费车道里原生提供。注册表现为 75 家。</p><p>插件、独立本地服务和 Windows 桌面壳统一升级到 <b>2.4.0</b>。请在设置 → 插件升级中检查更新。</p>"
+    },
+    {
+      "id": "2026-10-16-picks-page",
+      "title": "推荐项目页上线：EAC-Desktop、EAC-Pack 与 EAC-design-world——用得上，就顺手点个 Star",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-16T12:00:00Z",
+      "expiresAt": "2026-11-30T00:00:00Z",
+      "html": "<p><b>设置页新增「推荐项目」页</b>：三个与本插件同源的开源项目——它们把 Agent 装进原生桌面、让上百个插件和谐共存、把视频与设计留在这台机器上，也是 EAC 协付渠道背后的桌面工作台。用得上，就顺手点个 Star。</p><p><b>EAC-Desktop · 桌面工作台</b><br/>基于 DeepSeek Harness 的 Tauri 原生桌面：随包 Node 运行时，双击即进入工作；项目文件、会话变更、插件市场与皮肤都在一处，Windows / Linux / macOS 均有安装包。<br/><a href=\"https://github.com/Ebony-Vinyl/EAC-Desktop\">github.com/Ebony-Vinyl/EAC-Desktop</a> · <a href=\"https://github.com/Ebony-Vinyl/EAC-Desktop/releases\">下载安装</a></p><p><b>EAC-Pack · 插件整合包</b><br/>DSH Desktop 的插件目录与批量安装、更新管理：内置 72 个基线子插件、皮肤预览与 Prompt 合集，固定摘要清单逐字节校验，装出来的环境完整可信。<br/><a href=\"https://github.com/Ebony-Vinyl/EAC-Pack\">github.com/Ebony-Vinyl/EAC-Pack</a></p><p><b>EAC-design-world · 设计工作台</b><br/>DSH 的本地视频制作与设计插件：多轨剪辑、模板与设计体系、原生预览画布，导出的是真实文件；素材与工程全程留在自己硬盘上。<br/><a href=\"https://github.com/Ebony-Vinyl/EAC-design-world\">github.com/Ebony-Vinyl/EAC-design-world</a></p><p>三个项目都免费、开源、无广告。Star 是它们唯一的「工资条」——每多一个 Star，作者就多一分把项目做下去的理由。</p>"
+    },
+    {
+      "id": "2026-10-15-v2.3.0-release",
+      "title": "v2.3.0：免费车道迁移与插件升级页独立化",
+      "level": "update",
+      "pinned": true,
+      "createdAt": "2026-10-15T12:00:00Z",
+      "link": {
+        "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model/releases/tag/v2.3.0",
+        "label": "查看完整说明"
+      },
+      "html": "<p><b>免费车道</b>：请求迁移到新的 <code>/inference/v1</code> 路径，补齐会话标识、工具指纹和客户端归属处理；会话映射持久化，服务重启后不再丢失。上游 <code>FreeTierError</code> 会明确显示为线路锁定，不再误导重复登录。</p><p><b>插件升级</b>：升级功能独立为导航页，集中展示版本、进度和失败原因，设置页不再重复显示升级面板。</p><p>插件、独立本地服务和 Windows 桌面壳统一升级到 <b>2.3.0</b>。请在设置 → 插件升级中检查更新，独立服务和桌面端用户请使用完整新版程序。</p>"
+    },
+    {
       "id": "2026-10-10-v2.1.0-release",
       "title": "v2.1.0：聚合 API——自带 Key 接入 76 家服务商；省 Token（工具输出压缩实测省 90%）；自动降级链路；原生 /v1/messages",
       "level": "update",

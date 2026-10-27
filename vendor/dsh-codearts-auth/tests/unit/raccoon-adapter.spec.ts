@@ -929,3 +929,107 @@ describe('RaccoonAdapter 请求级账号轮换（余额耗尽无感切号）', (
     expect(streamError).toBeInstanceOf(Error)
   })
 })
+
+/**
+ * ★★ 网关 499（client closed request）必须归 **aborted 形态**。
+ *
+ * ## 为什么之前零覆盖（2026-10-12 审计实测）
+ *
+ * `c411fa8` 只改了 `src/raccoon-adapter.ts` + `package.json`，**没带任何测试** ——
+ * 审计实测该 spec 里匹配 `499|aborted|AbortError` 的行数为 **0**。
+ * 本组补上，并把该修复的**已知缺口**（SSE 内嵌帧路径）也如实锁住。
+ *
+ * ## 为什么必须由**适配器自己**抛
+ *
+ * `raccoon` 是**直接 provider 适配器**，请求不经 aggregate 路由 ⇒
+ * `aggregate-adapter.ts` 的 `isAbortLike` 第四条**覆盖不到它**。
+ * 旧路径把 499 包成普通 `LlmError`（`code = httpErrorCode(499)` = `'HTTP_499'`）
+ * ⇒ 外层 `adapterFailureChunk` 归 `kind: 'error'` ⇒ 终端显示「本轮运行失败」。
+ *
+ * ⚠️⚠️ **重试资格不受本改动影响**（实测，别按直觉推断）：
+ * `DEFAULT_RETRYABLE_CODES = ['EMPTY_RESPONSE','RATE_LIMIT','SERVER','TIMEOUT','TRANSPORT']`
+ * —— **`HTTP_499` 与 `ABORTED` 都不在其中**。故本改动只改外层归类的 `kind`
+ * （`error` → `aborted`），**不改变**「会不会重试」。
+ */
+describe('★★ raccoon 网关 499 必须归 aborted 形态（PR #87 c411fa8，原零测试）', () => {
+  const failingFetcher = (status: number, body: string) =>
+    vi.fn(async () => new Response(body, { status })) as unknown as typeof fetch
+
+  const catchError = async (
+    adapter: RaccoonAdapter,
+  ): Promise<{ name?: string; code?: string; message?: string } | undefined> => {
+    try {
+      await collect(adapter, {})
+      return undefined
+    } catch (error) {
+      return error as { name?: string; code?: string; message?: string }
+    }
+  }
+
+  it('★ 499 + `client has aborted request` ⇒ name=AbortError / code=ABORTED', async () => {
+    const adapter = makeAdapter({ fetcher: failingFetcher(499, 'client has aborted request') })
+    const error = await catchError(adapter)
+    expect(error?.code, '必须归 ABORTED（外层靠它判 aborted）').toBe('ABORTED')
+    expect(error?.name, 'name 也要设（isAbortLike 先看 name）').toBe('AbortError')
+    expect(error?.message).toContain('aborted request')
+  })
+
+  it('★ 499 但 body **没有** aborted 字样 ⇒ 仍归 ABORTED（status 腿独立成立）', async () => {
+    // ⚠️ 判据是 `status === 499 || 正则`，两条腿**独立**。只留正则腿这条会红。
+    const adapter = makeAdapter({ fetcher: failingFetcher(499, '{"error":"unknown"}') })
+    expect((await catchError(adapter))?.code).toBe('ABORTED')
+  })
+
+  it('★ 非 499 状态但 body 含 aborted request ⇒ 也归 ABORTED（正则腿独立成立）', async () => {
+    const adapter = makeAdapter({ fetcher: failingFetcher(400, 'another client has aborted request') })
+    expect((await catchError(adapter))?.code).toBe('ABORTED')
+  })
+
+  it('★★ 反例：真故障必须**保持**原 code（判据不得恒真）', async () => {
+    // ⚠️ 500 ⇒ `httpErrorCode` 给 `SERVER`（**可重试**）。判据恒真会让它变成
+    //    ABORTED ⇒ 丢掉重试资格。这是本组最重要的反例。
+    const adapter = makeAdapter({ fetcher: failingFetcher(500, 'upstream exploded') })
+    expect((await catchError(adapter))?.code).toBe('SERVER')
+  })
+
+  it('★ 反例：400 参数错保持 `INVALID_REQUEST`（既不误归 aborted，也不误归可重试）', async () => {
+    // ⚠️ `httpErrorCode(400)` 给的是 `INVALID_REQUEST`（不是 `HTTP_400`）——
+    //    4xx 里只有 401/403/429 与 400 有专用码，其余才落 `` `HTTP_${status}` ``。
+    const adapter = makeAdapter({ fetcher: failingFetcher(400, 'bad request payload') })
+    const error = await catchError(adapter)
+    expect(error?.code).toBe('INVALID_REQUEST')
+    expect(error?.name).not.toBe('AbortError')
+  })
+
+  it('⚠️ 边界如实记录：`HTTP_4990` 这类前缀串**会**被误命中（与 aggregate 侧同口径）', async () => {
+    // 判据正则 `/aborted request|HTTP_?499/i` **无词边界**，故 `HTTP_4990`
+    // 会被当成 499。此处把边界**如实锁住**，而不是单方面收严 ——
+    // 同族判据（aggregate 侧 `isAbortLike`）就是同一形态，两处不得分叉。
+    const adapter = makeAdapter({ fetcher: failingFetcher(400, 'HTTP_4990 token limit reached') })
+    expect((await catchError(adapter))?.code).toBe('ABORTED')
+  })
+
+  it('🔴 已知缺口（如实锁住，非契约）：**SSE 内嵌错误帧路径**上 499 仍归 `SERVER`', async () => {
+    // ⚠️⚠️ 真实缺口（2026-10-12 审计实测）：`abortLikeOrNormal` 只在**两个
+    //    HTTP 非 ok 的抛出点**被调用；而 HTTP 200 + SSE 内嵌错误帧那条路径
+    //    走 `consumeOpenAiSse`，**不经过它** ⇒ 499 在那里仍抛 `code='SERVER'`
+    //    ⇒ 外层归 `kind:'error'` ⇒ 终端仍显示「本轮运行失败」。
+    //
+    // ⚠️ 修它要动 `src/openai-compat.ts`（**所有 provider 共享**的错误归类层），
+    //    影响面远超本次范围，故**本分支不擅自扩大改动面**，只登记。
+    //
+    // ⚠️ 这条断言**刻意只锁「现状事实」**（SSE 路径拿到的是 SERVER），
+    //    **不是**把缺口当契约：若将来有人在 `consumeOpenAiSse` 那层统一修好
+    //    （正确方向），本用例会红 —— 那时**应当改写它**，而不是回退修复。
+    const fetcher = vi.fn(async () => sseResponse([
+      JSON.stringify({ statusCodeValue: 499, message: 'client has aborted request' }),
+    ])) as unknown as typeof fetch
+    const adapter = makeAdapter({ fetcher })
+    const error = await catchError(adapter)
+    expect(
+      error?.code,
+      'SSE 内嵌帧路径当前归 SERVER（已知缺口）。若此处变成 ABORTED，说明该层已统一修复，'
+      + '请改写本用例而不是回退修复。',
+    ).toBe('SERVER')
+  })
+})

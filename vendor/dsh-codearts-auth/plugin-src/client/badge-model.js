@@ -66,6 +66,27 @@ export const DEFAULT_BADGE_PREFERENCE = 'auto';
 export const AGGREGATE_PROVIDER_ID = 'aggregate';
 
 /**
+ * 旧 auto（`jet-hub-auto`）的路由 id —— 必须与宿主 `src/auto-adapter.ts` 的
+ * `AUTO_PROVIDER` 逐字一致。
+ *
+ * ## ⚠️ 它与 `AGGREGATE_PROVIDER_ID` 是**两个不同的 provider**，不要合并
+ *
+ * 两者都能「用一个模型名跨渠道选型」，但机制不同：
+ * - `aggregate`：**客户端**重定向（宿主记下「上次实际转发成功的渠道」，
+ *   客户端在门控前把 `aggregate` 换成那个真实渠道，见 {@link resolveBadgeProvider}）；
+ * - `jet-hub-auto`：**宿主端**改写（客户端拿不到「临期胜者」，那要打全池余额接口；
+ *   宿主在 `usage.badge` 里把请求改写后再查，见 `jet-hub-rpc.ts`）。
+ *
+ * ⇒ 前者靠**重定向**过门控，后者靠**专用分支**过门控（`usage-badge.js` 里
+ * `provider === AUTO_PROVIDER_ID` 那一条）。**两条路径都不能删**：用户
+ * 2026-10-08 明确要求「两个 auto 都要能用」。
+ *
+ * ⚠️ 上游 `ba10f4f` 重写 aggregate 时把旧 auto 的徽标支持整块删掉了
+ *（宿主端 `autoActual` / 客户端那个裸字面量分支）⇒ 用户看到「也没胶囊了？」。
+ */
+export const AUTO_PROVIDER_ID = 'jet-hub-auto';
+
+/**
  * 把徽标的 `provider` 解析成**实际要读哪个渠道的余额**。
  *
  * ## 为什么需要它（P3）
@@ -150,17 +171,36 @@ export const HOST_STALE_HINT = '插件宿主未加载最新版本，请重启 DS
 /**
  * 把 RPC 错误翻译成**用户能行动**的一句话。
  *
- * - 命中「宿主没有这个方法」⇒ 给出 {@link HOST_STALE_HINT}；
+ * ## 两种「宿主跑旧代码」的形态（都必须翻译）
+ *
+ * | 形态 | 宿主的原始文案 | 触发条件 |
+ * |---|---|---|
+ * | 宿主**没有这个方法** | `unknown method: usage.badgePreference` | 新客户端 + 更旧的宿主 |
+ * | 宿主**不认这个 provider** | `unsupported provider: jet-hub-auto` | 客户端已支持 auto 徽标、宿主还没加载该 PR |
+ *
+ * ⚠️ 第二种形态是 2026-10-11 复审**实测**出来的（在 master 上真跑 `usage.badge`
+ * 端点取证）：新增的 `jet-hub-auto` 徽标分支让客户端会去请求一个**旧宿主不认识**
+ * 的 provider，而旧宿主对它的回包正是 `unsupported provider: jet-hub-auto`。
+ * 原先只认 `unknown method` ⇒ 用户看到的是这句裸技术文案，完全不知道该做什么
+ * （而实际动作只有「重启 DSH」）—— 正是本常量要消灭的那类静默失败。
+ *
+ * ## ⚠️ 判据仍然要**窄**
+ *
+ * - `unknown method`：宿主 `handleMethod` 的 `default` 分支写死的文案
+ *   （`src/jet-hub-rpc.ts`），改动它时本函数要同步。
+ * - `unsupported provider`：`credits.balances` 查表失败时的写死文案（同上文件）。
+ *   必须**带上冒号与 provider 名**才算命中吗？不需要 —— 这个短语在宿主侧只出现在
+ *   「provider 未登记」这一处，不会与参数错误混淆。
+ * - **不要**泛化成「含 unknown / 不支持」之类：那会把真实的参数错误也吞掉，
+ *   让用户去重启一个本来就正常的宿主。
+ *
  * - 其它错误**原样透出**（凭据过期、网络失败等，它们的文案本身就有指向性）；
  * - 拿不到消息时回落到调用方给的 `fallback`。
- *
- * ⚠️ 判据要**窄**：只认 `unknown method` 这一个短语。这是宿主 `handleMethod`
- * 的 `default` 分支写死的文案（`src/jet-hub-rpc.ts`），改动它时本函数要同步；
- * 不要泛化成「含 unknown / 不支持」之类，那会把真实的参数错误也吞掉。
  */
 export function describeBadgeError(error, fallback = '') {
   const message = typeof error?.message === 'string' ? error.message : '';
   if (message.includes('unknown method')) return HOST_STALE_HINT;
+  if (message.includes('unsupported provider')) return HOST_STALE_HINT;
   return message.length > 0 ? message : fallback;
 }
 
@@ -654,6 +694,111 @@ export function orderCreditRows(rows, options = {}) {
     .sort((a, b) => balanceOrder(b) - balanceOrder(a));
   const hidden = Math.max(0, ordered.length - limit);
   return { shown: options.expanded === true ? ordered : ordered.slice(0, limit), hidden };
+}
+
+/**
+ * auto 的**折叠胶囊名**：`自动 → CodeBuddy GLM-5.3-Flash x0.06 · 今日 24:00过期`。
+ *
+ * ## 为什么抽成纯函数
+ *
+ * 原先这段逻辑内联在 `usage-badge.js` 的渲染函数里，而那个文件**不能被单测 import**
+ *（它 import `react`，单测环境没有）。于是既有测试只能对它做**字符串断言**
+ *（`expect(BADGE).toContain('value?.autoActual')`）—— 我实测发现那类断言是
+ ***恒真的假用例**：把它改成 `if (false && …)` 或 `undefined && …` 之后，
+ * 正则/子串**照样命中**，用例依然全绿，而功能已经完全失效。
+ *
+ * ⇒ 把判定逻辑搬到这里，测试可以直接 `import` 并**行为断言**（见
+ *   `auto-badge-restore.spec.ts`）。这符合本仓库既有做法：`badge-model.js`
+ *   里全是纯函数，正是为了「单测环境没有 react」。
+ *
+ * ## 三要素（用户 2026-10-06 定，上游 ba10f4f 删掉后按原实现补回）
+ *
+ * 1. **在用谁**：实际渠道（短名）+ 模型名 —— 徽标是止损工具，用户原话
+ *    「以为在用 A，实际在烧 B，等发现时积分已经没了」；
+ * 2. **倍率**：auto 自己**没有**倍率（它是跨渠道的单一模型名，倍率取决于这次
+ *    选中谁）⇒ 只能显示在这里，**不能**写进模型选择器的静态名（那个名字对所有
+ *    请求都一样，写死就是编造）；
+ * 3. **临期倒计时**：胜者额度何时作废。
+ *
+ * ## 各字段缺失时的降级（都必须能发生）
+ *
+ * | 情形 | 结果 |
+ * |---|---|
+ * | `autoActual` 缺席（非 auto 渠道 / 读数未到） | 返回 `fallback`（普通渠道名） |
+ * | 倍率缺席或非有限（`Infinity` = 无标注哨兵） | 不显示倍率（**不编造**） |
+ * | 倍率 `0` | 显示「免费」（本仓库既有口径） |
+ * | 倒计时缺席或非有限（`Infinity` 被 JSON 序列化成 `null`） | 不显示倒计时 |
+ * | 带图改道 | 追加「（图）」 |
+ *
+ * @param options.fallback - `autoActual` 缺席时的名字（即普通渠道展示名）。
+ * @param options.autoActual - 宿主回传的 `{ provider, model, viaImageFallback }`。
+ * @param options.price - 宿主回传的 `autoPrice`。
+ * @param options.expiryAt - 宿主回传的 `autoExpiryAt`。
+ * @param options.providerLabel - 渠道 id → 展示名（`jet-hub.js` 的 `providerLabel`）。
+ * @param options.now - 当前时刻（注入以便单测；省略用 `Date.now()`）。
+ * @returns 折叠胶囊的渠道名部分。
+ */
+export function autoBadgeName(options = {}) {
+  const fallback = typeof options.fallback === 'string' ? options.fallback : '';
+  const target = options.autoActual;
+  // ⚠️ 必须判 `typeof === 'object'` 而不只是 truthy：宿主是**另一个进程**，
+  //    字段形状不受 TS 保护（畸形值不该让整条渲染路径抛错）。
+  if (typeof target !== 'object' || target === null || typeof target.provider !== 'string' || target.provider.length === 0) {
+    return fallback;
+  }
+  const labelOf = typeof options.providerLabel === 'function' ? options.providerLabel : (id) => id;
+  const shortName = shortProviderName(labelOf(target.provider)) || target.provider;
+  let name = `自动 → ${shortName}${typeof target.model === 'string' && target.model.length > 0 ? ` ${target.model}` : ''}`;
+  // 倍率：只有**有限**值才显示 —— `Infinity` 是「无标注」哨兵，拼出来是 `xInfinity`。
+  const price = options.price;
+  if (typeof price === 'number' && Number.isFinite(price)) {
+    name += ` ${price === 0 ? '免费' : `x${price}`}`;
+  }
+  // 带图改道是**另一条路径**的决策，必须标出来，否则用户无法解释「为什么这次是这家」。
+  if (target.viaImageFallback === true) name += '（图）';
+  // 临期倒计时：非有限值不显示（`Infinity` 被 JSON 序列化成 `null`，
+  // `new Date(null)` 是 1970 —— 一个看起来像 bug 的日期）。
+  const expiryAt = options.expiryAt;
+  if (typeof expiryAt === 'number' && Number.isFinite(expiryAt)) {
+    const text = expiryCountdownText(expiryAt, options.now);
+    if (text.length > 0) name += ` · ${text}`;
+  }
+  return name;
+}
+
+/**
+ * 临期失效时刻 → 倒计时文案（`今日 24:00过期` / `10/9 08:30过期`）。
+ *
+ * ⚠️ 「今日」按**本地日历**判定，不是「24 小时内」：用户看到的是「今天几点作废」，
+ * 那才是他要的决策信息（「今日」和「明天」是完全不同的紧迫度）。
+ *
+ * @param at - 毫秒时间戳。
+ * @param now - 当前时刻（注入以便单测；省略用 `Date.now()`）。
+ * @returns 文案；非有限值返回空串（调用方据此不显示）。
+ */
+export function expiryCountdownText(at, now = Date.now()) {
+  // ⚠️⚠️ **必须显式判 `typeof at === 'number'`**，不能只靠 `Number.isFinite(d.getTime())`。
+  //    真实缺陷（本用例实测抓到）：`new Date(null)` 是**合法的** 1970-01-01，
+  //    `getTime()` 有限 ⇒ 只判它会让 `null` 渲染成 `1/1 08:00过期`（一个看起来
+  //    像 bug 的日期）。而 `null` 正是宿主端 `Infinity` 经 JSON 序列化后的形态
+  //    （`usage.badge` 只回传有限时刻，见那里的注释）⇒ 这条路径**真实可达**。
+  if (typeof at !== 'number') return '';
+  const d = new Date(at);
+  if (!Number.isFinite(d.getTime())) return '';
+  const n = new Date(now);
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const sameDay = d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  return `${sameDay ? '今日' : `${d.getMonth() + 1}/${d.getDate()} `}${hm}过期`;
+}
+
+/**
+ * 短渠道名：去掉「Loomy (讯飞)」这类括号后缀 —— 折叠胶囊宽度有限。
+ *
+ * @param name - 渠道展示名。
+ * @returns 去掉括号部分并 `trim` 后的名字。
+ */
+export function shortProviderName(name) {
+  return String(name ?? '').replace(/\s*[（(][^)）]*[)）]\s*/g, '').trim();
 }
 
 /**

@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import {
-  LoomyAdapter, classifyLoomyFailure, parseLoomyRemoteModels, recordsLoomyRateLimit,
+  LoomyAdapter, classifyLoomyFailure, loomyCooldownResetAtMs, parseLoomyRemoteModels,
+  recordsLoomyRateLimit,
 } from '../../src/loomy-adapter.js'
 import { classifyRaccoonFailure } from '../../src/raccoon-adapter.js'
+import { LOOMY, loomyContextWindow } from '../../src/loomy-product.js'
+import { allAccountsRateLimitedForModel } from '../../src/account-pool.js'
+import { isLoomyAuthBusinessCode, LOOMY_PROBE_BACKOFF_MS } from '../../src/loomy-adapter.js'
+import { nextUtc8DayStartMs } from '../../src/model-queue.js'
 import type { LoomyCredential } from '../../src/loomy.js'
 
 const CRED: LoomyCredential = {
@@ -74,6 +79,23 @@ describe('parseLoomyRemoteModels', () => {
       })],
     })
     expect(models[0]!.supportsImage).toBe(false)
+  })
+
+  /**
+   * ★ 2026-10-14 用户报障「loomy 的 qwen3.8max 输入不能上图」：远端对
+   * `qwen-3.8-max` 漏报（`input_modalities: ['text']`、`vision: false`）而实测能读图
+   * ⇒ **不能照抄声明值**。判据与同批 10 个模型的对照表见 `src/loomy-product.ts`。
+   */
+  it('★ 远端漏报时 qwen-3.8-max 仍判定支持图片（声明值与覆盖表分叉）', () => {
+    const models = parseLoomyRemoteModels({
+      data: [remoteEntry({
+        id: 'qwen-3.8-max',
+        name: 'Qwen 3.8 Max（x12.0）',
+        capabilities: { reasoning: true, vision: false, input_modalities: ['text'] },
+      })],
+    })
+    expect(models[0]!.id).toBe('qwen-3.8-max')
+    expect(models[0]!.supportsImage).toBe(true)
   })
 })
 
@@ -189,13 +211,87 @@ describe('LoomyAdapter.resolveModel', () => {
     const adapter = makeAdapter()
     const resolved = await adapter.resolveModel('loomy', 'spark-x')
     expect(resolved.name).toBe('Spark X2.5')
-    expect(resolved.context?.contextWindow).toBe(1_048_576)
+    // ⚠️ 兜底表路径的 `spark-x` 也必须是 262144（真实墙），不是远端的 1048576。
+    // ❌ 修复前这里写死 1_048_576 —— 那是把缺陷当契约（issue IKJW31）。
+    expect(resolved.context?.contextWindow).toBe(262_144)
   })
 
   it('未知模型不编造 context', async () => {
     const adapter = makeAdapter()
     const resolved = await adapter.resolveModel('loomy', 'nope')
     expect(resolved.context).toBeUndefined()
+  })
+})
+
+/**
+ * ★★ 上下文窗口的逐模型覆盖（Gitee issue IKJW31）。
+ *
+ * ## 缺陷
+ *
+ * 远端 `GET /models` 对 `spark-x` 声明 `context_length: 1048576`，**真实墙在
+ * 262144**。宿主按 1M 打包 ⇒ 输入越过 256K 后上游收下请求但 **0 输出** +
+ * `finish_reason=length` ⇒ 插件报 `max-tokens`，而 DSH 对它**不自动重试**
+ * ⇒ 长会话「有时候 token 截断」（4 次失败的 prompt 总量逐 token 相同：
+ * `262,138 = 262,144 − 6`）。
+ *
+ * ## 为什么这一组必须分**两条路径**测
+ *
+ * 远端可用时走远端值、远端失败时走兜底表。**只改兜底表等于没改** ——
+ * 这是本 issue 最容易踩空的点（作者第一版就漏了远端路径）。
+ * 两条路径各一条用例，任何一条退化都会立刻变红。
+ */
+describe('LoomyAdapter 上下文窗口覆盖（issue IKJW31）', () => {
+  it('覆盖表把 spark-x 降到真实的 262144，且判据不依赖调用方的值', () => {
+    expect(loomyContextWindow('spark-x', 1_048_576)).toBe(262_144)
+    // 无覆盖的模型原样透传（**防误伤**：不能把整表一刀切成某个值）
+    expect(loomyContextWindow('MiniMax-M3', 1_048_576)).toBe(1_048_576)
+    expect(loomyContextWindow('Kimi-k2.6', 262_144)).toBe(262_144)
+  })
+
+  it('★ 远端路径：远端声明 1M，解析结果必须是 262144', () => {
+    // 判据直接打在 `parseLoomyRemoteModels` 上（真实远端形状：context_length=1048576）
+    const models = parseLoomyRemoteModels({
+      data: [remoteEntry({ id: 'spark-x', name: 'Spark X2.5（x0.1）' })],
+    })
+    // ⛔ 回归前：这里是 1_048_576 —— 宿主于是按 1M 打包。
+    expect(models[0]!.contextWindow).toBe(262_144)
+  })
+
+  it('★ 远端路径：resolveModel 同样拿到 262144（这是宿主真正读的那个值）', async () => {
+    const adapter = makeAdapter({
+      fetchRemoteModels: async () => parseLoomyRemoteModels({
+        data: [remoteEntry({ id: 'spark-x', name: 'Spark X2.5（x0.1）' })],
+      }),
+    })
+    const resolved = await adapter.resolveModel('loomy', 'spark-x')
+    expect(resolved.context?.contextWindow).toBe(262_144)
+  })
+
+  it('★ 兜底表路径：条目本身已写真实值（不是靠覆盖表兜的）', () => {
+    const entry = LOOMY.fallbackModels.find((m) => m.id === 'spark-x')
+    // 兜底表是「未联网时的真相源」，它自己就该是真实的 —— 若只靠覆盖表，
+    // 将来有人抄这张表去别处就会把 1M 一起抄走。
+    expect(entry?.contextWindow).toBe(262_144)
+  })
+
+  it('⚠️ 其余模型不受影响（远端与兜底两条路径都不许被误改）', () => {
+    const models = parseLoomyRemoteModels({
+      data: [
+        remoteEntry({ id: 'MiniMax-M3' }),
+        remoteEntry({ id: 'Kimi-k2.6', context_length: 262_144 }),
+      ],
+    })
+    expect(models.find((m) => m.id === 'MiniMax-M3')?.contextWindow).toBe(1_048_576)
+    expect(models.find((m) => m.id === 'Kimi-k2.6')?.contextWindow).toBe(262_144)
+  })
+
+  it('⚠️ 远端未给窗口（0）时不得被覆盖表凭空变成 262144', () => {
+    // 判据顺序是「先判有效再覆盖」：`spark-x` 若某天远端不再下发 context_length，
+    // 结果应是 0（不声明）而不是覆盖值 —— 否则会谎报一个我们并未验证的窗口。
+    const models = parseLoomyRemoteModels({
+      data: [remoteEntry({ id: 'spark-x', context_length: undefined })],
+    })
+    expect(models[0]!.contextWindow).toBe(0)
   })
 })
 
@@ -434,7 +530,8 @@ describe('LoomyAdapter.providerInfo', () => {
  * loomy 的分类器初版与 raccoon 的**修复前**版本逐字同形（文案先判 +
  * `insufficient` 单独出现即算额度）。raccoon 已在 `7b524ff` 收窄，loomy 未同步
  * ⇒ 同一报文在两个 provider 上被判成**不同类别**，且危险方向恒定朝 loomy：
- * `quota` 会走 `recordsLoomyRateLimit` ⇒ **给账号写 24h 模型冷却**。
+ * `quota` 会走 `recordsLoomyRateLimit` ⇒ **给账号写模型冷却**（时长见
+ * `loomyCooldownResetAtMs`：quota = UTC+8 当日 24:00，rate = +1h）。
  *
  * 实测（临时探针，已删）三例 —— 403 + `insufficient permissions`、
  * 403 + 积分不足、401 + 余额不足：loomy 判 quota 并写冷却，raccoon 判 auth 不写。
@@ -534,8 +631,9 @@ describe('classifyLoomyFailure 判据（与 raccoon 逐格同构）', () => {
  * 两个时刻——查询时有钱、推理时上游报 `14018`，错误直接抛 harness，
  * 下次取号还是同一个号 ⇒ 「卡死在一个号上」。
  *
- * 本 describe 锁定：HTTP 层额度耗尽 → 标记坏号该模型 24h → `tried` 换下一个
- * → 重发成功；全部耗尽才报错且带最后一次真实原因；非额度类 4xx 不换号。
+ * 本 describe 锁定：HTTP 层额度耗尽 → 标记坏号该模型（终点 = UTC+8 当日 24:00，
+ * 见下方 IKL80H 一组）→ `tried` 换下一个 → 重发成功；全部耗尽才报错且带最后一次
+ * 真实原因；非额度类 4xx 不换号。
  * 语义与 raccoon / buddy 三处对齐（同一张判据形状，各家用各家的词表）。
  */
 describe('LoomyAdapter 请求级账号轮换（余额耗尽无感切号）', () => {
@@ -820,5 +918,814 @@ describe('LoomyAdapter 请求级账号轮换（余额耗尽无感切号）', () 
 
     // 真正耗尽的是 B —— A 只返回了 401（认证类，本就不该写标记）。
     expect(marks.map((m) => m.accountId)).toEqual(['loomy-B'])
+  })
+})
+
+/**
+ * ★★ 额度冷却的**终点**：UTC+8 当日 24:00，不是「撞墙时刻 + 24h」。
+ *
+ * ## 缺陷形态（Gitee IKL80H，2026-10-13 用户真机报障）
+ *
+ * 用户原话：「0 点后 loomy 能用，我自己的账号实测。但该插件的 loomy 会说模型未到
+ * 重置时间，不给用，目测是以积分耗尽的 24 小时做判定。」
+ *
+ * 根因：Loomy 的每日赠送额度（每日 5000）按 **UTC+8 自然日**重置，而旧实现记的是
+ * `Date.now() + 24h` 的**滑动窗口**。23:50 烧光 ⇒ 标记落到**次日 23:50** ⇒ 跨过 0 点
+ * 后上游已放行，插件仍判受限。
+ *
+ * ## 为什么必须有「反向」那一格
+ *
+ * 只断言「修复后 0 点后不再受限」是**可能恒真**的：判据整体失效（例如
+ * `allAccountsRateLimitedForModel` 恒返回 `undefined`）同样会让它通过。故最后一格
+ * 拿**变异体**（退回 +24h）跑同一时刻，要求它**必须判受限**——两侧一起才锁定方向。
+ *
+ * 证据出处：`src/loomy-adapter.ts` 的 `loomyCooldownResetAtMs` 逐格记录。
+ */
+describe('LoomyAdapter 额度冷却的终点（IKL80H：自然日 vs +24h）', () => {
+  /** 2026-10-13 23:50 UTC+8 —— 当天额度烧光的时刻。 */
+  const T_EXHAUST = Date.parse('2026-10-13T15:50:00.000Z')
+  /** 2026-10-14 00:10 UTC+8 —— 跨过 0 点，上游已重置放行。 */
+  const T_AFTER_MIDNIGHT = Date.parse('2026-10-13T16:10:00.000Z')
+
+  it('quota 的终点 = UTC+8 次日 0 点（只差 10 分钟），不是 +24h', () => {
+    expect(loomyCooldownResetAtMs('quota', T_EXHAUST)).toBe(nextUtc8DayStartMs(T_EXHAUST))
+    expect(loomyCooldownResetAtMs('quota', T_EXHAUST) - T_EXHAUST).toBe(10 * 60_000)
+    expect(loomyCooldownResetAtMs('quota', T_EXHAUST)).not.toBe(T_EXHAUST + 24 * 3_600_000)
+  })
+
+  /**
+   * ⚠️ **本格对本次修复「无牙」——如实登记**：在恰好 0 点这个输入上，
+   * `now + 24h` 与 `nextUtc8DayStartMs` 给出**同一个值**，故把实现退回旧写法
+   * 本用例**仍然通过**（实测：变异 1 只杀掉 3 条，不含本条）。
+   *
+   * 留它的理由不是「守修复」，而是守**边界语义**：0 点撞墙时终点必须是
+   * **再下一个** 0 点，不能返回「此刻」（那会让标记立即失效 ⇒ 同一请求内反复重试）。
+   * 不为它编一条恒真断言来假装有牙。
+   */
+  it('恰好 UTC+8 0 点撞墙 → 终点是**再下一个** 0 点（当天刚开始，不是立即解禁）', () => {
+    const midnight = Date.parse('2026-10-13T16:00:00.000Z')
+    expect(loomyCooldownResetAtMs('quota', midnight) - midnight).toBe(24 * 3_600_000)
+  })
+
+  it('rate 仍是撞墙时刻 + 1 小时（本次改动不影响频率类）', () => {
+    expect(loomyCooldownResetAtMs('rate', T_EXHAUST) - T_EXHAUST).toBe(3_600_000)
+  })
+
+  it('★★ 适配器写下的标记 = 自然日终点（注入时钟跑真实失败路径，端到端）', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(T_EXHAUST)
+    try {
+      const marks: number[] = []
+      const pool = {
+        updateModelRateLimit: async (_a: string, _m: string, resetAtMs: number) => {
+          marks.push(resetAtMs)
+        },
+        getAvailableAccount: async () => null,
+        findAccountIdByCredential: async () => 'loomy-A',
+      }
+      const adapter = makeAdapter({
+        resolveCredential: async () => CRED,
+        accountPool: pool as never,
+        fetchImpl: (async () => new Response(
+          JSON.stringify({ error: { message: '14018 Credits exhausted' } }), { status: 402 },
+        )) as unknown as typeof fetch,
+      })
+      await adapter.stream({
+        provider: 'loomy', model: 'MiniMax-M3', messages: [{ role: 'user', content: 'hi' }],
+      } as never).next().then(() => null).catch(() => null)
+
+      expect(marks).toHaveLength(1)
+      expect(marks[0]).toBe(nextUtc8DayStartMs(T_EXHAUST))
+      expect(marks[0]).not.toBe(T_EXHAUST + 24 * 3_600_000)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('★★ 用户症状回归：0 点后 10 分钟不再判「全部账号限流」（含反向对照）', () => {
+    const marked = (resetAtMs: number) => [
+      { id: 'loomy-A', provider: 'loomy', enabled: true, modelRateLimits: { 'MiniMax-M3': resetAtMs } },
+    ] as never
+
+    // 修复后的值：0 点已过 ⇒ 不再受限（用户要的行为）。
+    expect(
+      allAccountsRateLimitedForModel(marked(loomyCooldownResetAtMs('quota', T_EXHAUST)), 'MiniMax-M3', T_AFTER_MIDNIGHT),
+    ).toBeUndefined()
+
+    // 反向对照（变异体 = 旧实现）：同一时刻**必须**判受限，且距解禁 > 23h
+    // —— 这正是用户看到「没到重置时间」的那一幕，证明上面那一格不是恒真。
+    const regressed = allAccountsRateLimitedForModel(
+      marked(T_EXHAUST + 24 * 3_600_000), 'MiniMax-M3', T_AFTER_MIDNIGHT,
+    )
+    expect(regressed).toBeDefined()
+    expect((regressed!.resetAtMs - T_AFTER_MIDNIGHT) / 3_600_000).toBeGreaterThan(23)
+  })
+})
+
+/**
+ * ★ 图片能力覆盖（2026-10-14 用户报障：loomy 的 qwen3.8max 输入不能上图）。
+ *
+ * DSH 的图片准入闸门读的是**模型目录里的 `inputModalities`**
+ *（`dsh-api-session-controller` 的 `MODEL_DOES_NOT_SUPPORT_IMAGES`），不是适配器
+ * 内部的 `supportsImage`。所以这里断言的必须是宿主真正读到的那个字段，且**远端与
+ * 兜底两条路径都要过** —— 只改一侧，远端可用时那一侧就白改了（`contextWindow`
+ * 曾有同型隐患，见上方 issue IKJW31 一组）。
+ */
+describe('LoomyAdapter 图片能力覆盖（2026-10-14 远端漏报）', () => {
+  /** 远端对 qwen-3.8-max 的真实声明：`input_modalities: ['text']`、`vision: false`。 */
+  const textOnlyQwen = () => parseLoomyRemoteModels({
+    data: [remoteEntry({
+      id: 'qwen-3.8-max',
+      name: 'Qwen 3.8 Max（x12.0）',
+      capabilities: { reasoning: true, vision: false, input_modalities: ['text'] },
+    })],
+  })
+
+  it('★ 远端路径：qwen-3.8-max 的目录条目含 image（图不再被准入闸门拦下）', async () => {
+    const adapter = makeAdapter({ fetchRemoteModels: async () => textOnlyQwen() })
+    const models = await adapter.listModels('loomy')
+    const entry = models.find((m) => m.id === 'qwen-3.8-max')
+    expect(entry?.inputModalities).toContain('image')
+  })
+
+  it('★ 兜底表路径：远端整体失败时同样含 image（两条路径同一判据）', async () => {
+    const adapter = makeAdapter({ fetchRemoteModels: async () => { throw new Error('boom') } })
+    const models = await adapter.listModels('loomy')
+    const entry = models.find((m) => m.id === 'qwen-3.8-max')
+    expect(entry?.inputModalities).toContain('image')
+  })
+
+  it('⚠️ 该家其余模型不受影响：纯文本模型仍只报 text', async () => {
+    const adapter = makeAdapter({ fetchRemoteModels: async () => { throw new Error('boom') } })
+    const models = await adapter.listModels('loomy')
+    const byId = new Map(models.map((m) => [m.id, m.inputModalities]))
+    expect(byId.get('spark-x')).toEqual(['text'])
+    expect(byId.get('deepseek-v4-flash-0731')).toEqual(['text'])
+  })
+
+  it('⚠️ 远端声明纯文本的**其它**模型不得被覆盖表误放行（不恒真）', async () => {
+    const adapter = makeAdapter({
+      fetchRemoteModels: async () => parseLoomyRemoteModels({
+        data: [remoteEntry({
+          id: 'spark-x',
+          name: 'Spark X2.5（x0.1）',
+          capabilities: { reasoning: true, input_modalities: ['text'] },
+        })],
+      }),
+    })
+    const models = await adapter.listModels('loomy')
+    expect(models[0]!.inputModalities).toEqual(['text'])
+  })
+
+  /**
+   * ★ 上游把 id 改成**大写**时不得静默失效（2026-10-14 审计发现）。
+   *
+   * 断言打在 `inputModalities`（宿主准入闸门真正读的字段）上，而不是内部
+   * `supportsImage` —— 否则「适配器算对了但目录播报错了」这类分叉抓不到。
+   * 远端原值逐字节大小写变体都要能过，同时**对外 id 必须原样保留**
+   *（它是 `fallbackIndex` / `effortsForModel` 的索引键，改了会连带静默失效）。
+   */
+  it('★ 远端把 id 下成大写时，qwen-3.8-max 仍判定支持图片且对外 id 不变', async () => {
+    const adapter = makeAdapter({
+      fetchRemoteModels: async () => parseLoomyRemoteModels({
+        data: [remoteEntry({
+          id: 'Qwen-3.8-Max',
+          name: 'Qwen 3.8 Max（x12.0）',
+          capabilities: { reasoning: true, vision: false, input_modalities: ['text'] },
+        })],
+      }),
+    })
+    const models = await adapter.listModels('loomy')
+    const entry = models.find((m) => m.id === 'Qwen-3.8-Max')
+    expect(entry, '对外 id 必须原样保留（不得被归一化改掉）').toBeDefined()
+    expect(entry?.inputModalities, '闸门读的字段').toContain('image')
+  })
+})
+
+/**
+ * ★★ 凭据探测失败**不得**打断本轮（Gitee 报障，会话 `session-bfb9b616`，2026-10-20）
+ *
+ * ## 缺陷形态
+ *
+ * 只读探测端点 `GET /points/records` 与「凭据是否有效」是两件事，但适配器把
+ * 探测抛出的**任何**异常都当终态：
+ *
+ * ```
+ * if (credential === undefined || isLoomyExpired(credential)) {
+ *   await this.options.refresh()   // ← 抛出即整轮失败
+ * }
+ * ```
+ *
+ * 真实伤情：同一渠道第 4、5 轮相隔 27 分钟两次整轮失败，文案分别是
+ * `Loomy 凭据探测失败：系统内部错误`（业务错误）与
+ * `Loomy 凭据探测网络失败：The operation was aborted due to timeout`（60s 超时），
+ * 而**同一时刻面板三个账号余额全部读得到** —— 渠道是活的，死的只是探测。
+ *
+ * ## 修法边界
+ *
+ * 只放过**非终态**；`RefreshTokenExpiredError` 仍必须抛（否则「请重新登录」
+ * 这条唯一出路会被吞掉）。最后一条用例是**反向对照** —— 没有它，
+ * 「凡错就放过」也能让前两条全绿。
+ */
+describe('★★ 凭据探测失败不得打断本轮（2026-10-20 报障）', () => {
+  const EXPIRED: LoomyCredential = { ...CRED, expires_at: '1' }
+  const SSE = [
+    'data: {"choices":[{"index":0,"delta":{"content":"ok"}}]}\n\n',
+    'data: [DONE]\n\n',
+  ].join('')
+
+  function fetchSpy(captured: { auth: string[] }) {
+    return (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      captured.auth.push(String(new Headers(init?.headers).get('Authorization') ?? ''))
+      return new Response(SSE, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+    }) as unknown as typeof fetch
+  }
+
+  async function run(adapter: LoomyAdapter) {
+    for await (const _chunk of adapter.stream({
+      provider: 'loomy',
+      model: 'MiniMax-M3',
+      messages: [{ role: 'user', content: 'hi' }],
+    } as never)) {
+      // 只为把请求发出去
+    }
+  }
+
+  it('探测抛业务错误（系统内部错误）→ 继续用现有凭据发请求，并留告警', async () => {
+    const captured = { auth: [] as string[] }
+    const warns: string[] = []
+    const adapter = makeAdapter({
+      resolveCredential: async () => EXPIRED,
+      refresh: async () => { throw new Error('Loomy 凭据探测失败：系统内部错误') },
+      warn: (message) => warns.push(message),
+      fetchImpl: fetchSpy(captured),
+    })
+
+    await expect(run(adapter)).resolves.toBeUndefined()
+    expect(captured.auth, '请求必须真的发出一次').toHaveLength(1)
+    expect(captured.auth[0], '用的仍是那份（本地判过期的）凭据').toContain(EXPIRED.access_token)
+    expect(warns, '非终态失败必须留痕，不能静默').toHaveLength(1)
+    expect(warns[0]).toContain('系统内部错误')
+  })
+
+  it('探测超时（aborted due to timeout）→ 同样放行', async () => {
+    const captured = { auth: [] as string[] }
+    const warns: string[] = []
+    const adapter = makeAdapter({
+      resolveCredential: async () => EXPIRED,
+      refresh: async () => {
+        throw new Error('Loomy 凭据探测网络失败：The operation was aborted due to timeout')
+      },
+      warn: (message) => warns.push(message),
+      fetchImpl: fetchSpy(captured),
+    })
+
+    await expect(run(adapter)).resolves.toBeUndefined()
+    expect(captured.auth).toHaveLength(1)
+    expect(warns[0]).toContain('timeout')
+  })
+
+  it('反向对照：凭据确实失效（RefreshTokenExpiredError）→ 仍然抛错', async () => {
+    const captured = { auth: [] as string[] }
+    const adapter = makeAdapter({
+      resolveCredential: async () => EXPIRED,
+      refresh: async () => {
+        const error = new Error('Loomy 凭证已失效，请重新登录（缺少 token）')
+        error.name = 'RefreshTokenExpiredError'
+        throw error
+      },
+      fetchImpl: fetchSpy(captured),
+    })
+
+    await expect(run(adapter)).rejects.toThrow('凭证已失效')
+    expect(captured.auth, '终态失败不该再发业务请求').toHaveLength(0)
+  })
+})
+
+/**
+ * ★★★ **401/403 分支**的探测失败同样不得打断整轮（2026-10-20 审计补修）。
+ *
+ * ## 为什么必须单独一组（上一组测不到它）
+ *
+ * 上面那组走的是**前置门禁**（`credential === undefined || isLoomyExpired`）。
+ * 而 `await this.options.refresh()` 在适配器里有**两处**调用点，第二处是
+ * 「业务请求回来 401/403 再探测一次」。PR !124 只修了前置门禁那一处。
+ *
+ * ⚠️ **实测证据**：把 401 分支改坏（降级成静默放过 / 换回裸调用）后，
+ * 上一组那 64 条**全部通过** —— 缺陷就藏在没有用例的路径里。
+ * 本组的作用正是把这条路径钉住。
+ *
+ * ## 401 分支的修法与前置门禁**不同**（别照抄）
+ *
+ * 前置门禁：探测失败 → warn → **继续用现有凭据发请求**（本来就没发出过请求）。
+ * 401 分支：探测失败 → warn → **不重取、不重发**，直接落换号循环。
+ * 理由（对抗审计 D1–D4 实测）：探测失败后重取往往拿到**同一份坏凭据**，
+ * 重发就是白烧一次（无池恒 401 发 2 次、A 坏 B 好发 3 次、8 号全 401 发 9 次）。
+ */
+describe('★★★ 401/403 分支的探测失败也不得打断整轮（审计补修）', () => {
+  const FRESH: LoomyCredential = { ...CRED }
+  const EXPIRED: LoomyCredential = { ...CRED, expires_at: '1' }
+  const SSE = [
+    'data: {"choices":[{"index":0,"delta":{"content":"ok"}}]}\n\n',
+    'data: [DONE]\n\n',
+  ].join('')
+
+  /** 按调用序列返回状态码；记录每次用的 token。 */
+  function seqFetch(statuses: readonly number[], auths: string[]) {
+    let n = 0
+    return (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      auths.push(String(new Headers(init?.headers).get('Authorization') ?? ''))
+      const status = statuses[Math.min(n, statuses.length - 1)]!
+      n += 1
+      if (status === 200) {
+        return new Response(SSE, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+      }
+      return new Response(JSON.stringify({ code: status }), {
+        status,
+        headers: { 'content-type': 'application/json' },
+      })
+    }) as unknown as typeof fetch
+  }
+
+  async function drain(adapter: LoomyAdapter) {
+    for await (const _chunk of adapter.stream({
+      provider: 'loomy',
+      model: 'MiniMax-M3',
+      messages: [{ role: 'user', content: 'hi' }],
+    } as never)) {
+      // 只为把请求发出去
+    }
+  }
+
+  it('★★ 业务端点 401 + 探测抛非终态错误 ⇒ 不得整轮失败（必须留 warn）', async () => {
+    // ⚠️ 用 **未过期** 的凭据 ⇒ 不进前置门禁，只走 401 分支（这是本组的关键）。
+    const auths: string[] = []
+    const warns: string[] = []
+    const adapter = makeAdapter({
+      resolveCredential: async () => FRESH,
+      refresh: async () => { throw new Error('Loomy 凭据探测失败：系统内部错误') },
+      warn: (message) => warns.push(message),
+      fetchImpl: seqFetch([401], auths),
+    })
+
+    // 无池 ⇒ 换号无从谈起，最终仍会以「所有账号均不可用」失败；
+    // 但那必须是 **LlmError（AUTH）**，而不是探测那层的裸 Error。
+    await expect(drain(adapter)).rejects.toThrow(/所有账号均不可用|4?01/)
+    expect(warns, '非终态探测失败必须留痕（与前置门禁同口径）').toHaveLength(1)
+    expect(warns[0], '文案必须点名是 401/403 之后那一处').toContain('401/403')
+  })
+
+  it('★★★ 决定性判据：A 的 token 401、池里 B 正常 ⇒ 必须换到 B 成功', async () => {
+    // ⚠️⚠️ 这条是本次审计的核心回归 —— 修前实测 `getAvailableAccount` 调用 **0** 次、
+    //    B **从未被尝试**、整轮失败。PR 声称「真失效由换号接住」正是在此处被证伪。
+    const auths: string[] = []
+    const B: LoomyCredential = { ...CRED, access_token: 'tok-B' }
+    let resolveCount = 0
+    const adapter = makeAdapter({
+      // 第一次给 A（401），之后仍给 A（模拟「重取拿到同一份坏凭据」——
+      // 修法要求探测失败时**不重取**，故这条只是让「照抄前置分支」的写法暴露）
+      resolveCredential: async () => { resolveCount += 1; return FRESH },
+      refresh: async () => { throw new Error('Loomy 凭据探测失败：系统内部错误') },
+      warn: () => {},
+      fetchImpl: seqFetch([401, 200], auths),
+      accountPool: {
+        findAccountIdByCredential: async () => 'acc-A',
+        getAvailableAccount: async () => ({
+          entry: { id: 'acc-B', credentialRef: 'r' },
+          credential: B,
+        }),
+        updateModelRateLimit: async () => {},
+      } as never,
+    })
+
+    await expect(drain(adapter)).resolves.toBeUndefined()
+    // ① 换号真的发生了：第二个不同的 token 被发出去。
+    expect(auths.length, '必须有第二次请求（换号）').toBeGreaterThanOrEqual(2)
+    expect(auths.some((a) => a.includes('tok-B')), '必须真的换到 B').toBe(true)
+    // ② **不得重发同一个坏 token**（对抗审计 D3 的「白烧一次」）。
+    const aTimes = auths.filter((a) => a.includes(FRESH.access_token)).length
+    expect(aTimes, 'A 的坏 token 只该发一次（探测失败后不重取不重发）').toBe(1)
+  })
+
+  it('★★ 反向对照：401 后探测报**终态** ⇒ 仍必须抛（「请重新登录」是唯一出路）', async () => {
+    const auths: string[] = []
+    const adapter = makeAdapter({
+      resolveCredential: async () => FRESH,
+      refresh: async () => {
+        const error = new Error('Loomy 凭证已失效，请重新登录（缺少 token）')
+        error.name = 'RefreshTokenExpiredError'
+        throw error
+      },
+      warn: () => {},
+      fetchImpl: seqFetch([401], auths),
+    })
+
+    await expect(drain(adapter)).rejects.toThrow('凭证已失效')
+  })
+
+  /**
+   * ★★ 「凭据未配置 / 凭据解析失败」必须是**终态**（否则「请重新登录」被吞）。
+   *
+   * ⚠️ 这两格原先在 `refreshAccountCredential()` 里抛的是**普通 `Error`**，
+   * 而终态判据只认 `name === 'RefreshTokenExpiredError'` ⇒ 被判成非终态。
+   * 生产热路径在**池里有账号时**走的正是那个入口 ⇒ 终态被降级。
+   */
+  it('★★ 按 ref 入口的「凭据未配置 / 解析失败」必须是终态（不得被降级吞掉）', async () => {
+    const { LoomyAuth } = await import('../../src/loomy-auth.js')
+    const { Context } = await import('@deepseek-ai/cordis')
+    const ctx = new Context()
+    // 最小 credentials 替身：resolve 恒返回 undefined ⇒ 走「凭据未配置」那一格
+    ctx.provide('credentials' as never, {
+      resolve: async () => undefined,
+      get: async () => undefined,
+      set: async () => {},
+      unset: async () => {},
+    } as never)
+    const auth = new LoomyAuth(ctx, { ...LOOMY, id: 'loomy' } as never)
+    const error = await auth.refreshAccountCredential('LOOMY_ACCOUNT_TEST').then(
+      () => undefined,
+      (e: unknown) => e,
+    )
+    expect(error, '凭据未配置必须抛错').toBeInstanceOf(Error)
+    expect(
+      (error as Error).name,
+      '必须是终态名 RefreshTokenExpiredError，否则适配器会降级成「继续用现有凭据」',
+    ).toBe('RefreshTokenExpiredError')
+  })
+})
+
+/**
+ * ★★ 探测非终态失败后的**退避**：不得每轮都白等 60 秒（2026-10-20 审计 E-3）。
+ *
+ * ## 缺陷形态
+ *
+ * `isLoomyExpired` 读本地 `expires_at`（登录时刻 +14 天推算**写下**，服务端不下发，
+ * 本插件**永不改写**）⇒ 本地判过期后，前置探测分支**每一轮**都会进。而探测的
+ * 超时上限是 `LOOMY_REQUEST_TIMEOUT_MS` = 60 秒，且 `probeCredential` 用的是
+ * **独立**的 `AbortSignal.timeout`、不联动调用方 `signal` ⇒ 最坏情况是
+ * 「每轮首 token 前白等 60 秒」，用户点停止也打断不了。
+ *
+ * 审计实测：`refresh` 永挂 ⇒ 8 秒后仍未返回；缩短到 250ms 后
+ * `perTurnMs=[316,315,310]`（**每轮各等一次**）。
+ *
+ * ## 判据
+ *
+ * 退避窗口（{@link LOOMY_PROBE_BACKOFF_MS}，5 分钟）内**不再调用** `refresh`，
+ * 但仍然**照常发业务请求**；探测成功时立刻清掉退避。
+ * ⚠️ 变异：删掉 `if (!this.probeBackedOff(...))` 那一层 ⇒ 本组必红。
+ */
+describe('★★ 探测失败后的退避：不得每轮都白等探测超时（审计 E-3）', () => {
+  const EXPIRED: LoomyCredential = { ...CRED, expires_at: '1' }
+  const SSE = [
+    'data: {"choices":[{"index":0,"delta":{"content":"ok"}}]}\n\n',
+    'data: [DONE]\n\n',
+  ].join('')
+
+  function okFetch() {
+    let calls = 0
+    const fn = (async () => {
+      calls += 1
+      return new Response(SSE, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+    }) as unknown as typeof fetch
+    return { fn, calls: () => calls }
+  }
+
+  async function drain(adapter: LoomyAdapter) {
+    for await (const _chunk of adapter.stream({
+      provider: 'loomy', model: 'MiniMax-M3', messages: [{ role: 'user', content: 'hi' }],
+    } as never)) { /* drain */ }
+  }
+
+  it('★★ 第 1 轮探测失败 ⇒ 第 2 轮**不再探测**，但业务请求照发', async () => {
+    const f = okFetch()
+    let refreshCalls = 0
+    let now = 1_000
+    const adapter = makeAdapter({
+      resolveCredential: async () => EXPIRED,
+      refresh: async () => { refreshCalls += 1; throw new Error('Loomy 凭据探测失败：系统内部错误') },
+      warn: () => {},
+      fetchImpl: f.fn,
+      now: () => now,
+    })
+
+    await drain(adapter)
+    expect(refreshCalls, '第 1 轮必须真的探测过').toBe(1)
+    expect(f.calls(), '业务请求必须照发（探测失败不阻断）').toBe(1)
+
+    // 第 2 轮：仍在退避窗口内（未推进时间）
+    await drain(adapter)
+    expect(refreshCalls, '退避窗口内不得再探测（否则每轮白等 60 秒）').toBe(1)
+    expect(f.calls(), '业务请求仍要照发').toBe(2)
+  })
+
+  it('★★ 退避窗口过期后必须重新探测（上游恢复要能纠正）', async () => {
+    const f = okFetch()
+    let refreshCalls = 0
+    let fail = true
+    let now = 1_000
+    const adapter = makeAdapter({
+      resolveCredential: async () => EXPIRED,
+      refresh: async () => {
+        refreshCalls += 1
+        if (fail) throw new Error('Loomy 凭据探测失败：系统内部错误')
+      },
+      warn: () => {},
+      fetchImpl: f.fn,
+      now: () => now,
+    })
+
+    await drain(adapter)
+    expect(refreshCalls).toBe(1)
+
+    fail = false
+    now += LOOMY_PROBE_BACKOFF_MS + 1
+    await drain(adapter)
+    expect(refreshCalls, '窗口过期后必须重探').toBe(2)
+  })
+
+  it('★★ 探测**成功**时立刻清退避（没理由继续跳过）', async () => {
+    const f = okFetch()
+    let refreshCalls = 0
+    let fail = true
+    let now = 1_000
+    const adapter = makeAdapter({
+      resolveCredential: async () => EXPIRED,
+      refresh: async () => {
+        refreshCalls += 1
+        if (fail) throw new Error('Loomy 凭据探测失败：系统内部错误')
+      },
+      warn: () => {},
+      fetchImpl: f.fn,
+      now: () => now,
+    })
+
+    await drain(adapter)
+    expect(refreshCalls).toBe(1) // 失败 ⇒ 进退避
+
+    // 未推进时间，但这次探测成功 ⇒ 必须**清掉**退避
+    fail = false
+    // 先手动把退避窗口推过一点，让「清掉」这件事可观测：
+    // ⚠️ 若不推进时间，窗口内根本不会再探测，测不到「清掉」。
+    now += LOOMY_PROBE_BACKOFF_MS + 1
+    await drain(adapter)
+    expect(refreshCalls, '窗口过期后重探且成功').toBe(2)
+
+    // 成功之后**不需要**再等一个完整窗口：下一次（哪怕时间没动）仍会探测。
+    await drain(adapter)
+    expect(refreshCalls, '成功后必须清退避 ⇒ 下一轮照常探测').toBe(3)
+  })
+
+  it('★★ 反向对照：终态仍必须抛，且不产生退避（终态是「请重新登录」）', async () => {
+    const f = okFetch()
+    let refreshCalls = 0
+    const adapter = makeAdapter({
+      resolveCredential: async () => EXPIRED,
+      refresh: async () => {
+        refreshCalls += 1
+        const error = new Error('Loomy 凭证已失效，请重新登录（缺少 token）')
+        error.name = 'RefreshTokenExpiredError'
+        throw error
+      },
+      warn: () => {},
+      fetchImpl: f.fn,
+    })
+
+    await expect(drain(adapter)).rejects.toThrow('凭证已失效')
+    // ⚠️ 终态不进退避（它每一轮都该抛，用户据此去重新登录）；
+    //    故第二次仍会探测 —— 这里只断言「不会静默放行」。
+    await expect(drain(adapter)).rejects.toThrow('凭证已失效')
+    expect(refreshCalls).toBe(2)
+    expect(f.calls(), '终态不得发出业务请求').toBe(0)
+  })
+})
+/**
+ * ★★ `HTTP 200 + 业务码 100002` 也必须能换号（2026-10-20 审计 E-1，**既有缺陷**）。
+ *
+ * ## 缺陷形态
+ *
+ * Loomy 的业务失败**恒 HTTP 200**（`src/loomy.ts` 的协议说明：
+ * 「带错的那个 → HTTP 200 + `{"code":"100002","desc":"缺少 token"}`」），
+ * 而请求级换号循环写在 `if (!response.ok)` 里 ⇒ 200 的认证失败**一次都不换号**。
+ * 多账号场景下**从未尝试过好号**，终错是 `SERVER`（「响应不是 SSE」）而非 `AUTH`。
+ *
+ * 实测（基线 `b5dab83` 同样）：
+ * ```
+ * classifyLoomyFailure('100002', 200)  ⇒ 'other'  rotate=false
+ * classifyLoomyFailure('100002', 401)  ⇒ 'auth'   rotate=true
+ * ```
+ *
+ * ## ⚠️ 为什么判据**不进** `classifyLoomyFailure`
+ *
+ * 那个分类器与 `classifyRaccoonFailure` 明文规定「必须逐格同构」，并由本文件的
+ * 「与 raccoon 对拍」用例逐条守着；而 `100002` 是 Loomy 独有码。
+ * 塞进去会当场把对拍用例变红，或逼着给 raccoon 编一个它没有的码。
+ * ⇒ 业务码这一腿留在本家自己的 {@link isLoomyAuthBusinessCode} 里。
+ */
+describe('★★ 200 + 业务码 100002 也要能换号（审计 E-1）', () => {
+  const CRED_A: LoomyCredential = { access_token: 'tok-A', userid: 'ua', phone: '13800000001' }
+  const CRED_B: LoomyCredential = { access_token: 'tok-B', userid: 'ub', phone: '13800000002' }
+  const SSE = 'data: {"choices":[{"index":0,"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n'
+
+  async function drain(adapter: LoomyAdapter) {
+    for await (const _chunk of adapter.stream({
+      provider: 'loomy', model: 'MiniMax-M3', messages: [{ role: 'user', content: 'hi' }],
+    } as never)) { /* drain */ }
+  }
+
+  it('★★ 判据本身：只有 100002 是认证业务码，别的业务码不是', () => {
+    expect(isLoomyAuthBusinessCode({ ok: false, code: '100002' })).toBe(true)
+    expect(isLoomyAuthBusinessCode({ ok: false, code: '100001' })).toBe(false) // 参数错误
+    expect(isLoomyAuthBusinessCode({ ok: false, code: '200003' })).toBe(false)
+    expect(isLoomyAuthBusinessCode({ ok: true, code: '0' })).toBe(false)
+  })
+
+  it('★★★ A 回「200 + 100002」、池里 B 正常 ⇒ 必须换到 B 成功', async () => {
+    const auths: string[] = []
+    const warmed: string[] = []
+    const fetchImpl = (async (_u: unknown, init?: RequestInit) => {
+      const auth = String(new Headers(init?.headers).get('Authorization') ?? '')
+      auths.push(auth)
+      if (auth.includes('tok-A')) {
+        // ⚠️ **HTTP 200** + JSON 认证信封 —— 这正是 Loomy 表达「token 缺失」的主通道
+        return new Response(
+          JSON.stringify({ code: '100002', desc: '缺少 token' }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        )
+      }
+      return new Response(SSE, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+    }) as unknown as typeof fetch
+    const adapter = makeAdapter({
+      resolveCredential: async () => CRED_A,
+      refresh: async () => {},
+      warn: (m) => warmed.push(m),
+      fetchImpl,
+      accountPool: {
+        findAccountIdByCredential: async (_p: string, tok: string) => (tok === 'tok-A' ? 'acc-A' : 'acc-B'),
+        getAvailableAccount: async () => ({ entry: { id: 'acc-B' }, credential: CRED_B }),
+        updateModelRateLimit: async () => { /* 认证类不该写冷却 */ },
+      } as never,
+    })
+
+    await expect(drain(adapter)).resolves.toBeUndefined()
+    expect(auths.some((a) => a.includes('tok-B')), '必须换到 B').toBe(true)
+    expect(warmed.some((m) => m.includes('100002')), '必须留痕（否则静默换号）').toBe(true)
+  })
+
+  it('★★ 反向对照：非认证业务码（100001 参数错误）**不得**被当成认证失败换号', async () => {
+    const auths: string[] = []
+    let picks = 0
+    const fetchImpl = (async (_u: unknown, init?: RequestInit) => {
+      auths.push(String(new Headers(init?.headers).get('Authorization') ?? ''))
+      // ⚠️ 100001 = 参数错误，换号无益 ⇒ 必须原样报错、**不换号**
+      return new Response(
+        JSON.stringify({ code: '100001', desc: 'params error' }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      )
+    }) as unknown as typeof fetch
+    const adapter = makeAdapter({
+      resolveCredential: async () => CRED_A,
+      refresh: async () => {},
+      warn: () => {},
+      fetchImpl,
+      accountPool: {
+        findAccountIdByCredential: async () => 'acc-A',
+        getAvailableAccount: async () => { picks += 1; return { entry: { id: 'acc-B' }, credential: CRED_B } },
+        updateModelRateLimit: async () => {},
+      } as never,
+    })
+
+    // 非 SSE ⇒ 报「响应不是 SSE」；关键是**不得换号**
+    await expect(drain(adapter)).rejects.toThrow()
+    expect(picks, '非认证业务码不得换号（换谁都会失败，白烧候选）').toBe(0)
+    expect(auths, '只该发一次').toHaveLength(1)
+  })
+
+  it('★★ 声明 JSON 但**不是**认证码 ⇒ 响应体必须原样交回下游（不得读干）', async () => {
+    // ⚠️⚠️ 这条守的是「`text()` 读完 body 之后**必须**重建响应」。
+    //    否则下游拿到一个已消耗的流：`consumeOpenAiSse` 会报
+    //    「响应不是 SSE（没有任何 data: 帧）」并**丢掉上游原话**。
+    //    实测（我第一版实现就是这个形态）：变异「读完不重建」⇒
+    //    错误文案从上游业务码退化成空流，用户看不到真实原因。
+    const adapter = makeAdapter({
+      resolveCredential: async () => CRED_A,
+      refresh: async () => {},
+      fetchImpl: (async () => new Response(
+        JSON.stringify({ code: '200003', desc: '上游原话必须可见' }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      )) as unknown as typeof fetch,
+    })
+    // 非认证码 ⇒ 不换号、不转 401；但 body 必须还能被下游读到。
+    const message = await adapter.stream({
+      provider: 'loomy', model: 'MiniMax-M3', messages: [{ role: 'user', content: 'hi' }],
+    } as never).next().then(() => '').catch((e: Error) => String(e.message))
+    // ⚠️ 断言「上游原话仍在文案里」——这是「没读干」的可观测判据。
+    expect(message, '上游业务码原话必须保留（body 未被读干）').toContain('200003')
+  })
+
+  it('★★ 反向对照：SSE 正文不得被这条腿吃掉（content-type 不是 JSON 就零成本跳过）', async () => {
+    const adapter = makeAdapter({
+      resolveCredential: async () => CRED_A,
+      refresh: async () => {},
+      fetchImpl: (async () => new Response(SSE, {
+        status: 200, headers: { 'content-type': 'text/event-stream' },
+      })) as unknown as typeof fetch,
+    })
+    // 能正常读出正文内容 ⇒ 说明没有在中间被 text() 读干
+    const chunks: string[] = []
+    for await (const chunk of adapter.stream({
+      provider: 'loomy', model: 'MiniMax-M3', messages: [{ role: 'user', content: 'hi' }],
+    } as never)) {
+      // ⚠️ 正文走的是 `text-delta`（实测 chunk 形状：
+      //    block-start → text-delta{text:"ok"} → block-end → finish）。
+      const c = chunk as { type?: string; text?: string }
+      if (c.type === 'text-delta') chunks.push(String(c.text))
+    }
+    expect(chunks.join(''), 'SSE 正文必须完整到达（不能被 100002 那条腿读干）').toContain('ok')
+  })
+})
+/**
+ * ★★ 探测必须针对「**本轮要用的**那份凭据」，而不是「池默认号」
+ * （2026-10-20 审计 E-2，**既有缺陷**）。
+ *
+ * ## 缺陷形态
+ *
+ * 热路径把 `refresh()` 的结果当作「**本轮**凭据能不能用」的裁决，而接线层原先
+ * 恒探测 `pool.getAvailableAccount(LOOMY.id, '')` = **池默认号** ⇒ 二者可能
+ * 不是同一个号。后果：本轮要用的号**完全可用**，仅因**另一个号**报终态，
+ * 整轮就被打死（实测：业务请求 0 次）。
+ *
+ * 这与 `401` 分支注释里自己写过的「二者可能不是同一个号」是同一个坑：
+ * 那处讨论的是**冷却标记记错号**，这处是**裁决打死错的人**。
+ *
+ * ## 修法
+ *
+ * `refresh(forCredential?)` 多一个可选参数；适配器把**本轮凭据**传下去，
+ * 接线层按 access_token 反查它自己的 ref 再探测。
+ * ⚠️ 反查失败要**退回原行为**（探测默认号），不许凭空跳过探测。
+ */
+describe('★★ 探测针对本轮凭据，而非池默认号（审计 E-2）', () => {
+  const FRESH: LoomyCredential = { access_token: 'tok-mine', userid: 'um', phone: '13800000009' }
+  const OTHER: LoomyCredential = { access_token: 'tok-other', userid: 'uo', phone: '13800000008' }
+  const SSE = 'data: {"choices":[{"index":0,"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n'
+
+  async function drain(adapter: LoomyAdapter) {
+    for await (const _chunk of adapter.stream({
+      provider: 'loomy', model: 'MiniMax-M3', messages: [{ role: 'user', content: 'hi' }],
+    } as never)) { /* drain */ }
+  }
+
+  it('★★ 适配器必须把**本轮凭据**传给 refresh（否则接线层只能猜）', async () => {
+    let received: LoomyCredential | undefined
+    const adapter = makeAdapter({
+      // 本地判过期 ⇒ 走前置探测分支（这样才会调 refresh）
+      resolveCredential: async () => ({ ...FRESH, expires_at: '1' }),
+      refresh: async (forCredential) => { received = forCredential },
+      fetchImpl: (async () => new Response(SSE, {
+        status: 200, headers: { 'content-type': 'text/event-stream' },
+      })) as unknown as typeof fetch,
+    })
+
+    await drain(adapter)
+    expect(received, '必须把本轮凭据传下去（否则接线层只能探测池默认号）').toBeDefined()
+    expect(received?.access_token, '传的必须是**本轮**那一份').toBe('tok-mine')
+  })
+
+  it('★★ 反向对照：探测报终态且**针对的是本轮凭据** ⇒ 仍然抛（该重登的是我）', async () => {
+    const adapter = makeAdapter({
+      resolveCredential: async () => ({ ...FRESH, expires_at: '1' }),
+      refresh: async (forCredential) => {
+        // ⚠️ 只有「探测对象就是本轮这份」时才该把终态算到本轮头上
+        expect(forCredential?.access_token).toBe('tok-mine')
+        const error = new Error('Loomy 凭证已失效，请重新登录（缺少 token）')
+        error.name = 'RefreshTokenExpiredError'
+        throw error
+      },
+      fetchImpl: (async () => new Response(SSE, {
+        status: 200, headers: { 'content-type': 'text/event-stream' },
+      })) as unknown as typeof fetch,
+    })
+
+    await expect(drain(adapter)).rejects.toThrow('凭证已失效')
+  })
+
+  it('★★ OTHER 号的存在不改变行为：本轮凭据决定一切', async () => {
+    // 这条锁的是「参数传递的语义」：无论池里还有谁，传给 refresh 的都必须是本轮这份。
+    const seen: string[] = []
+    const adapter = makeAdapter({
+      resolveCredential: async () => ({ ...FRESH, expires_at: '1' }),
+      refresh: async (forCredential) => { seen.push(forCredential?.access_token ?? '(none)') },
+      fetchImpl: (async () => new Response(SSE, {
+        status: 200, headers: { 'content-type': 'text/event-stream' },
+      })) as unknown as typeof fetch,
+      accountPool: {
+        // 池里有另一个号（OTHER），且它是「默认号」—— 旧实现会探测它
+        findAccountIdByCredential: async () => '',
+        getAvailableAccount: async () => ({ entry: { id: 'acc-other' }, credential: OTHER }),
+        updateModelRateLimit: async () => {},
+      } as never,
+    })
+
+    await drain(adapter)
+    expect(seen, '传下去的必须是本轮凭据，而不是池默认号').toEqual(['tok-mine'])
   })
 })

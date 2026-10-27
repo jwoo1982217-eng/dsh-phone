@@ -37,21 +37,62 @@
  *
  * ## 三条安全边界（都按「宁可少续跑，不可无限续跑」选）
  *
- * 1. **只在 idle 投递**。错误发生的那一刻驱动器还在跑，此时 `followup()` 排进
- *    `next-turn` 后**不会**被唤醒（`wakeDriver()` 对 running 相位不latch），
- *    消息会**烂在收件箱里**。故像目标驱动器一样等 `agent/status === 'idle'`。
+ * 1. **只在 idle 投递，且投递必须脱离事件派发栈**。错误发生的那一刻驱动器还在
+ *    跑，此时 `followup()` 排进 `next-turn` 后**不会**被唤醒（`wakeDriver()`
+ *    对 running 相位不 latch），消息会**烂在收件箱里**。故像目标驱动器一样等
+ *    `agent/status === 'idle'`。
+ *    ⚠️⚠️ **但仅仅「在 idle 分支里投」是不够的**（Issue IKLEOW 根因 1）：`idle`
+ *    是由 `setPhase()` **同步派发**的，若在该派发的监听器里同步 `followup()`，
+ *    `wakeDriver()` 会立刻把相位改回 `running` 并**再次同步派发**
+ *    `agent/status` —— 一次 idle 转换因此产生两个方向相反的信号，客户端采用
+ *    哪一个取决于监听器注册顺序（详见 `deliverNow` 的注释与实测数据）。
+ *    故投递一律经 {@link LoopResumeScheduler} 挪出当前栈，并在投递时刻**重新
+ *    复核** `status === 'idle'` 与收件箱为空。
  * 2. **连续次数上限**（默认 2，见 `LOOP_RESUME_DEFAULT_MAX`）。这是**连续**
- *    计数：任何**别人**投进收件箱的消息（用户手打的、目标驱动器的、子代理的）
- *    都把它清零 —— 语义与「用户自己补一句『继续』之后我们又有预算」一致。
+ *    计数：**别人真的介入**时把它清零（用户手打的、目标驱动器排的、子代理收尾的）
+ *    —— 语义与「用户自己补一句『继续』之后我们又有预算」一致。
+ *    ⚠️ **只有真介入才算**（见 {@link isInterventionSource}）：自动注入的上下文
+ *    通知（`agent-instructions` / `tool-jobs` / `repeat-tool-reminder` …）不清零，
+ *    否则任何每步注入通知的插件都能把这个上限架空。
  * 3. **只在循环中止时续跑**。`REASONING_LOOP` 只在「该步没有任何可见产出」时
  *    才报（见各适配器的 `reasoningLoopIsSoleOutput` 门禁），故续跑不会重复
  *    已经给用户看过的东西；其它错误码（TRANSPORT / QUOTA / AUTH …）一律不碰。
+ * 4. **如实署名 source**：投出的消息带 `{ kind: 'loop-resume' }`，**绝不**伪造成
+ *    `{ kind: 'user' }`（见 {@link LOOP_RESUME_SOURCE_KIND}）。
  *
  * ⚠️ 续跑次数是**进程内**状态（按 agent id 记）。插件重载即清零 —— 与目标
  * 驱动器的 `activation` 同样是进程内语义，不做持久化（没有格式变更风险）。
  */
 import type { Context } from '@deepseek-ai/cordis';
 import type { UserMessage } from '@deepseek-ai/dsh-llm';
+/**
+ * 自动续跑消息的**自有来源标识**。
+ *
+ * ⚠️⚠️ **绝不能再用 `{ kind: 'user' }`**（Issue IKLEOW 根因 3）。按 harness 的
+ * 既有约定，`source.kind === 'user'` 是**宿主对「直接人类输入」的证明**，
+ * 不是一个渲染标签：`tool-goal` 的 create / edit / pause / resume 都要求
+ * 「当前轮次存在直接人类消息」才放行（见 `packages/goal/tool-goal/README.md`
+ * 的「Host attestation of human input」）。伪造成 `user` 会让自动续跑**冒用
+ * 人类授权**，模型据此可以创建 / 改写 / 恢复目标；UI 也会把它渲染成用户发言。
+ *
+ * ⚠️ 0.1.7 之前的 `MessageSourceMap` 只有一个共享的 `plugin` 包装，本插件当时
+ * 因此只能借用 `user`；**0.2.0 起 source kind 由**生产者自己**声明**
+ * （`MessageSourceMap` 已删除 `plugin`，改为合并扩展），故现在可以如实署名。
+ */
+export declare const LOOP_RESUME_SOURCE_KIND = "loop-resume";
+declare module '@deepseek-ai/dsh-llm' {
+    interface MessageSourceMap {
+        /**
+         * 循环中止后由本插件自动投递的续跑指令。
+         *
+         * ⚠️ 它不是人类输入 —— `tool-goal` 的人类授权判据（`source.kind === 'user'`）
+         * 因此**不会**被它命中，这正是本标识存在的意义。
+         */
+        'loop-resume': {
+            readonly kind: 'loop-resume';
+        };
+    }
+}
 /**
  * 自动续跑时投递的 user 消息正文。
  *
@@ -137,6 +178,15 @@ export interface LoopResumeLog {
     info(message: string): void;
     warn(message: string): void;
 }
+/**
+ * 把一个任务挪出**当前事件派发栈**的调度器。
+ *
+ * ⚠️ 默认是 `queueMicrotask`（不是定时器）：本需求是「本轮刚失败、此刻就续跑」，
+ * 微任务只需让出当前同步栈即可，不会引入额外延迟，也不像 `ctx.schedule` 那样
+ * 变成持久化任务。harness 自己的 `goal-round-driver` 用 promise 链达到同一目的
+ * （`requested` + `run` 串行），二者都是「脱离派发栈」的实现。
+ */
+export type LoopResumeScheduler = (task: () => void) => void;
 /** {@link createLoopResumeController} 的构造参数。 */
 export interface LoopResumeControllerOptions {
     /** 策略（开关 + 上限）。 */
@@ -150,22 +200,54 @@ export interface LoopResumeControllerOptions {
      * 单测侧直接传 spy。
      */
     readonly deliver?: (agent: LoopResumeAgent, message: UserMessage) => void;
+    /**
+     * 投递的调度方式；默认 {@link defaultSchedule}（`queueMicrotask`）。
+     *
+     * 单测注入 `task => task()` 即可恢复同步语义（便于断言），而**真实组合测试
+     * 必须用默认值** —— 本参数存在的唯一理由是让「脱离派发栈」这件事可测。
+     */
+    readonly schedule?: LoopResumeScheduler;
 }
 /** 自动续跑控制器（纯逻辑，不依赖 cordis）。 */
 export interface LoopResumeController {
     /** 记录一次 `agent/error`。 */
     observeFailure(agent: LoopResumeAgent, error: unknown): void;
-    /** 记录一次 `agent/status`；返回是否真的投了一次续跑。 */
+    /**
+     * 记录一次 `agent/status`。
+     *
+     * @returns 是否（将）投出一次续跑。⚠️ 语义随调度器而变，**调用方不得据此做
+     *   业务判断**（`installLoopResume` 的监听器忽略它，只用于测试与诊断）：
+     *   同步调度器下是**投递结果**；默认的 `queueMicrotask` 下投递尚未发生，
+     *   故只能如实返回「**已排定**」。
+     */
     observeIdle(agent: LoopResumeAgent): boolean;
     /** 记录一条进入收件箱的消息（用于区分「我们投的」与「别人投的」）。 */
     observeInput(agent: LoopResumeAgent, message: {
         readonly id: string;
+        readonly source?: unknown;
     }): void;
     /** 丢弃某个 agent 的状态（`agent/disposed`）。 */
     forget(agent: LoopResumeAgent): void;
     /** 当前**连续**续跑计数（诊断/单测用）。 */
     attemptsOf(agentId: string): number;
 }
+/**
+ * 判断一条消息是否由本插件的自动续跑投出。
+ *
+ * ⚠️ 按 **`source.kind`** 认，而不是按 message id：id 只在单进程内有效，
+ * 而 source 会随消息落盘，重放 / 重启后仍可辨认。
+ *
+ * @param source - 消息的 `source` 字段（未知形状按「不是」处理）。
+ * @returns 是否为自动续跑消息。
+ */
+export declare function isLoopResumeSource(source: unknown): boolean;
+/**
+ * 判断一条收件箱插入是否代表「别人真的介入了」。
+ *
+ * @param source - 消息的 `source` 字段。
+ * @returns 是否清零连续续跑预算。
+ */
+export declare function isInterventionSource(source: unknown): boolean;
 /**
  * 创建自动续跑控制器。
  * @param options - 策略、日志出口与投递动作。

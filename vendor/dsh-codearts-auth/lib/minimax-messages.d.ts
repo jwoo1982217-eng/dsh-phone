@@ -53,7 +53,7 @@
  * ⚠️ OpenAI 的 `image_url` 形状被服务端**明确拒绝**（见 `serializeMinimaxMessages`）。
  * ⚠️ 内联由调用方完成（适配器读附件服务），本文件保持**纯函数**。
  */
-import type { FinishReason, RequestMessage as Message, StreamChunk, ToolSchema, TokenUsage } from '@deepseek-ai/dsh-llm';
+import type { FinishReason, RequestMessage, StreamChunk, ToolSchema, TokenUsage } from '@deepseek-ai/dsh-llm';
 /**
  * 构造 Anthropic Messages 请求体。
  *
@@ -64,7 +64,16 @@ import type { FinishReason, RequestMessage as Message, StreamChunk, ToolSchema, 
  */
 export declare function buildMinimaxMessagesPayload(options: {
     model: string;
-    messages: readonly Message[];
+    /**
+     * 待翻译的历史。
+     *
+     * ⚠️ 类型是 **`RequestMessage`**（= `Message | RequestUserInput`）而不是
+     * `Message`：0.2.0 的 `GenerateOptions.messages` 就是这个联合 —— 一次性
+     * 调用方（标题生成、子请求）可以传**无 id / 无 source** 的用户输入。
+     * 下游 `serializeMinimaxMessages` 第 1 步就把它交给
+     * `normalizeHarnessMessages`（按结构读取），全程不触碰 `id` / `source`。
+     */
+    messages: readonly RequestMessage[];
     system?: string;
     tools?: readonly ToolSchema[];
     temperature?: number;
@@ -113,7 +122,7 @@ export interface MinimaxInlineImage {
  * 不允许触碰附件服务（与 `buildQoderTools` 同思路，便于单测锁死形状）。
  * 调用方没内联成功时**不静默丢图** —— 那会让用户以为图片被模型看到了。
  */
-export declare function serializeMinimaxMessages(messages: readonly Message[], images?: ReadonlyMap<string, MinimaxInlineImage>): Array<Record<string, unknown>>;
+export declare function serializeMinimaxMessages(messages: readonly RequestMessage[], images?: ReadonlyMap<string, MinimaxInlineImage>): Array<Record<string, unknown>>;
 /** 把 Anthropic 的 `stop_reason` 映射为 DSH 的 {@link FinishReason}。 */
 export declare function mapMinimaxStopReason(reason: unknown): FinishReason;
 /** 解析 `usage` 字段（`message_start` 与 `message_delta` 各带一半）。 */

@@ -443,11 +443,19 @@ suite('跨 provider 图片 token 上限探测（原图直发）', () => {
       counts: [15],
       stream: streamOf(build(true), name, model),
     })
-    // ⚠️ buddy 才断言边界数值与错误码：那是**实测**出来的
+    // ⚠️ buddy 才断言错误码：那是**实测**出来的
     //（15 张报 `prompt is too long: 100001 tokens > 100000 maximum`）。
     // 归错成 INVALID_REQUEST 的代价是不对称的 —— 那个码既不在 harness 的
     // 可重试集合、也不触发溢出压缩（`dsh-compaction-basic` 只认
     // CONTEXT_WINDOW_EXCEEDED），会话每轮直接报废。
+    //
+    // ⚠️ **`100001` 是常量哨兵（= limit + 1），不是实算 token 数**（issue IKKX0T）：
+    // 12 / 15 / 20 三档报的都是它。故本用例只断言**报文形态**（下面的正则），
+    // **绝不**拿这个数字反推每张 token —— 那正是「99,579 差 0.4%」那条
+    // 巧合式论证的成因（已删除）。每张的真实成本要读成功请求的 `usage`。
+    //
+    // ⚠️ 另注意**边的读法**：`counts: [15]` 只能说明「15 张会挂」，
+    // 真实边界是**区间 `(8,15]`**（issue 二分到 `(10,12]`），不是「= 15」。
     if (name === 'buddy') {
       expect(raw[0]?.code, '腾讯的图片 token 溢出被归错码 → 既不重试也不压缩')
         .toBe('CONTEXT_WINDOW_EXCEEDED')

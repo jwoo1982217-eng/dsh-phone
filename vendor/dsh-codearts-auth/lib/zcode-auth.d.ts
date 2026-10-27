@@ -382,11 +382,7 @@ export declare class ZcodeAuth extends Service {
      *
      * 失败返回 `undefined`，由调用方回退到 `ZCODE_CAPTCHA_FALLBACK`。
      */
-    fetchCaptchaConfig(): Promise<{
-        region: string;
-        prefix: string;
-        sceneId: string;
-    } | undefined>;
+    fetchCaptchaConfig(): Promise<ZcodeCaptchaConfig | undefined>;
     /** captcha 配置缓存（60 秒 TTL，对齐官方 `f3()`）。惰性创建。 */
     private captchaConfigCache;
     private captchaConfigCacheInstance;
@@ -458,11 +454,7 @@ export declare class ZcodeAuth extends Service {
      *   「内部载体优先」那一层，见 {@link mintClaimCaptcha}。
      * 推理热路径那条「内部优先 + 当次回退」走 {@link mintCaptchaParam}。
      */
-    mintCaptcha(config?: {
-        region: string;
-        prefix: string;
-        sceneId: string;
-    }, options?: {
+    mintCaptcha(config?: ZcodeCaptchaConfig, options?: {
         signal?: AbortSignal;
     }): Promise<string>;
     /**
@@ -548,11 +540,7 @@ export declare class ZcodeAuth extends Service {
      *   推理路径已不再驱动内部载体（依据见 {@link mintClaimCaptcha} 的那张表）。
      *   这里只消费需求位。
      */
-    mintCaptchaParam(config?: {
-        region: string;
-        prefix: string;
-        sceneId: string;
-    }, options?: {
+    mintCaptchaParam(config?: ZcodeCaptchaConfig, options?: {
         signal?: AbortSignal;
     }): Promise<CarrierOutcome>;
     /**
@@ -566,11 +554,7 @@ export declare class ZcodeAuth extends Service {
      * 3. chromium 腿撞上**退避冷却**而抛错 ⇒ 保持既有抛出语义（原样上抛，不吞、
      *    不退化成「不带 param 再撞一次」）。
      */
-    mintCaptchaAfterRejection(outcome: CarrierOutcome, config?: {
-        region: string;
-        prefix: string;
-        sceneId: string;
-    }, options?: {
+    mintCaptchaAfterRejection(outcome: CarrierOutcome, config?: ZcodeCaptchaConfig, options?: {
         signal?: AbortSignal;
     }): Promise<CarrierOutcome>;
     /** 取（并惰性创建）captcha 预取池。 */
@@ -587,6 +571,15 @@ export declare class ZcodeAuth extends Service {
         failed: number;
         probeFirstCount: number;
         knownRequiredCount: number;
+        /**
+         * 「首发就主动带」的次数（2026-10-12）：上游 `skip_model_request: false`
+         * ⇒ 不必白吃那发必然 `3007` 的先探。
+         *
+         * ⚠ 必须**显式列出**（不能只靠 `...captchaRequirementObservability()` 的展开）：
+         * 展开虽然会带进这个字段，但返回类型里不写就等于**类型面在撒谎** ——
+         * 调用方（面板/诊断）看不到它，将来也更容易被误删。
+         */
+        upfrontCaptchaCount: number;
         failureStreak: number;
         queuePending: number;
         cooldownRemainingMs: number;

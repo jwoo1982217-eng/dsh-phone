@@ -152,7 +152,17 @@ export interface LobsteraiProduct {
      * 未配置时适配器用 `DEFAULT_IMAGE_PIXEL_BUDGET`。
      */
     imagePixelBudget?: number;
-    /** 单张请求图片的编码字节目标（未配置用 1 MiB，见 `src/image-budget.ts`）。 */
+    /**
+     * 单张请求图片的编码字节目标。
+     *
+     * 取 `DEFAULT_BODY_LIMITED_IMAGE_MAX_BYTES`（**1 MiB**，见 `src/image-budget.ts`）。
+     *
+     * ⚠️ **必须显式赋值**：`requestImageTargetFor` 的默认参数是 2 MiB
+     * （为腾讯系的**图片 token 预算**准备），而 LobsterAI 撞的是**请求体体积**
+     * （13 张 ≈50 MiB 就把上游压出 `SERVER code=500`）—— 漏赋值会让生效值翻倍，
+     * 与 `image-budget.ts` 记的余量自相矛盾。同款缺陷与修法见
+     * `qoder-product.ts` 的 `imageMaxBytes` 注释。
+     */
     imageMaxBytes?: number;
     /** 远端模型列表不可用时的兜底模型目录。 */
     fallbackModels: readonly LobsteraiFallbackModel[];

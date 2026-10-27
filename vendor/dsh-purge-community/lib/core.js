@@ -1,4 +1,5 @@
 import nodeFs from "node:fs";
+import { assertNativeRecipeBase } from "./core-version-guard.js";
 import { tunFakeIpPatch } from "./tun-fake-ip.js";
 import os from "node:os";
 import path from "node:path";
@@ -5758,6 +5759,7 @@ function shouldRestoreOriginal(original, bak) {
  */
 export function restoreMissingOriginalsFromBak(aiBase) {
   communityRequireBase(aiBase);
+  assertNativeRecipeBase(aiBase, 'Restore missing backup');
   const restored = [];
   if (!aiBase || !isDir(aiBase)) return restored;
   const roots = [aiBase];
@@ -5800,7 +5802,8 @@ export function restoreMissingOriginalsAllHosts() {
   for (const aiBase of enumeratePatchAiBases()) {
     try {
       restored.push(...restoreMissingOriginalsFromBak(aiBase));
-    } catch {
+    } catch (error) {
+      if (error?.code === "DSH_PURGE_CORE_VERSION_UNSUPPORTED") throw error;
       /* 一个宿主失败不挡住其余 */
     }
   }
@@ -5809,6 +5812,7 @@ export function restoreMissingOriginalsAllHosts() {
 
 export async function backupAll(aiBase) {
   communityRequireBase(aiBase);
+  assertNativeRecipeBase(aiBase, 'Backup');
   const files = targetFiles(aiBase);
   const made = [];
   const errors = [];
@@ -5857,6 +5861,7 @@ async function sameFileBytes(left, right) {
 
 export async function revertAll(aiBase, options = {}) {
   communityRequireBase(aiBase);
+  assertNativeRecipeBase(aiBase, 'Revert');
   restoreMissingOriginalsFromBak(aiBase);
   const files = targetFiles(aiBase);
   const reverted = [];
@@ -6727,6 +6732,7 @@ async function repairPluginCordisYaml() {
 
 export async function applyPatches(aiBase, patches = ALL_PATCHES, options = {}) {
   communityRequireBase(aiBase);
+  assertNativeRecipeBase(aiBase, 'Apply');
   restoreMissingOriginalsFromBak(aiBase);
   const files = targetFiles(aiBase);
   const report = [];
@@ -6825,6 +6831,8 @@ export async function applyPatches(aiBase, patches = ALL_PATCHES, options = {}) 
  */
 export function patchWatchedClientBundlesSync(aiBase = findAiBase()) {
   if (!aiBase) return [];
+  communityRequireBase(aiBase);
+  assertNativeRecipeBase(aiBase, "Patch watched client bundles");
   const files = targetFiles(aiBase);
   const written = [];
   for (const p of ALL_PATCHES) {

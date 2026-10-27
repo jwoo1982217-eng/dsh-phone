@@ -1,0 +1,101 @@
+{
+  "officialRepository": "https://github.com/kelai141/dsh-mobile-apk",
+  "officialCommit": "1a8f9fb309580c8c1a3c826272c8da17c9e4877b",
+  "officialPreviousReference": "c8a53338e192dbe90b6ba7c49272c7f37feb5d60",
+  "canonicalStart": "6874bc9aee6b3a767c85dbe5cea4af474ac37ddb",
+  "entries": [
+    {
+      "id": "core-rc2",
+      "state": "MISSING",
+      "localEvidence": "runtime/package.json",
+      "observed": "0.2.1-alpha.1; target 0.2.1-rc.2",
+      "implementation": "Pinned candidate evaluation; no overwrite until all custom overlays/private SDKs adapted"
+    },
+    {
+      "id": "virtual-display-workbench",
+      "state": "MISSING",
+      "localEvidence": "app/src/main/java/com/dshphone/control",
+      "observed": "No virtual display registry/viewer/control transport",
+      "implementation": "Owned display, explicit Shizuku setup, target-checked control, human viewer and session tool"
+    },
+    {
+      "id": "saf-workspace-picker",
+      "state": "MISSING",
+      "localEvidence": "app/src/main/java/com/dshphone/StorageAccess.kt",
+      "observed": "Existing raw filesystem browser/all-files guide is not a system tree chooser",
+      "implementation": "Native picker plus engine pick seam and trusted-page callback"
+    },
+    {
+      "id": "independent-terminal",
+      "state": "MISSING",
+      "localEvidence": "app/src/main/java/com/dshphone/NodeRunner.kt",
+      "observed": "Tool execution/log viewer exists; no independent user console",
+      "implementation": "Native line-based bash session independent of engine, bounded output and cleanup"
+    },
+    {
+      "id": "own-signed-apk-updates",
+      "state": "MISSING",
+      "localEvidence": "app/src/main/AndroidManifest.xml",
+      "observed": "Own source repo confirmed, no release channel or installer",
+      "implementation": "Manual same-package/same-signer SHA-verified installer, honest empty release state"
+    },
+    {
+      "id": "splash-management-video-autostart",
+      "state": "MISSING",
+      "localEvidence": "app/src/main/java/com/dshphone/MainActivity.kt",
+      "observed": "Latest official1a8f9fb adds configurable startup video/autostart",
+      "implementation": "Include in completion scope; no default auto-start behavior removal"
+    },
+    {
+      "id": "incoming-new-session-ttl",
+      "state": "MISSING",
+      "localEvidence": "app/src/main/java/com/dshphone/MainActivity.kt",
+      "observed": "Existing file handoff attaches into current conversation; no forced temp workspace+7day lifecycle",
+      "implementation": "Preserve existing handoff option and add official isolated workflow with safe TTL only for owned temporary files"
+    },
+    {
+      "id": "isolated-browser-workbench",
+      "state": "PARTIAL",
+      "localEvidence": "app/src/main/java/com/dshphone/browser",
+      "observed": "Separate process browser exists, full viewport/UA capability mapping needs audit",
+      "implementation": "Compare tool and native browser behavior, add real missing functionality only"
+    },
+    {
+      "id": "photo-document-picker",
+      "state": "EQUIVALENT",
+      "localEvidence": "app/src/main/java/com/dshphone/FilePicker.kt",
+      "observed": "Existing system photo/document split implemented in0.2.12",
+      "implementation": "Retain and regress"
+    },
+    {
+      "id": "webview-recovery",
+      "state": "EQUIVALENT",
+      "localEvidence": "app/src/main/java/com/dshphone/ForegroundPageRecoveryPolicy.kt",
+      "observed": "Bounded renderer recovery implemented",
+      "implementation": "Retain and regress"
+    },
+    {
+      "id": "engine-lifecycle-backoff",
+      "state": "EQUIVALENT",
+      "localEvidence": "app/src/main/java/com/dshphone/EngineRestartPolicy.kt",
+      "observed": "Confirmed-dead process backoff implemented",
+      "implementation": "Retain and regress"
+    },
+    {
+      "id": "longpress-conversation-actions",
+      "state": "CUSTOM_PRESERVE",
+      "localEvidence": "peer/conversation-actions",
+      "observed": "Copy/share/explicit memory/single-multi-range-partial delete; required edit events",
+      "implementation": "Never replace with official UI dropping these behaviors"
+    },
+    {
+      "id": "custom-extensions-and-data",
+      "state": "CUSTOM_PRESERVE",
+      "localEvidence": "docs/phone-upgrade-contract.md",
+      "observed": "Accounts/MCP/OFM/QQ/Noema/skills/personas/sessions/workspaces/private SDKs",
+      "implementation": "Byte/semantic inventory, disposable Android UID upgrade and representative call/recovery validation"
+    }
+  ],
+  "phoneModified": false,
+  "fullCompletionClaimed": false
+}

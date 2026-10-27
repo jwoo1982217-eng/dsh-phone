@@ -27,6 +27,43 @@ function originOf(loginUrl: string): string {
   return loginUrl.replace(/\/raccoon\/login$/, '')
 }
 
+/**
+ * 对本地 HTTP 服务的 `fetch`，带**连接失败重试**。
+ *
+ * ## ⚠️ 为什么需要（2026-10-08 实测的既有 flake，不是本次改动引入）
+ *
+ * 本文件的用例真起一个 `127.0.0.1` 的随机端口服务再 `fetch` 它。**单文件跑 6 次
+ * 全绿**，但**全量并行**（vitest 多 worker）时偶发 `fetch failed` —— 那是瞬时
+ * 资源争抢（socket/端口/文件描述符），**不是逻辑缺陷**。
+ *
+ * ⚠️ **只重试连接类失败**（`TypeError: fetch failed` / `ECONNRESET` /
+ * `ECONNREFUSED`）：HTTP 状态码与业务错误**必须原样返回**，否则会把
+ * 「服务端真的回了 500」这类真缺陷重试成绿 —— 那正是本仓库反复记录的
+ * 「把失败吞掉」形态。
+ *
+ * ⚠️ 重试次数与间隔刻意保守（3 次 × 50ms）：足够吸收瞬时争抢，
+ * 又不会把真失败拖成慢测试（真失败最坏多耗 150ms）。
+ */
+async function fetchLocal(url: string, init?: RequestInit): Promise<Response> {
+  const MAX_ATTEMPTS = 3
+  let lastError: unknown
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      // ⚠️ 这里必须是**全局 `fetch`**，不能是 `fetchLocal` ——
+      //    写成后者会**无限递归**（本文件的批量替换一度踩到过）。
+      return await fetch(url, init)
+    } catch (error) {
+      // ⚠️ 只吞「连不上」这一类；HTTP 层的错误响应是**正常返回**（不会走这里）。
+      const message = error instanceof Error ? error.message : String(error)
+      const isConnectionFailure = /fetch failed|ECONNRESET|ECONNREFUSED|EPIPE/i.test(message)
+      if (!isConnectionFailure || attempt === MAX_ATTEMPTS) throw error
+      lastError = error
+      await new Promise((resolve) => setTimeout(resolve, 50 * attempt))
+    }
+  }
+  throw lastError
+}
+
 /** 造一个最小 JWT。 */
 function jwtWithExp(expSeconds: number): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256' })).toString('base64url')
@@ -124,7 +161,7 @@ describe('startRaccoonLoginFlow', () => {
   it('loginUrl 立即可访问，且返回 HTML', async () => {
     const fetcher = vi.fn(async () => jsonResponse({ code: 0, data: { status: 'pending' } }))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
-    const response = await fetch(started.loginUrl)
+    const response = await fetchLocal(started.loginUrl)
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toContain('text/html')
     const body = await response.text()
@@ -142,7 +179,7 @@ describe('startRaccoonLoginFlow', () => {
     const fetcher = vi.fn(async () => jsonResponse({ code: 0, data: { status: 'pending' } }))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    const response = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
+    const response = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ status: 'pending' })
   })
@@ -159,8 +196,8 @@ describe('startRaccoonLoginFlow', () => {
     })
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
-    await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
+    await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
+    await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
     const credential = await started.result
     expect(credential.access_token).toBe(token)
     expect(credential.refresh_token).toBe('r')
@@ -199,7 +236,7 @@ describe('startRaccoonLoginFlow', () => {
     const fetcher = vi.fn(async () => jsonResponse({ code: 0, message: 'success' }))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    const response = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
+    const response = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone: '' }),
@@ -211,7 +248,7 @@ describe('startRaccoonLoginFlow', () => {
     const fetcher = vi.fn(async () => jsonResponse({ code: 0, message: 'success' }))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    const response = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
+    const response = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone: '13800000000', captchaParam: 'cap' }),
@@ -231,7 +268,7 @@ describe('startRaccoonLoginFlow', () => {
     ))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    const response = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
+    const response = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone: '13800000000', captchaParam: 'bad' }),
@@ -253,12 +290,12 @@ describe('startRaccoonLoginFlow', () => {
     })
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
+    await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone: '13800000000', captchaParam: 'cap' }),
     })
-    const response = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
+    const response = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ smsCode: '123456' }),
@@ -273,7 +310,7 @@ describe('startRaccoonLoginFlow', () => {
     const fetcher = vi.fn(async () => jsonResponse({ code: 0, message: 'success' }))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    const response = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
+    const response = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ smsCode: '123456' }),
@@ -290,19 +327,19 @@ describe('startRaccoonLoginFlow', () => {
     })
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
+    await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsSend}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone: '13800000000', captchaParam: 'cap' }),
     })
-    const first = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
+    const first = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ smsCode: '000000' }),
     })
     expect((await first.json() as { ok: boolean }).ok).toBe(false)
     // 再来一次仍应正常处理（未被上一次失败弄坏）
-    const second = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
+    const second = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.smsVerify}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ smsCode: '000001' }),
@@ -314,7 +351,7 @@ describe('startRaccoonLoginFlow', () => {
     const fetcher = vi.fn(async () => jsonResponse({ code: 0, data: { status: 'pending' } }))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    const response = await fetch(`${base}/raccoon/nope`)
+    const response = await fetchLocal(`${base}/raccoon/nope`)
     expect(response.status).toBe(404)
   })
 
@@ -324,7 +361,7 @@ describe('startRaccoonLoginFlow', () => {
     }))
     started = await startRaccoonLoginFlow({ fetcher: fetcher as unknown as typeof fetch })
     const base = originOf(started.loginUrl)
-    const response = await fetch(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
+    const response = await fetchLocal(`${base}${RACCOON_LOGIN_PAGE_PATHS.poll}`)
     const payload = await response.json() as { status: string; expiredAt?: string }
     expect(payload.status).toBe('logging')
     expect(payload.expiredAt).toBe('2030-01-01T00:00:00Z')

@@ -38,7 +38,34 @@ export const FIXTURE_HINT = '缺少图片探针 fixture '
   + '（tests/fixtures/test.png，刻意不入库：真人桌面截图含隐私）。'
   + '请自备一张 ≥2000×1200 的无个人信息截图。'
 
-/** issue 反推的计价比例，用来把实测边界换算成 token 做交叉验证。 */
+/**
+ * ⚠️ **只在 ≈1721×997 附近成立的粗估比例 —— 不要拿它跨尺寸外推**
+ * （issue IKKX0T 订正，2026-10-12）。
+ *
+ * ## 它的来源是可靠的
+ *
+ * 617 来自**真实 usage**（报障会话 11,351 次成功请求里，35 张时最大
+ * `96,537` 图片 token ⇒ 96,537 ÷ 35 = 2,758 token/张 ⇒
+ * 1,715,837 px ÷ 2,758 ≈ **622 px/token**）。这个数据源本身没问题。
+ *
+ * ## 但「拿它线性外推到别的尺寸」已经被证伪
+ *
+ * 把两组实测摆在一起（都假设上限 10 万、都用「过/挂」两端夹）：
+ *
+ * | 尺寸 | 像素 | 实测边界 | 反推每张 token | px/token |
+ * |---|---|---|---|---|
+ * | 1721×997 | 1,715,837 | 35 过 / 36 挂 | ≈2,778 ~ 2,857 | **601 ~ 618** |
+ * | 2560×1600 | 4,096,000 | 10 过 / 12 挂 | ≈8,333 ~ 10,000 | **410 ~ 492** |
+ *
+ * 面积涨 **2.39×**，每张 token 成本却涨了 **≈3.25×**（取区间中点）——
+ * 每 px 的单价在大图上**劣化约 1.36×**。这是典型的分块/上采样计价，
+ * **不能**用一条线性公式跨尺寸套用。
+ *
+ * ⚠️ 诚实标注强度：这是**由两组实测区间反推**的结论（issue 作者提出、
+ * 本仓库用同一套算术复核），不是直接测得的。要钉死它必须采**真实 usage**
+ * 并拟合 —— 本文件的 `BurstResult.usage` 就是为此加的（适配器本就 yield
+ * `usage`，探针原先丢掉了）。在拿到那份数据之前，**别把 617 当公式用**。
+ */
 export const PIXELS_PER_IMAGE_TOKEN = 617
 
 /** 网关报的那条上限（issue 的失败报文里就是它）。 */
@@ -54,8 +81,11 @@ export const GATEWAY_IMAGE_TOKEN_LIMIT = 100_000
  * 「传输层 / 鉴权 / 请求体积」与「图片 token 预算」区分开；
  * 0 张基线回答的是「这个账号此刻到底通不通」。
  *
- * fixture 是 4.10M px/张 ≈ 6,639 token/张，按 617 px/token 推 **15 张越界**
- * （buddy 实测正是 15 张报 `100001 tokens > 100000 maximum`）。
+ * fixture 是 4.10M px/张。⚠️ **本序列的第二档（8 张）不是按 617 算出来的**
+ * （issue IKKX0T 订正）：617 只在小图上成立，在 4.1M px 上真实成本是
+ * **≈8,300~10,000 token/张**（见 `PIXELS_PER_IMAGE_TOKEN`），实测边界落在
+ * **(8, 15]**（issue 二分到 (10,12]）—— 取 8 与 15 正是为了夹住它。
+ * 选这两档的经验依据是**既有实测**，不是公式外推。
  */
 export const PROBE_COUNTS = [0, 1, 8, 15, 24]
 
@@ -67,10 +97,52 @@ export const PROBE_COUNTS = [0, 1, 8, 15, 24]
  */
 
 /** 撞墙判据：只有图片 token 上限的报文算数，其余失败都说明探测被污染了。 */
-export type BurstVerdict = 'overflow' | 'transport' | 'auth' | 'other' | 'ok'
+export type BurstVerdict = 'overflow' | 'too-large' | 'transport' | 'auth' | 'other' | 'ok'
+
+/**
+ * 「请求体/载荷过大」类报文（Gitee issue IKKX0T 补的三家形态）。
+ *
+ * ## 为什么必须与 `overflow` 分开
+ *
+ * 两者是**两种不同的约束**，旋钮不同（见 `src/image-budget.ts` 的说明）：
+ * - `overflow` = 图片**视觉 token** 预算（腾讯系，`prompt is too long: N > M maximum`）
+ *   → 靠**降像素**；
+ * - `too-large` = **请求体体积**（trae / loomy / qoder / raccoon / lobsterai / cline）
+ *   → 靠**降编码字节**。
+ *
+ * 探针要回答的是「边界在第几张」，两者都能回答；但**定预算时**必须知道是哪一种
+ * ——拿 token 预算去治体积限制会白缩像素，反之亦然。
+ *
+ * ⚠️ **判据必须窄**：只认**明确指向载荷体积**的措辞。`502 + HTML` 与 `504` 那两条
+ * 形态**刻意不在此列** —— 它们与「上游真崩了」无法区分，把它们当边界证据会得出
+ * 「这家上限是 N 张」的假结论（issue IKKX0T 记录的 trae 502 就是这种）。
+ */
+const TOO_LARGE_PATTERNS: readonly RegExp[] = [
+  // trae 流内 `code=4006`：`We're sorry, the content is too large for AI to understand.`
+  /content\s+is\s+too\s+large/i,
+  /\bcode=?4006\b/i,
+  // loomy：`413 Request Entity Too Large`（纯 HTML，无 JSON、无字节数）
+  /request\s+entity\s+too\s+large/i,
+  // qoder：`413 Request body size exceeds maximum allowed 52428800 bytes`（**精确值**）
+  /request\s+body\s+size\s+exceeds/i,
+  // raccoon：`HTTP_413: request body exceeds 10MB`
+  /request\s+body\s+exceeds/i,
+  // 通用兜底：明确带字节数的体积报文
+  /payload\s+too\s+large/i,
+]
+
+/** 报文是否明确指向「载荷体积过大」。 */
+export function isPayloadTooLarge(text: string): boolean {
+  return TOO_LARGE_PATTERNS.some((pattern) => pattern.test(text))
+}
 
 export function classifyFailure(text: string, code?: string): BurstVerdict {
   if (isImageTokenOverflow(text)) return 'overflow'
+  // ⚠️ 顺序：体积判据必须排在 transport 之前 —— `413` 与 `504` 都可能被上游
+  // 以 HTML 形态给出，而 `classifyFailure` 的 transport 正则含 `ECONNRESET` 等，
+  // 两者不会互撞；但体积报文里若同时出现 "fetch failed" 措辞，
+  // 以**更具体**的体积判据为准才不会漏掉边界。
+  if (isPayloadTooLarge(text)) return 'too-large'
   if (code === 'TRANSPORT' || /transport error|fetch failed|socket hang|ECONNRESET/i.test(text)) return 'transport'
   if (code === 'AUTH' || /authorization_verify|unauthorized|api 密钥/i.test(text)) return 'auth'
   return 'other'
@@ -183,6 +255,33 @@ export interface BurstResult {
   errorText: string
   /** 失败归类：只有 `overflow` 才是图片预算撞墙。 */
   verdict: BurstVerdict
+  /**
+   * 上游回报的**真实输入 token 数**（成功时才有）。
+   *
+   * ## ⚠️ 为什么必须采集它（issue IKKX0T 的教训，2026-10-12）
+   *
+   * 本探针原先**丢掉了 `usage`**（`chunk` 的类型断言里根本没有这个字段），
+   * 于是「每张图要花多少 token」只能靠**失败报文里的数字**反推 —— 而那个数字
+   * 是**常量哨兵**：`prompt is too long: 100001 tokens > 100000 maximum` 里的
+   * `100001` **恒等于 `limit + 1`**，与张数无关（issue 作者用同一批运行的
+   * 12/15/20 三档实测：三次报的都是 `100001`；本仓库用纯算术独立复核过 ——
+   * 若它是实算值，三个不同张数**不可能**报同一个数）。
+   *
+   * ⇒ 拿哨兵反推每张成本**在方法论上就是错的**，而且错得不明显：它曾让
+   * 「617 px/token」这个只在小图上成立的比例被当成通用公式外推到 4.1M px，
+   * 得出了「估算 99,579、差 0.4%」这种**巧合式吻合**。
+   *
+   * 适配器**本来就 yield `usage`**（`buddy-adapter.ts` 等都有 `type:'usage'` 分支），
+   * 采集它是零额外成本的 —— 之前只是没人接。有了实测值就能直接拟合
+   * 「每张 token 成本 vs 图像素」，不必再猜比例、也不必再依赖任何报文数字。
+   *
+   * ⚠️ **诚实登记：这条采集没有自动化守卫**。本探针是**人工运行的 e2e 工具**，
+   * 仓库里没有它的单测（跑真机才能验），所以「把采集分支删掉」不会有任何用例变红
+   * （已实测：临时改成 `if (false && …)` 后 `tsc` 与全量单测**全绿**）。
+   * 判据只能在真机跑 `pnpm test:e2e:image-burst` / `image-bisect` 时**看日志**：
+   * 每档应打印 `实测 input N（每张 ≈M）`；**若那一段不出现**，就是采集被改坏了。
+   */
+  usage?: { inputTokens: number; outputTokens: number }
 }
 
 /**
@@ -214,6 +313,8 @@ export async function probeImageBurst(options: {
     let code: string | undefined
     let errorText = ''
     let ok = true
+    /** 上游回报的真实输入 token（见 `BurstResult.usage` 的说明）。 */
+    let usage: { inputTokens: number; outputTokens: number } | undefined
     try {
       for await (const chunk of options.stream(
         [{
@@ -223,12 +324,25 @@ export async function probeImageBurst(options: {
         AbortSignal.timeout(options.timeoutMs ?? 300_000),
         system,
       )) {
-        const c = chunk as { type?: string; text?: string; failure?: { code?: string } }
+        const c = chunk as {
+          type?: string
+          text?: string
+          failure?: { code?: string }
+          usage?: { inputTokens?: unknown; outputTokens?: unknown }
+        }
         if (c.type === 'text-delta' && typeof c.text === 'string') answer += c.text
         if (c.type === 'finish' && c.failure !== undefined) {
           ok = false
           code = c.failure.code
           errorText = String(c.failure.message ?? '')
+        }
+        // ⚠️ 采集**真实 usage**（issue IKKX0T）：这是唯一能拟合「每张图多少 token」
+        // 的可靠数据源 —— 失败报文里的数字是常量哨兵，不能用（见 BurstResult.usage）。
+        if (c.type === 'usage' && typeof c.usage?.inputTokens === 'number') {
+          usage = {
+            inputTokens: c.usage.inputTokens,
+            outputTokens: typeof c.usage.outputTokens === 'number' ? c.usage.outputTokens : 0,
+          }
         }
       }
     } catch (error) {
@@ -237,22 +351,119 @@ export async function probeImageBurst(options: {
       code = typeof e.code === 'string' ? e.code : undefined
       errorText = e.message ?? String(error)
     }
+    // ⚠️ 两套数字，**判据不同**：
+    //   · `estimated` 是拿 **617 px/token 线性外推**的**粗估**（只在 1721×997
+    //     附近成立，见 PIXELS_PER_IMAGE_TOKEN 的说明）—— 仅用于人读日志；
+    //   · `usage.inputTokens` 是**上游实测值**，才是唯一能反推每张成本的数据。
+    // 日志两个都打：粗估明显偏离实测时就说明 617 在该尺寸下不适用（issue IKKX0T）。
     const estimated = Math.round(count * fixture.ref.width * fixture.ref.height / PIXELS_PER_IMAGE_TOKEN)
     const verdict: BurstVerdict = ok ? 'ok' : classifyFailure(errorText, code)
-    console.log(`  [${options.label}] ${count === 0 ? '基线(无图)' : `${count} 张（估算 ≈${estimated} token）`} → `
+    const measured = usage === undefined
+      ? ''
+      : `，实测 input ${usage.inputTokens}${count > 0 ? `（每张 ≈${Math.round(usage.inputTokens / count)}）` : ''}`
+    console.log(`  [${options.label}] ${count === 0 ? '基线(无图)' : `${count} 张（粗估 ≈${estimated} token${measured}）`} → `
       + `${ok ? `成功（${answer.trim().slice(0, 40)}）` : `${verdict}：code=${code ?? '?'} ${errorText.slice(0, 120)}`}`)
-    results.push({ count, ok, answer: answer.trim(), code, errorText, verdict })
-    // 只有真正的图片预算撞墙才值得停在边界上。
-    if (verdict === 'overflow') break
+    results.push({
+      count, ok, answer: answer.trim(), code, errorText, verdict,
+      ...usage === undefined ? {} : { usage },
+    })
+    // 真正的边界只有两种形态：图片 token 预算、请求体体积。两者都值得停在边界上
+    //（前者靠降像素、后者靠降编码字节，见 classifyFailure 的说明）。
+    if (verdict === 'overflow' || verdict === 'too-large') break
     // 其余失败必须**中止并如实标注探测无效** —— 把 `TRANSPORT`／`AUTH`
     // 当成「撞墙」，就会得出「这家网关上限是 N 张」的假结论（我第一版就是这么错的）。
     if (verdict !== 'ok') {
-      console.log(`  ⚠️ 探测中止：${verdict} 类失败与图片 token 预算无关，`
+      console.log(`  ⚠️ 探测中止：${verdict} 类失败与图片上限无关，`
         + '不能据此判断该网关的上限。')
       break
     }
   }
   return results
+}
+
+/**
+ * 在 `(pass, fail]` 上**二分**出真实边界张数（Gitee issue IKKX0T 的探测方法）。
+ *
+ * ## 为什么需要它
+ *
+ * `probeImageBurst` 走的是**固定序列**（`PROBE_COUNTS` = `[0,1,8,15,24]`），
+ * 得到的是「区间」而非边界。issue 作者用二分把误差压到 ≤3 张，才拿到
+ * 「trae (21,24]」「loomy (19,21]」这种可用于**定预算值**的精度。
+ *
+ * ⚠️ **本仓库的规矩是「拿不到阈值就不定值」**（`docs/agent-notes/protocol-wire.md`）：
+ * 固定序列给出的 `24` 这种上界**不足以**用来定 `imageMaxBytes` ——
+ * 真实边界可能是 16，也可能是 24，取上界定值会留下 8 张的过冲。
+ *
+ * ## 三条实现约束
+ *
+ * - **必须复用 `probeImageBurst`**（同一份 `classifyFailure` / `system` / 去重逻辑），
+ *   否则二分出来的边界与固定序列的结论**不可比**；
+ * - **只在 `(pass, fail]` 上二分**：调用方需先给出一个已知通过的 `low` 与
+ *   已知失败的 `high`（未验证的区间不能二分 —— 会得到无意义的收敛）；
+ * - **`tolerance` 默认 3 张**（对齐 issue 的误差声明），且循环上限兜底，
+ *   防止上游行为不稳定时无限二分。
+ *
+ * @returns 二分出的边界信息；`low` 或 `high` 不满足前提时返回 `undefined`
+ */
+export async function bisectImageLimit(options: {
+  label: string
+  stream: (messages: unknown[], signal: AbortSignal, system: string) => AsyncIterable<unknown>
+  /** 已知**通过**的张数（含 0）。 */
+  low: number
+  /** 已知**失败**的张数，且必须 > low。 */
+  high: number
+  /** 收敛容差（张）；默认 3。 */
+  tolerance?: number
+  prompt?: string
+  system?: string
+  timeoutMs?: number
+}): Promise<{
+  /** 已知通过的最大张数（下界）。 */
+  pass: number
+  /** 已知失败的最小张数（上界）。 */
+  fail: number
+  /** 边界处的失败形态 —— 决定该用哪个旋钮（像素 vs 字节）。 */
+  verdict: BurstVerdict
+  /** 全部探测记录（含二分的每一步）。 */
+  steps: BurstResult[]
+} | undefined> {
+  const tolerance = options.tolerance ?? 3
+  if (!Number.isFinite(options.low) || !Number.isFinite(options.high)) return undefined
+  if (options.low < 0 || options.high <= options.low) return undefined
+
+  const steps: BurstResult[] = []
+  let pass = options.low
+  let fail = options.high
+  let verdict: BurstVerdict = 'other'
+
+  // 上限兜底：区间宽 3 张时必然收敛，log2 上限给 12 次足够任何合理区间。
+  for (let round = 0; round < 12 && fail - pass > tolerance; round++) {
+    const mid = Math.floor((pass + fail) / 2)
+    if (mid <= pass || mid >= fail) break
+    const [result] = await probeImageBurst({
+      label: `${options.label} 二分 mid=${mid}`,
+      counts: [mid],
+      ...options.prompt === undefined ? {} : { prompt: options.prompt },
+      ...options.system === undefined ? {} : { system: options.system },
+      ...options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs },
+      stream: options.stream,
+    })
+    if (result === undefined) break
+    steps.push(result)
+    // ⚠️ 非边界类失败（transport / auth / other）**必须中止**：把它当成
+    // 「mid 太大」会把边界算小，得出一个假的预算值。
+    if (!result.ok && result.verdict !== 'overflow' && result.verdict !== 'too-large') {
+      console.log(`  ⚠️ 二分中止：mid=${mid} 出现 ${result.verdict} 类失败，与图片上限无关。`)
+      break
+    }
+    if (result.ok) {
+      pass = mid
+    } else {
+      fail = mid
+      verdict = result.verdict
+    }
+  }
+  return { pass, fail, verdict, steps }
 }
 
 /**

@@ -1,13 +1,18 @@
 import { offloadRequestImages } from "./image-offload.js";
 // DeepSeek Harness rc.8 MIT adapter; account header, redirect fence and stale-token rejection adaptation.
 import z from "@deepseek-ai/schemastery";
-import { CONTEXT_WINDOW_EXCEEDED_CODE, ToolCallId as CallId, EMPTY_RESPONSE_CODE, LlmAdapter, LlmError, ProviderRequestId, QUOTA_EXCEEDED_CODE, ReasoningEffortId, RetryPolicySchema, assertUsableApiKey, attributionHeaders, contentHasImage, isContextWindowExceededError, isQuotaExceededError, resolveRetryPolicy } from "@deepseek-ai/dsh-llm";
+import { CONTEXT_WINDOW_EXCEEDED_CODE, ToolCallId as CallId, EMPTY_RESPONSE_CODE, LlmAdapter, LlmError, ProviderRequestId, QUOTA_EXCEEDED_CODE, ReasoningEffortId, RetryPolicySchema, assertUsableApiKey, attributionHeaders, isContextWindowExceededError, isQuotaExceededError, resolveRetryPolicy } from "@deepseek-ai/dsh-llm";
 import { credentialRef } from "@deepseek-ai/dsh-credentials";
 import { launchEnvironmentOf } from "@deepseek-ai/dsh-launch-environment";
 import { MAX_TIMER_DELAY_MS, idleWatchdog, timeoutOf } from "@deepseek-ai/dsh-timeout";
 import { getOrCreateAnonymousUserId } from "@deepseek-ai/dsh-anonymous-user-id";
 import { AttachmentError } from "@deepseek-ai/dsh-attachment";
 import { EventSourceParserStream } from "eventsource-parser/stream";
+// This adapter projects tool-role messages into rc.8 nested tool results before
+// admission. Newer SDK contentHasImage only examines flat content blocks.
+function contentHasImage(content) {
+	return content.some(block => block.type === "image" || block.type === "tool-result" && contentHasImage(block.content));
+}
 //#region lib/types/serialize.js
 /**
 * Serialize harness messages into DeepSeek chat completions. Text-only

@@ -363,8 +363,27 @@ export async function fetchModels(
   fetcher: typeof fetch = fetch,
   signal?: AbortSignal,
   product: BuddyProduct = CODEBUDDY,
+  /**
+   * 各来源成败的**出参**（issue IKJVTF，审计 I3）。
+   *
+   * ⚠️ 用出参而非改返回值：既有调用方与单测都按「返回数组」用，改形状会波及它们；
+   * 完整性只对**适配器**有意义（它决定要不要永久缓存）。不传即行为不变。
+   *
+   * ⚠️ 本函数是**两个**端点的并集（scoped + `/v3/config`），且它自己的注释就写明
+   * 两集合 id 不同（`hy4-preview-f` 只在 config）—— 故「一个成功、一个失败」
+   * 是**常态**，不是异常。旧判据 `models.length > 0` 会把它当成完整 ⇒ 永久缓存
+   * ⇒ 那个免费变体的促销倍率（`creditsRate`）再也回不来（用户报障原话：
+   * 「hy4 preview 现在 ide 是免费我们还是 0.29」）。
+   */
+  outcome?: BuddyCatalogOutcome,
 ): Promise<BuddyRemoteModel[]> {
-  if (credential.access_token.length === 0) return []
+  if (credential.access_token.length === 0) {
+    if (outcome !== undefined) {
+      outcome.scopedOk = false
+      outcome.configOk = false
+    }
+    return []
+  }
   const headers: Record<string, string> = {
     ...credentialAuthHeaders(credential),
     // credentialAuthHeaders 内置 CodeBuddy 的 UA/域名，这里按产品覆盖。
@@ -387,6 +406,7 @@ export async function fetchModels(
   // 返回 500 或空列表），故失败时回退到 /v3/config，仍失败则由调用方回退
   // 静态目录。三层回退保证任何一层可用都能给出模型列表。
   const scoped = await requestScopedModels(credential, headers, fetcher, signal, product)
+  if (outcome !== undefined) outcome.scopedOk = scoped !== undefined
   if (scoped !== undefined) {
     // ⚠️ **两个端点下发的模型 id 集合不同，必须取并集。**
     //
@@ -403,6 +423,10 @@ export async function fetchModels(
     // 它带更完整的元数据），同时取其促销表。任何失败都不影响模型列表 ——
     // 促销与补充模型都只是增强。
     const config = await requestConfig(headers, fetcher, signal, product)
+    // ⚠️ `requestConfig` 失败时**静默**返回空快照（它是「展示增强」），
+    // 故完整性必须由**它自己的** `ok` 字段上报，不能靠「快照是否为空」反推：
+    // 上游真的没有促销时 `promotions` 也是空的。
+    if (outcome !== undefined) outcome.configOk = config.ok
     const merged = mergeRemoteModels(scoped, config.models)
     return config.promotions.size === 0 ? merged : applyPromotions(merged, config.promotions)
   }
@@ -413,8 +437,13 @@ export async function fetchModels(
     const { status, body } = await request('GET', url, headers, {
       fetcher, timeoutMs: REQUEST_TIMEOUT_MS, ...signal !== undefined ? { signal } : {},
     })
-    if (status !== 200) return []
-    return parseModelsFromConfig(body)
+    if (status !== 200) {
+      // scoped 已失败、config 也失败 ⇒ 两者皆 false（调用方会回退静态目录）。
+      return []
+    }
+    const models = parseModelsFromConfig(body)
+    if (outcome !== undefined) outcome.configOk = true
+    return models
   } catch {
     return []
   }
@@ -440,6 +469,30 @@ function mergeRemoteModels(
 interface BuddyConfigSnapshot {
   models: BuddyRemoteModel[]
   promotions: Map<string, string>
+  /**
+   * 这次请求是否**真的成功且形状可识别**（issue IKJVTF，审计 I3）。
+   *
+   * ⚠️ 不能靠「`models`/`promotions` 是否为空」反推：上游真的没有促销时
+   * 它们也是空的，而那**不是**失败。残缺目录被判成完整会让它永久固化。
+   */
+  ok: boolean
+}
+
+/**
+ * buddy 目录的**各来源成败**（issue IKJVTF，审计 I3）。
+ *
+ * buddy 是**双端点** provider：`/console/enterprises/{scope}/models`（scoped）
+ * 与 `/v3/config`，两者 id 集合不同、必须取并集。故「一个成功、一个失败」
+ * 是常态 ⇒ 必须显式上报，否则残缺目录被当成完整并永久缓存。
+ */
+export interface BuddyCatalogOutcome {
+  scopedOk: boolean
+  configOk: boolean
+}
+
+/** 两个来源是否**都**取到了。 */
+export function isBuddyCatalogComplete(outcome: BuddyCatalogOutcome): boolean {
+  return outcome.scopedOk && outcome.configOk
 }
 
 /**
@@ -454,7 +507,7 @@ async function requestConfig(
   signal: AbortSignal | undefined,
   product: BuddyProduct,
 ): Promise<BuddyConfigSnapshot> {
-  const empty: BuddyConfigSnapshot = { models: [], promotions: new Map() }
+  const empty: BuddyConfigSnapshot = { models: [], promotions: new Map(), ok: false }
   try {
     const { status, body } = await request('GET', `${product.endpoint}${CONFIG_PATH}`, headers, {
       fetcher, timeoutMs: REQUEST_TIMEOUT_MS, ...signal !== undefined ? { signal } : {},
@@ -465,6 +518,7 @@ async function requestConfig(
     return {
       models: parseModelsFromConfig(body),
       promotions: parsePromotions(data as Record<string, unknown>),
+      ok: true,
     }
   } catch {
     return empty

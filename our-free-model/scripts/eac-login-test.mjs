@@ -213,6 +213,11 @@ pollResult = () => new Response('{"status":"expired"}')
 await firePoll(); login = page.render()
 assert.equal(login.pending, null); assert.equal(login.notice, 'eac.sessionExpired'); assert.equal(storage.size, 0)
 page.unmount()
+const pendingTree = EacAuth({ t, auth: { available: true }, eacLogin: { ...login, pending: { link, url: 'https://gateway.invalid/auth' } } })
+const pendingLinks = []
+const collectLinks = node => { if (!node || typeof node !== 'object') return; if (node.type === 'a') pendingLinks.push(node); for (const child of node.children ?? []) { if (Array.isArray(child)) child.forEach(collectLinks); else collectLinks(child) } }
+collectLinks(pendingTree)
+assert.ok(pendingLinks.some(node => node.props.href === 'https://gateway.invalid/auth' && node.props.target === '_blank'), '等待授权面板必须提供可点击的授权链接')
 const tree = EacAuth({ t, auth: { available: true, unverified: true }, eacLogin: { ...login, pending: null } })
 assert.ok(JSON.stringify(tree).includes('eac.pillUnknown'))
 assert.equal(JSON.stringify(tree).includes('eac.pillCompat'), false)
@@ -280,14 +285,18 @@ console.log('ok  UI: lost cancellation acknowledgement converges; already commit
   const { EventEmitter } = await import('node:events')
   const { lane } = await import('../src/eac.js')
   const { callRoute, fakeContext, until } = await import('./lib/fake-kernel.mjs')
-  const previous = { home: process.env.DSH_HOME, upstream: process.env.OUR_FREE_MODEL_BASE, fetch: globalThis.fetch, spawn: childProcess.spawn, laneFetch: lane.fetch }
+  const previous = { home: process.env.DSH_HOME, upstream: process.env.OUR_FREE_MODEL_BASE, fetch: globalThis.fetch, execFile: childProcess.execFile, laneFetch: lane.fetch }
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-login-routes-'))
   const order = [], routeDelivery = deferred()
   let ctx
   process.env.DSH_HOME = home
   process.env.OUR_FREE_MODEL_BASE = 'http://127.0.0.1:9'
   globalThis.fetch = async () => new Response('{"data":[]}')
-  childProcess.spawn = () => { order.push('browser'); return Object.assign(new EventEmitter(), { unref() {} }) }
+  childProcess.execFile = (_file, _args, _options, callback) => {
+    order.push('browser')
+    queueMicrotask(() => callback(null, '', ''))
+    return new EventEmitter()
+  }
   syncBuiltinESMExports()
   lane.fetch = async url => {
     if (url.includes('/auth/github/start?')) { order.push('registered'); return new Response(null, { status: 302 }) }
@@ -319,7 +328,7 @@ console.log('ok  UI: lost cancellation acknowledgement converges; already commit
     for (const dispose of [...(ctx?.__disposers ?? [])].reverse()) await dispose()
     await flush()
     globalThis.fetch = previous.fetch; lane.fetch = previous.laneFetch
-    childProcess.spawn = previous.spawn; syncBuiltinESMExports()
+    childProcess.execFile = previous.execFile; syncBuiltinESMExports()
     if (previous.home === undefined) delete process.env.DSH_HOME
     else process.env.DSH_HOME = previous.home
     if (previous.upstream === undefined) delete process.env.OUR_FREE_MODEL_BASE
@@ -350,8 +359,8 @@ assert.equal(popup.location.href, undefined)
 startingPhone.resolve(); await phoneStart; login = page.render()
 assert.equal(popup.location.href, login.pending.url)
 assert.equal(login.notice, '')
-const pendingTree = EacAuth({ t, auth: { available: true }, eacLogin: login })
-assert.ok(JSON.stringify(pendingTree).includes('eac.open'), 'manual clickable page remains available')
+const pendingPhoneTree = EacAuth({ t, auth: { available: true }, eacLogin: login })
+assert.ok(JSON.stringify(pendingPhoneTree).includes('eac.open'), 'manual clickable page remains available')
 cancelResult = () => new Response('{"ok":true}')
 await login.cancel(); page.unmount()
 beforeStart = async () => {}

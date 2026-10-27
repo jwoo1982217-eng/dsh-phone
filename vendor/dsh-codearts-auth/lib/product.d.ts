@@ -151,6 +151,32 @@ export interface BuddyProduct {
     /** 追加到登录 URL 的版本号（appendSessionParams 为 true 时使用） */
     pluginVersion?: string;
     /**
+     * 该产品**合法的凭据 `domain` 值集合**（凭据里 `domain` 的语义是「登录站点」，
+     * 即 token 的 `iss` 主机，**不是**请求端点域名）。
+     *
+     * ## 为什么需要它（真实缺陷，独立审计实测证伪）
+     *
+     * `pruneAccountsWithForeignDomain` 原先的判据是「`domain !== product.apiDomain`
+     * 就删账号」。该判据**语义不成立**：
+     *
+     * - `domain` 记录的是**登录站**（`src/buddy-adapter.ts` 明文写着这一点），
+     *   且 `X-Domain` 实际以 `this.product.apiDomain || credential.domain` 取值 ——
+     *   凭据里的 `domain` 只是**兜底**，故 `domain ≠ apiDomain` **不蕴含**
+     *   「凭据发不到当前端点」。本机实测 buddy 的 20 个真实账号里，`domain`
+     *   合法地存在 `www.codebuddy.cn`（登录站）与 `copilot.tencent.com`（API 域）
+     *   两种值，而那 12 个 `www.codebuddy.cn` 的账号**一直是正常可用的**。
+     * - 该判据之所以在 buddy 上没出事，**只是因为上游恰好没对 `CODEBUDDY` 调用
+     *   这个函数**（唯一调用点是 `WORKBUDDY`）。一旦推广到 buddy，会一次性删掉
+     *   那 12 个账号。
+     *
+     * ⇒ 判据改为「domain **属于该产品的已知域集合**就保留，只有**确证属于其它
+     * 产品**（即命中别的产品的集合）才删」。本字段就是这个集合。
+     *
+     * ⚠️ 空数组表示「没有已知域信息」⇒ 调用方应**保守保留**（无法判定不等于失配）。
+     * ⚠️ 新增同源产品时必须登记它的登录站，否则跨产品导入的账号会被误判。
+     */
+    knownDomains?: readonly string[];
+    /**
      * 单张请求图片的像素预算（issue !IKITT9）。
      *
      * 适配器据此把附件派生成**缩放后的请求版本**再内联，而不是直接发原图。
@@ -184,14 +210,29 @@ export declare const CODEBUDDY: BuddyProduct;
  *    登记为 `dailyCheckin: false` ⇒ 按钮不渲染 ⇒ `runTasks: true` 传不进来；
  * 2. **更根本的是**：contributor 在 !62 复审中实测确认 `www.workbuddy.ai` 后端
  *    **根本没有成长中心**（无任务列表、无 claim 端点）。故这不是「等将来开放」，
- *    而是「该产品没有这个功能」。`GROWTH_CAPABLE_PROVIDERS` 与客户端的
- *    `GROWTH_TASK_PROVIDERS` 都已据此**移除** `workbuddy`。
+ *    而是「该产品没有这个功能」。客户端 `GROWTH_TASK_PROVIDERS` 与宿主能力表
+ *    （`src/provider-credits.ts` 里**只有 buddy** 挂 `credits.afterClaim`）
+ *    都已据此**排除** `workbuddy`。
+ *
+ *    ⚠️ 2026-10-08（Task 4）：宿主侧原先另有一张手抄的 `GROWTH_CAPABLE_PROVIDERS`
+ *    集合，**已删除** —— 「哪家有成长中心」现在由「该家是否提供 `credits.afterClaim`」
+ *    回答（能力注册表说了算，不再有第二份可漂移的名单）。
  *
  * 两个字段保留是因为 `BuddyProduct` 把它们声明为必填；若将来类型放宽为可选，
  * 这里可以删掉（`claimBaseOf` / `webBaseOf` 已能正确处理空值并给出可读错误）。
  */
 export declare const WORKBUDDY: BuddyProduct;
-/** 全部产品配置，供按 id 查询与遍历注册使用。 */
+/**
+ * 全部 **CodeBuddy 系**产品配置，供按 id 查询与遍历注册使用。
+ *
+ * ⚠️ 只放同源产品（共用 cli-external-link 认证 + ProductProvider 机制）。
+ * **腾讯 OrcaTerm 不在此列**：它的登录是网页 cookie（微信扫码）而非
+ * `/v2/plugin/auth/state` 两步流程，塞进本表会让 `account.create` 把
+ * `product.endpoint`/`product.platform` 当有效值用，拼出
+ * `undefined/v2/plugin/auth/state?platform=undefined` 而失败
+ *（真机事故 2026-10-14）。OrcaTerm 的登录在 `jet-hub-rpc.ts` 的
+ * `account.create` 里走独立分支（见 `orcaterm-login.ts`）。
+ */
 export declare const ALL_PRODUCTS: readonly BuddyProduct[];
 /** 按 provider id 取产品配置；未知 id 返回 undefined。 */
 export declare function productById(id: string): BuddyProduct | undefined;

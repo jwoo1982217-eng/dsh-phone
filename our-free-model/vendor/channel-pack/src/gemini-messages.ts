@@ -37,7 +37,7 @@ import type {
   ToolSchema,
 } from '@deepseek-ai/dsh-llm'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
-import { normalizeHarnessMessages } from './message-shape.js'
+import { collectHarnessSystem, normalizeHarnessMessages } from './message-shape.js'
 import { readWithIdleTimeout, resolveToolPairing } from './sse.js'
 import type { GeminiInlineImage, GeminiModelSpec } from './gemini.js'
 import {
@@ -213,8 +213,7 @@ export function translateGeminiRequest(options: TranslateGeminiRequestOptions): 
 
   const contents: GeminiContent[] = []
   for (const message of normalized) {
-    // system 由 `options.system` 单独承载（DSH 不会把 system 放进 messages，
-    // 真出现时按 user 处理会让模型把它当用户指令 —— 故显式跳过）。
+    // System text is collected into systemInstruction, never a user turn.
     // `developer`（只承载工具增删元数据）由归一化层一并丢弃。
     if (message.role === 'system') continue
 
@@ -314,8 +313,10 @@ export function translateGeminiRequest(options: TranslateGeminiRequestOptions): 
     sessionId,
   }
 
-  if (options.system !== undefined && options.system !== '') {
-    request.systemInstruction = { role: 'system', parts: [{ text: options.system }] }
+  const systemText = [...new Set([options.system, collectHarnessSystem(normalized)]
+    .filter((text): text is string => typeof text === 'string' && text !== ''))].join('\n\n')
+  if (systemText !== '') {
+    request.systemInstruction = { role: 'system', parts: [{ text: systemText }] }
   }
 
   if (options.tools !== undefined && options.tools.length > 0) {

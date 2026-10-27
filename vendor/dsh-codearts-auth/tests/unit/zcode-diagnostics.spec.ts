@@ -11,9 +11,13 @@
  * 断言它的**每一个子串**都不出现在渲染结果里。
  */
 import { beforeEach, describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   accountOrdinal,
   describeZcodeRequestShape,
+  extractZcodeLogId,
   formatZcodeDiagnostic,
   noteZcodeRequestFailed,
   noteZcodeRequestOk,
@@ -22,6 +26,14 @@ import {
 } from '../../src/zcode-diagnostics.js'
 import { buildZcodeSystemBlocks, withContextPrefix } from '../../src/zcode-identity.js'
 import { describeUpstreamError, httpErrorCodeForZcode } from '../../src/zcode-adapter.js'
+
+/** 源码接线断言用（与 `zcode-captcha-upfront.spec.ts` 同一套定位法）。 */
+const HERE = dirname(fileURLToPath(import.meta.url))
+
+/** 剥注释后再断言：只改注释不该让接线「看起来」还在。 */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+}
 
 /** 走真实构造路径拿一份请求体形态（与 `stream()` 里用的是同一批函数）。 */
 function realShape(): ReturnType<typeof describeZcodeRequestShape> {
@@ -198,6 +210,116 @@ describe('ZCode 3012 可观测诊断（issue IKJI0Y）', () => {
         accountId: 'acct-D', sentAt: 5_000, status: 405, shape: realShape(), now: 5_000,
       })
       expect(line).toContain('距上条 —')
+    })
+  })
+
+  /**
+   * ★★ `logid` 必须进诊断行（2026-10-12）。
+   *
+   * ## 为什么（issue IKJI0Y 的原始记录 + 本机一手实测）
+   *
+   * 笔记原话：「响应体还带 **`logid`** —— 向用户索取现场时**优先要它**
+   * （上游侧排障凭据）」。但**此前它从未被解析过**（全仓 grep `logid` 零命中），
+   * 于是用户报障时我们只能拿到「账号#1 · 身份块 2898 字符 · HTTP 405」，
+   * **没有一样是上游能据以查日志的东西**。
+   *
+   * ## 本机实测（`scripts/probe-zcode-logid-shape.mjs`，只发 GET）
+   *
+   * 四个端点（`client/configs` / `billing/preview` / `billing/balance` /
+   * `event/report`）全部**同时**带：
+   *
+   * ```
+   * [header] x-request-id = 20261012145652694e8f48d3614ae49634
+   * [body]   logid        = 20261012145652694e8f48d3614ae49634   ← ★ 逐字相同
+   * ```
+   *
+   * ⇒ 两者是**同一个值**。故判据取**双来源**：
+   * ① 响应体顶层 `logid`（业务错误的主路）；
+   * ② HTTP 头 `x-request-id`（**边缘 HTML 页也有它** —— 而那种响应体里没有 `logid`，
+   *    正是 3012 之外另一类高频故障，少了这条就查不到）。
+   */
+  describe('★ logid 现场（上游排障的唯一凭据）', () => {
+    it('从响应体顶层 `logid` 取到（业务错误的主路）', () => {
+      expect(extractZcodeLogId(
+        '{"code":3012,"msg":"request has been blocked due to unusual activity.","logid":"abc123"}',
+      )).toBe('abc123')
+    })
+
+    it('★ 响应体没有 `logid` 时回退到 HTTP 头 `x-request-id`（边缘 HTML 页走这条）', () => {
+      // 边缘页形态：正文是 HTML，body 里解析不出 logid —— 但 header 有。
+      expect(extractZcodeLogId('<html><body>502 Bad Gateway</body></html>', {
+        'x-request-id': 'hdr-999',
+      })).toBe('hdr-999')
+    })
+
+    it('★ 响应体优先于 header（两者都在时取 body 的业务值）', () => {
+      expect(extractZcodeLogId('{"logid":"from-body"}', { 'x-request-id': 'from-header' }))
+        .toBe('from-body')
+    })
+
+    it('header 名大小写不敏感（HTTP 头本就大小写不敏感）', () => {
+      expect(extractZcodeLogId('{}', { 'X-Request-Id': 'upper-1' })).toBe('upper-1')
+    })
+
+    it('取不到时返回 undefined（**不编造**、不留空壳）', () => {
+      expect(extractZcodeLogId('{"code":3012}')).toBeUndefined()
+      expect(extractZcodeLogId('')).toBeUndefined()
+      expect(extractZcodeLogId('<html></html>', {})).toBeUndefined()
+      // 空白值等同没有（`"logid":""` / `"  "` 都不算现场）
+      expect(extractZcodeLogId('{"logid":""}')).toBeUndefined()
+      expect(extractZcodeLogId('{"logid":"   "}')).toBeUndefined()
+    })
+
+    it('非字符串 logid（数字/对象）不得被 stringify 出来（形状防御）', () => {
+      expect(extractZcodeLogId('{"logid":12345}')).toBeUndefined()
+      expect(extractZcodeLogId('{"logid":{"a":1}}')).toBeUndefined()
+    })
+
+    it('★ 诊断行带上 logid（让用户能直接把现场报回上游）', () => {
+      const line = formatZcodeDiagnostic({
+        accountId: 'acct-L',
+        sentAt: 1_000,
+        status: 405,
+        shape: realShape(),
+        logId: '20261012145652694e8f48d3614ae49634',
+        now: 1_000,
+      })
+      expect(line).toContain('logid 20261012145652694e8f48d3614ae49634')
+    })
+
+    it('★ 没有 logid 时**整项省略**（不留「logid 」空壳，与 shape 缺省同款纪律）', () => {
+      const line = formatZcodeDiagnostic({
+        accountId: 'acct-L2', sentAt: 1_000, status: 405, shape: realShape(), now: 1_000,
+      })
+      expect(line).not.toContain('logid')
+    })
+
+    /**
+     * ★★ **接线守卫**：原语写好了必须真的接上。
+     *
+     * 本仓库历史上**多次**栽在「原语写好了但没接上」（`zcode-upstream.ts` 的
+     * `fetchImpl` 曾是**死参数**；`catalogIdsOf` 改名后 85 条用例全绿而生产退化）。
+     * 上面那几条只证明 `formatZcodeDiagnostic` **能**渲染 logid，
+     * **不证明**两条真实路径真的把值传进去了 —— 少了本段，
+     * 「`logId:` 那一行被删掉」会让全部单测继续绿，而线上永远看不到 logid。
+     */
+    it('★ 接线：推理路径与领取路径都必须把 logId 传进诊断', () => {
+      const adapterSrc = readFileSync(resolve(HERE, '../../src/zcode-adapter.ts'), 'utf8')
+      const authSrc = readFileSync(resolve(HERE, '../../src/zcode-auth.ts'), 'utf8')
+      // 剥注释：本仓库记过「把接线改成注释后源码正则仍全绿」那类假绿。
+      const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+      // 推理路径：从**真实响应**取（体 + 头），不是凭空造一个值。
+      expect(strip(adapterSrc)).toMatch(/logId:\s*extractZcodeLogId\(text,\s*response\.headers\)/)
+      // 领取路径：读上游 outcome 带上来的那个。
+      expect(strip(authSrc)).toMatch(/logId:\s*outcome\.logId/)
+    })
+
+    it('★ 接线：领取侧必须在**持有 response 的那一层**提取（下游已无 header）', () => {
+      const src = stripComments(readFileSync(resolve(HERE, '../../src/zcode-upstream.ts'), 'utf8'))
+      // `claimZcodePlan` 里提取并落到返回值 —— 那是唯一同时有 response 与完整 text 的地方。
+      expect(src).toMatch(/const\s+logId\s*=\s*extractZcodeLogId\(text,\s*response\.headers\)/)
+      expect(src).toMatch(/\.\.\.logId\s*===\s*undefined\s*\?\s*\{\}\s*:\s*\{\s*logId\s*\}/)
     })
   })
 

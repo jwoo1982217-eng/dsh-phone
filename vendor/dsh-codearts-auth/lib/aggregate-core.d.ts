@@ -32,6 +32,38 @@ export declare const NEVER: number;
 /** 该 provider 本次不可用（无启用账号 / 探测失败）的哨兵值。 */
 export declare const UNUSABLE = -1;
 /**
+ * 候选的**三态门控**（用户 2026-10-15 的取舍：没有临期积分折算的渠道默认不参与，可逐条手工打开）。
+ *
+ * - `'allowed'`：参与本次轮换候选池（**已接入**折算渠道的默认态，或白名单里的**显式允许**）；
+ * - `'rejected'`：用户**显式拒绝**（拒绝表里为 `true`）；
+ * - `'default-rejected'`：该渠道**未接入**临期折算且用户没显式允许 ⇒ **默认不参与**。
+ *
+ * ⚠️⚠️ 优先级**必须是**「显式拒绝 > 显式允许 > 默认」：
+ *   - 两张表**各有各的域、不做互斥归一**（用户 2026-10-15 的修正）：已接入折算的候选只归**拒绝表**
+ *     （黑名单语义：默认参与，「不参与」才需显式记录），未接入的只归**白名单**（默认不参与，
+ *     「参与」才需显式记录）—— 两表的键域由 `expiryWired` 这个渠道级编译器事实划分，**天然不相交**，
+ *     所以正常情况下同一键不会双命中；
+ *   - 但**判据不能依赖这个事实**：跨域残留（例如某渠道后来接入折算、遗留的白名单条目）或
+ *     外部直接写表时，同键双命中是可能的。此时「拒绝优先」的最坏后果只是「拒绝生效、
+ *     白名单残留一条无作用的 `true`」，用户再点一次开关就回到自洽态；若反过来判「允许优先」，
+ *     用户点「拒绝」会**没反应**（本仓库已有「按钮看起来坏了」的缺陷史）。
+ *
+ * ⚠️ **本判据只留这一份**：宿主在 `aggregate.catalog` 里把结果**直接下发**（`state` + `expiryWired`），
+ *    客户端只渲染、不判定（本仓库「同一语义两套判据」的红线）。
+ */
+export type CandidateGate = 'allowed' | 'rejected' | 'default-rejected';
+/** {@link resolveCandidateGate} 的入参（刻意用**布尔三格**而不是「两个表 + 渠道」，便于逐格测）。 */
+export interface CandidateGateInput {
+    /** 该键在**显式拒绝表**里（只认 `true`，由调用方保证）。 */
+    rejected: boolean;
+    /** 该键在**白名单**里（只认 `true`，由调用方保证）。 */
+    allowed: boolean;
+    /** 该候选所属渠道是否**已接入临期折算**（权威是 `WIRED_EXPIRY_PROVIDERS`）。 */
+    expiryWired: boolean;
+}
+/** 见 {@link CandidateGate} 的判定表与优先级说明。 */
+export declare function resolveCandidateGate(input: CandidateGateInput): CandidateGate;
+/**
  * 临期探针：给定 provider，返回它**一个代表账号**的最早失效时刻。
  *
  * ⚠️ 抽成可注入函数是为了让用例**零网络**（本仓库单测环境的惯例：把 IO 抽到
@@ -74,8 +106,8 @@ export declare function pickSoonestProvider(entries: readonly (readonly [string,
  * | `DeepSeek V4 Flash 0731 · x3.0` | 3.0 ✅ | 3.0 |
  *
  * `Spark X2.5` 这条路径**真实可达**：loomy 的 `splitLoomyRate` 在远端下发**不带
- * 倍率**的名称时原样返回原名（`loomy.ts:136/147`），而 `loomyDisplayName` 不追加
- * 分隔符，该原名会被 `loomy-adapter.ts:163` 直接写进目录名 ⇒ 就会把它当 2.5 倍，
+ * 倍率**的名称时原样返回原名（`loomy.ts`），而 `loomyDisplayName` 不追加
+ * 分隔符，该原名会被 `loomy-adapter.ts` 直接写进目录名 ⇒ 就会把它当 2.5 倍，
  * 于是「挑最便宜」反而**挑到了最贵的**（同池里 `· x0.8` 的模型排到了它后面）。
  *
  * ✅ 修法：要求倍率前有分隔符（`·` / `×` / `·x`），并按真实形态支持促销箭头
@@ -98,15 +130,28 @@ export interface RankedCandidate {
     price: number;
 }
 /**
- * 候选排序：**临期升序 → 同档倍率升序 → 声明顺序兜底**。
+ * 候选排序：**手工位次严格优先 → 临期升序 → 同档倍率升序 → 声明顺序兜底**。
  *
- * - 第一判据「临期升序」：越早作废的先用掉（本功能的全部价值）；
- * - 第二判据「倍率升序」：同一临期档内挑便宜的（省钱）；
- * - 第三判据「声明顺序」：完全并列时保持候选表顺序（`Array.prototype.sort` 在
+ * - 第一判据「手工位次」（仅当传入 `manualRankOf`）：「按手工排序」模式下用户拖出来的顺序，
+ *   排过的一律排在**全部**没排过的之前；
+ * - 第二判据「临期升序」：越早作废的先用掉（本功能的全部价值）；
+ * - 第三判据「倍率升序」：同一临期档内挑便宜的（省钱）；
+ * - 第四判据「声明顺序」：完全并列时保持候选表顺序（`Array.prototype.sort` 在
  *   ES2019 起是**稳定**的，故无需显式兜底字段）。
+ *
+ * ⚠️⚠️ **手工位次是「严格序 + 临期兜底」，不是「临期为主、手工为辅」**（用户 2026-10-15 的取舍）：
+ *    已排过的候选按位次排在**全部**未排过的候选之前，即使它临期更晚。理由：用户拖动时表达的是
+ *    「我要这个渠道先被用」；若临期仍优先，拖动会被临期值**静默覆盖** ⇒ 面板显示的顺序与真实
+ *    轮换顺序分叉（本仓库红线之一）。
+ *
+ * ⚠️ `manualRankOf` 返回 `undefined` = 该候选没被手工排过。两者都未排过时**必须**落到
+ *    临期兜底分支 —— 那里用 `a.expiry !== b.expiry` 先判不等，**顺带避开**
+ *    `Infinity - Infinity === NaN`（两个 `NEVER` 候选相减会得到 `NaN`，而 `NaN` 不是合法的
+ *    比较器返回值：`sort` 会把它当 `0`，顺序随引擎实现漂移）。
+ *    ⇒ 别把两个分支合成 `(a.expiry - b.expiry) || (a.price - b.price)`。
  *
  * ⚠️ **纯函数**：不改传入数组（先 `slice()`）。适配器会对同一份候选表反复排序
  * （每次请求），原地排序会让顺序随调用次数漂移。
  */
-export declare function rankCandidates(candidates: readonly RankedCandidate[]): RankedCandidate[];
+export declare function rankCandidates(candidates: readonly RankedCandidate[], manualRankOf?: (candidate: RankedCandidate) => number | undefined): RankedCandidate[];
 //# sourceMappingURL=aggregate-core.d.ts.map

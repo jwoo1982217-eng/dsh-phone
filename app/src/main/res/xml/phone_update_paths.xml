@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Never expose pending downloads, user files, accounts, or the complete cache root. -->
+    <cache-path name="verified_phone_update" path="phone-updates/verified/" />
+</paths>

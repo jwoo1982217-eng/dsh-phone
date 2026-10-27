@@ -45,7 +45,9 @@ export async function summarizeAdaptive({ctx, config, input, agent, signal, targ
   };
   const transcriptMessages = text => [asMessage('system', SYSTEM), asMessage('user', 'TRANSCRIPT DATA (ordered):\n' + text), asMessage('user', instruction)];
   const fragment = async (text, depth = 0) => {
-    try { return await invoke(transcriptMessages(text), undefined, []); }
+    // Serialized transcript fragments have no live developer/tool updates.
+    // ToolHistory is a {tools, updates} snapshot, not an array; omit it here.
+    try { return await invoke(transcriptMessages(text)); }
     catch (error) {
       if (signal?.aborted || !(isContextOverflow(error) || error.code === 'COMPACTION_BATCH_TOO_LARGE') || depth >= 7 || textTokens(text) < 1024) throw error;
       const pieces = splitText(text, Math.max(256, Math.floor(textTokens(text) / 2)));

@@ -1,3 +1,4 @@
+import {frontendShared} from './fixtures/frontend-shared.mjs';
 import assert from 'node:assert/strict';
 import {readFile, writeFile, mkdir} from 'node:fs/promises';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -15,10 +16,7 @@ const runtime = path.join(root, root.includes('dsh-phone-public') ? 'runtime' : 
 // Reuse the pinned frontend's actual shared React, store and primitive bundle.
 // Replace only its boot entry in this isolated copy; no server/session runs.
 const dist=path.join(runtime,'node_modules/@deepseek-ai/dsh-web-frontend/dist');
-const frontend=await readFile(path.join(dist,'assets/index-DjTxlw_T.js'),'utf8');
-const boot=frontend.indexOf('const fo=globalThis.dshDesktopBoot');
-assert(boot>0 && frontend.includes('function lM()'));
-const sharedFrontend=frontend.slice(0,boot)+'window.__TEST_SHARED__=lM();\n';
+const {shared:sharedFrontend,css}=await frontendShared(dist);
 let js = `
 const shared=window.__TEST_SHARED__, React=shared.react, jsx=shared['react/jsx-runtime'], ReactDOM=shared['react-dom'];
 const {createRoot}=shared['react-dom/client'], {createSnapshotStore}=shared['@deepseek-ai/dsh-client-store'];
@@ -47,7 +45,7 @@ const resetBundle=await build({stdin:{resolveDir:path.join(root,'vendor/dsh-code
 js+=`
 (()=>{const module={exports:{}},exports=module.exports,require=id=>shared[id];${resetBundle.outputFiles[0].text}
 window.resetCalls=[];window.resetMulti=false;window.resetFail=false;window.disposeReset=module.exports.install(async(method,p)=>{window.resetCalls.push({method,...p});if(method==='account.list')return{accounts:[{id:'account-a',enabled:true,nickname:'本人账号'},...(window.resetMulti?[{id:'account-b',enabled:true,nickname:'另一个账号'}]:[])]};if(method==='zcode.sources'){if(window.resetFail)throw Error('套餐读取失败验证');return{selected:'organization-flow:fixture:project',sources:[{id:'organization-flow:fixture:project',kind:'organization-flow',label:'机构流量'},{id:'individual',kind:'individual',label:'个人编程套餐'},{id:'team:fixture:project',kind:'team',label:'机构编程套餐'}]};}if(method==='zcode.resetStatus')return{availableFiveHourResets:p.sourceId.startsWith('team:')?[{expireAt:Date.now()+3600000},{expireAt:Date.now()+7200000}]:[],availableWeekResets:[],latestFiveHourResetHistory:null,latestWeekResetHistory:null,hasUnreadHistory:false};throw Error('本测试禁止消耗机会');});})();`;
-const css = await readFile(path.join(dist,'assets/index-DBK_Mahs.css'),'utf8');
+
 const phoneCss = await readFile(path.join(root, 'app/src/main/assets/dsh-phone.css'), 'utf8').catch(error=>{if(error.code!=='ENOENT')throw error;return readFile(path.join(root,'peer/presentation.css'),'utf8');});
 const phoneJs = await readFile(path.join(root, 'app/src/main/assets/dsh-phone.js'), 'utf8').catch(error=>{if(error.code!=='ENOENT')throw error;return readFile(path.join(root,'peer/presentation.js'),'utf8');});
 const html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>

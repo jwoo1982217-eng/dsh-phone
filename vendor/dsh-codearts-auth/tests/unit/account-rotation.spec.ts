@@ -8,8 +8,8 @@ import { rotatingStream } from '../../src/account-rotation.js'
 import { registerAdapterIdempotent } from '../../src/llm-register-compat.js'
 import { BuddyBalanceSelector } from '../../src/buddy-balance-selector.js'
 import { LoomyBalanceSelector } from '../../src/loomy-balance-selector.js'
-import { OpencodeAdapter } from '../../src/opencode-adapter.js'
-import { AutoclawIntegration } from '../../src/autoclaw.js'
+import { OpencodeAdapter } from '../../src/opencode-inference-adapter.js'
+import { AutoclawIntegration } from '../../src/autoclaw-local-integration.js'
 import { AutoclawApi } from '../../src/autoclaw-api.js'
 import { ZcodeAdapter } from '../../src/zcode-adapter.js'
 import { ModelGate } from '../../src/model-gate.js'
@@ -23,7 +23,7 @@ async function fixture(provider = 'autoclaw') {
   const values = new Map<string, string>()
   const pool = new AccountPool({ logger: { warn: vi.fn() }, get: () => undefined,
     credentials: { resolve: async (ref: unknown) => { await Promise.resolve(); const value = values.get(JSON.stringify(ref)); return value === undefined ? undefined : { value } }, unset: async () => {} },
-  } as any)
+  } as any, { preserveAccountOrder: true })
   const add = async (id: string, brand = provider) => {
     values.set(JSON.stringify(credentialRef(id)), JSON.stringify({ access_token: `token-${id}` }))
     await pool.addAccount({ id, provider: brand, credentialRef: id, enabled: true, nickname: id, createdAt: 1 })

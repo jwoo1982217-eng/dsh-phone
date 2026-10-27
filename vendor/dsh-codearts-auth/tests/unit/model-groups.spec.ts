@@ -208,4 +208,74 @@ describe('Jet Hub 面板的分组接线', () => {
   it('分组提交期间单条开关一并禁用', () => {
     expect(client).toMatch(/busy: busyIds\.has\(model\.id\) \|\| bulkBusy \|\| groupBusy !== null/)
   })
+
+  /**
+   * ⚠️ 服务端的 `warnings`（Issue IKJW33）必须**被渲染出来**，否则本 issue
+   * 的整个修复在 GUI 上等于没做 —— 服务端说得很清楚，界面却只显示「开关已翻」。
+   *
+   * ⚠️⚠️ **必须用「出现次数 == 2」而不是 `toMatch`**（真实缺陷，独立审计实测）：
+   * 两个入口各有一处接线，`toMatch` 只要**任意一处**命中即通过 ⇒
+   * 只接一个入口时它照样绿（审计变异 E2 实测）。
+   */
+  it('单条与分组开关**都**消费服务端 warnings（两个入口，计数断言）', () => {
+    const consumed = client.match(/setToggleWarnings\(res\?\.warnings \|\| \[\]\)/g) ?? []
+    expect(consumed.length, '两处开关入口必须都接 warnings，只接一个会留下同样的静默面').toBe(2)
+    // 两个入口都要**真的把返回值接出来**（`await rpcCall(...)` 不接返回值就没法读 warnings）。
+    expect(client).toMatch(/const res = await rpcCall\('model\.setDisabled', \{ provider, modelId, disabled \}\)/)
+    expect(client).toMatch(/const res = await rpcCall\('model\.setDisabledMany', \{ provider, modelIds: ids, disabled \}\)/)
+  })
+
+  /**
+   * ⚠️⚠️ 警告**不得**混进错误通道：`data-tone` 必须是 `warn`（样式表只定义了
+   * `warn`，写成 `warning` 会静默落回中性色），且角色是 `status` 不是 `alert`
+   * —— 「模型已下架」不是插件故障，用红色 alert 会误导用户。
+   *
+   * ⚠️⚠️ **断言必须锚定到 warnings 渲染块本身**（真实缺陷，独立审计实测）：
+   * 原先写成独立的 `toMatch(/'data-tone': 'warn'/)` + `toMatch(/role: 'status'/)`，
+   * 而这两个字面量在**全文件**分别出现 **5 次**与 **2 次**（别的面板也有）
+   * ⇒ 断言被别处满足、**恒真零守卫**。审计用内存变异实测：
+   * 删掉整个 warnings 渲染块、或把它改成 `'warning'` + `role: 'alert'`
+   *（**正是下面注释自称防住的那个坑**），这两条断言**仍然 PASS**。
+   *
+   * ⇒ 改为截取 `toggleWarnings.length > 0` 之后的那一段，在**片段内**断言
+   * `data-tone: 'warn'` 与 `role: 'status'` **相邻**出现。
+   */
+  it('warnings 用 warn tone + role=status（锚定到渲染块，不得被别处字面量满足）', () => {
+    const start = client.indexOf('toggleWarnings.length > 0')
+    expect(start, '找不到 warnings 的渲染判据').toBeGreaterThan(-1)
+    // 截到该三元表达式的结束（`: null,`）为止 —— 只在这段里断言。
+    const end = client.indexOf(': null,', start)
+    expect(end, '找不到 warnings 渲染块的结尾').toBeGreaterThan(start)
+    const block = client.slice(start, end)
+
+    // ⚠️ 锁「相邻」：`'data-tone': 'warn',` 紧接 `role: 'status'`（允许中间只有换行/缩进）。
+    expect(
+      block,
+      'warnings 渲染块必须用 warn tone + role=status（写成 warning 会静默落回中性色）',
+    ).toMatch(/'data-tone': 'warn',\s*\r?\n\s*role: 'status'/)
+    // ⚠️ 反向：这一段里**不得**出现错误通道的取值（否则就是把它混进了错误通道）。
+    expect(block).not.toMatch(/'data-tone': 'error'/)
+    expect(block).not.toMatch(/role: 'alert'/)
+  })
+
+  /**
+   * 错误提示通道**保持原样**（不能被 warnings 的改动带偏）。
+   *
+   * ⚠️ 同样要锚定片段：全文件的 `error`/`alert` 出现多次，裸 `toMatch` 会恒真。
+   */
+  it('错误提示仍是 error + alert（与 warnings 分开，不得被合并）', () => {
+    // ⚠️ 锚点用 `data-tone': 'error'` 自身的**唯一**上下文：`toggleError`
+    // 的渲染块。取它前后各一段，在该片段内断言与 `role: 'alert'` 相邻。
+    const marker = "'data-tone': 'error',"
+    const at = client.indexOf(marker)
+    expect(at, '找不到错误提示的 data-tone').toBeGreaterThan(-1)
+    // 该块必须紧邻 `role: 'alert'`（相邻关系，无法被别处的 alert 满足）。
+    const block = client.slice(at, at + 120)
+    expect(block).toMatch(/'data-tone': 'error',\s*\r?\n\s*role: 'alert'/)
+    // ⚠️ 反向：warnings 块里**不得**出现 error/alert（不得混进错误通道）。
+    const start = client.indexOf('toggleWarnings.length > 0')
+    const warningsBlock = client.slice(start, client.indexOf(': null,', start))
+    expect(warningsBlock).not.toMatch(/'data-tone': 'error'/)
+    expect(warningsBlock).not.toMatch(/role: 'alert'/)
+  })
 })

@@ -27,10 +27,10 @@ import os from 'node:os'
 import path from 'node:path'
 import fs from 'node:fs'
 import crypto from 'node:crypto'
-import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { externalUrl, openExternal } from './src/open-external.js'
 import { ROUTE_LABELS, ROUTE_MAIN, ROUTE_REGION } from './src/adapter.js'
-import { DATA_DIR_NAME, decodeWindow, resolveDshHome } from './src/store.js'
+import { DATA_DIR_NAME, resolveDshHome, publicModelVisibility, validateModelVisibility, isModelHidden } from './src/store.js'
 import { isEacEntry, isKiloEntry } from './src/catalog.js'
 import { STATE } from './src/probe.js'
 import { generateKey, rankLanAddresses, startForwardServer, startLanRelay } from './src/forward.js'
@@ -41,9 +41,10 @@ import { directFetch } from './src/eac.js'
 import { clearEacUser, readEacUser, writeEacUser } from './src/eac-user.js'
 import { createEacLoginPoller } from './src/eac-login.js'
 import { unlockSealedLane } from './src/vault.js'
-import { DEFAULT_LEVEL, budgetLadder } from './src/effort.js'
-import { windowTokens } from './src/stream.js'
+import { DEFAULT_LEVEL, budgetLadder, hasDeclaredEffortMenu } from './src/effort.js'
+import { modelAvailability } from './src/model-test.js'
 import { AnnouncementFeed } from './src/feed.js'
+import { createPickStats } from './src/picks.js'
 import { PluginUpdater } from './src/updater.js'
 import { selfReload, watchPackage, isReloading } from './src/reload.js'
 import { createPushHub } from './src/push.js'
@@ -57,7 +58,6 @@ import { CAVEMAN_LEVELS, PONYTAIL_LEVELS } from './src/token-saver/prompts.js'
 import { OPTIMIZATIONS } from './src/local-optimize.js'
 import { createModelRuntime, createRuntimeStores } from './src/core/runtime.js'
 import { mountHostChannels } from './src/host-channels.js'
-import { runBenchmark } from './src/benchmark.js'
 
 export { fromOpenAiMessages } from './src/core/completion.js'
 import { buildStats } from './src/core/stats.js'
@@ -84,29 +84,6 @@ function readPackageVersion() {
 export const version = readPackageVersion()
 
 /**
- * Open a URL in the system browser, best effort. The settings page shows the
- * same URL with a copy button, so a headless host or a refused spawn costs a
- * paste, never the flow. The URL is always one this plugin built from the
- * sealed gateway endpoint — never user input.
- */
-function openExternal(url) {
-  if (!/^https?:\/\//i.test(url)) return false
-  // Android has no xdg-open. The WebView reserves a user-gesture popup instead.
-  if (process.env.DSH_PHONE_ANDROID === '1') return false
-  try {
-    const [command, args] = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]]
-      : process.platform === 'darwin' ? ['open', [url]]
-        : ['xdg-open', [url]]
-    const child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true })
-    child.on('error', () => {})
-    child.unref()
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
  * `llm` is what the plugin exists for, so it is the only hard requirement of the
  * plugin itself.
  *
@@ -131,7 +108,7 @@ function openExternal(url) {
 export const inject = ['llm']
 
 /** Where the plugin's own announcement copy lives; bump it to re-announce. */
-export const ANNOUNCEMENT_VERSION = '2026-09-25.1'
+export const ANNOUNCEMENT_VERSION = '2026-10-17.3'
 
 /**
  * Who owns the plugin's bytes — the distribution mode:
@@ -331,7 +308,7 @@ export function apply(ctx, config) {
       const url = `${eacAuthRootOf(credential)}/auth/github/start?link=${link}`
       const prepared = await eacLoginPoller.prepare(link)
       if (prepared.error !== undefined) return prepared
-      return { url, link, opened: openExternal(url) }
+      return { url, link, opened: await openExternal(url) }
     },
     /** Collect the token the browser flow just produced. */
     poll: link => eacLoginPoller.poll(link),
@@ -374,6 +351,14 @@ export function apply(ctx, config) {
     log: message => logger.info?.(message),
   })
   feed.load()
+
+  // The recommendation page's star counts. Not part of the feed: the feed is
+  // the owner's channel to the user, this is a read of GitHub's public numbers,
+  // and a failure here only ever costs the page its figures.
+  const picks = createPickStats({
+    cacheFile: path.join(dataDir, 'picks.json'),
+    log: message => logger.info?.(message),
+  })
 
   /**
    * The announcement view the settings page reads. A managed install polls no
@@ -519,7 +504,7 @@ export function apply(ctx, config) {
     // resetting whatever request was in flight on the old socket.
     if (forward !== null && wanted
       && forward.host === (desired.host || '127.0.0.1')
-      && forward.port === (Number.isFinite(Number(desired.port)) ? Number(desired.port) : 0)) return
+      && forward.requestedPort === (Number.isFinite(Number(desired.port)) ? Math.trunc(Number(desired.port)) : 0)) return
     if (forward === null && !wanted) return
     if (forward !== null) {
       const closing = forward
@@ -555,21 +540,11 @@ export function apply(ctx, config) {
         onTrace: event => logger.info?.(`our-free-model request: ${JSON.stringify(event)}`),
       })
       forwardError = ''
-      // The requested port is somebody else's for good — a `netsh interface
-      // portproxy` rule outlives this plugin, and on Windows it surfaces as
-      // EACCES on a loopback bind. `startForwardServer` walks to a free port
-      // rather than leaving the feature down; the port it settled on is what
-      // gets persisted below, and this notice is what says so.
+      // Keep the requested configuration; the bound port belongs to runtime state.
       forwardNotice = forward.fellBack === true && forward.bindError !== null
         ? `port ${forward.requestedPort} is not available on this machine (${forward.bindError.code}); the listener is on port ${forward.port} instead`
         : ''
       if (forwardNotice !== '') logger.warn?.(`our-free-model forward: ${forwardNotice}`)
-      // Persist the port that actually answers, but out of the CURRENT
-      // settings - not the desired snapshot from before the await. An
-      // overlapped save would otherwise be rolled back to entry-time values.
-      const settledForward = settings.get().forward ?? {}
-      settings.update({ forward: { ...settledForward, port: forward.port, host: forward.host || desired.host || '127.0.0.1' } })
-      settings.flush()
     } catch (error) {
       forwardError = String(error?.message ?? error)
       logger.warn?.(`our-free-model: forward listener could not start (${forwardError})`)
@@ -1043,7 +1018,7 @@ export function apply(ctx, config) {
   ctx.inject(['credentials', 'commands', 'llm'], scoped => {
     void mountHostChannels(scoped, {
       loadPack: () => import('./vendor/channel-pack/pack.js'),
-      outlet: { active: egressActive, fetch: egressFetch },
+      outlet: { active: egressActive, fetch: egressFetch, fetchSigned: (input, init, send) => egressFetch(input, init, send) },
       onState: state => { channelPack = state },
       logger,
     })
@@ -1057,8 +1032,10 @@ export function apply(ctx, config) {
   const api = createApiRoutes({
     settings, stats, availability, catalog: () => modelRuntime.catalog, state,
     refreshCatalog, refreshAvailability, syncForward, syncRelay, syncEgress,
+    onVisibilityChanged: emitTopology,
     pool: fetchPoolSnapshot,
     eacAuth,
+    picks,
     // ── the aggregate lane's settings surface ────────────────────────────────
     // The registry is static data; the configured half is the settings file with
     // every key masked. Writing one provider rebuilds the catalog and re-emits
@@ -1142,9 +1119,21 @@ export function apply(ctx, config) {
         // Every id a chain may reference, with the display name the picker uses —
         // the editor offers a searchable list instead of a free-text field, so a
         // typo cannot become a chain link that silently never resolves.
-        models: state().catalog.map(entry => ({ id: entry.id, name: entry.name, channel: entry.channel ?? 'free', vision: entry.vision === true })),
+        models: state().catalog.map(entry => ({
+          id: entry.id, name: entry.name, channel: entry.channel ?? 'free', vision: entry.vision === true,
+          contextWindow: entry.contextWindow, maxOutput: entry.maxOutput,
+        })),
+        usable: state().catalog.filter(isComboEntry).map(publicCombo),
         strategies: ['fallback', 'round-robin'],
       }),
+      preview: patch => {
+        if (patch === null || typeof patch !== 'object' || !Array.isArray(patch.models)
+          || patch.models.length > 1000 || patch.models.some(id => typeof id !== 'string' || id.length > 300)) {
+          throw httpError(400, 'models must be an array of model ids')
+        }
+        const entries = buildComboCatalog(normalizeCombos([{ name: 'preview', models: patch.models }]), state().catalog)
+        return { capacity: entries.length ? publicCombo(entries[0]) : null }
+      },
       save: async patch => {
         if (patch === null || typeof patch !== 'object') throw httpError(400, 'the request body must be a JSON object')
         const rows = normalizeCombos(patch.combos)
@@ -1154,7 +1143,7 @@ export function apply(ctx, config) {
         settings.update({ combos: rows })
         settings.flush()
         const catalog = syncAggregateCatalog()
-        return { combos: rows, usable: catalog.filter(isComboEntry).map(entry => ({ id: entry.id, name: entry.name, models: entry.combo })) }
+        return { combos: rows, usable: catalog.filter(isComboEntry).map(publicCombo) }
       },
     },
     // ── token savers ────────────────────────────────────────────────────────
@@ -1291,11 +1280,7 @@ export function apply(ctx, config) {
       settings.flush()
       return minted
     },
-    testModel: async (id, effort, signal) => {
-      const entry = modelRuntime.catalog.find(candidate => candidate.id === id)
-      if (entry === undefined) throw new UpstreamError(`unknown model "${id}"`, CODE.server)
-      return runBenchmark({ adapter, entry, snapshot: state(), effort, signal })
-    },
+    testModel: (id, effort, options) => modelRuntime.testModel(id, effort, options),
     meta: () => ({
       version: packageVersion,
       distribution,
@@ -1710,6 +1695,9 @@ export function createApiRoutes(deps) {
         const body = await readJson(req)
         return send(200, { ok: true, ...await deps.combos.save(body) })
       }
+      if (method === 'POST' && routePath === '/combos/preview') {
+        return send(200, deps.combos.preview(await readJson(req)))
+      }
       // ── token savers ───────────────────────────────────────────────────────
       if (method === 'GET' && routePath === '/token-saver') {
         return send(200, deps.tokenSaver.get())
@@ -1752,6 +1740,13 @@ export function createApiRoutes(deps) {
       if (method === 'POST' && routePath === '/eac/logout') {
         return send(200, await deps.eacAuth.logout())
       }
+      if (method === 'POST' && routePath === '/open-external') {
+        const target = externalUrl((await readJson(req))?.url)
+        if (target === null) return send(400, { error: 'bad-url' })
+        let opened = false
+        try { opened = await (deps.openExternal ?? openExternal)(target) === true } catch { /* manual link remains available */ }
+        return send(200, { ok: true, opened })
+      }
       if (method === 'GET' && routePath === '/pool') {
         try { return send(200, await deps.pool()) } catch (error) {
           const reason = POOL_REASONS.has(error?.reason) ? error.reason : 'unreachable'
@@ -1776,6 +1771,9 @@ export function createApiRoutes(deps) {
       if (method === 'GET' && routePath === '/announcements') {
         const view = deps.announcements.view()
         return send(200, { ...view, acked: [...ackedSet(deps)], notifyOs: deps.settings.get().notifyOs === true })
+      }
+      if (method === 'GET' && routePath === '/picks') {
+        return send(200, await deps.picks.view())
       }
       if (method === 'POST' && routePath === '/announcements/ack') {
         const body = await readJson(req)
@@ -1827,8 +1825,9 @@ export function createApiRoutes(deps) {
       }
       if (method === 'POST' && routePath === '/settings') {
         const patch = await readJson(req)
+        const visibility = validateModelVisibility(patch)
         const current = deps.settings.get()
-        const next = sanitizeSettings({ ...current, ...pick(patch, ['enabled', 'exposeRegionModels', 'probeIntervalMinutes', 'defaultMaxTokens', 'announcementAck', 'feedUrl', 'feedPollMinutes', 'notifyOs', 'updateCheckHours', 'autoReloadWatch']) }, current)
+        const next = sanitizeSettings({ ...current, ...pick(patch, ['enabled', 'exposeRegionModels', 'probeIntervalMinutes', 'defaultMaxTokens', 'announcementAck', 'feedUrl', 'feedPollMinutes', 'notifyOs', 'updateCheckHours', 'autoReloadWatch']), ...visibility }, current)
         if (patch.forward !== undefined) {
           const forward = { ...(current.forward ?? {}), ...pick(patch.forward, ['enabled', 'host', 'port']) }
           // The listener spends this machine's lane, and a routable bind address
@@ -1839,7 +1838,7 @@ export function createApiRoutes(deps) {
           }
           if (forward.port !== undefined) {
             const port = Number(forward.port)
-            forward.port = Number.isFinite(port) && port >= 1 && port <= 65535 ? Math.trunc(port) : (current.forward?.port ?? 0)
+            forward.port = Number.isFinite(port) && port >= 0 && port <= 65535 ? Math.trunc(port) : (current.forward?.port ?? 0)
           }
           // The LAN relay is a second door on the same feature, so it travels in
           // the same `forward` patch — but it does *not* inherit the loopback
@@ -1877,6 +1876,11 @@ export function createApiRoutes(deps) {
         }
         deps.settings.update(next)
         deps.settings.flush()
+        if (deps.settings.writeFailed) {
+          deps.settings.value = current
+          return send(500, { error: 'could not persist settings' })
+        }
+        if (Object.keys(visibility).length > 0) deps.onVisibilityChanged?.()
         await deps.syncForward()
         await deps.syncRelay()
         await deps.syncEgress()
@@ -1935,17 +1939,16 @@ export function createApiRoutes(deps) {
       if (method === 'POST' && routePath === '/bench') {
         const body = await readJson(req)
         const controller = new AbortController()
-        const cancel = () => { if (!res.writableEnded) controller.abort() }
-        req.once?.('aborted', cancel)
-        res.once?.('close', cancel)
-        if (req.aborted) cancel()
+        const abort = () => controller.abort(new UpstreamError('Text test cancelled', CODE.aborted))
+        res.once?.('close', abort)
         try {
-          const result = await deps.testModel(String(body.model ?? ''), body.effort === undefined ? undefined : String(body.effort), controller.signal)
-          return send(200, result)
-        } finally {
-          req.removeListener?.('aborted', cancel)
-          res.removeListener?.('close', cancel)
-        }
+          const result = await deps.testModel(String(body.model ?? ''), body.effort === undefined ? undefined : String(body.effort), { signal: controller.signal })
+          if (!controller.signal.aborted) return send(200, result)
+          return
+        } catch (error) {
+          if (!controller.signal.aborted) throw httpError(error.status === 404 ? 404 : error.code === CODE.timeout ? 504 : 502, String(error.message ?? error))
+          return
+        } finally { res.removeListener?.('close', abort) }
       }
       return send(404, { error: 'not found' })
     } catch (error) {
@@ -2193,8 +2196,16 @@ function clientSnippets({ forward, key, lanKey, models }) {
   }
 }
 
+function publicCombo(entry) {
+  return {
+    id: entry.id, name: entry.name, models: entry.combo,
+    contextWindow: entry.contextWindow, maxOutput: entry.maxOutput, vision: entry.vision === true,
+  }
+}
+
 function publicSettings(settings, forwardInfo, egressInfo) {
   return {
+    ...publicModelVisibility(settings),
     enabled: settings.enabled !== false,
     exposeRegionModels: settings.exposeRegionModels !== false,
     probeIntervalMinutes: settings.probeIntervalMinutes ?? 15,
@@ -2266,19 +2277,19 @@ function buildSummary(deps) {
   // Lanes that carry no availability verdict of their own. The absorbed channels
   // and the aggregate lane are named by a listing round that already succeeded,
   // and a combo is a view over rows that were themselves named — none of them is
-  // pinged, so "no verdict" must not render as "unknown".
+  // pinged. A listing is not an inference verdict; explicit tests add their own samples.
   const unprobed = entry => isEacEntry(entry) || isKiloEntry(entry) || isAggregateEntry(entry) || isComboEntry(entry)
   return {
     catalog: state.catalog.map(entry => ({
       ...entry,
-      availability: unprobed(entry) ? STATE.available : (snapshot.results?.[entry.id]?.state ?? STATE.unknown),
-      detail: unprobed(entry) ? '' : (snapshot.results?.[entry.id]?.detail ?? ''),
-      probedAt: unprobed(entry) ? 0 : (snapshot.results?.[entry.id]?.at ?? 0),
-      ttftMs: unprobed(entry) ? undefined : snapshot.results?.[entry.id]?.ttftMs,
-      latencyMs: unprobed(entry) ? undefined : snapshot.results?.[entry.id]?.latencyMs,
+      hiddenByUser: isModelHidden(entry, state.settings),
+      hiddenByGroup: isModelHidden(entry, { ...state.settings, hiddenModelIds: [] }),
+      ...modelAvailability(entry.id, snapshot, unprobed(entry)),
       // What each rung of the effort menu will really put on the wire for this
       // model, so the page never shows a 32K "output ceiling" beside a call that
-      // was cut off at 8K. A model with no effort menu has no ladder to show.
+      // was cut off at 8K. A model with no effort menu has no ladder to show;
+      // a menu model's rungs are flat (its level, not the ladder, is the wire
+      // control), which is what the card's "default ceiling" tag then reads.
       ...(entry.reasoning === true ? { budgets: budgetLadder(entry, undefined, defaultMaxTokens) } : {}),
       // `null` here is what the picker does not advertise; the roster still lists
       // those models, because "the probe refused it" is the user's only evidence.

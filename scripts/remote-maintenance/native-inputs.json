@@ -1,0 +1,41 @@
+{
+  "existingFiles": {
+    "app/src/main/java/com/dshphone/MainActivity.kt": {
+      "before": "c374ca5fabf2d4dd33cd3ec55fbd3f360a8972aed8b7a8d9bf37cc91dd9a9dc2",
+      "after": "53fd53d2115b02166d67661bc1f2f01cbb8e152cec67f90a166072eef2798c3b"
+    },
+    "app/src/main/java/com/dshphone/PocketConnection.kt": {
+      "before": "3ccf2bc082d1958357ccb769db8ad695aa78555525e81c37f64813e4cfe1d1f3",
+      "after": "4645e5166b0840d90af4c7322cea2dfccd568787efe051ff870796b477371e47"
+    },
+    "app/src/main/java/com/dshphone/NodeRunner.kt": {
+      "before": "73bf957a34c6d56869d2b2e2c307112c064de8791e2ee342e73d56fd362cebc4",
+      "after": "38b43f788b7dc6748ed826c3f1f7ea4d74c2146c10f5b961fc8bea53a7e53d51"
+    },
+    "app/src/main/AndroidManifest.xml": {
+      "before": "08c12e877c509e9b40ace6d806942420bf5d4e8058a3d744495b2085b7e28e42",
+      "after": "be38606e02cd546aba345538192a8ff70a8e724a27fbf51bd6f01494f1b7d3b6"
+    },
+    "app/build.gradle": {
+      "before": "9b16ddb6cea2b04bb2fc07067997f20ce6154a4974ec85df0491eebdb8cbf3eb",
+      "after": "e5f8424bd9f2e7e4311730c98432504e55c1f2bc9cf22678531e94b2ebf0715d"
+    }
+  },
+  "newFiles": {
+    "app/src/main/java/com/dshphone/PeerConnection.kt": "5a1fdc23105ce55844c6c00c9e533a23bcd6c6df05ab1c39a59e8ba9cc570b52",
+    "app/src/main/java/com/dshphone/PhonePeerUpgrade.kt": "bf11bf31f22f9ca12c8d672211c9034ba99d17b914a49c636cd52246718d59f4",
+    "app/src/test/java/com/dshphone/PeerConnectionTest.kt": "ae24ffdb9492f26bf7623920144b83f0a58952b51f6073b65285c0f989c747b0",
+    "app/src/test/java/com/dshphone/PeerNativeLifecycleTest.kt": "cd5c01d6182eabc35875b0c9368dbc9af0408ce4136df9580df74cec8f9ec819",
+    "app/src/test/java/com/dshphone/PeerLocalClientTest.kt": "a4370116e81473ebcc781efad094978e321f0294cfaed0917c46aaa4ea7aa73b",
+    "app/src/test/java/com/dshphone/PhonePeerUpgradeTest.kt": "f9a96cc015d0171c947d73b0db692acfdcc2c1739448bb78ca203997c893d5a3",
+    "app/src/test/resources/remote-peer-old/page.html": "a32e942bc842aaf995c03f98d7fda57746fe8e674d0aa4b09a08f800b8d869c0",
+    "app/src/test/resources/remote-peer-old/legacy-index.js": "caf334c3293b3113969de5d49d4e91d6d9a1019fc1d9cc60ca1e6d1aee72cbee",
+    "app/src/test/resources/remote-peer-old/protocol.mjs": "38882b147defb7d3e32301a2076d3fb97e2d08176e1d09d4487153b96533430e",
+    "app/src/test/resources/remote-peer-old/relay.mjs": "6127d0812f4fdc5989a32e2036f92a309918301b573de1e8c3a951e831304e21",
+    "app/src/test/resources/remote-peer-old/index.mjs": "9ccb639041f65f08228366c1714529f444c56aaefc0a3b643ef4ebb870467d57",
+    "app/src/test/resources/remote-peer-old/summary-runner.mjs": "524b97de30f99d816fbf81da6936ac3c2bf1a0bc27d88c8dce83d349aab924e7",
+    "app/src/test/resources/remote-peer-old/tunnel.mjs": "93441c3e2347816ef5397e3227d58290611e8c6b3d36427ed72663d669a7da1b"
+  },
+  "patchSha256": "35488d44c3c2d8cf7edf17eba1b207dd04281aeb92ced384fadc95d89a86f129",
+  "base": "verified stable121 source; only connection maintenance delta; app/assets122"
+}

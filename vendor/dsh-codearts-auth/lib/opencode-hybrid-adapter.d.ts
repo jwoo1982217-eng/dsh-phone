@@ -20,12 +20,12 @@
 import { LlmAdapter } from '@deepseek-ai/dsh-llm';
 import type { GenerateOptions, LlmModelInfo, LlmProviderInfo, LlmResolvedModelInfo, StreamChunk } from '@deepseek-ai/dsh-llm';
 import type { IdentitySlot } from './opencode-auth.js';
-import type { OpencodeAdapter, OpencodeAdapterOptions } from './opencode-adapter.js';
+import type { OpencodeAdapter } from './opencode-inference-adapter.js';
 import type { OpencodeLocalAdapter } from './opencode-local-adapter.js';
 /** 快通道的匿名槽（`Bearer public`，直连出口 IP 记账）。 */
 export declare function opencodeInferenceSlot(): IdentitySlot;
 /** 构造一个只走匿名快通道的 Zen 适配器实例。 */
-export declare function createOpencodeInferenceAdapter(options?: Pick<OpencodeAdapterOptions, 'readImage' | 'warn'>): OpencodeAdapter;
+export declare function createOpencodeInferenceAdapter(): OpencodeAdapter;
 export interface OpencodeHybridOptions {
     disabledModels?: () => ReadonlySet<string>;
 }
@@ -40,8 +40,6 @@ export declare class OpencodeHybridAdapter extends LlmAdapter {
     private readonly fast;
     private readonly options;
     constructor(local: OpencodeLocalAdapter, fast: OpencodeAdapter, options?: OpencodeHybridOptions);
-    /** 已有视觉型号整体保留原生通道；不能用 /zen 的视觉声明冒充快通道已验证。 */
-    private useFast;
     providerInfo(provider: string): LlmProviderInfo;
     listAllModels(): readonly {
         id: string;
@@ -50,7 +48,6 @@ export declare class OpencodeHybridAdapter extends LlmAdapter {
     }[];
     listModels(provider: string): Promise<readonly LlmModelInfo[]>;
     resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
-    prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<import("@deepseek-ai/dsh-llm").PreparedAdapterCall>;
     handleRpc(method: string, payload: unknown): Promise<unknown | undefined>;
     stream(options: GenerateOptions): AsyncIterable<StreamChunk>;
 }

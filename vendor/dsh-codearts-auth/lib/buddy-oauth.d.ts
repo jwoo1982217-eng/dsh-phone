@@ -101,7 +101,33 @@ export declare class RefreshTokenExpiredError extends Error {
  * 与 User-Agent 两个身份标识。**必须**由调用方传入，否则 WorkBuddy 会发出
  * `X-Product-Code: codebuddy` 的请求。
  */
-export declare function fetchModels(credential: BuddyCredential, fetcher?: typeof fetch, signal?: AbortSignal, product?: BuddyProduct): Promise<BuddyRemoteModel[]>;
+export declare function fetchModels(credential: BuddyCredential, fetcher?: typeof fetch, signal?: AbortSignal, product?: BuddyProduct, 
+/**
+ * 各来源成败的**出参**（issue IKJVTF，审计 I3）。
+ *
+ * ⚠️ 用出参而非改返回值：既有调用方与单测都按「返回数组」用，改形状会波及它们；
+ * 完整性只对**适配器**有意义（它决定要不要永久缓存）。不传即行为不变。
+ *
+ * ⚠️ 本函数是**两个**端点的并集（scoped + `/v3/config`），且它自己的注释就写明
+ * 两集合 id 不同（`hy4-preview-f` 只在 config）—— 故「一个成功、一个失败」
+ * 是**常态**，不是异常。旧判据 `models.length > 0` 会把它当成完整 ⇒ 永久缓存
+ * ⇒ 那个免费变体的促销倍率（`creditsRate`）再也回不来（用户报障原话：
+ * 「hy4 preview 现在 ide 是免费我们还是 0.29」）。
+ */
+outcome?: BuddyCatalogOutcome): Promise<BuddyRemoteModel[]>;
+/**
+ * buddy 目录的**各来源成败**（issue IKJVTF，审计 I3）。
+ *
+ * buddy 是**双端点** provider：`/console/enterprises/{scope}/models`（scoped）
+ * 与 `/v3/config`，两者 id 集合不同、必须取并集。故「一个成功、一个失败」
+ * 是常态 ⇒ 必须显式上报，否则残缺目录被当成完整并永久缓存。
+ */
+export interface BuddyCatalogOutcome {
+    scopedOk: boolean;
+    configOk: boolean;
+}
+/** 两个来源是否**都**取到了。 */
+export declare function isBuddyCatalogComplete(outcome: BuddyCatalogOutcome): boolean;
 /** 企业模型端点的 scope 段：个人账号用字面量 `personal`。 */
 export declare const ENTERPRISE_MODELS_SCOPE = "personal";
 /**

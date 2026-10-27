@@ -16,19 +16,24 @@
  * 复用的是 `src/sse.ts` 的三个工具函数（`readWithIdleTimeout` / `resolveToolPairing` /
  * `normalizeToolArguments` / `isTruncatedArguments`）——它们处理的是 OpenAI 协议层的通用陷阱。
  */
-import { LlmAdapter, LlmError, ReasoningEffortId } from '@deepseek-ai/dsh-llm';
+import { CONTEXT_WINDOW_EXCEEDED_CODE, LlmAdapter, LlmError, ReasoningEffortId } from '@deepseek-ai/dsh-llm';
 import { ToolCallId as CallId } from '@deepseek-ai/dsh-llm';
-import { providerCatalogVisible } from './account-pool.js';
+import { createModelCatalog, isCatalogFreshFor } from './model-catalog.js';
 import { reasoningRankOf } from './reasoning-ladder.js';
 import { RemoteCatalogGate } from './remote-catalog-gate.js';
-import { TRAE_MAX_CONTEXT_TOKENS, clampTraeMaxTokens, isTraeExpired, parseTraeSSELine, isTraeModelCallable, traeMaxModeFields, traeSOLOHeaders, transformToSOLOBody, } from './trae.js';
+import { broadcastCatalogChanged } from './catalog-broadcast.js';
+import { TRAE_MAX_CONTEXT_TOKENS, clampTraeMaxTokens, isTraeExpired, parseTraeSSELine, isTraeModelCallable, traeMaxModeFields, traeSOLOHeaders, traeUsageFromTokenUsage, transformToSOLOBody, } from './trae.js';
 import { TRAE } from './trae-product.js';
 import { classifyTraeError, recordsTraeRateLimit, shouldRotateTraeAccount } from './trae-errors.js';
 import { traeCooldownFor } from './trae-cooldown-table.js';
 import { normalizeHarnessMessages } from './message-shape.js';
-import { createBlankReasoningSuppressor, createReasoningLoopDetector, hasUsableToolName, isProseTruncatedByStopString, isReasoningLoopGuardEnabled, isTruncatedArguments, normalizeToolArguments, readWithIdleTimeout, reasoningLoopFailure, resolveEmptyResponseReason, resolveToolPairing, splitThinkTaggedContent, stripBareThinkCloseTagIfEnabled, stripCourseLeakFromHistoryContent, stripCourseLeakIfEnabled } from './sse.js';
+import { createBlankReasoningSuppressor, createDsmlMarkerNormalizer, createReasoningLoopDetector, fixDsmlMarkers, hasUsableToolName, isProseTruncatedByStopString, isReasoningLoopGuardEnabled, isTruncatedArguments, normalizeToolArguments, readWithIdleTimeout, reasoningLoopFailure, resolveEmptyResponseReason, resolveToolPairing, splitThinkTaggedContent, stripBareThinkCloseTagIfEnabled, stripCourseLeakFromHistoryContent, stripCourseLeakIfEnabled } from './sse.js';
 import { registerAdapterIdempotent, } from './llm-register-compat.js';
 import { reportLedgerAccount } from './token-ledger.js';
+import { planSessionTitleThinking } from './session-title.js';
+// ⚠️ `detail` 那条腿**只留一份实现**（`openai-compat.ts`）：本仓库 6 份同义的
+// `errorDetail` 各写一条判据必然漂移（IKLBSH A1）。
+import { detailFieldText } from './openai-compat.js';
 /** 本适配器注册的 provider 路由名。 */
 export const PROVIDER = 'trae';
 /**
@@ -183,6 +188,55 @@ class TraeStreamErrorCause extends Error {
  */
 function isRotatableStreamError(code) {
     return code === 1005 || code === 4008 || code === 4011;
+}
+/**
+ * 流内错误码 `4006`：**请求体过大**（上游原文 `content is too large for AI to understand`）。
+ *
+ * ## 为什么必须单列（Gitee issue IKKX0T 的独立实测）
+ *
+ * 归类点原先是行内三元 `code === 1005 || code === 4008 ? 'QUOTA_EXCEEDED' : 'SERVER'`，
+ * 于是 4006 落到 **`SERVER`** —— 而 `SERVER` **在** harness 的
+ * `DEFAULT_RETRYABLE_CODES`（`[EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT]`，
+ * 已在 `dsh-llm` 实测确认）里 ⇒ 同一个巨型请求体会被**原样重发 5 次**
+ * （退避 500/1000/2000/4000/8000ms，约 15.5 秒），而它每次必然同样失败。
+ *
+ * ⚠️ **归错的代价是不对称的**（与 `buddy-adapter.ts` 的 `GATEWAY_PROMPT_TOO_LONG` 同因）：
+ * 体积超限是**确定性**失败，重试毫无意义；归成 `CONTEXT_WINDOW_EXCEEDED` 则
+ * ① 不在可重试集合里（不白重试），② 还能触发 `dsh-compaction-basic` 的溢出压缩
+ * ——它的 listener 第一行就是 `if (failure.code !== CONTEXT_WINDOW_EXCEEDED_CODE) return next()`。
+ * 图片撑大的请求体正是压缩能真正缓解的那一类。
+ *
+ * ⚠️ **与 `4001` 的区别**：4001 是「模型不可调用」（换号/压缩都无益，如实报错）；
+ * 4006 是「这一次的载荷太大」（压缩/少发图能救）。两者**不可合并**。
+ *
+ * ⚠️ **只认 4006 这一个码，不做措辞匹配**：同族的 `502 + HTML` 形态
+ * （issue 记录的另一条 trae 报文）与「上游真的崩了」**无法区分** ——
+ * 把它也归成溢出会让真正的 5xx 故障失去重试机会（`upstreamStatusOrFallback`
+ * 的注释记着同一条方向：5xx 必须原样透出）。
+ */
+function isStreamPayloadTooLargeError(code) {
+    return code === 4006;
+}
+/**
+ * 流内 `event:error` → provider-neutral 错误码。
+ *
+ * 抽成函数而不是继续写在行内三元里：这张表要**逐格**可测（本仓库的既有教训是
+ * 「同一张判据表的两个实现必须逐格同构」，散落在调用点就没法对拍）。
+ *
+ * 顺序即优先级，且**不可重排**：
+ * 1. `4006` 体积超限 → `CONTEXT_WINDOW_EXCEEDED`（不重试 + 可压缩）；
+ * 2. `1005` / `4008` 额度类 → `QUOTA_EXCEEDED`（终态，用户需签到/换号）；
+ * 3. 其余（含 `4001` 模型不可调用）→ `SERVER`。
+ *
+ * ⚠️ 第 3 条保留 `SERVER` 是**有意**的：它覆盖的多数是上游真 5xx/未知故障，
+ * 那类确实该重试。本函数只把「确定为确定性失败」的码挑出来。
+ */
+function streamErrorCode(code) {
+    if (isStreamPayloadTooLargeError(code))
+        return CONTEXT_WINDOW_EXCEEDED_CODE;
+    if (code === 1005 || code === 4008)
+        return 'QUOTA_EXCEEDED';
+    return 'SERVER';
 }
 /**
  * 机器指纹轮换间隔（每 N 次请求换一代，仅在显式启用时生效）。
@@ -448,6 +502,9 @@ function errorDetail(body) {
             typeof data.code === 'number' || typeof data.code === 'string' ? `code=${String(data.code)}` : undefined,
             typeof data.message === 'string' ? data.message : undefined,
             typeof data.msg === 'string' ? data.msg : undefined,
+            // ⚠️ 上游代理的 `{"error":"…","detail":"<真实原因>"}` 形态（IKLBSH A1）。
+            // 判据只留一份实现（`openai-compat.ts` 的 `detailFieldText`）；必须是最后一条腿。
+            detailFieldText(data),
         ].filter((value) => value !== undefined);
         if (parts.length > 0)
             return parts.join(' ');
@@ -485,6 +542,14 @@ function httpErrorCode(status) {
  */
 function traeStreamErrorMessage(code, message, model) {
     const base = `trae: ${message} (code=${code})`;
+    if (code === 4006) {
+        // 上游原文 *"We're sorry, the content is too large for AI to understand."*
+        // 说的是**这一次请求的载荷**太大（实测：约 (21,24] 张 2560×1600 原图，
+        // 即请求体 ≈100 MiB 量级，Gitee issue IKKX0T）。原文不提「图片」也不提
+        // 「体积」，容易被读成模型能力问题，故补一句可操作的指向。
+        return `${base} —— 本次请求的内容过大：多为一次携带的图片过多/过大。`
+            + '请减少本轮的图片数量或改用更小的截图后重试。';
+    }
     if (code !== 4001)
         return base;
     return `${base} —— 模型「${model}」不被上游接受：它通常是「仅可见但不可调用」的`
@@ -547,10 +612,23 @@ export class TraeAdapter extends LlmAdapter {
     /** 动态模型缓存。 */
     remoteModels;
     /**
+     * ⚠️ 上次**成功**读到远端目录的时刻（0 = 从未成功过）。
+     *
+     * ⚠️ 与 `remoteModels` **并存**、不是替代：`remoteModels` 存「有哪些模型」，
+     *    本字段存「何时读到的」。只有 `remoteModels` 时目录**永不刷新**（原行为）。
+     */
+    catalogAt = 0;
+    /**
      * 目录加载闸门：并发去重 + 失败/空结果冷却。
      * 依据见 `src/remote-catalog-gate.ts`（首屏「加载模型巨长」的实测归因）。
      */
-    catalogGate = new RemoteCatalogGate();
+    catalogGate;
+    /**
+     * ⚠️ **2026-10-08 Task 7c：三个方法收敛到共享骨架** `createModelCatalog`。
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架，
+     * 现在只剩 `toCatalogEntry`（本家私有形状 + Max 模式 + 两层可见性过滤）。
+     */
+    catalog;
     /** 远端模型元数据索引。 */
     remoteMeta = new Map();
     /** 产品级兜底模型索引。 */
@@ -566,18 +644,53 @@ export class TraeAdapter extends LlmAdapter {
         this.product = options.product ?? TRAE;
         this.fetchImpl = options.fetchImpl ?? fetch;
         this.fallbackIndex = new Map((this.product.fallbackModels ?? []).map((model) => [model.id, model]));
+        // 目录落地后通知客户端重读（issue IKJVTF 的缺陷①）。
+        this.catalogGate = new RemoteCatalogGate(options.onCatalogLoaded === undefined ? {} : { onLoaded: options.onCatalogLoaded });
+        // ⚠️ 共享骨架（Task 7c）：门控 → 读目录 → 黑名单 → 回填 → 三态。
+        this.catalog = createModelCatalog({ accountPool: options.accountPool }, {
+            product: this.product,
+            loadCatalog: () => this.loadCatalogEntries(),
+            syncCatalog: () => this.syncCatalogEntries(),
+            /**
+             * ★ **强制重拉**（供后台 20 分钟刷新器与「用户改设置」）。
+             *
+             * ⚠️ 与 `loadCatalog` 的差别：后者内部有 `isCatalogFresh` 判据 ⇒ 新鲜时**不拉**。
+             * 本回调要的是「无视新鲜度，强制拉一次」，故先清时刻再调同一个方法 ——
+             * **不另写一份拉取逻辑**（那会让两条路的上游行为分叉）。
+             */
+            refresh: async () => {
+                this.catalogAt = 0;
+                await this.ensureRemoteModels();
+            },
+            // ⚠️ 未知 id 保守报 `['text']`（见 `inputModalitiesFor`）。
+            unknownModelInputModalities: () => ['text'],
+        });
     }
     providerInfo(provider) {
         const id = typeof provider === 'string' && provider.length > 0 ? provider : this.product.id;
         return { id, name: this.product.displayName };
     }
-    /** 懒加载远端模型目录（仅拉取一次）。 */
+    /**
+     * 懒加载远端模型目录（**每 20 分钟**重新拉一次，用户 2026-10-18 的要求）。
+     */
     async ensureRemoteModels() {
         const fetchRemote = this.options.fetchRemoteModels;
-        if (this.remoteModels !== undefined || fetchRemote === undefined)
+        // ⚠️ `fetchRemote === undefined` 那半边**原样保留** —— 它判的是「有没有远端
+        //    可拉」（无凭据/无接线），与新鲜度是两件事。
+        if (fetchRemote === undefined)
             return;
+        // ⚠️ 判据来源：`isCatalogFresh`（`model-catalog.ts` 的**唯一**实现）。
+        // ⚠️ **入口用 `isCatalogFreshFor`**：用户在 Jet Hub 改开关后要**立即**重拉
+        //    （规格 §6 的正确性要求，见 `invalidateCatalogCache`）。本方法只有这一处
+        //    判据，且它在 gate **之前**（拉不到就用旧值），故整条路径都安全。
+        // ⚠️ **不是**照抄 aggregate-adapter.ts 那条 —— 那边另有两处本家没有的前提
+        //    （`force` 与 `options.catalogTtlMs` 覆盖的 60s TTL），本家用 20 分钟默认周期。
+        if (this.remoteModels !== undefined
+            && isCatalogFreshFor(this.product.id, this.catalogAt, this.options.now?.() ?? Date.now())) {
+            return;
+        }
         // 闸门：并发去重 + 失败/空结果冷却（依据见 src/remote-catalog-gate.ts）。
-        // Trae 的目录超时上限 30s（src/trae.ts:68），失败不冷却会被 buildModelCatalog
+        // Trae 的目录超时上限 30s（src/trae.ts），失败不冷却会被 buildModelCatalog
         // 放大成「每模型一次」。
         await this.catalogGate.run(async () => {
             const models = await fetchRemote();
@@ -585,6 +698,9 @@ export class TraeAdapter extends LlmAdapter {
                 return false;
             this.remoteModels = models;
             this.remoteMeta = new Map(models.map((model) => [model.id, model]));
+            // ⚠️ **只在成功赋值后**记时刻：失败/空结果不写，否则一次抖动会把上界
+            //    刷新掉、下轮还要等满 20 分钟才发现上游没恢复。
+            this.catalogAt = this.options.now?.() ?? Date.now();
             return true;
         });
     }
@@ -749,76 +865,107 @@ export class TraeAdapter extends LlmAdapter {
      * 故这里提供「不过滤黑名单」的目录，由 `model.list` 端点使用：它据此拿到
      * 每个 id 的**真实展示名（含倍率）**，再自行回填 `disabled` 状态。
      * 对话框模型选择器读的仍是 `listModels`（已过滤），可见性行为不变。
+     *
+     * ⚠️ **2026-10-08 Task 7c**：骨架（含上面这条理由）已上移到共享实现
+     * `src/model-catalog.ts`，此处只剩委托。
      */
+    /**
+     * ★ **后台目录刷新器入口**（`src/index.ts` 的 `refreshOf` 调 `adapter.refresh?.()`）。
+     *
+     * ⚠️⚠️ 必须由适配器**显式转发** `catalog.refresh`：`ModelCatalog`（`model-catalog.ts`）
+     *    上的这个成员**不会**自动变成适配器的成员 —— `pruned()` 的 Proxy 只透传
+     *    **适配器自己的**成员（`dead-model-store.ts:748-749`）。
+     *    漏转发 ⇒ 刷新器「已武装」却对这家**空转**，且**零日志**（`refreshOf` 返回
+     *    `undefined` 时静默跳过 —— `index.ts` 的装配注释写着这件事）。
+     *    ⚠️ 与 `options.refresh`（HTTP 401 后的**凭据**重取）**不是同一件事**，
+     *    两者同名纯属巧合，**不得合并**。
+     */
+    async refresh() {
+        await this.catalog.refresh?.();
+    }
     listAllModels() {
-        // 过滤逻辑与 `listModels` 的第一、二层一致（usage / config_switch /
-        // is_invisible_to_user 已在解析器里剔除；这里再挡 isHidden 与 is_custom_model），
-        // **唯一区别是不套用户黑名单**。
+        return this.catalog.listAllModels();
+    }
+    /**
+     * 把本家条目转成共享骨架的中间结构。
+     *
+     * ⚠️ 本家四处**真实差异**：
+     * 1. `contextWindow` 受 **Max 模式**影响（开启时用 `maxContextWindow` /
+     *    `TRAE_MAX_CONTEXT_TOKENS`，两者**不能混用** —— 未开 Max 却声明 1M 会让
+     *    DSH 把超长上下文直接发出去，上游按 200K 校验后拒绝）；
+     * 2. `maxTokens` 二级查找（Max 模式下用 `maxModeOutputTokens`）；
+     * 3. `reasoning` 的默认档**优先采信上游 `default_level`**（见 `reasoningFor`）；
+     * 4. `inputModalities` 逐模型判定（远端 `display_config.multimodal`）——
+     *    早期硬编码 `['text']` 导致 DSH 在**附件准入阶段**就拒掉图片（Issue #IKHDKC）。
+     */
+    toCatalogEntry(model) {
+        const contextWindow = this.contextWindowFor(model.id);
+        const maxTokens = this.maxOutputTokensFor(model.id);
+        const reasoning = this.reasoningFor(model.id);
+        return {
+            id: model.id,
+            name: traeDisplayName(model),
+            // ⚠️ `resolveModel` 用**元数据里的 name**（不带倍率）⇒ 显式提供 `bareName`。
+            bareName: this.remoteMeta.get(model.id)?.name
+                ?? this.fallbackIndex.get(model.id)?.name
+                ?? model.name,
+            // ⚠️ 逐模型判定（见上）；未声明时**保守报 `['text']`**（不是省略）。
+            inputModalities: this.inputModalitiesFor(model.id),
+            ...contextWindow !== undefined ? { contextWindow } : {},
+            ...maxTokens !== undefined ? { maxTokens } : {},
+            ...reasoning !== undefined ? { reasoning } : {},
+        };
+    }
+    /**
+     * 本家全部条目（**含两层可见性过滤**）。
+     *
+     * 过滤逻辑分两层（原 `listModels` 的注释）：
+     *
+     * 第一层（解析时，`parseTraeBatchModelList`）：硬性过滤 `usage !==
+     * chat_completion` / `config_switch === false` / `is_invisible_to_user ===
+     * true`。这些条件对 batch 端点（全功能配置表）有意义，避免 summary /
+     * custom_model / multimodal 等非对话条目塞满目录。
+     *
+     * 第二层（运行时，此处）：硬性过滤 `isHidden === true`（兜底表路径没有解析器，
+     * 在 `staticFallbackModels` 里过滤；远端路径由解析器过滤，但测试绕过解析器直接
+     * 喂 `TraeRemoteModel[]`，故此处再补一刀保持一致性）+ `is_custom_model === true`
+     * （自定义模型，需用户在 IDE 内绑定供应商，本插件调不通，一律 4001）。
+     *
+     * ⚠️ `is_invisible_to_user` **不再由 `hideInternalModels` 控制**：新设计
+     * 要求目录与官方 Auto Mode 选择器一致，隐藏模型不在目录中展示。
+     */
+    catalogEntries() {
         const source = this.remoteModels === undefined
             ? this.staticFallbackModels()
             : this.remoteModels.filter((model) => isTraeModelCallable(model) && model.isHidden !== true);
-        return source.map((model) => ({ id: model.id, name: traeDisplayName(model) }));
+        return source.map((model) => this.toCatalogEntry(model));
+    }
+    async loadCatalogEntries() {
+        await this.ensureRemoteModels();
+        return this.catalogEntries();
+    }
+    /**
+     * 同步视图（`listAllModels` 用）。
+     *
+     * ⚠️ **不能** `await ensureRemoteModels()`（同步契约）—— 读 `remoteModels`
+     * 缓存，未落地时回退静态兜底表（这正是原实现的语义）。
+     */
+    syncCatalogEntries() {
+        return this.catalogEntries();
     }
     async listModels(_provider) {
-        // ⚠️ 门控放在 `ensureRemoteModels()` **之前**：没有已登录账号时连远端目录都
-        // 不必拉（省掉一次无谓的 HTTP 请求）。没有任何已登录账号时返回空数组，让
-        // DSH 的 `buildModelCatalog`（它 `.filter(group => group.models.length > 0)`）
-        // 把整个 provider 分组隐藏，减少模型选择列表的臃肿（见 providerCatalogVisible）。
-        // ⚠️ 这里必须返回 `[]` 而**不能抛错**：抛错会被归入 catalog 的 `failures`，
-        // 界面上反而多出一条 provider 报错。
-        if (!await providerCatalogVisible(this.options.accountPool, this.product.id))
-            return [];
-        await this.ensureRemoteModels();
-        // 过滤逻辑分两层：
-        //
-        // 第一层（解析时，`parseTraeBatchModelList`）：硬性过滤 `usage !==
-        // chat_completion` / `config_switch === false` / `is_invisible_to_user ===
-        // true`。这些条件对 batch 端点（全功能配置表）有意义，避免 summary /
-        // custom_model / multimodal 等非对话条目塞满目录。
-        //
-        // 第二层（运行时，`listAllModels`）：硬性过滤 `isHidden === true`（兜底表
-        // 路径没有解析器，在 `staticFallbackModels` 里过滤；远端路径由解析器过滤，
-        // 但测试绕过解析器直接喂 `TraeRemoteModel[]`，故此处再补一刀保持一致性）+
-        // `is_custom_model === true`（自定义模型，需用户在 IDE 内绑定供应商，本
-        // 插件调不通，一律 4001）。
-        //
-        // ⚠️ `is_invisible_to_user` **不再由 `hideInternalModels` 控制**：新设计
-        // 要求目录与官方 Auto Mode 选择器一致，隐藏模型不在目录中展示。
-        const source = this.listAllModels();
-        const disabled = this.options.accountPool?.disabledModelsFor(this.product.id);
-        const listed = disabled === undefined || disabled.size === 0
-            ? source
-            : source.filter((model) => !disabled.has(model.id));
-        return listed.map((model) => ({
-            provider: this.product.id,
-            id: model.id,
-            name: model.name,
-            // ⚠️ 逐模型判定（远端 `display_config.multimodal`）—— 早期这里硬编码
-            // `['text']`，导致 DSH 在附件准入阶段就拒掉图片（Issue #IKHDKC）。
-            inputModalities: this.inputModalitiesFor(model.id),
-        }));
+        return this.catalog.listModels(_provider);
     }
-    async resolveModel(provider, model, _signal) {
-        await this.ensureRemoteModels();
-        const remoteName = this.remoteMeta.get(model)?.name;
-        const resolved = {
-            provider,
-            id: model,
-            name: remoteName ?? this.fallbackIndex.get(model)?.name ?? model,
-            // ⚠️ 与 listModels 同源：必须逐模型判定，否则准入闸门仍会拦下图。
-            inputModalities: this.inputModalitiesFor(model),
-        };
-        const contextWindow = this.contextWindowFor(model);
-        if (contextWindow !== undefined)
-            resolved.context = { contextWindow };
-        const maxTokens = this.maxOutputTokensFor(model);
-        if (maxTokens !== undefined)
-            resolved.defaultMaxTokens = maxTokens;
-        // 推理强度档位：远端 `reasoning_effort_config` 权威（见 reasoningFor）。
-        const reasoning = this.reasoningFor(model);
-        if (reasoning !== undefined)
-            resolved.reasoning = reasoning;
-        return resolved;
+    /**
+     * 解析模型元信息。
+     *
+     * ⚠️ 原实现里的四处判据（context / maxTokens / reasoning / modalities）现已
+     * 收敛到 `toCatalogEntry`；骨架的 `resolveModel` 只做回填与「不声明未知」。
+     * ⚠️ `inputModalities` **与 `listModels` 同源**（都走 `toCatalogEntry`）——
+     * 否则准入闸门仍会拦下图（Issue #IKHDKC 的教训）。
+     */
+    async resolveModel(provider, model, signal) {
+        return this.catalog.resolveModel(provider, model, signal);
     }
     async prepareCall(provider, model, signal) {
         return {
@@ -927,6 +1074,28 @@ export class TraeAdapter extends LlmAdapter {
             }
             imageUrls = new Map();
             for (const [id, ref] of imageRefs) {
+                /**
+                 * ⚠️ **此处刻意走「原图」路径，未接 `readImageRequest` 缩放桥接**
+                 * （Gitee issue IKKX0T，2026-10-12 复核）。
+                 *
+                 * 既有理由「原图边界从未探过，拿不到阈值就不定值」**已失效**：
+                 * issue 的独立实测给出边界 **`(21, 24]` 张** 2560×1600 原图，
+                 * 形态是流内 `code=4006 content is too large for AI to understand`
+                 * （该码原先被归成可重试的 `SERVER`，已于本次修掉 —— 见
+                 * `streamErrorCode` 的注释，所以现在失败是**快速且文案明确**的）。
+                 *
+                 * ⇒ **但当前仍不接**，理由只有一条：**边界未经本仓库复测**。
+                 * issue 的 fixture 是 3.45 MiB/张、本仓库的是 2.87 MiB/张，
+                 * 量纲不同 ⇒ 同一个「≈100 MiB 请求体」边界对应的**张数也不同**，
+                 * 直接套用别家的 `imageMaxBytes` 等于写进一个没验证的猜测。
+                 *
+                 * **复测入口**：`pnpm test:e2e:image-bisect`
+                 * （`tests/e2e/image-limit-bisect.e2e.spec.ts`，二分到 ≤3 张）。
+                 * 复测后：① 给 `TraeProduct.imageMaxBytes` 赋值；
+                 * ② 这里改为 `projectRequestImage(ref, {...})` 并保留「拿不到就回退原图」；
+                 * ③ 宿主侧 `index.ts` 补 `readImageRequest` 桥接；
+                 * ④ 删掉 `tests/unit/image-budget.spec.ts` 里那条「loomy/trae 不误接」守卫。
+                 */
                 const image = await this.options.readImage(ref);
                 if (image === undefined)
                     continue;
@@ -962,9 +1131,32 @@ export class TraeAdapter extends LlmAdapter {
         }
         if (options.temperature !== undefined)
             openaiBody.temperature = options.temperature;
+        /**
+         * 会话自动命名（`purpose: 'session-title'`）的思考与预算决策（issue IKKVDH）。
+         *
+         * DSH 用 **64 token** 发标题请求且**不传 `reasoningEffort`**，而宿主会把
+         * 本模型的默认档注入进来。TRAE 的档位来自远端
+         * `reasoning_effort_config.options`（实测形如 `["light","high","extra_high"]`，
+         * **没有 `off`/`none`**）⇒ 本家在多数模型上**关不掉**思考，只能走抬预算兜底。
+         *
+         * ⚠️ `declaredEfforts` **必须与 `reasoningFor` 同源**（对抗审计实测的分叉）：
+         * `reasoningFor` 在 `supportThinking === false` 时**不声明任何档位**，而直接读
+         * `reasoningConfig.options` 会绕过该过滤 ⇒ 「resolveModel 声明 null，标题路径却
+         * 当真存在档位」。方向虽安全（只会多抬预算、不会下发不存在的档），但两份判据
+         * 必须同源，否则将来某家新增 `off` 档时会静默分叉。
+         */
+        const titlePlan = planSessionTitleThinking({
+            purpose: options.purpose,
+            requestedEffort: options.reasoningEffort === undefined ? undefined : String(options.reasoningEffort),
+            // 与 `reasoningFor(options.model)` 同源：经它过滤 `supportThinking === false`。
+            declaredEfforts: this.reasoningFor(options.model)?.efforts.map((effort) => String(effort.id)) ?? [],
+            maxTokens: options.maxTokens,
+        });
         // 输出额度收敛到上游安全上限（默认 64000，见 clampTraeMaxTokens）。
         // 不收敛时客户端索要 131072 会把上游打成 4xx。
-        const maxTokens = clampTraeMaxTokens(options.maxTokens);
+        // ⚠️ 抬预算（`titlePlan.maxTokens`）必须走**同一个**钳制函数，
+        // 否则会被钳回原值、兜底静默失效。
+        const maxTokens = clampTraeMaxTokens(titlePlan.maxTokens);
         if (maxTokens !== undefined)
             openaiBody.max_tokens = maxTokens;
         if (options.stop !== undefined && options.stop.length > 0)
@@ -974,8 +1166,12 @@ export class TraeAdapter extends LlmAdapter {
         // 取值来自 `resolveModel` 声明的 `reasoning.efforts`（即远端
         // `reasoning_effort_config.options` 的字符串），故这里不做白名单校验 ——
         // 校验只会把「远端新增档位」变成静默丢弃。
-        if (options.reasoningEffort !== undefined) {
-            openaiBody.reasoning_effort = options.reasoningEffort;
+        //
+        // ⚠️ 标题请求改走 `titlePlan.effort`：该模型若声明了 `off`/`none` 就是它，
+        // 否则**保留原档位**（关不掉，靠上面的抬预算兜底）——
+        // 绝不能自作主张把档位删掉（那会让「关不掉」变成「静默降档」）。
+        if (titlePlan.effort !== undefined) {
+            openaiBody.reasoning_effort = titlePlan.effort;
         }
         // Max 模式（1M 上下文）：成套覆盖 `max_tokens` / `prompt_max_tokens` /
         // `context_window_size` 并注入 `strategy=max`（见 traeMaxModeFields）。
@@ -986,6 +1182,17 @@ export class TraeAdapter extends LlmAdapter {
         if (this.maxModeFor(options.model)) {
             const meta = this.remoteMeta.get(options.model);
             Object.assign(openaiBody, traeMaxModeFields(meta?.maxContextWindow ?? TRAE_MAX_CONTEXT_TOKENS, meta?.maxModeOutputTokens));
+        }
+        // ⚠️⚠️ **标题请求的抬预算必须排在 Max 覆盖之后**（对抗审计实测的缺口）：
+        // `traeMaxModeFields` **无条件**写 `max_tokens`，若抬预算写在它之前就会被
+        // 覆盖掉。且远端 `__max` 明细只校验 `> 0`（`readDetailMaxTokens`），
+        // 一个异常小的值（实测 `100`、`1`）会把预算压到**低于兜底下限** ⇒ 思考又被
+        // 腰斩、本 issue 原样复发。故这里按「取两者较大」收敛，绝不让已抬高的值变小。
+        if (titlePlan.isTitle && maxTokens !== undefined) {
+            const current = openaiBody.max_tokens;
+            openaiBody.max_tokens = typeof current === 'number' && Number.isFinite(current) && current > maxTokens
+                ? current
+                : maxTokens;
         }
         // system 提示并入 messages 顶部（同样要在转换之前，以便 content 被规范化）。
         if (options.system !== undefined && options.system.length > 0) {
@@ -1249,6 +1456,8 @@ export class TraeAdapter extends LlmAdapter {
          * 故正文守卫**只截断文本**，绝不 `reader.cancel()`、绝不改 finish reason。
          */
         const proseLoopGuard = isReasoningLoopGuardEnabled() ? createReasoningLoopDetector() : undefined;
+        /** DSML 标记归一化器（见 sse.ts）；**每流一实例**，待定缓冲是跨帧状态。 */
+        const dsmlFix = createDsmlMarkerNormalizer();
         let proseLoopDetected = false;
         // ⚠️ 此处**曾有** `proseHasThinkTag` 门禁变量，2026-09-27 **删除**。
         // 逐帧探测在跨帧时必然漏判（实测二分帧 7/11 漏）→ 收尾不切分 → 标签泄漏。
@@ -1363,8 +1572,12 @@ export class TraeAdapter extends LlmAdapter {
                                             // 跨帧必然漏判（实测二分帧 7/11 漏）→ 收尾不切分 → 标签泄漏。
                                             // 改为收尾无条件调用 `splitThinkTaggedContent`。
                                             if (!proseLoopDetected) {
-                                                block.text += delta.content;
-                                                yield { type: 'text-delta', index: block.index, text: delta.content };
+                                                // ⚠️ **先归一化再累积**（2026-10-13，见 sse.ts 注释）。
+                                                const fixedDelta = dsmlFix.push(delta.content);
+                                                block.text += fixedDelta;
+                                                if (fixedDelta.length > 0) {
+                                                    yield { type: 'text-delta', index: block.index, text: fixedDelta };
+                                                }
                                             }
                                         }
                                         if (delta.reasoning_content !== undefined) {
@@ -1455,17 +1668,7 @@ export class TraeAdapter extends LlmAdapter {
                                 }
                                 case 'token_usage': {
                                     if (ev.usage !== undefined) {
-                                        const promptTokens = typeof ev.usage.prompt_tokens === 'number' ? ev.usage.prompt_tokens : 0;
-                                        const completionTokens = typeof ev.usage.completion_tokens === 'number' ? ev.usage.completion_tokens : 0;
-                                        const reasoningTokens = typeof ev.usage.reasoning_tokens === 'number' ? ev.usage.reasoning_tokens : undefined;
-                                        yield {
-                                            type: 'usage',
-                                            usage: {
-                                                inputTokens: promptTokens,
-                                                outputTokens: completionTokens,
-                                                ...reasoningTokens !== undefined && reasoningTokens > 0 ? { reasoningTokens } : {},
-                                            },
-                                        };
+                                        yield { type: 'usage', usage: traeUsageFromTokenUsage(ev.usage) };
                                     }
                                     break;
                                 }
@@ -1507,7 +1710,9 @@ export class TraeAdapter extends LlmAdapter {
                                             });
                                         }
                                         // 4001（模型不可调用）不换号：换账号也是同一模型被拒。
-                                        throw new LlmError(message, ev.errorCode === 1005 || ev.errorCode === 4008 ? 'QUOTA_EXCEEDED' : 'SERVER');
+                                        // ⚠️ 归类走 {@link streamErrorCode}（4006 体积超限**不能**落 SERVER，
+                                        //    否则会被 harness 原样重发 5 次 —— 见该函数的说明）。
+                                        throw new LlmError(message, streamErrorCode(ev.errorCode));
                                     }
                                     break;
                                 }
@@ -1595,6 +1800,17 @@ export class TraeAdapter extends LlmAdapter {
                 },
             };
         }
+        // ── DSML 归一化收尾：下发待定缓冲 ──（与 openai-compat.ts / buddy 同款）
+        {
+            const tail = dsmlFix.flush();
+            if (tail.length > 0 && !proseLoopDetected) {
+                const tailBlock = blocks.find(candidate => candidate.kind === 'text');
+                if (tailBlock !== undefined) {
+                    tailBlock.text += tail;
+                    yield { type: 'text-delta', index: tailBlock.index, text: tail };
+                }
+            }
+        }
         if (textBlock !== undefined) {
             // ── think 标签归位（见 `splitThinkTaggedContent`）──
             // 标签**前**的内心独白 → reasoning 块；标签**后**的真正文 → 本 text 块。
@@ -1642,7 +1858,8 @@ export class TraeAdapter extends LlmAdapter {
                 ? textOut.slice(0, proseLoopGuard.cutAt)
                 : textOut;
             // 行首 `course` / `课` 泄漏 token 清洗（见 `stripCourseLeak`）。
-            const cleaned = stripCourseLeakIfEnabled(truncated);
+            // ⚠️ DSML 归一化**整串兜底**（幂等，与 openai-compat.ts 同款）。
+            const cleaned = fixDsmlMarkers(stripCourseLeakIfEnabled(truncated));
             // ⚠️ 归位后正文可能为空串 —— 空块会污染会话，且 DSH 的
             // `EMPTY_RESPONSE` 契约禁止产出空内容块。思考段已归位，故仍有产出。
             if (cleaned !== '') {
@@ -1768,12 +1985,20 @@ export class TraeAdapter extends LlmAdapter {
  *   token、闸门是字符，只要内容的字符/token 足够高（系数 5 ⇒ 6.25），任何**有限**
  *   系数都会被绕过。系数 5 只是把触发条件推到实测值（中文 2.13、英文/代码 4.0）
  *   之外，而不是消灭它。
- * - 全仓库**只有 trae 有这条「静默丢历史」的路径**：其余 13 个 provider 把 DSH 的
- *   压缩点当唯一真相；唯一的另一类体积防护（`src/image-budget.ts`，13 家共用）
+ * - 全仓库**只有 trae 有这条「静默丢历史」的路径**：其余 provider 把 DSH 的
+ *   压缩点当唯一真相；唯一的另一类体积防护（`src/image-budget.ts`）
  *   作用在**单张图的编码字节**上，且压不下去时**抛 `UNSUPPORTED_CONTENT`**（可见），
  *   而不是悄悄丢消息。
+ *   ⚠️ **刻意不写「几家共用」**：本节原写「**13 家共用**」，实测按**家**展开
+ *   （一个适配器可能服务两家）只有 **9 家**（`buddy`/`workbuddy`/`cline`/`zcode`/
+ *   `gemini`/`raccoon`/`qoder`/`qodercn`/`lobsterai`）。该数**从写下时就不对**
+ *   —— 引入它的那笔提交里实测同样是 9，不是「后来有人不用了」。
+ *   另有 5 家（`trae` / `loomy` / `minimax` / `codearts` / `opencode`）**完全不用**
+ *   该模块 —— 它们的图片路径各有自己的判据（`loomy` 与 `minimax` 实测都是
+ *   **显式抛 `UNSUPPORTED_CONTENT`**，同样可见、同样不静默）。
+ *   ⇒ 这类「家数」是**必然腐坏**的快照，别在这里写数字。
  *
- * ⇒ 因此删掉它：**静默丢历史这一类缺陷在结构上消失**，trae 与其余 13 家同形，
+ * ⇒ 因此删掉它：**静默丢历史这一类缺陷在结构上消失**，trae 与其余各家同形，
  * 真正的限制只有一个 —— DSH 的压缩点。
  *
  * ## 如果将来要加回来
@@ -1798,7 +2023,12 @@ export class TraeAdapter extends LlmAdapter {
  */
 export function registerTraeLlm(ctx, options) {
     const product = options.product ?? TRAE;
-    const adapter = new TraeAdapter(options);
+    const adapter = new TraeAdapter({
+        ...options,
+        // ⚠️ 注入**唯一**的广播实现（`src/catalog-broadcast.ts`），不要在这里
+        // 另写一份 emit —— 两份实现必然漂移（issue IKJVTF 的缺陷① 就是「十处全漏」）。
+        onCatalogLoaded: () => broadcastCatalogChanged(ctx),
+    });
     registerAdapterIdempotent(ctx.llm, [product.id], adapter);
     // 返回实例：Jet Hub 的「显示列表」需要它的 `listAllModels()`（不受用户黑名单
     // 影响的全量目录，带最终展示名/倍率）。DSH 的 `ctx.llm` 不透传自定义方法，

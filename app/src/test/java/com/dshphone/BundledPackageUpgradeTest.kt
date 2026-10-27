@@ -31,15 +31,26 @@ class BundledPackageUpgradeTest {
         assertEquals("preserve version 2.5.3", File(current, "independent-marker").readText())
     }
 
-    @Test fun olderAndEqualVersionsAcceptTheBundledUpdateWithNumericOrdering() {
+    @Test fun everyExistingVersionIsHandedToTheReviewedTransactionWithoutDeletingExtras() {
         val bundled = temp.newFolder("bundled"); val installed = temp.newFolder("installed")
         pkg(bundled, "2.10.0")
         for (version in listOf("1.99.99", "2.9.99", "2.10.0")) {
             pkg(installed, version)
-            assertEquals(emptySet<String>(), BundledPackageUpgrade.preservedPackages(bundled, installed))
+            assertEquals(setOf("dsh-our-free-model"), BundledPackageUpgrade.preservedPackages(bundled, installed))
         }
         pkg(installed, "3.0.0")
         assertEquals(setOf("dsh-our-free-model"), BundledPackageUpgrade.preservedPackages(bundled, installed))
+    }
+
+    @Test fun currentPhoneOfm253IsNotDeletedBeforeThe257CompatibilityTransaction() {
+        val bundled = temp.newFolder("next"); val installed = temp.newFolder("phone")
+        pkg(bundled, "2.5.7"); val current = pkg(installed, "2.5.3")
+        val custom = File(current, "private-extra.js").apply { writeText("retained local customization") }
+        val before = custom.readBytes()
+        val retained = BundledPackageUpgrade.preservedPackages(bundled, installed)
+        assertTrue("NodeRunner must not replace this directory before migratePhoneCore", "dsh-our-free-model" in retained)
+        assertArrayEquals(before, custom.readBytes())
+        assertEquals("preserve version 2.5.3", File(current,"independent-marker").readText())
     }
 
     @Test fun freshInstallAndAbsentOptionalBundleNeedNoPreservation() {

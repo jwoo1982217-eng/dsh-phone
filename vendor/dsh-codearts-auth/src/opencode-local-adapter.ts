@@ -1,3 +1,4 @@
+import { createDsmlMarkerNormalizer } from './sse.js'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -10,6 +11,7 @@ import { collectImages, serializeMessages, httpErrorCode } from './openai-compat
 import { normalizeHarnessMessages } from './message-shape.js'
 
 interface AdapterOptions {
+  providerClosed?: () => boolean
   readImage?: (ref: unknown) => Promise<{ data: Uint8Array; mediaType: string } | undefined>
   disabledModels?: () => ReadonlySet<string>
   timeoutMs?: number
@@ -49,6 +51,7 @@ export class OpencodeLocalAdapter extends LlmAdapter {
   providerInfo(provider: string) { return { id: provider, name: 'OpenCode 免费模型（本地服务）' } }
   listAllModels() { return this.service.cachedModels().map(model => ({ id: model.id, name: model.name, isFree: true })) }
   async listModels(provider: string): Promise<readonly LlmModelInfo[]> {
+    if (this.options.providerClosed?.()) return []
     this.service.warm()
     const disabled = this.options.disabledModels?.() ?? new Set()
     return this.service.cachedModels().filter(model => !disabled.has(model.id)).map(model => ({ provider, id: model.id, name: model.name, inputModalities: model.inputModalities }))
@@ -187,7 +190,8 @@ export class OpencodeLocalAdapter extends LlmAdapter {
       } else {
         for (const part of reply?.parts ?? []) {
           if (!['text', 'reasoning'].includes(part.type) || typeof part.text !== 'string' || !part.text) continue
-          let text = part.text
+          const dsmlFix = createDsmlMarkerNormalizer()
+          let text = part.type === 'text' ? dsmlFix.push(part.text) + dsmlFix.flush() : part.text
           if (part.type === 'text') for (const stop of options.stop ?? []) { if (!stop) continue; const at = text.indexOf(stop); if (at >= 0) text = text.slice(0, at) }
           if (!text) continue
           const type = part.type as 'text' | 'reasoning'

@@ -1,20 +1,29 @@
-export type Page = 'overview' | 'models' | 'usage' | 'channels' | 'eac' | 'settings' | 'connection'
+export type Page = 'overview' | 'models' | 'usage' | 'channels' | 'eac' | 'settings' | 'connection' | 'sponsor'
 export interface Model {
   id: string
   name: string
   channel: string
   routable: boolean
+  hiddenByUser?: boolean
+  hiddenByGroup?: boolean
   vision?: boolean
   reasoning?: boolean
   contextWindow?: number
   maxOutput?: number
+  availabilitySource?: 'listing' | 'probe' | 'manual'
+  detail?: string
+  probedAt?: number
+  latencyMs?: number
   availability?: string
   ttftMs?: number | null
 }
-export interface ModelTestResult { ok: boolean; text: string; latencyMs: number }
+export interface ModelTestResult { ok: boolean; text: string; latencyMs: number; ttftMs?: number; persisted?: boolean }
 export interface ServiceSettings {
   enabled: boolean
   exposeRegionModels: boolean
+  hiddenModelIds: string[]
+  hideFreeModels: boolean
+  hideEacModels: boolean
   streamRecovery: boolean
   standaloneProbe: boolean
   probeIntervalMinutes: number
@@ -70,5 +79,5 @@ export interface Host {
   error(error: Error): void
   testModel(model: string, signal: AbortSignal): Promise<ModelTestResult>
   refreshModels(probe: boolean, signal: AbortSignal): Promise<void>
-  saveSettings(settings: ServiceSettings): Promise<ServiceSettings>
+  saveSettings(settings: Partial<ServiceSettings>): Promise<ServiceSettings>
 }

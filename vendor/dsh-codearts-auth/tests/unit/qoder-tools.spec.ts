@@ -47,6 +47,16 @@ import { buildQoderHistory, buildQoderTools } from '../../src/qoder-adapter.js'
  */
 const captured: { ask?: QoderInferAsk; payload?: Record<string, unknown> } = {}
 
+/**
+ * ⚠️ `dispose` 的**调用计数**（2026-10-12 审计补）。
+ *
+ * 真实缺陷：原先替身写成 `dispose: () => {}`（noop）—— 那只能证明「方法存在」，
+ * **不能证明它被调用**。审计实测：删掉适配器 `buildRequest` 的 `finally` 里那句
+ * `client?.dispose()`，5 个 qoder 相关 spec 共 147 条全绿，即这条交付
+ * **零守卫**。故改为可计数，并由下面两条用例断言「每次构造请求都释放」。
+ */
+const disposeCalls = { count: 0 }
+
 vi.mock('../../src/qoder-wasm.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/qoder-wasm.js')>()
   return {
@@ -59,6 +69,12 @@ vi.mock('../../src/qoder-wasm.js', async (importOriginal) => {
           captured.payload = actual.buildQoderInferPayload(ask, 'fixed-request-id')
           return { url: 'https://example.invalid/x', headers: {}, body: 'enc' }
         },
+        // ⚠️ 替身必须**镜像真实类的接口**：适配器在 `buildRequest` 的
+        // `finally` 里调 `dispose()` 释放 wasm `QoderContext`
+        // （见 `src/qoder-wasm.ts` 文件头的「wasm 堆泄漏」）。
+        // 替身缺这个方法会让每个用例都报 `client?.dispose is not a function`。
+        // ⚠️ 计数（不是 noop）：见上面 `disposeCalls` 的注释。
+        dispose: () => { disposeCalls.count += 1 },
       }),
     },
   }
@@ -401,5 +417,117 @@ describe('QoderAdapter 真的把工具与工具历史交给加密请求（端到
     expect(payloadMessages.find((m) => m.role === 'tool')).toMatchObject({
       role: 'tool', content: 'file body', tool_call_id: 'c1',
     })
+  })
+})
+
+/**
+ * ★★ 适配器侧必须**真的调用** `dispose()`（2026-10-12 审计补的守卫）。
+ *
+ * ## 为什么单独立一组
+ *
+ * `buildRequest` 的 `finally` 里那句 `client?.dispose()` 是本次移植的**核心交付
+ * 之一**（不释放则进程级 wasm 堆只增不减 ⇒ 长上下文会话 `unreachable` 暴毙）。
+ * 但审计实测：**删掉它，5 个 qoder 相关 spec 共 147 条全绿** —— 即这条交付
+ * **零守卫**。
+ *
+ * 根因是替身写法：原先 `dispose: () => {}` 只能证明「方法存在」（缺了会报
+ * `client?.dispose is not a function`），**不能证明它被调用**。
+ * 故改为可计数，并在下面两条用例里断言：
+ * 1. 正常路径：每次构造请求都释放；
+ * 2. **异常路径**：`prepareInfer` 抛错时同样释放 —— 那正是泄漏最多的那条路；
+ * 3. **错误保真**：释放失败不得顶替 `try` 块的原始错误。
+ */
+describe('★★ QoderAdapter.buildRequest 必须释放 wasm 上下文', () => {
+  async function makeAdapter(fetchImpl: typeof fetch) {
+    const { QoderAdapter } = await import('../../src/qoder-adapter.js')
+    const { QODER } = await import('../../src/qoder-product.js')
+    const { buildQoderCredential, parseQoderTokenPayload } = await import('../../src/qoder.js')
+    const credential = buildQoderCredential(
+      parseQoderTokenPayload({ token: 'tok', refresh_token: 'ref', user_id: 'uid-1' }),
+      { machineId: 'm-1' },
+    )
+    return new QoderAdapter({
+      credentialRef: { name: 'QODER_ACCESS_TOKEN' } as never,
+      resolveCredential: async () => credential,
+      refresh: async () => {},
+      product: QODER,
+      fetchImpl,
+    })
+  }
+
+  it('★ 正常路径：每次构造请求都调用 dispose（否则 wasm 堆只增不减）', async () => {
+    const adapter = await makeAdapter((async () => envelope('hi')) as unknown as typeof fetch)
+    disposeCalls.count = 0
+    for await (const _ of adapter.stream({
+      model: 'qfmodel',
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+    } as never)) { /* drain */ void _ }
+    expect(disposeCalls.count, 'buildRequest 没有释放 wasm 上下文').toBeGreaterThanOrEqual(1)
+  })
+
+  it('★ 异常路径：prepareInfer 抛错时**同样**必须释放（那是泄漏最多的路）', async () => {
+    // ⚠️ 这条防的是「把 dispose 写在 return 之后而不是 finally 里」这类回归：
+    //    顺序调用在正常路径上看着是对的，异常路径却整条泄漏。
+    const wasm = await import('../../src/qoder-wasm.js')
+    const spy = vi.spyOn(wasm.QoderEncryptedInfer, 'create').mockResolvedValue({
+      prepareInfer: () => { throw new Error('prepareInfer 炸了') },
+      dispose: () => { disposeCalls.count += 1 },
+    } as never)
+    try {
+      const adapter = await makeAdapter((async () => envelope('hi')) as unknown as typeof fetch)
+      disposeCalls.count = 0
+      await expect((async () => {
+        for await (const _ of adapter.stream({
+          model: 'qfmodel',
+          messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+        } as never)) { /* drain */ void _ }
+      })()).rejects.toThrow()
+      expect(disposeCalls.count, '异常路径没有释放 wasm 上下文').toBeGreaterThanOrEqual(1)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('★★ 释放失败**不得顶替**原始错误（错误保真红线）', async () => {
+    // ⚠️⚠️ 真实缺陷（2026-10-12 审计实测）：JS 语义上 `finally` 里的 `throw`
+    //    **无条件覆盖** `try` 里的 `throw`，而 `dispose()` → `freePointer()`
+    //    的 catch 里**确实会 rethrow** —— 它自己的注释就写了「堆耗尽时它同样
+    //    会 trap」，即**恰在本修复要治理的那个场景下**会抛。
+    //
+    // 后果（修复前实测）：上游的 `AUTH` 被改写成「WASM 堆耗尽」，而且
+    // `describeWasmFailure` 返回**裸 `Error`**（非 `HarnessError`）⇒ 外层
+    // `normalizeLlmFailure` 归 `UNKNOWN` ⇒ **连可重试性判据一起丢**。
+    //
+    // ⇒ 修法：`dispose()` 包 try/catch，失败**只吞不上抛**（清理动作不该改变
+    //   本次请求的结论）。本用例锁的就是「原始错误必须保真」。
+    const wasm = await import('../../src/qoder-wasm.js')
+    const { LlmError } = await import('@deepseek-ai/dsh-llm')
+    const spy = vi.spyOn(wasm.QoderEncryptedInfer, 'create').mockResolvedValue({
+      prepareInfer: () => { throw new LlmError('ORIGINAL-auth-401', 'AUTH' as never) },
+      dispose: () => { throw new Error('DISPOSE-wasm-heap-exhausted') },
+    } as never)
+    try {
+      const adapter = await makeAdapter((async () => envelope('hi')) as unknown as typeof fetch)
+      const caught = await (async () => {
+        try {
+          for await (const _ of adapter.stream({
+            model: 'qfmodel',
+            messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+          } as never)) { /* drain */ void _ }
+          return undefined
+        } catch (error) {
+          return error as { message?: string; code?: string }
+        }
+      })()
+      expect(
+        caught?.message,
+        `原始错误被 dispose 顶替了（实测 message=${String(caught?.message)}）`,
+      ).toContain('ORIGINAL-auth-401')
+      // ⚠️ `code` 同样必须保真：`describeWasmFailure` 返回的是裸 `Error`，
+      //    会让外层归 `UNKNOWN` 并丢掉 `AUTH` 的重试语义。
+      expect(caught?.code).toBe('AUTH')
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

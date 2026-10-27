@@ -15,16 +15,29 @@ export function validatePair(pair) {
 export function newPair(relay) { return validatePair({ version: 1, relay, room: randomBytes(16).toString('hex'), secret: randomBytes(32).toString('hex') }); }
 export function pairCode(pair) { return 'dsh-peer:1:' + Buffer.from(JSON.stringify(validatePair(pair))).toString('base64url'); }
 export function connectionLink(pair) { return 'dsh-phone://peer/connect#' + pairCode(pair); }
+export function shareLink(pair) {
+  const url = new URL(validatePair(pair).relay);
+  if (url.protocol !== 'wss:' || url.pathname !== '/relay') throw Error('分享链接需要固定加密中继');
+  url.protocol = 'https:'; url.pathname = '/connect'; url.hash = pairCode(pair); return url.href;
+}
 export function parsePair(code) {
   if (typeof code !== 'string' || code.length > 2048) throw Error('请粘贴电脑生成的完整连接链接');
   let value = code.trim();
+  let bridge;
+  if (value.startsWith('https://')) {
+    bridge = new URL(value);
+    if (bridge.pathname !== '/connect' || bridge.username || bridge.password || bridge.search) throw Error('连接链接格式无效');
+    value = bridge.hash.slice(1);
+  }
   if (value.startsWith('dsh-phone://')) {
     const url = new URL(value);
     if (url.host !== 'peer' || url.pathname !== '/connect' || url.username || url.password || url.search) throw Error('连接链接格式无效');
     value = url.hash.slice(1);
   }
   if (!value.startsWith('dsh-peer:1:')) throw Error('请粘贴电脑生成的完整连接链接');
-  return validatePair(JSON.parse(Buffer.from(value.slice(11), 'base64url').toString()));
+  const pair = validatePair(JSON.parse(Buffer.from(value.slice(11), 'base64url').toString()));
+  if (bridge) { const relay = new URL(pair.relay); relay.protocol = relay.protocol === 'wss:' ? 'https:' : 'http:'; if (bridge.origin !== relay.origin || relay.pathname !== '/relay') throw Error('连接链接来源与中继不符'); }
+  return pair;
 }
 export function relayProof(pair) { return createHash('sha256').update('dsh-peer-relay-v1\0' + pair.secret).digest('hex'); }
 export function makeCipher(pair, role, session = '') {

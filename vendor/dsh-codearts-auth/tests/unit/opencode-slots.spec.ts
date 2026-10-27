@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   ensureDefaultAnonymousSlot, isAnonymousCredential, listIdentitySlots,
-  newAccountFingerprint, nextFingerprintGeneration,
+  newAccountFingerprint, nextFingerprintGeneration, normalizeOpencodeGeneration,
+  poolEntrySnapshot,
   type PoolEntrySnapshot,
 } from '../../src/opencode-auth.js'
+import { deriveProjectId } from '../../src/opencode.js'
 
 /**
  * 构造一个账号池条目。
@@ -128,6 +130,66 @@ describe('listIdentitySlots', () => {
   it('userAgent 透传到每个槽', () => {
     const slots = listIdentitySlots([entry()], 'opencode/1.18.99')
     expect(slots.every((s) => s.userAgent === 'opencode/1.18.99')).toBe(true)
+  })
+})
+
+/**
+ * `poolEntrySnapshot` 是**唯一的**槽输入投影实现（2026-10-08 第二轮抽出来的）。
+ *
+ * ## 为什么要有这一段
+ *
+ * 抽它之前，同一套派生有**两处**：`index.ts` 的 opencode 接线块和
+ * `listIdentitySlots` 的缺指纹回退分支。两处都算
+ * `identity = anonymous ? id : apiKey` + `deriveProjectId`。
+ * 分叉的后果是**静默**的：匿名通道的 api_key 全是 `public`，
+ * 若某处误用 api_key 派生，N 条匿名通道会拿到**同一个指纹**
+ * ——不报错、日志无字，只是「换了通道却仍被关联」。
+ *
+ * 抽取本身由 `opencode-wiring.spec.ts` 的源码断言锁住（`index.ts` 不得再出现
+ * 那份 identity 派生）；本段锁**抽取后的行为**，两者缺一不可：
+ * 只锁源码会让「函数体写错」漏过，只锁行为会让「又抄一份回去」漏过。
+ */
+describe('poolEntrySnapshot（槽输入投影的唯一实现）', () => {
+  it('账号槽用 apiKey 派生，且代次进 project id（「指纹」按钮的生效点）', () => {
+    const base = poolEntrySnapshot({ id: 'opencode-a1', apiKey: 'sk-A' })
+    expect(base.fingerprint.projectId).toBe(deriveProjectId('sk-A', 0))
+    expect(base.fingerprint.generation).toBe(0)
+    const rotated = poolEntrySnapshot({ id: 'opencode-a1', apiKey: 'sk-A', generation: 2 })
+    expect(rotated.fingerprint.projectId).toBe(deriveProjectId('sk-A', 2))
+    expect(rotated.fingerprint.projectId).not.toBe(base.fingerprint.projectId)
+  })
+
+  it('⚠️⚠️ 匿名槽用**条目 id** 派生（用 api_key 会让 N 条匿名通道指纹相同）', () => {
+    const first = poolEntrySnapshot({ id: 'opencode-anon-1', apiKey: 'public' })
+    const second = poolEntrySnapshot({ id: 'opencode-anon-2', apiKey: 'public' })
+    expect(first.fingerprint.projectId).toBe(deriveProjectId('opencode-anon-1', 0))
+    // 核心不变式：两条匿名通道必须彼此不可关联。
+    expect(first.fingerprint.projectId).not.toBe(second.fingerprint.projectId)
+  })
+
+  it('⚠️ enabled 缺省为 true —— 探测靠它才能重测停用账号', () => {
+    // `listIdentitySlots` 会跳过 enabled === false 的条目，而探测的既定语义是
+    // 「停用账号也要能重测」（account-probe.ts 模块头第 2 条设计）。
+    expect(poolEntrySnapshot({ id: 'a', apiKey: 'sk-A' }).enabled).toBe(true)
+    expect(poolEntrySnapshot({ id: 'a', apiKey: 'sk-A', enabled: false }).enabled).toBe(false)
+  })
+
+  it('代次归一化：负 / NaN / Infinity / undefined 一律 0（不能只判 nullish）', () => {
+    // ⚠️ `-1` 不是 nullish，`?? 0` 放它过去 ⇒ 与另一处判据分叉。
+    // 规范化收敛在 `normalizeOpencodeGeneration`，这里连同池侧方法一起对拍。
+    for (const bad of [-1, Number.NaN, Number.POSITIVE_INFINITY, undefined]) {
+      expect(poolEntrySnapshot({ id: 'a', apiKey: 'sk-A', generation: bad }).fingerprint.generation)
+        .toBe(0)
+      expect(normalizeOpencodeGeneration(bad)).toBe(0)
+    }
+    expect(poolEntrySnapshot({ id: 'a', apiKey: 'sk-A', generation: 3 }).fingerprint.generation).toBe(3)
+    expect(normalizeOpencodeGeneration(3)).toBe(3)
+  })
+
+  it('proxy 原样带出（归一化是 listIdentitySlots 的职责，不在这里做）', () => {
+    expect(poolEntrySnapshot({ id: 'a', apiKey: 'sk-A', proxy: '127.0.0.1:7897' }).proxy)
+      .toBe('127.0.0.1:7897')
+    expect(poolEntrySnapshot({ id: 'a', apiKey: 'sk-A' }).proxy).toBeUndefined()
   })
 })
 

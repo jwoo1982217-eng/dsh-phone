@@ -78,7 +78,7 @@ export const LOBSTERAI_CREDENTIAL_REF = 'LOBSTERAI_ACCESS_TOKEN'
  * 续期被后端判定为终态（refresh_token 失效）时抛出的错误。
  *
  * 与 `buddy-oauth.ts` / `oauth.ts` 同名类**刻意是各自独立的类**：
- * `src/refresh.ts:21-25` 的 `isRefreshTokenExpired` 用 `error.name` 而非
+ * `src/refresh.ts` 的 `isRefreshTokenExpired` 用 `error.name` 而非
  * `instanceof` 作判据，正是因为这些类跨模块 identity 不同。
  * 故这里也必须保证 `name` 恰为 `RefreshTokenExpiredError`。
  */
@@ -688,8 +688,8 @@ export class LobsteraiAuth extends Service {
   async fetchModels(pool?: AccountPool): Promise<LobsteraiRemoteModel[]> {
     let credential: LobsteraiCredential | undefined
     if (pool) {
-      const available = await pool.getAvailableAccount(this.product.id, '')
-      if (available) credential = available.credential as LobsteraiCredential
+      const available = await pool.getAvailableAccount<LobsteraiCredential>(this.product.id, '')
+      if (available) credential = available.credential
     }
     if (credential === undefined) credential = await this.resolveStoredCredential()
     if (credential === undefined || credential.access_token.length === 0) return []

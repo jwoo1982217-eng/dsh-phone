@@ -432,8 +432,10 @@ function serializeTraeMessages(
           },
         }))
       const text = contentToText(content)
+      if (text.trim().length === 0 && toolCalls.length === 0) continue
       // 正文为空且有工具调用时 content 必须为 null（对齐 Go 端：纯 tool_calls
       // 的 assistant 不回写空 content）。
+      flushToolImages()
       wire.push({
         role: 'assistant',
         content: text.length === 0 && toolCalls.length > 0 ? null : text,
@@ -442,6 +444,7 @@ function serializeTraeMessages(
       continue
     }
     if (message.role === 'system') {
+      flushToolImages()
       wire.push({ role: 'system', content: contentToText(message.content) })
       continue
     }
@@ -477,7 +480,8 @@ function serializeTraeMessages(
         // 有图：正文与图片合并为一条多模态 user 消息（parts 里已含文本块）。
         flushToolImages()
         wire.push({ role: 'user', content: parts })
-      } else {
+      } else if (text.trim().length > 0) {
+        flushToolImages()
         wire.push({ role: 'user', content: text })
       }
     }
@@ -503,8 +507,8 @@ function serializeTraeMessages(
       flushToolImages()
       wire.push({ role: 'user', content: parts ?? text })
     }
-    flushToolImages()
   }
+  flushToolImages()
   return wire
 }
 
@@ -1303,6 +1307,7 @@ export class TraeAdapter extends LlmAdapter {
      * 就不发任何 chunk（与「空名字 tool_call」同型修法）。
      */
     const suppressor = createBlankReasoningSuppressor()
+    const proseSuppressor = createBlankReasoningSuppressor()
     const toolCalls = new Map<number, {
       index: number
       text: string
@@ -1392,7 +1397,8 @@ export class TraeAdapter extends LlmAdapter {
 
                   if (Object.keys(delta).length > 0) {
                     // 按块类型分发
-                    if (delta.content !== undefined) {
+                    const textDelta = delta.content === undefined ? undefined : proseSuppressor.feed(delta.content as string)
+                    if (textDelta !== undefined) {
                       let block = blocks.find(c => c.kind === 'text')
                       if (block === undefined) {
                         block = { index: nextIndex++, kind: 'text', text: '' }
@@ -1402,14 +1408,14 @@ export class TraeAdapter extends LlmAdapter {
                       // 正文死循环守卫（见 `proseLoopGuard` 注释）。命中后只停止
                       // 累积与发射，绝不 `reader.cancel()`、绝不改 finish reason。
                       if (proseLoopGuard !== undefined) {
-                        if (proseLoopGuard.observe(delta.content as string)) proseLoopDetected = true
+                        if (proseLoopGuard.observe(textDelta)) proseLoopDetected = true
                       }
                       // ⚠️ **不要在这里逐帧探测 think 标签**（2026-09-27 移除）：
                       // 跨帧必然漏判（实测二分帧 7/11 漏）→ 收尾不切分 → 标签泄漏。
                       // 改为收尾无条件调用 `splitThinkTaggedContent`。
                       if (!proseLoopDetected) {
-                        block.text += delta.content as string
-                        yield { type: 'text-delta', index: block.index, text: delta.content as string }
+                        block.text += textDelta
+                        yield { type: 'text-delta', index: block.index, text: textDelta }
                       }
                     }
                     if (delta.reasoning_content !== undefined) {
@@ -1682,10 +1688,12 @@ export class TraeAdapter extends LlmAdapter {
       const cleaned = stripCourseLeakIfEnabled(truncated)
       // ⚠️ 归位后正文可能为空串 —— 空块会污染会话，且 DSH 的
       // `EMPTY_RESPONSE` 契约禁止产出空内容块。思考段已归位，故仍有产出。
-      if (cleaned !== '') {
+      if (cleaned.trim() !== '') {
         blockCount += 1
         emittedProse = cleaned
         yield { type: 'block-end', index: textBlock.index, block: { type: 'text', text: cleaned } }
+      } else {
+        yield { type: 'block-end', index: textBlock.index, block: { type: 'text', text: '' } }
       }
     }
     const reasoningBlock = blocks.find(block => block.kind === 'reasoning')

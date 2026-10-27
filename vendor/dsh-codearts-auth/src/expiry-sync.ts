@@ -61,6 +61,29 @@ export interface ExpiryAccessors<TCredential> {
    */
   refreshableOf?: (credential: TCredential) => boolean
   /**
+   * **refresh_token 本身的到期时刻**（毫秒）。
+   *
+   * ## 这条腿是为谁加的（CodeArts 30 天硬上限，2026-10-18 实测）
+   *
+   * ⚠️ lead-time 判据原本**只读 access_token 的到期**，在 refresh_token 寿命
+   * **更短**时会于死线之后才放行 ⇒ 那一轮续期必然失败。
+   *
+   * 华为 STS 的实测行为（解开全部历史凭据的 JWT 逐个核对得出）：
+   * `refresh_token.exp` **恒等于「登录时刻 + 30 天」，续期不会延长它** ——
+   * 续期只会**缩短**剩余寿命。而 access_token 寿命恒为 2 小时。于是最后一天：
+   * access 剩 2 小时、refresh 只剩约 50 分钟，按 lead-time 算净窗口仅 6~9 分钟，
+   * 而调度周期是 30 分钟 ⇒ **必然错过**，账号在 access 到期后彻底不可用
+   * （该日实测两个账号同时报废，且池内 `refreshable` 仍是 `true`）。
+   *
+   * 提供本腿后，剩余寿命不足 lead 时会**提前放行**（在死线前把 access 换新，
+   * 顺带把 refresh 的剩余寿命重新拉满到 access 之后）。
+   *
+   * ⚠️ **不提供时行为与从前逐字节一致**（`shouldRefreshNow` 退化成单腿判据）：
+   * 其余八家的 refresh_token 寿命均长于 access_token（buddy 14 天 / cline 30 天
+   * / minimax 30 天 …），补这条腿对它们**无任何行为变化**，故刻意不给它们加。
+   */
+  refreshExpiresAtOf?: (credential: TCredential) => number | undefined
+  /**
    * `AccountPool.findAccountIdByCredential` 的凭据身份。
    *
    * ⚠️ 该参数的语义是「**凭据内容**」（通常是 access_token）而**不是 ref 名**，
@@ -89,6 +112,50 @@ const EXPIRY_TOLERANCE_MS = 1000
 export function shouldRefreshNow(expiresAtMs: number | undefined, nowMs = Date.now()): boolean {
   if (expiresAtMs === undefined || !Number.isFinite(expiresAtMs)) return true
   return expiresAtMs - nowMs <= REFRESH_LEAD_MS
+}
+
+/**
+ * 本轮是否需要为该凭据发一次续期请求：**access 与 refresh 两条腿取或**。
+ *
+ * ⚠️ 这是 {@link shouldRefreshNow} 的**带 refresh 寿命腿**版本，只有 CodeArts
+ * 走它（其余八家不提供 `refreshExpiresAtOf`，行为与旧版逐字节相同）。
+ *
+ * ## 为什么必须取「或」而不是「与」
+ *
+ * 取「与」（两条腿都满足才续）会**制造**一个新缺陷：refresh 剩 3 天、access
+ * 剩 2 小时（正常态）时反而**不续**，access 一过期账号就报废 —— 而此刻 refresh
+ * 明明还好好活着。取「或」的语义才是对的：**任一条腿进入告警区间就续期**，
+ * 两条腿都能因此被拉满。
+ *
+ * ## 为什么 refresh 已过期时也要放行（而不是直接判定失败）
+ *
+ * `refreshExpiresAt < now` 时本函数返回 `true`，让调用方**真去发一次**请求：
+ * 上游可能已经续发过（多端登录会重签 refresh），本地这一份过期不代表云端不接受。
+ * 让真实报文来否决，比凭本地过期时间猜要可靠 —— 且调用方对 `invalid_grant`
+ * 已有终态处理（写 `refreshable: false` 并提示重新登录）。
+ *
+ * ⚠️ 但**读不到**（`undefined` / NaN）时**必须当「不知」而非「已过期」**：
+ * CodeArts 的 refresh 是 JWT，`exp` 明文可读，读不到只可能是旧版 ticket 凭据
+ * （没有 refresh_token），那种情况由 `isCodeArtsRefreshable` 拦下；若在这里
+ * fail-closed 成 `true`，会让所有读不到腿的凭据每 30 分钟被无谓刷一次。
+ */
+export function shouldRefreshNowWithRefreshExpiry<TCredential>(params: {
+  /** access_token 的到期时刻（毫秒）。 */
+  expiresAtMs: number | undefined
+  /** refresh_token 的到期时刻（毫秒）；`undefined` = 读不到（当作不知）。 */
+  refreshExpiresAtMs: number | undefined
+  nowMs?: number
+}): boolean {
+  const nowMs = params.nowMs ?? Date.now()
+  // 主腿：access 进入 lead 窗口（含已过期 / 读不到）。
+  if (shouldRefreshNow(params.expiresAtMs, nowMs)) return true
+  // refresh 这条腿：读不到就**放弃这条腿**（fail-open 到「按 access 判」）。
+  const r = params.refreshExpiresAtMs
+  if (r === undefined || !Number.isFinite(r)) return false
+  // 已过期 → 放行（让真实请求去否决，见上方注释）。
+  if (r <= nowMs) return true
+  // 剩余不足一个 lead 周期 → 提前续，别等到 access 的窗口才发现来不及。
+  return r - nowMs <= REFRESH_LEAD_MS
 }
 
 /**
@@ -183,7 +250,10 @@ export async function refreshAccountWithReconcile<TCredential>(params: {
   const { pool, provider, tag, accountId, credential, accessors, current, refresh, save } = params
   const expiresAt = accessors.expiresAtOf(credential)
 
-  if (!shouldRefreshNow(expiresAt)) {
+  if (!shouldRefreshNowWithRefreshExpiry({
+    expiresAtMs: expiresAt,
+    refreshExpiresAtMs: accessors.refreshExpiresAtOf?.(credential),
+  })) {
     // 凭据仍在有效期内：只把池值对账，不发请求。
     await syncAccountExpiry({
       pool,

@@ -6,7 +6,7 @@
  */
 import { Service, type Context } from '@deepseek-ai/cordis';
 import { type CredentialRef } from '@deepseek-ai/dsh-credentials';
-import { type BuddyLoginFlowOptions } from './buddy-oauth.js';
+import { type BuddyCatalogOutcome, type BuddyLoginFlowOptions } from './buddy-oauth.js';
 import type { BuddyRemoteModel } from './buddy.js';
 import { AccountPool } from './account-pool.js';
 import { type BuddyProduct } from './product.js';
@@ -153,6 +153,16 @@ export declare class BuddyAuth extends Service {
      * 即携带另一个产品的身份标识。
      */
     fetchModels(pool?: AccountPool): Promise<BuddyRemoteModel[]>;
+    /**
+     * 最近一次 {@link fetchModels} 的各来源成败（issue IKJVTF，审计 I3）。
+     *
+     * ⚠️ 由 `src/index.ts` 在**构造时**注入一个空对象，此后 `fetchModels`
+     * 每轮原地写入；适配器的 `catalogComplete` 回调读它。用出参对象而非改
+     * `fetchModels` 的返回类型 —— 该签名被既有调用方与单测按「返回数组」使用。
+     */
+    lastCatalogOutcome: BuddyCatalogOutcome | undefined;
+    /** 把两个来源都标成「没取到」（无凭据等早退分支用）。 */
+    private markCatalogIncomplete;
     /** 注入的 fetch（测试用）；默认为全局 fetch。 */
     private get fetchImpl();
 }

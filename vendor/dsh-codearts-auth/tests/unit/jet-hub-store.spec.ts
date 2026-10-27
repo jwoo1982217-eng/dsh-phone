@@ -10,15 +10,24 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  clearRejectionLayer,
   createJetHubStore,
   mergeLegacyLoomyLock,
   sanitizeAccounts,
+  sanitizeAggregateAllowed,
+  sanitizeAggregateOrder,
+  sanitizeAggregateOrderMode,
   sanitizeDisabledModels,
   sanitizeGatewayEnabled,
+  sanitizeNativeWebSearchEnabled,
   sanitizePermanentLocks,
+  sanitizeProviderClosed,
   sanitizeProviderOrder,
+  withAllowed,
+  withoutAllowed,
 } from '../../src/jet-hub-store.js'
 import type { ProviderAccountEntry } from '../../src/types.js'
+import { PROVIDER_REGISTRY } from '../../src/provider-registry.js'
 
 /** 造一个最小 ctx；`settings` 按用例给（undefined = 服务缺失）。 */
 function makeCtx(settings: unknown): never {
@@ -50,6 +59,21 @@ describe('sanitizeGatewayEnabled', () => {
     expect(sanitizeGatewayEnabled('false')).toBe(true)
     expect(sanitizeGatewayEnabled(0)).toBe(true)
     expect(sanitizeGatewayEnabled({})).toBe(true)
+  })
+})
+
+describe('sanitizeNativeWebSearchEnabled', () => {
+  it('只有显式 false 才算关闭，其余一律按启用（与网关开关逐字同构）', () => {
+    // ⚠️ 方向不能反：丢键 / 脏值都必须回到**默认启用**。反过来（只认 true）
+    // 会让读取失败变成「原生搜索被静默关闭」，用户只会看到搜索突然开始要
+    // API Key，而他自己根本没关过。
+    expect(sanitizeNativeWebSearchEnabled(false)).toBe(false)
+    expect(sanitizeNativeWebSearchEnabled(undefined)).toBe(true)
+    expect(sanitizeNativeWebSearchEnabled(null)).toBe(true)
+    expect(sanitizeNativeWebSearchEnabled(true)).toBe(true)
+    expect(sanitizeNativeWebSearchEnabled('false')).toBe(true)
+    expect(sanitizeNativeWebSearchEnabled(0)).toBe(true)
+    expect(sanitizeNativeWebSearchEnabled({})).toBe(true)
   })
 })
 
@@ -107,10 +131,18 @@ describe('老契约后端（SettingsStore）', () => {
       disabledModels: { buddy: { 'glm-5.2': true } },
       // save 未携带拒绝表 → 写出空表，读回同值（老文档没这个键时的默认）。
       aggregateRejections: {},
+      // 三个新键（聚合门控 + 手工排序）同样缺省即写出：空白名单 / 空顺序表 / 临期序。
+      aggregateAllowed: {},
+      aggregateOrder: {},
+      aggregateOrderMode: 'expiry',
       loomyPermanentLocked: false,
       gatewayEnabled: true,
+      // save 未携带原生搜索开关 → 写出启用（缺省），读回同值。
+      nativeWebSearchEnabled: true,
       // save 未携带顺序 → 写出空数组（未自定义），读回同值。
       providerOrder: [],
+      // 关闭意图缺省空表（没有任何供应商被关闭）：读回同值（Gitee IKP8OF）。
+      providerClosed: {},
     })
     // ⚠️ 锁定表**不进**这份文档：它是同机多 profile 共享的，旧版本代码全量重写
     // 时不会携带自己不认识的键 —— 表放这儿会被静默抹掉（详见
@@ -165,6 +197,42 @@ describe('老契约后端（SettingsStore）', () => {
     expect(store.load()?.aggregateRejections).toEqual(rejections)
   })
 
+  /**
+   * ★★ **「供应商关闭意图」必须能落盘并读回**（Gitee issue IKP8OF）。
+   *
+   * ⚠️⚠️ 本用例存在的理由与上面拒绝表那条**逐字同因**：只断言「不传时写出空表」
+   * 是**恒真**的 —— 把 `save()` 里的 `providerClosed: ...` 整行删掉，那类断言
+   * **照样全绿**（实测：注入 MUTANT-M6 后 56 条全过）。
+   *
+   * 而漏键的后果是本 issue 的**原样复发**：`replace` 是整体替换语义 ⇒ 关闭意图
+   * **永不落盘**，且任何账号 / 黑名单 / 网关 / 顺序写入都会顺带把它抹掉
+   * ⇒ 重启后供应商**静默回到「已打开」**，用户无从察觉自己「又打开过」它。
+   *
+   * ⇒ 判据必须打在「**传了**必须落盘且能读回」这一半。
+   */
+  it('★★ 关闭意图在 settings 后端可落盘并读回（不能只断言「不传时为空」）', async () => {
+    let saved: Record<string, unknown> | undefined
+    const scope = {
+      get: () => saved,
+      replace: async (section: object) => { saved = section as Record<string, unknown> },
+    }
+    const store = createJetHubStore(makeCtx({ register: () => scope, describe: () => [] }))
+    await store.save({ accounts: [], disabledModels: {}, providerClosed: { cline: true } })
+
+    // ① 载荷里**必须**带上它（replace 语义下的唯一保证）。
+    expect(saved?.providerClosed, '★ save 漏了本键 ⇒ 关闭意图永不落盘').toEqual({ cline: true })
+    // ② 且能读回（不是只写进载荷、读时又丢掉）。
+    expect(store.load()?.providerClosed).toEqual({ cline: true })
+  })
+
+  /** 反向：脏值不得被当成「已关闭」（`'false'` 是 truthy，误判会让整家模型消失）。 */
+  it('★ 关闭意图只认显式 true（脏值不得让整家模型静默消失）', () => {
+    expect(sanitizeProviderClosed({ cline: true, buddy: 'false', trae: 1, qoder: null }))
+      .toEqual({ cline: true })
+    expect(sanitizeProviderClosed(['cline'])).toEqual({})
+    expect(sanitizeProviderClosed(null)).toEqual({})
+  })
+
   it('★ 拒绝表缺省时写出空表（老文档没有该键的兼容路径）', async () => {
     let saved: Record<string, unknown> | undefined
     const scope = {
@@ -203,6 +271,11 @@ describe('老契约后端（SettingsStore）', () => {
 })
 
 describe('文件后端（FileStore）', () => {
+  /**
+   * ⚠️ 这两处 `toEqual` 是**整份文档**的逐键断言（`不落盘 permanentLocks` 之类的
+   * 反例也靠它）。新增持久化键时**必须**在这里补一行 —— 否则它会以「期望值与
+   * 实际值差一个键」的形式失败，看起来像回归，其实是快照过期。
+   */
   it('写入后可被新实例读回（跨重启持久化）', async () => {
     const writer = createJetHubStore(makeCtx(undefined))
     await writer.save({ accounts: [ACCOUNT], disabledModels: { buddy: { 'glm-5.2': true } } })
@@ -216,12 +289,22 @@ describe('文件后端（FileStore）', () => {
       disabledModels: { buddy: { 'glm-5.2': true } },
       // 拒绝表缺省空表（没有任何拒绝）—— 与升级前行为一致
       aggregateRejections: {},
+      // 门控白名单缺省空表（没有手工打开的候选）—— 未接入渠道因此回到「默认不参与」
+      aggregateAllowed: {},
+      // 手工顺序表缺省空表（未自定义任何模型的顺序）
+      aggregateOrder: {},
+      // 排序模式缺省临期序 —— 与升级前行为一致
+      aggregateOrderMode: 'expiry',
       // 镜像字段缺省 false（解锁）—— 与既有行为一致
       loomyPermanentLocked: false,
       // 网关开关缺省启用 —— 与升级前行为一致
       gatewayEnabled: true,
+      // 原生搜索开关缺省启用 —— 与升级前行为一致
+      nativeWebSearchEnabled: true,
       // 顺序缺省空数组（未自定义）—— 与升级前行为一致
       providerOrder: [],
+      // 关闭意图缺省空表（没有任何供应商被关闭）：读回同值（Gitee IKP8OF）。
+      providerClosed: {},
     })
     // 落盘文本里也不该出现锁定表（它属于 permanent-locks.json）
     expect(readFileSync(statePath, 'utf-8')).not.toContain('permanentLocks')
@@ -266,6 +349,44 @@ describe('文件后端（FileStore）', () => {
       'utf-8',
     )
     expect(createJetHubStore(makeCtx(undefined)).load()?.gatewayEnabled).toBe(true)
+  })
+
+  /**
+   * 「渠道原生搜索」总开关的**持久化**守卫（PR95 审计补）。
+   *
+   * ⚠️ 本组用例的存在理由：本键加进 `JetHubState` 时**只**接了 `AccountPool`
+   * 的内存副本与 RPC，**两个后端都没接** —— 于是 `sanitizeNativeWebSearchEnabled`
+   * 有 7 条单测、却**零生产调用者**，用户关掉开关后重启**静默回到原生搜索**。
+   * 上面那组网关用例逐条同构地覆盖了整条链，本键却一条都没有；这组就是把它补成
+   * 同构的（**跨实例读回**才是有效判据 —— 只断言 `sanitize*` 的返回值是同义反复，
+   * 那 7 条单测当初全绿也正是因为这个）。
+   */
+  it('⚠️ 原生搜索开关 false 可跨实例读回（关了就是关了，含老契约后端）', async () => {
+    const writer = createJetHubStore(makeCtx(undefined))
+    await writer.save({ accounts: [], disabledModels: {}, nativeWebSearchEnabled: false })
+
+    const reader = createJetHubStore(makeCtx(undefined))
+    expect(reader.load()?.nativeWebSearchEnabled).toBe(false)
+  })
+
+  it('老文档没有原生搜索开关时缺省为启用（= 升级前行为）', () => {
+    mkdirSync(join(dir, 'jet-hub'), { recursive: true })
+    writeFileSync(
+      join(dir, 'jet-hub', 'state.json'),
+      JSON.stringify({ accounts: [], disabledModels: {} }),
+      'utf-8',
+    )
+    expect(createJetHubStore(makeCtx(undefined)).load()?.nativeWebSearchEnabled).toBe(true)
+  })
+
+  it('原生搜索开关落盘时脏值被归一化为启用', () => {
+    mkdirSync(join(dir, 'jet-hub'), { recursive: true })
+    writeFileSync(
+      join(dir, 'jet-hub', 'state.json'),
+      JSON.stringify({ accounts: [], disabledModels: {}, nativeWebSearchEnabled: 'off' }),
+      'utf-8',
+    )
+    expect(createJetHubStore(makeCtx(undefined)).load()?.nativeWebSearchEnabled).toBe(true)
   })
 
   /**
@@ -389,17 +510,19 @@ describe('文件后端（FileStore）', () => {
    * 新增 ZCode 后全套单测仍然全绿，而 `ZCODE_ACCOUNT_*` 的账号在 `state.json`
    * 缺失时会静默消失（凭据还在，只是索引建不出来，用户只能重新登录）。
    *
-   * 故本用例从**客户端唯一的 provider 清单**（`plugin-src/client/jet-hub.js`
-   * 的 `PROVIDERS`）取 id —— 派生方式与 `credits-capabilities.spec.ts` 的
-   * 「能力矩阵覆盖 PROVIDERS 中的每一个 provider」**完全一致**，只保留一处
-   * 正则，避免两处漂移。上游再加 provider 而忘记同步本表时，这里会红。
+   * 故本用例从**客户端唯一的 provider 清单**取 id —— 该清单
+   * （`plugin-src/client/jet-hub.js` 的 `PROVIDERS`）与
+   * `credits-capabilities.spec.ts` 的同名断言一样，**已改为直接读
+   * `PROVIDER_REGISTRY`**（2026-10-08），不再解析源码文本。
+   * 上游再加 provider 而忘记同步本表时，这里会红。
    */
   it('恢复表覆盖客户端 PROVIDERS 的全部 provider（从真实清单派生）', () => {
-    // ⚠️ 用 `import.meta.url` 直接拼 URL（不引 `fileURLToPath` / `dirname`）：
-    // 本文件的 import 区最容易被上游改动，少一处依赖就少一处合并冲突面。
-    const source = readFileSync(new URL('../../plugin-src/client/jet-hub.js', import.meta.url), 'utf8')
-    const allIds = [...source.matchAll(/\{\s*id:\s*'([a-z]+)',\s*label:/g)].map((m) => m[1]!)
-    // 防「正则该更新了却静默取到 0 项」这类假绿。
+    // ⚠️ 2026-10-08 改：原先从**客户端源码文本**用正则
+    // `/\{\s*id:\s*'([a-z]+)',\s*label:/g` 派生 id —— 那个字符类
+    // **不匹配连字符**，新 provider id 带 `-` 时会**静默漏算一个 id
+    // 而守卫照样全绿**。现在直接读 registry，两侧同出一源。
+    const allIds = PROVIDER_REGISTRY.map((d) => d.id)
+    // 防「清单为空导致下游断言恒真」这类假绿。
     expect(allIds.length).toBeGreaterThan(0)
 
     /**
@@ -470,11 +593,19 @@ describe('文件后端（FileStore）', () => {
       disabledModels: {},
       // 拒绝表缺省空表（没有任何拒绝）：读回同值。
       aggregateRejections: {},
+      // 三个新键同理：写盘时缺省，读回应如实带回这些默认值。
+      aggregateAllowed: {},
+      aggregateOrder: {},
+      aggregateOrderMode: 'expiry',
       loomyPermanentLocked: false,
       // 写盘时缺省即启用：读回应如实带回这个默认值。
       gatewayEnabled: true,
+      // 原生搜索开关同理：写盘时缺省即启用，读回同值。
+      nativeWebSearchEnabled: true,
       // 顺序缺省空数组（未自定义）：读回同值。
       providerOrder: [],
+      // 关闭意图缺省空表（没有任何供应商被关闭）：读回同值（Gitee IKP8OF）。
+      providerClosed: {},
     })
   })
 })
@@ -561,5 +692,279 @@ describe('归一化', () => {
     expect(sanitizeProviderOrder(null)).toEqual([])
     expect(sanitizeProviderOrder('buddy')).toEqual([])
     expect(sanitizeProviderOrder({ 0: 'buddy' })).toEqual([])
+  })
+
+  /**
+   * ★ 真实缺陷（Critical，对抗审计实测证伪）：`sanitizeAccounts` 必须按 id 去重。
+   *
+   * `id` 是账号的**唯一键**（`updateAccount` / `removeAccount` / `reorderAccounts`
+   * 全按它 `findIndex`），池里两条同 id 时第二条永远改不动、删不掉。原先只有
+   * `mergeAccounts` 内部去重，而 `replaceAll`（备份导入的**默认模式**）不去重。
+   *
+   * 后果**远不止**幽灵账号：`sinkAccountToProviderEnd` 按 id 匹配会写出
+   * `undefined` 空洞 ⇒ 该 provider 的 `getAvailableAccount` / `listAccounts`
+   * 全部抛错（整条推理链崩），且空洞经 `JSON.stringify` 变 `null`、重启后被本
+   * 函数丢弃 ⇒ **账号永久丢失**。
+   *
+   * 反向验证：去掉实现里的 `seenIds` 判断 → 本用例变红。
+   */
+  it('★ 按 id 去重：同 id 只保留首次出现的条目（池里绝不允许两条同 id）', () => {
+    const accounts = sanitizeAccounts([
+      { id: 'dup', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_D1', nickname: 'first' },
+      { id: 'dup', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_D2', nickname: 'second' },
+      { id: 'unique', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_D3' },
+    ])
+    expect(accounts.map(a => a.id)).toEqual(['dup', 'unique'])
+    // 保留的是**首次**出现的那条（不合并字段 —— 无法判断哪份更新）。
+    expect(accounts[0]!.nickname).toBe('first')
+    expect(accounts[0]!.credentialRef).toBe('BUDDY_ACCOUNT_D1')
+  })
+
+  it('★ 去重不受「同 id 但 provider 不同」影响（id 是全局唯一键，跨 provider 也去重）', () => {
+    // 账号存在**一个全局数组**里（各 provider 混排），故 id 冲突跨 provider 同样危险。
+    const accounts = sanitizeAccounts([
+      { id: 'x', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_X1' },
+      { id: 'x', provider: 'codearts', credentialRef: 'CODEARTS_ACCOUNT_X2' },
+    ])
+    expect(accounts).toHaveLength(1)
+    expect(accounts[0]!.provider).toBe('buddy')
+  })
+
+  /**
+   * ★ 真实缺陷（High，对抗审计实测证伪）：`modelRateLimits` 必须过滤脏值。
+   *
+   * 备份文件是用户可编辑的输入，原先该字段**原样透传**。非数字脏值会让 UI 与
+   * 宿主**判据分叉**：UI 用 `v > Date.now()` ⇒ 对 `'not-a-number'` 为 `false`
+   * ⇒ **不显示**「限额中」；宿主用 `now >= resetAt` 亦为 `false` ⇒ 判为**受限**、
+   * 选号时排除。用户看到「这个号完全正常」，而宿主永远不用它。
+   *
+   * 反向验证：去掉 `sanitizeModelRateLimits` → 本用例变红。
+   */
+  it('★ modelRateLimits 过滤脏值：只留有限正数（与 updateModelRateLimit 写入守卫同源）', () => {
+    const accounts = sanitizeAccounts([{
+      id: 'a', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_A',
+      modelRateLimits: {
+        'glm-5.2': 1_800_000_000_000,   // 合法：有限正数
+        'garbage': 'not-a-number',      // 字符串
+        'nan': Number.NaN,
+        'inf': Number.POSITIVE_INFINITY,
+        'neg': -1,
+        'zero': 0,
+        'null': null,
+        '': 1_800_000_000_000,          // 空 modelId
+      },
+    }])
+    expect(accounts[0]!.modelRateLimits).toEqual({ 'glm-5.2': 1_800_000_000_000 })
+  })
+
+  it('★ modelRateLimits 全为脏值时不写出该键（不留 {} 噪音）', () => {
+    const accounts = sanitizeAccounts([{
+      id: 'a', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_A',
+      modelRateLimits: { x: 'bad', y: null },
+    }])
+    expect(accounts[0]!.modelRateLimits).toBeUndefined()
+    // ⚠️ 值为 `undefined`（而非缺键）：`JSON.stringify` 会整个丢弃它，
+    // 故落盘/传输形态与「从未有过标记」完全一致。故这里**不能**断言 `in` 为 false
+    // —— 那是对内存对象形状的过度约束，与真正关心的「落盘形态」无关。
+    expect(JSON.parse(JSON.stringify(accounts[0]))).not.toHaveProperty('modelRateLimits')
+  })
+
+  it('modelRateLimits 非对象（数组/字符串/null）一律视为无标记', () => {
+    for (const raw of [[], 'x', null, 42]) {
+      const accounts = sanitizeAccounts([{
+        id: 'a', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_A', modelRateLimits: raw,
+      }])
+      expect(accounts[0]!.modelRateLimits).toBeUndefined()
+    }
+  })
+
+  it('已过期的限流标记**保留**（UI 靠它渲染「重置」按钮，清理由 sweep 负责）', () => {
+    const past = Date.now() - 60_000
+    const accounts = sanitizeAccounts([{
+      id: 'a', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_A',
+      modelRateLimits: { 'glm-5.2': past },
+    }])
+    expect(accounts[0]!.modelRateLimits).toEqual({ 'glm-5.2': past })
+  })
+
+  /**
+   * ★★ **High 回归用例**（真实缺陷，对抗审计实测证伪）：
+   * `1e308` 是「有限正数」但**超出 `Date` 范围**（上界 8.64e15），
+   * 原先的 `isFinite(v) && v > 0` 会放过它 ⇒ 落池后下次撞限流时
+   * `updateModelRateLimit` 里的 `new Date(current).toISOString()` 抛
+   * **`RangeError: Invalid time value`**，而 17 个调用点里 16 个没有 try。
+   *
+   * 反向验证：把判据改回 `Number.isFinite(v) && v > 0` → 本用例变红。
+   */
+  it('★ 超出 Date 范围的有限数必须被过滤（否则 updateModelRateLimit 抛 RangeError）', () => {
+    const accounts = sanitizeAccounts([{
+      id: 'a', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_A',
+      modelRateLimits: {
+        'too-big': 1e308,
+        'just-over': 8_640_000_000_000_001,
+        'ok': 8_640_000_000_000_000,      // 恰好等于 Date 上界 → 保留
+      },
+    }])
+    expect(accounts[0]!.modelRateLimits).toEqual({ ok: 8_640_000_000_000_000 })
+  })
+
+  it('★ isValidResetAtMs 是读写两侧共用的谓词（不再各写一份判据）', async () => {
+    const { isValidResetAtMs, MAX_DATE_MS } = await import('../../src/jet-hub-store.js')
+    expect(isValidResetAtMs(1)).toBe(true)
+    expect(isValidResetAtMs(MAX_DATE_MS)).toBe(true)
+    expect(isValidResetAtMs(MAX_DATE_MS + 1)).toBe(false)
+    expect(isValidResetAtMs(1e308)).toBe(false)
+    expect(isValidResetAtMs(0)).toBe(false)
+    expect(isValidResetAtMs(-1)).toBe(false)
+    expect(isValidResetAtMs(Number.NaN)).toBe(false)
+    expect(isValidResetAtMs(Number.POSITIVE_INFINITY)).toBe(false)
+    expect(isValidResetAtMs('123')).toBe(false)
+    expect(isValidResetAtMs(null)).toBe(false)
+    expect(isValidResetAtMs(undefined)).toBe(false)
+  })
+})
+
+/**
+ * 聚合门控白名单 / 手工顺序表 / 排序模式（用户 2026-10-15 的新功能）。
+ *
+ * ⚠️ 判据的写法照本文件的既有纪律：`sanitize*` 的返回值断言是**必要但不足**的
+ *    （`:304` 那条教训：7 条 sanitize 单测全绿、生产零调用者）——
+ *    真正的守卫是**跨实例读回**与**载荷逐键在**，见下面两组。
+ */
+describe('sanitizeAggregateAllowed（只认显式 true；空层不保留；畸形退化空表）', () => {
+  it("只留 true，false / 1 / 字符串 true 一律丢弃", () => {
+    expect(sanitizeAggregateAllowed({
+      m: { minimax: { r1: true, r2: false, r3: 1, r4: 'true' } },
+    })).toEqual({ m: { minimax: { r1: true } } })
+  })
+
+  it('空层逐级不保留（不留 { m: {} } / { m: { minimax: {} } }）', () => {
+    expect(sanitizeAggregateAllowed({ m: { minimax: {}, empty: { r: false } } })).toEqual({})
+  })
+
+  it('畸形输入一律退化空表（含数组 —— typeof [] === object）', () => {
+    expect(sanitizeAggregateAllowed([])).toEqual({})
+    expect(sanitizeAggregateAllowed('x')).toEqual({})
+    expect(sanitizeAggregateAllowed(null)).toEqual({})
+    expect(sanitizeAggregateAllowed({ m: [] })).toEqual({})
+    expect(sanitizeAggregateAllowed({ m: { minimax: [] } })).toEqual({})
+  })
+})
+
+describe('sanitizeAggregateOrder（只留含 NUL 的非空字符串，去重保序）', () => {
+  it('丢掉不含分隔符的元素、空串、非字符串与重复项', () => {
+    expect(sanitizeAggregateOrder({
+      m: ['buddy\u0000r1', 'buddy\u0000r1', 'no-separator', '', 42, 'trae\u0000r2'],
+    })).toEqual({ m: ['buddy\u0000r1', 'trae\u0000r2'] })
+  })
+
+  it('空数组 / 非数组 / 畸形一律丢键（= 未自定义）', () => {
+    expect(sanitizeAggregateOrder({ empty: [], bad: 'not-an-array' })).toEqual({})
+    expect(sanitizeAggregateOrder([])).toEqual({})
+    expect(sanitizeAggregateOrder('x')).toEqual({})
+  })
+})
+
+describe('sanitizeAggregateOrderMode（只有字面量 manual 才算手工）', () => {
+  it('逐格', () => {
+    expect(sanitizeAggregateOrderMode('manual')).toBe('manual')
+    expect(sanitizeAggregateOrderMode('expiry')).toBe('expiry')
+    expect(sanitizeAggregateOrderMode(undefined)).toBe('expiry')
+    expect(sanitizeAggregateOrderMode(null)).toBe('expiry')
+    expect(sanitizeAggregateOrderMode('MANUAL')).toBe('expiry')
+    expect(sanitizeAggregateOrderMode(1)).toBe('expiry')
+  })
+})
+
+describe('清层/白名单纯函数（`clearRejectionLayer` 只服务 D4 那一条既有路径）', () => {
+  const REJECTIONS = { m: { buddy: { driftOld: true, other: true }, trae: { a: true } } }
+
+  it('clearRejectionLayer 清的是**整渠道层**（D4：重新打开一条 = 整渠道恢复）', () => {
+    expect(clearRejectionLayer(REJECTIONS, 'm', 'buddy')).toEqual({ m: { trae: { a: true } } })
+  })
+
+  it('clearRejectionLayer 逐级删层，且**不改入参**', () => {
+    expect(clearRejectionLayer({ m: { buddy: { a: true } } }, 'm', 'buddy')).toEqual({})
+    expect(clearRejectionLayer(REJECTIONS, 'm', 'buddy')).not.toBe(REJECTIONS)
+    expect(REJECTIONS.m.buddy).toEqual({ driftOld: true, other: true })
+  })
+
+  it('clearRejectionLayer 对不存在的键是恒等（不抛错、不造空层）', () => {
+    expect(clearRejectionLayer({}, 'm', 'buddy')).toEqual({})
+    expect(clearRejectionLayer({ m: {} }, 'm', 'buddy')).toEqual({})
+  })
+
+  it('withoutAllowed 只删同键（同渠道其它候选的手工打开状态必须保留）', () => {
+    const before = { m: { minimax: { r1: true, r2: true } } }
+    expect(withoutAllowed(before, 'm', 'minimax', 'r1')).toEqual({ m: { minimax: { r2: true } } })
+    expect(withoutAllowed({ m: { minimax: { r1: true } } }, 'm', 'minimax', 'r1')).toEqual({})
+    expect(before).toEqual({ m: { minimax: { r1: true, r2: true } } })
+  })
+
+  it('withAllowed 幂等、不改入参，并能合并进已有渠道层', () => {
+    expect(withAllowed({}, 'm', 'minimax', 'r1')).toEqual({ m: { minimax: { r1: true } } })
+    expect(withAllowed(withAllowed({}, 'm', 'minimax', 'r1'), 'm', 'minimax', 'r1'))
+      .toEqual({ m: { minimax: { r1: true } } })
+    expect(withAllowed({ m: { minimax: { r1: true } } }, 'm', 'minimax', 'r2'))
+      .toEqual({ m: { minimax: { r1: true, r2: true } } })
+  })
+})
+
+describe('★ 三个新键必须在两个后端都能跨实例读回（不是只断言 sanitize）', () => {
+  const ALLOWED = { 'deepseek-v4-1-flash': { minimax: { 'MiniMax-M3': true } } }
+  const ORDER = { 'deepseek-v4-1-flash': ['minimax\u0000MiniMax-M3'] }
+
+  it('老契约后端：载荷逐键在 + 能读回', async () => {
+    let saved: Record<string, unknown> | undefined
+    const scope = {
+      get: () => saved,
+      replace: async (section: object) => { saved = section as Record<string, unknown> },
+    }
+    const store = createJetHubStore(makeCtx({ register: () => scope, describe: () => [] }))
+    await store.save({
+      accounts: [],
+      disabledModels: {},
+      aggregateAllowed: ALLOWED,
+      aggregateOrder: ORDER,
+      aggregateOrderMode: 'manual',
+    })
+
+    // ① `replace` 是整体替换语义 ⇒ 载荷漏键 = 永不落盘 + 任何写入都抹掉它
+    expect(saved?.aggregateAllowed).toEqual(ALLOWED)
+    expect(saved?.aggregateOrder).toEqual(ORDER)
+    expect(saved?.aggregateOrderMode).toBe('manual')
+    // ② 且能读回（不是只写进载荷、读时又丢掉）
+    expect(store.load()?.aggregateAllowed).toEqual(ALLOWED)
+    expect(store.load()?.aggregateOrder).toEqual(ORDER)
+    expect(store.load()?.aggregateOrderMode).toBe('manual')
+  })
+
+  it('文件后端：新实例能读回（跨重启持久化）', async () => {
+    const writer = createJetHubStore(makeCtx(undefined))
+    await writer.save({
+      accounts: [],
+      disabledModels: {},
+      aggregateAllowed: ALLOWED,
+      aggregateOrder: ORDER,
+      aggregateOrderMode: 'manual',
+    })
+
+    const reader = createJetHubStore(makeCtx(undefined))
+    expect(reader.load()?.aggregateAllowed).toEqual(ALLOWED)
+    expect(reader.load()?.aggregateOrder).toEqual(ORDER)
+    expect(reader.load()?.aggregateOrderMode).toBe('manual')
+  })
+
+  it('老文档没有这三个键时缺省为空/临期序（= 升级前行为）', () => {
+    mkdirSync(join(dir, 'jet-hub'), { recursive: true })
+    writeFileSync(
+      join(dir, 'jet-hub', 'state.json'),
+      JSON.stringify({ accounts: [], disabledModels: {} }),
+      'utf-8',
+    )
+    const state = createJetHubStore(makeCtx(undefined)).load()
+    expect(state?.aggregateAllowed).toEqual({})
+    expect(state?.aggregateOrder).toEqual({})
+    expect(state?.aggregateOrderMode).toBe('expiry')
   })
 })

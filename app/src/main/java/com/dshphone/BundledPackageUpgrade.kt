@@ -5,7 +5,7 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.LinkOption
 
-/** OFM has its own updater. An APK must not downgrade its newer installation. */
+/** Existing OFM directories belong to the guarded core/plugin transaction, never blanket APK copy. */
 internal object BundledPackageUpgrade {
     private const val INDEPENDENT = "dsh-our-free-model"
     private val releaseVersion = Regex("(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)")
@@ -30,12 +30,10 @@ internal object BundledPackageUpgrade {
         val bundled = File(bundledModules, INDEPENDENT)
         val installed = File(installedModules, INDEPENDENT)
         if (!bundled.exists() || !Files.exists(installed.toPath(), LinkOption.NOFOLLOW_LINKS)) return emptySet()
-        val next = version(bundled)
-        val current = version(installed)
-        for (index in current.indices) {
-            if (current[index] > next[index]) return setOf(INDEPENDENT)
-            if (current[index] < next[index]) return emptySet()
-        }
-        return emptySet()
+        version(bundled)
+        version(installed)
+        // Even an older/equal installation may contain reviewed local edits and
+        // extra files. migratePhoneCore owns their full preflight/backup/swap.
+        return setOf(INDEPENDENT)
     }
 }

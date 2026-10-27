@@ -2,8 +2,24 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { AGGREGATE_PROVIDER_ID, resolveBadgeProvider } from '../../plugin-src/client/badge-model.js'
 
+/**
+ * 仓库根（源码级断言用）。
+ *
+ * ⚠️ **必须用 `fileURLToPath`，不能用 `URL.pathname`**（真实缺陷，Gitee issue
+ * IKLBSH A3）：`pathname` 对路径里的空格做**百分号编码**（`D:\Vibe coding\…`
+ * → `/D:/Vibe%20coding/…`），而原先只 `replace(/^\/([A-Za-z]:)/, '$1')` 修盘符
+ * 前缀、**不修 `%20`** ⇒ `readFileSync` 对含空格路径恒 ENOENT，
+ * 而 vitest 把它报成**整份 spec 收集失败**（不是单个用例失败），
+ * 看起来像测试基建坏了而不是路径判据错了。
+ * `fileURLToPath`（`node:url` 自带）做正确的百分号解码。
+ *
+ * ⚠️ 该修复的守卫在 `tests/unit/path-source-read.spec.ts`（结构性扫描）——
+ * 因为**在本机无空格路径下把这里改回去仍全绿**（对抗审计实测 98 条绿），
+ * 逐文件的变异验证测不出它。
+ */
 const here = fileURLToPath(new URL('.', import.meta.url))
 const read = (rel) => readFileSync(resolve(here, '../..', rel), 'utf8')
 
@@ -81,15 +97,38 @@ describe('★ P3：usage-badge.js 的重定向必须在门控**之前**', () => 
     expect(redirectAt).toBeLessThan(gateAt)
   })
 
-  it('★ 无历史时整体不渲染（复用既有的空 provider 形态，不另造判据）', () => {
-    // ⚠️ 规格 §6.6：徽标的「无历史 ⇒ 不渲染」应**复用** `typeof provider !== 'string'
-    //    || provider.length === 0` 那一形态。重定向返回 null 后，`provider` 变成
-    //    null ⇒ 该既有门控天然拦掉它 ⇒ **不需要**新增一条判据。
-    // ⚠️ 实现是**就地赋回 `provider`**（不是新造 `const resolved = ...`）——
+  it('★ 无历史时改为渲染「待首次请求」占位胶囊（2026-10-08 用户报障后改口径）', () => {
+    // ⚠️ 原口径是「无历史 ⇒ 整体不渲染」（规格 §6.6：复用既有的空 provider 形态）。
+    //    用户报障「也没胶囊了？」后改成本条 —— 理由见 `usage-badge.js` 里那段注释：
+    //    徽标在本插件里是**止损工具**，整个消失会让用户分不清「聚合没在用」
+    //    与「徽标坏了」。
+    //
+    // ⚠️ 但「**不预测渠道**」这条约束**仍然成立**（规格 §6.3 的 P4 核心）：占位文案
+    //    只说「待首次请求」，不编造任何渠道名。下面同时断言两件事。
+    expect(badgeCode).toMatch(/if \(isAggregate && provider === null\) \{/)
+    // ⚠️ 实现必须仍是**就地赋回 `provider`**（不是新造 `const resolved = ...`）——
     //    因为那两行门控是既有断言**逐字钉住**的，换变量名会让
     //    `usage-badge-client.spec.ts` 的正则失配（实测撞过一次）。
     expect(badgeCode).toMatch(/provider = resolveBadgeProvider\(/)
-    expect(badgeCode).toContain('typeof provider !== \'string\' || provider.length === 0')
+    // 占位分支必须**在**空 provider 门控之前（否则 `provider === null` 会先被它 return null）。
+    const pendingAt = badgeCode.indexOf('if (isAggregate && provider === null) {')
+    const emptyGateAt = badgeCode.indexOf("typeof provider !== 'string' || provider.length === 0")
+    expect(pendingAt).toBeGreaterThan(0)
+    expect(emptyGateAt).toBeGreaterThan(0)
+    expect(pendingAt).toBeLessThan(emptyGateAt)
+    // 占位文案不得出现任何具体渠道名（那是「预测」）。
+    const pendingBlock = badgeCode.slice(pendingAt, emptyGateAt)
+    for (const p of ['buddy', 'codearts', 'zcode', 'loomy', 'workbuddy']) {
+      expect(pendingBlock, `占位胶囊不得预测渠道「${p}」`).not.toContain(p)
+    }
+  })
+
+  it('★ 非聚合的空 provider 仍然整体不渲染（既有正确行为不得被占位分支带跑）', () => {
+    // ⚠️ 占位分支的判据是 `isAggregate && provider === null` —— 非聚合时
+    //    `isAggregate` 为假 ⇒ 继续走下面的空 provider 门控 ⇒ 不渲染。
+    //    「新会话尚未选模型」那条路径的行为**逐字不变**。
+    expect(badgeCode).toMatch(/typeof provider !== 'string' \|\| provider\.length === 0/)
+    expect(badgeCode).toContain('if (!supportsCreditBalance(provider)) return null;')
   })
 
   it('★ 重定向后的真实渠道传给 UsageBadgeActive（X1：靠既有 useEffect([provider]) 重挂载）', () => {
@@ -183,5 +222,29 @@ describe('★ P3：重定向取数必须能**反复**刷新（真实缺陷回归
       expect(body, '取数成功分支里不得 clearInterval（会破坏「随切换更新」）')
         .not.toMatch(/clearInterval/)
     }
+  })
+
+  it('★★ 必须把**当前模型 id** 传给端点（否则徽标显示别的模型走过的渠道）', () => {
+    // ⚠️⚠️ **真实缺陷**（用户报障 2026-10-16）：「我们用 glm5.3 后徽标显示的 provider
+    //    是腾讯 codebuddy，不是排序的第一个 OfficeAce」。
+    //
+    // 根因：本处原先调 `readActiveProvider()` **不传参数**，而宿主
+    // `aggregate.activeProvider` 在**无参**时回 `lastActiveProvider` ——
+    // 「**任意虚拟模型**最近一次成功」的渠道，**不是你当前选中的那个模型**。
+    // ⇒ 用 GLM-5.3（手工序第一位 officeace）时，徽标显示的是**别的模型**
+    //（如 DeepSeek V4.1 Flash）上次走成功的 buddy（腾讯）。
+    //
+    // ⚠️ 宿主**本来就**按模型分开记录（`activeProviderByModel`），端点的
+    //   `canonicalId` 参数也一直存在 —— 只是客户端从来没传。
+    expect(redirectBlock, '★ 取数必须传模型 id').toMatch(/readActiveProvider\(modelId\)/)
+    expect(redirectBlock, '★ 不得退回无参调用（那正是本缺陷）')
+      .not.toMatch(/readActiveProvider\(\)/)
+    // ★ 且模型 id 必须真的来自目录快照的 `current.model`（不是另造一份来源）。
+    expect(badge, 'modelId 必须取自 current.model')
+      .toMatch(/const modelId = state\?\.current\?\.model/)
+    // ★ effect 依赖必须含 `modelId`：用户切模型时要立刻按新模型重查，
+    //   否则会一直显示旧模型的渠道（与「定时器常驻」那条需求同因）。
+    expect(redirectBlock, '★ 依赖数组必须含 modelId')
+      .toMatch(/\}, \[isAggregate, readActiveProvider, modelId\]\)/)
   })
 })

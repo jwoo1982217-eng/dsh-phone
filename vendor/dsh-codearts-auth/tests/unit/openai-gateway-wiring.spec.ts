@@ -1,3 +1,4 @@
+const alternateLoopback = process.platform === 'darwin' ? '::1' : '127.0.0.2'
 import { createServer, request } from 'node:http'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -5,6 +6,25 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mountOpenAiGateway } from '../../src/openai-gateway/index.js'
 import { disposeGatewayRuntime } from '../../src/openai-gateway/runtime.js'
+
+/**
+ * 从指定 host 连一次，返回状态码或错误码。
+ *
+ * ⚠️ 存在的理由：`gatewayAddress()` 只回传**配置字符串**，它证明不了内核真的
+ * 绑在那张网卡上（独立审计 M6 实测：`listen()` 写死 `127.0.0.1` 时，
+ * 只断言 `address()` 的用例照样全绿）。只有真实 HTTP 往返能锁住绑定面。
+ */
+function probeHost(host: string, port: number): Promise<string> {
+  return new Promise((resolve) => {
+    const req = request({ host, port, path: '/v1/models', method: 'GET', timeout: 2000 }, (res) => {
+      res.resume()
+      resolve(`HTTP ${res.statusCode ?? 0}`)
+    })
+    req.on('error', (error: NodeJS.ErrnoException) => resolve(error.code ?? error.message))
+    req.on('timeout', () => { req.destroy(); resolve('timeout') })
+    req.end()
+  })
+}
 
 /**
  * 网关的插件接线（`src/index.ts` 的 `mountOpenAiGateway(ctx)` 一行）的回归锁。
@@ -19,6 +39,14 @@ interface FakeContext {
   logger: { info: (m: string) => void; warn: (m: string) => void; error: (m: string) => void }
   llm: unknown
   effect(fn: () => unknown, name?: string): unknown
+  /**
+   * ⚠️ 必须提供：`mountOpenAiGateway()` 会经 `ctx.get('attachments')` 桥接附件服务
+   * （见 `makeGatewayAttachmentBridge`）。**缺了它整条启动链会在这一步抛**
+   * —— 而那条抛错被刻意 catch 成一条日志（网关是旁路功能），于是用例会
+   * 「通过」但**从未真的启动过网关**：任何「host/端口真的生效了吗」的断言都
+   * 得不到验证（本文件新增的 IKL7UN 用例正是这么发现的）。
+   */
+  get(name: string): unknown
 }
 
 function makeContext(): { ctx: FakeContext; cleanups: Array<() => unknown>; logs: string[] } {
@@ -36,6 +64,8 @@ function makeContext(): { ctx: FakeContext; cleanups: Array<() => unknown>; logs
       resolveModelInfo: async () => ({}),
       stream: () => { throw new Error('not used in wiring tests') },
     },
+    // 附件服务缺失：网关的文本能力不受影响（这是真实支持的降级路径）。
+    get: () => undefined,
     effect(fn) {
       const cleanup = fn()
       if (typeof cleanup === 'function') cleanups.push(cleanup)
@@ -47,6 +77,7 @@ function makeContext(): { ctx: FakeContext; cleanups: Array<() => unknown>; logs
 
 const ENV_KEYS = [
   'DSH_OPENAI_GATEWAY_PORT',
+  'DSH_OPENAI_GATEWAY_HOST',
   'DSH_OPENAI_GATEWAY_API_KEY',
   'DSH_OPENAI_GATEWAY_ENABLED',
   'DSH_JET_HUB_STATE_DIR',
@@ -60,6 +91,7 @@ beforeEach(() => {
   process.env.DSH_JET_HUB_STATE_DIR = home
   process.env.DSH_OPENAI_GATEWAY_API_KEY = 'wiring-test-key'
   delete process.env.DSH_OPENAI_GATEWAY_PORT
+  delete process.env.DSH_OPENAI_GATEWAY_HOST
   delete process.env.DSH_OPENAI_GATEWAY_ENABLED
 })
 
@@ -77,6 +109,25 @@ afterEach(async () => {
 /** 让出若干个微任务轮次，等 `applyGatewayDesiredState()` 这条异步链走完。 */
 async function settle(): Promise<void> {
   for (let i = 0; i < 10; i++) await Promise.resolve()
+}
+
+/**
+ * 在 `127.0.0.1` 上挑一个当前空闲的端口。
+ *
+ * ⚠️ 存在的理由：本文件的阴性对照要断言「`127.0.0.1:PORT` 连不上」，而
+ * 并发跑的其它测试进程可能正好占着默认端口 8326 ⇒ 那条断言会拿到 401 而
+ * **假失败**（实测在并发跑全量套件时踩到）。显式挑空闲端口即可消除这个耦合。
+ */
+async function freePort(): Promise<number> {
+  const server = createServer()
+  return new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address()
+      const port = typeof address === 'object' && address !== null ? address.port : 0
+      server.close(() => resolve(port))
+    })
+  })
 }
 
 describe('网关的插件接线', () => {
@@ -140,6 +191,65 @@ describe('网关的插件接线', () => {
 
     const { isGatewayRunning } = await import('../../src/openai-gateway/runtime.js')
     expect(isGatewayRunning()).toBe(false)
+  })
+
+  /**
+   * Issue IKL7UN 的**接线**锁：host 必须从 env 一路走到内核绑定的网卡上。
+   *
+   * ⚠️ 与 `openai-gateway-host-binding.spec.ts` 的分工：那里直接调
+   * `createOpenAiGateway()`（验证 server 用了 host），这里走**插件真实入口**
+   * `mountOpenAiGateway()` + 模块级 runtime 单例（验证 env → 配置 → 工厂 → start
+   * 这条链没断）。少了这一层，「工厂里把 host 丢掉」这种改动不会被发现。
+   *
+   * ⚠️⚠️ **`gatewayAddress()` 的断言是弱判据**（独立审计 M6/M7 实测）：它返回的是
+   * `config.host` 这个**字符串**，不是内核实际绑定的地址。把 `server.listen()`
+   * 改回写死 `'127.0.0.1'`（即把缺陷原样放回去）时，下面那条 `address()` 断言
+   * **照样通过** —— 因为配置字符串仍然是对的。
+   * ⇒ 故这里**必须再做一次真连**：从 127.0.0.2 连得上、且 127.0.0.1 连不上。
+   * 光靠 `address()` 会给人虚假的安全感（这条用例的「★」标记曾经就名不副实）。
+   */
+  it('★ DSH_OPENAI_GATEWAY_HOST 经插件入口生效（含真实连通性，不只是配置字符串）', async () => {
+    const { ctx } = makeContext()
+    // 127.0.0.2 是 Linux/macOS/Windows 上都存在的另一个回环地址（实测可绑），
+    // 用它就不必占用真实网卡，也不会与「只绑 127.0.0.1」的实现混淆。
+    process.env.DSH_OPENAI_GATEWAY_HOST = alternateLoopback
+    // ⚠️ **必须显式挑一个在 127.0.0.1 上空闲的端口**，不能用默认 8326：
+    // 下面的阴性对照要断言「127.0.0.1 连不上」，而 `127.0.0.2:PORT` 的绑定
+    // **不保留** `127.0.0.1:PORT`（不同地址、互不冲突）。若端口恰好被别的进程
+    // 或**并发跑的另一个测试进程**占用在 127.0.0.1 上，阴性对照就会拿到 401
+    // 而不是 ECONNREFUSED —— 实测在并发跑全量套件时假失败过。
+    const port = await freePort()
+    process.env.DSH_OPENAI_GATEWAY_PORT = String(port)
+
+    mountOpenAiGateway(ctx)
+    await settle()
+
+    const { isGatewayRunning, gatewayAddress } = await import('../../src/openai-gateway/runtime.js')
+    expect(isGatewayRunning()).toBe(true)
+    expect(gatewayAddress()?.host).toBe(alternateLoopback)
+    expect(gatewayAddress()?.port).toBe(port)
+
+    // ⚠️ 物理判据：真的绑在 127.0.0.2 上（401 = HTTP 往返成功、未带 key）。
+    expect(await probeHost(alternateLoopback, port)).toBe('HTTP 401')
+    // 阴性对照：写死 127.0.0.1 的实现会让这条变成 HTTP 401。
+    expect(await probeHost('127.0.0.1', port)).toBe('ECONNREFUSED')
+  })
+
+  it('★ 非法 host（通配地址）只降级为日志，绝不抛回 apply()', async () => {
+    const { ctx, logs } = makeContext()
+    process.env.DSH_OPENAI_GATEWAY_HOST = '0.0.0.0'
+
+    // 与端口非法同一条契约：网关是旁路功能，它配错不能拖垮整个插件。
+    expect(() => mountOpenAiGateway(ctx)).not.toThrow()
+    await settle()
+
+    const { isGatewayRunning } = await import('../../src/openai-gateway/runtime.js')
+    expect(isGatewayRunning()).toBe(false)
+    const text = logs.join('\n')
+    expect(text).toContain('DSH_OPENAI_GATEWAY_HOST')
+    // ⚠️ 日志必须说明「未启动」而不是只留一句环境变量名 —— 用户要能据此知道
+    // 网关没在跑（否则会以为只是没生效而反复重启）。
+    expect(text).toContain('未启动')
   })
 })
 

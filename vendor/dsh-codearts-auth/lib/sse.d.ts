@@ -43,8 +43,12 @@ export declare function readWithIdleTimeout(reader: ReadableStreamDefaultReader<
  * ⚠️ **不能用 `String(name).length > 0` 代替**：`undefined` / `null` 经 `String()`
  * 会变成 `"undefined"` / `"null"` 这类**非空**字符串，于是"缺名字"被误判成
  * "有名字"，原样发给上游照样 400。判据必须落在原始值上。
+ *
+ * ⚠️ `name is string` 这个类型谓词是**纯编译期**的收窄（运行期行为逐字节不变），
+ * 它让调用方在判过之后可以直接使用 `name` 而无需再断言 —— 网关侧因此不必写
+ * `String(...)` 或 `!`，那两种写法都会把「判据」与「取值」拆成两份、进而漂移。
  */
-export declare function hasUsableToolName(name: unknown): boolean;
+export declare function hasUsableToolName(name: unknown): name is string;
 /**
  * 判断一次响应是否为「零内容块」的退化补全，并给出 DSH 约定的 finish reason。
  *
@@ -537,6 +541,44 @@ export declare function isCourseLeakStripEnabled(): boolean;
  * （与死循环截断同一机制）。
  */
 export declare function stripCourseLeakIfEnabled(text: string): string;
+/**
+ * 对**完整字符串**做 DSML 工具调用标记归一化（幂等）。
+ *
+ * ## 为什么需要（2026-10-13 实测）
+ *
+ * DSH 的工具调用协议是模型写在正文里的文本标记（`<｜DSML｜invoke …>`，
+ * 竖线是 U+FF5C 全角竖线）。部分模型（实测 deepseek-v4.1-flash 经 OfficeAce
+ * MaaS、step-5-preview 经 CodeBuddy）会把它**写坏成双竖线** `<｜｜DSML｜｜` ——
+ * 宿主解析器不认，工具调用整段当正文显示，模型「停住不动」。
+ *
+ * 这是**分词器保真度**问题：全角双竖线常被合并成单个 token，模型难以精确
+ * 复现单根。适配器是唯一能在「进入宿主解析器之前」修正的层级。
+ *
+ * 规则（逐条对应实测的坏形态，幂等 —— 归一化后的文本再过一遍不变）：
+ * 1. `<｜{2,}DSML` → `<｜DSML`（开/闭标签左侧双竖线；`\/?` 兼容闭标签）
+ * 2. `DSML｜{2,}` → `DSML｜`（右侧双竖线）
+ */
+export declare function fixDsmlMarkers(text: string): string;
+/**
+ * {@link fixDsmlMarkers} 的**流式安全**版本。
+ *
+ * ## 为什么不能逐帧直接 `replace`
+ *
+ * 标记会被上游切成任意片段（`<｜` + `｜DSML｜` + `｜invoke…`），逐帧 replace
+ * 每帧都只见半截模式 —— 与 think 标签逐帧漏判是同一类坑（本文件上方
+ * `splitThinkTaggedContent` 的注释记录过实测：二分帧 7/11 种切法漏判）。
+ * 故这里持有**待定缓冲**：凡是可能构成模式前缀的尾部都扣住不发，等下一帧
+ * 拼齐再判。
+ *
+ * 代价：文本恰好以 `<`、`<｜`、`DSML｜` 等结尾时，最后几个字符会延迟到
+ * 下一帧（或 `flush()`）—— 对流式 UI 只是几字符的延迟，无正确性影响。
+ */
+export declare function createDsmlMarkerNormalizer(): {
+    /** 喂入一帧文本，返回可安全下发的部分（可能为空串）。 */
+    push(text: string): string;
+    /** 流结束：下发全部剩余（再做一次完整归一化兜底）。 */
+    flush(): string;
+};
 /**
  * 清洗**历史消息**里已持久化的行首泄漏；**供各适配器的序列化前调用**。
  *

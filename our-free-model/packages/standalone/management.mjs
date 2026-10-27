@@ -1,9 +1,11 @@
+import { modelAvailability } from '../../src/model-test.js'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import { buildStats } from '../../src/core/stats.js'
 import { generateKey } from '../../src/forward.js'
 import { structuralRejection } from '../../src/trust.js'
 import { openLoginTerminal } from './login-terminal.mjs'
+import { publicModelVisibility, validateModelVisibility, isModelHidden } from '../../src/store.js'
 
 const PREFIX = '/api/management'
 const BOOTSTRAP_MS = 10 * 60_000
@@ -48,10 +50,12 @@ async function readBody(req, limit = MAX_BODY_BYTES) {
 }
 
 function validateSettings(patch) {
-  const booleans = new Set(['enabled', 'exposeRegionModels', 'streamRecovery', 'standaloneProbe'])
-  const numbers = { probeIntervalMinutes: [1, 1440], defaultMaxTokens: [512, 131072] }
+  const visibility = validateModelVisibility(patch)
+  const booleans = new Set(['enabled', 'exposeRegionModels', 'streamRecovery', 'standaloneProbe', 'standaloneLanEnabled'])
+  const numbers = { probeIntervalMinutes: [1, 1440], defaultMaxTokens: [512, 131072], standaloneLanPort: [0, 65535] }
   const result = {}
   for (const [key, value] of Object.entries(patch)) {
+    if (Object.hasOwn(visibility, key)) { result[key] = visibility[key]; continue }
     if (booleans.has(key)) {
       if (typeof value !== 'boolean') throw fail(400, `${key} 必须是布尔值`)
     } else if (Object.hasOwn(numbers, key)) {
@@ -65,10 +69,13 @@ function validateSettings(patch) {
 
 export function managementSettings(value) {
   return {
+    ...publicModelVisibility(value),
     enabled: value.enabled !== false,
     exposeRegionModels: value.exposeRegionModels !== false,
     streamRecovery: value.streamRecovery !== false,
     standaloneProbe: value.standaloneProbe === true,
+    standaloneLanEnabled: value.standaloneLanEnabled === true,
+    standaloneLanPort: value.standaloneLanPort ?? 0,
     probeIntervalMinutes: value.probeIntervalMinutes ?? 15,
     defaultMaxTokens: value.defaultMaxTokens ?? 32768,
   }
@@ -137,14 +144,17 @@ export function createManagement({ stores, runtime, channels, eac, info, onSetti
       settings: managementSettings(stores.settings.get()),
       catalogSyncedAt: stores.settings.get().catalogSyncedAt ?? 0,
       probedAt: available.at ?? 0,
-      catalog: state.catalog.map(entry => ({
+      catalog: state.catalog.map(entry => {
+        const measured = modelAvailability(entry.id, available, Boolean(entry.channel))
+        return ({
         id: entry.id, name: entry.name, channel: entry.channel ?? 'anonymous',
         vision: entry.vision === true, reasoning: entry.reasoning === true || (entry.reasoning !== null && typeof entry.reasoning === 'object'),
         contextWindow: entry.contextWindow ?? entry.context_window, maxOutput: entry.maxOutput ?? entry.max_tokens,
         routable: routable.has(entry.id),
-        availability: entry.channel ? 'listed' : available.results?.[entry.id]?.state ?? 'unknown',
-        ttftMs: available.results?.[entry.id]?.ttftMs ?? null,
-      })),
+        hiddenByUser: isModelHidden(entry, state.settings),
+        hiddenByGroup: isModelHidden(entry, { ...state.settings, hiddenModelIds: [] }),
+        ...measured, availability: measured.availabilitySource === 'listing' ? 'listed' : measured.availability,
+      }) }),
     }
   }
 
@@ -199,6 +209,7 @@ export function createManagement({ stores, runtime, channels, eac, info, onSetti
         if (body.method === 'gateway.setEnabled') {
           if (typeof body.payload?.enabled !== 'boolean') throw fail(400, 'enabled 必须是布尔值')
           persist({ enabled: body.payload.enabled })
+          await onSettingsChanged()
         }
         const base = new URL(info().baseUrl)
         json(res, 200, { ok: true, value: {
@@ -234,8 +245,15 @@ export function createManagement({ stores, runtime, channels, eac, info, onSetti
     } else if (method === 'POST' && pathname === `${PREFIX}/settings`) {
       const patch = validateSettings(await readBody(req))
       persist(patch)
-      onSettingsChanged()
-      json(res, 200, { settings: managementSettings(stores.settings.get()) })
+      await onSettingsChanged()
+      json(res, 200, { settings: managementSettings(stores.settings.get()), lan: info().lan })
+    } else if (method === 'GET' && pathname === `${PREFIX}/lan/key`) {
+      json(res, 200, { key: stores.settings.get().standaloneLanKey ?? '' })
+    } else if (method === 'POST' && pathname === `${PREFIX}/lan/key/rotate`) {
+      const body = await readBody(req)
+      if (body.confirm !== true || Object.keys(body).length !== 1) throw fail(400, 'LAN key rotation requires only confirm: true')
+      persist({ standaloneLanKey: generateKey() })
+      json(res, 200, { key: stores.settings.get().standaloneLanKey })
     } else if (method === 'GET' && pathname === `${PREFIX}/key`) {
       json(res, 200, { key: stores.settings.get().forwardKey })
     } else if (method === 'POST' && pathname === `${PREFIX}/key/rotate`) {
@@ -261,18 +279,12 @@ export function createManagement({ stores, runtime, channels, eac, info, onSetti
       const controller = new AbortController()
       const abort = () => controller.abort()
       res.once('close', abort)
-      const deadline = setTimeout(abort, 60_000)
-      deadline.unref?.()
-      const started = Date.now()
       try {
-        const outcome = await runtime.complete({
-          model: body.model, signal: controller.signal,
-          openAi: { messages: [{ role: 'user', content: 'Reply with OK.' }], max_tokens: 64 },
-        })
-        if (outcome.error) throw fail(502, outcome.error)
-        json(res, 200, { ok: true, text: outcome.text.slice(0, 2000), latencyMs: Date.now() - started })
+        const result = await runtime.testModel(body.model, undefined, { signal: controller.signal })
+        if (!controller.signal.aborted) json(res, 200, result)
+      } catch (error) {
+        if (!controller.signal.aborted) throw fail(error.status === 404 ? 404 : error.code === 'TIMEOUT' ? 504 : 502, String(error.message ?? '模型测试失败'))
       } finally {
-        clearTimeout(deadline)
         res.removeListener('close', abort)
       }
     } else throw fail(404, '管理接口不存在')

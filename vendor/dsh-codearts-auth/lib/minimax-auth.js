@@ -11,13 +11,13 @@ import { Service } from '@deepseek-ai/cordis';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
 import { refreshAccountWithReconcile, } from './expiry-sync.js';
 import { MINIMAX, MINIMAX_MODELS_PATH, MINIMAX_REQUEST_TIMEOUT_MS, } from './minimax-product.js';
-import { fallbackToEntry, isMinimaxRefreshable, minimaxCredentialExpiresAtMs, minimaxHeaders, normalizeMinimaxModel, } from './minimax.js';
+import { fallbackToEntry, isMinimaxRefreshable, minimaxCredentialExpiresAtMs, describeMinimaxGeoRoute, minimaxFetch, minimaxHeadersFor, normalizeMinimaxModel, } from './minimax.js';
 import { pollMinimaxDeviceToken, refreshMinimaxCredential, startMinimaxDeviceAuthorization, } from './minimax-oauth.js';
 /**
  * 过期信息提取器（供共享实现 `refreshAccountWithReconcile` 用）。
  *
  * ⚠️ `identityOf` 的语义是「**凭据内容**」（这里是 access_token）而**不是** ref 名
- * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts:67` 记录的坑）。
+ * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts` 记录的坑）。
  *
  * ⚠️ `refreshableOf` 提供时共享实现会据此写池里的 `refreshable`。
  * MiniMax **确实有** refresh 端点，故提供它是**诚实**的
@@ -34,7 +34,7 @@ export class MinimaxRefreshTokenExpiredError extends Error {
         super(message);
         // ⚠️ `name` **必须**是 `'RefreshTokenExpiredError'`（真实缺陷，2026-09-29 修正）。
         //
-        // `src/refresh.ts:23` 的终态判据是结构化比较：
+        // `src/refresh.ts` 的终态判据是结构化比较：
         //   `if (error.name === 'RefreshTokenExpiredError') return true`
         //   `return /refresh[_ ]?token/i.test(error.message)`
         //
@@ -45,9 +45,9 @@ export class MinimaxRefreshTokenExpiredError extends Error {
         // 文案一改即静默退化，极难排查。
         //
         // 八个既有 provider 的同类类**一律**用 `'RefreshTokenExpiredError'`
-        // （`cline-auth.ts:79`、`qoder-auth.ts:83`、`lobsterai-auth.ts:88`、
-        // `loomy-auth.ts:78`、`raccoon-auth.ts:79`、`trae-auth.ts:81`、
-        // `buddy-oauth.ts:335`、`oauth.ts:91`）—— 本 provider 不应破例。
+        // （`cline-auth.ts`、`qoder-auth.ts`、`lobsterai-auth.ts`、
+        // `loomy-auth.ts`、`raccoon-auth.ts`、`trae-auth.ts`、
+        // `buddy-oauth.ts`、`oauth.ts`）—— 本 provider 不应破例。
         // 之所以能跨模块这样判，是因为判据是**字符串**而非 `instanceof`
         //（各模块的同名类是不同 identity，`instanceof` 会穿透）。
         this.name = 'RefreshTokenExpiredError';
@@ -104,7 +104,7 @@ export class MinimaxAuth extends Service {
             signal: controller.signal,
             product: this.product,
         });
-        // 与 `cline-auth.ts:230-233` 同理：结果可能早于调用方 `await` 而落定，
+        // 与 `cline-auth.ts` 同理：结果可能早于调用方 `await` 而落定，
         // 先挂空处理器避免「未处理的拒绝」告警（错误仍会传给真正的消费者）。
         //
         // ⚠️ 本例**必然**会走到这里：`close()` → `controller.abort()` →
@@ -307,12 +307,45 @@ export class MinimaxAuth extends Service {
             const url = new URL(`${this.product.apiHost}${MINIMAX_MODELS_PATH}`);
             url.searchParams.set('region', this.product.region);
             url.searchParams.set('buildEnv', this.product.buildEnv);
-            const response = await this.fetchImpl(url.toString(), {
-                headers: minimaxHeaders(credential),
+            /**
+             * ⚠️ **带传输级重试 + 保凭据跟随重定向**（两个真实缺陷的修法）。
+             *
+             * 传输级重试（2026-10-15）：「模型连接测试失败，显示 `fetch failed`」。
+             * 本机实测环境里的 HTTPS 检查代理约 **50%** 概率打断到本家的请求
+             *（`fetch failed ← SELF_SIGNED_CERT_IN_CHAIN`）⇒ 一次偶发中断就整轮失败。
+             *
+             * 保凭据跟随 3xx（2026-10-17，issue IKMEVG）：`agent.minimax.io` 恒 307 到
+             * `agent.minimaxi.com`，而 fetch 跨 origin 跟随会**剥掉 `Authorization`**
+             * ⇒ 第二跳无凭据 ⇒ 目录也拿不到（连带让 provider 在模型选择器里消失）。
+             *
+             * ⚠️ 两者合并在 `minimaxFetch` 一处，与推理 / 签到积分路径**共用同一份**
+             *（`src/minimax.ts`）—— 本文件不另写判据（同义判据分两处必然漂移）。
+             * `buildInit` 每跳重建头，保证跟随后的请求仍带凭据。
+             *
+             * ⚠️ 国际站另需附用户设置的 `X-Forwarded-For`（绕开 Akamai 按出口 IP
+             * 的地理分流）。没有它，大陆出口的用户连目录都拿不到 ⇒ provider 在模型
+             * 选择器里整个消失（这是本 issue 的另一个症状面）。
+             */
+            // ⚠️ 用 `typeof` 判一下：单测/旧接线可能传只实现部分方法的池替身，
+            //    直接 `.minimaxXff()` 会在那种替身上抛 `TypeError`（`?.` 挡不住）。
+            const pool = this.ctx.accountPool;
+            const xff = typeof pool?.minimaxXff === 'function' ? pool.minimaxXff() : undefined;
+            let geoRouted = false;
+            const response = await minimaxFetch(url.toString(), () => ({
+                headers: minimaxHeadersFor(credential, xff, this.product.id),
                 signal: AbortSignal.timeout(MINIMAX_REQUEST_TIMEOUT_MS),
+            }), {
+                fetcher: this.fetchImpl,
+                onGeoRoute: () => { geoRouted = true; },
             });
-            if (!response.ok)
+            if (!response.ok) {
+                // ⚠️ 地理路由必须留**可操作**的日志：否则用户只看到「模型列表变空」，
+                //    而真因（出口 IP 被判定为中国大陆）完全不可见。
+                if (geoRouted) {
+                    this.ctx.logger?.warn?.(`[${this.product.id}] ${describeMinimaxGeoRoute()}`);
+                }
                 return undefined;
+            }
             const body = await response.json().catch(() => undefined);
             const entries = parseMinimaxModelsPayload(body);
             // ⚠️ 远端成功但解析出 0 条时也回退兜底表（避免空列表让整个 provider 消失）
@@ -344,7 +377,7 @@ export class MinimaxAuth extends Service {
         if (pool !== undefined) {
             // ⚠ `getAvailableAccount` 返回 **`{ entry, credential }`**（两层），
             // **不是**「账号条目本身」—— 照抄既有 provider 的写法：
-            // `const available = await pool.getAvailableAccount(id, ''); available?.credential`
+            // `const available = await pool.getAvailableAccount<MinimaxCredential>(id, ''); available?.credential`
             const available = await pool.getAvailableAccount(this.product.id, '');
             if (available)
                 return available.credential;

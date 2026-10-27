@@ -4,33 +4,10 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region \0rolldown/runtime.js
-		var __create = Object.create;
-		var __defProp = Object.defineProperty;
-		var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-		var __getOwnPropNames = Object.getOwnPropertyNames;
-		var __getProtoOf = Object.getPrototypeOf;
-		var __hasOwnProp = Object.prototype.hasOwnProperty;
-		var __copyProps = (to, from, except, desc) => {
-			if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
-				key = keys[i];
-				if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
-					get: ((k) => from[k]).bind(null, key),
-					enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
-				});
-			}
-			return to;
-		};
-		var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", {
-			value: mod,
-			enumerable: true
-		}) : target, mod));
-		//#endregion
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
-		react = __toESM(react, 1);
-		let react_dom = require("react-dom");
+		let _tanstack_react_virtual = require("@tanstack/react-virtual");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		//#region lib/types/client/duration-store.js
 		/**
@@ -211,9 +188,9 @@ window.__ModuleLoader__.load({
 			"details.toolCalls": "工具调用",
 			"details.subtoolCalls": "子工具调用",
 			"details.error": "错误",
+			"details.lastAttemptError": "上次尝试错误",
 			"details.failure.auth": "API 密钥无效",
 			"details.retry": "重试",
-			"details.scheduled": "已计划",
 			"details.retryDelay": "重试延迟",
 			"details.result": "结果",
 			"details.compacted": "已压缩",
@@ -406,9 +383,9 @@ window.__ModuleLoader__.load({
 			"details.toolCalls": "Tool calls",
 			"details.subtoolCalls": "Subtool calls",
 			"details.error": "Error",
+			"details.lastAttemptError": "Last attempt error",
 			"details.failure.auth": "API key is invalid",
 			"details.retry": "Retry",
-			"details.scheduled": "Scheduled",
 			"details.retryDelay": "Retry delay",
 			"details.result": "Result",
 			"details.compacted": "Compacted",
@@ -1354,7 +1331,6 @@ window.__ModuleLoader__.load({
 				startSeq,
 				startTime,
 				started,
-				sawChunk: false,
 				blocks: [],
 				visibleBlocks: 0,
 				firstVisibleSeq: void 0,
@@ -1397,7 +1373,6 @@ window.__ModuleLoader__.load({
 		function updateChunk(state, chunk, seq, time) {
 			if (chunk.type === "usage") return {
 				...state,
-				sawChunk: true,
 				usage: addUsage$1(state.usage, chunk.usage)
 			};
 			const blocks = [...state.blocks];
@@ -1452,15 +1427,11 @@ window.__ModuleLoader__.load({
 					previousVisible = blockIsVisible(blocks[chunk.index]);
 					blocks[chunk.index] = toAssistantBlock(chunk.block);
 					break;
-				default: return {
-					...state,
-					sawChunk: true
-				};
+				default: return state;
 			}
 			const visibleBlocks = state.visibleBlocks - Number(previousVisible) + Number(blockIsVisible(blocks[changedIndex]));
 			return {
 				...state,
-				sawChunk: true,
 				blocks,
 				visibleBlocks,
 				...visibleBlocks > 0 && state.firstVisibleSeq === void 0 ? {
@@ -1481,7 +1452,6 @@ window.__ModuleLoader__.load({
 			const blocks = toAssistantBlocks(event.data.message.content);
 			return {
 				...settleTiming(state, event),
-				sawChunk: false,
 				blocks,
 				visibleBlocks: countVisibleBlocks(blocks),
 				final: match,
@@ -1555,7 +1525,7 @@ window.__ModuleLoader__.load({
 		}
 		function assistantRequest(state, node, boundary) {
 			if (!state.started) return void 0;
-			const status = node !== void 0 && node.interrupted !== true ? "complete" : state.retry !== void 0 || boundary !== void 0 ? "error" : "running";
+			const status = node !== void 0 ? node.interrupted === true ? "error" : "complete" : boundary !== void 0 ? "error" : "running";
 			return {
 				purpose: "assistant",
 				startSeq: state.startSeq,
@@ -1632,10 +1602,14 @@ window.__ModuleLoader__.load({
 				if (state === void 0) return null;
 				const node = finalNode(state, context);
 				const boundary = closedBoundary(context);
-				const partial = node === void 0 && boundary === void 0 && state.sawChunk ? {
+				const partial = node === void 0 && boundary === void 0 && state.blocks.length > 0 ? {
 					turn: state.turn,
 					step: state.step,
-					blocks: compactBlocks(state.blocks)
+					blocks: compactBlocks(state.blocks),
+					timing: {
+						stepStartTime: state.started ? state.startTime : null,
+						firstTokenTime: state.firstTokenTime ?? null
+					}
 				} : null;
 				const request = assistantRequest(state, node, boundary);
 				if (node === void 0 && partial === null && request === void 0) return null;
@@ -2380,6 +2354,7 @@ window.__ModuleLoader__.load({
 				},
 				callTime: previous === void 0 || "kind" in previous ? null : previous.time,
 				content: data.content ?? [],
+				meta: data.meta,
 				isError: data.isError === true,
 				...data.error === void 0 ? {} : { error: data.error },
 				subCalls: []
@@ -2558,1183 +2533,6 @@ window.__ModuleLoader__.load({
 		*/
 		function registerTrajectoryToolDefinition(ctx) {
 			ctx.uiConversation.events.register(trajectoryToolDefinition);
-		}
-		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+virtual-core@3.17.7/node_modules/@tanstack/virtual-core/dist/esm/lazy-measurements.js
-		function createLazyMeasurementsView(count, flat, getItemKey) {
-			const cache = new Array(count);
-			return new Proxy(cache, { get(target, prop, receiver) {
-				if (typeof prop === "string") {
-					const c = prop.charCodeAt(0);
-					if (c >= 48 && c <= 57) {
-						const i = +prop;
-						if (Number.isInteger(i) && i >= 0 && i < count) {
-							let v = target[i];
-							if (!v) {
-								const s = flat[i * 2];
-								v = target[i] = {
-									index: i,
-									key: getItemKey(i),
-									start: s,
-									size: flat[i * 2 + 1],
-									end: s + flat[i * 2 + 1],
-									lane: 0
-								};
-							}
-							return v;
-						}
-					}
-					if (prop === "length") return count;
-				}
-				return Reflect.get(target, prop, receiver);
-			} });
-		}
-		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+virtual-core@3.17.7/node_modules/@tanstack/virtual-core/dist/esm/utils.js
-		function memo$1(getDeps, fn, opts) {
-			let deps = opts.initialDeps ?? [];
-			let result;
-			let isInitial = true;
-			function memoizedFunction() {
-				const newDeps = getDeps();
-				if (!(newDeps.length !== deps.length || newDeps.some((dep, index) => deps[index] !== dep))) return result;
-				deps = newDeps;
-				result = fn(...newDeps);
-				if ((opts == null ? void 0 : opts.onChange) && !(isInitial && opts.skipInitialOnChange)) opts.onChange(result);
-				isInitial = false;
-				return result;
-			}
-			memoizedFunction.updateDeps = (newDeps) => {
-				deps = newDeps;
-			};
-			return memoizedFunction;
-		}
-		function notUndefined(value, msg) {
-			if (value === void 0) throw new Error(`Unexpected undefined${msg ? `: ${msg}` : ""}`);
-			else return value;
-		}
-		const approxEqual = (a, b) => Math.abs(a - b) < 1.01;
-		const debounce = (targetWindow, fn, ms) => {
-			let timeoutId;
-			return function(...args) {
-				targetWindow.clearTimeout(timeoutId);
-				timeoutId = targetWindow.setTimeout(() => fn.apply(this, args), ms);
-			};
-		};
-		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+virtual-core@3.17.7/node_modules/@tanstack/virtual-core/dist/esm/index.js
-		let _isIOSResult;
-		const isIOSWebKit = () => {
-			if (_isIOSResult !== void 0) return _isIOSResult;
-			if (typeof navigator === "undefined") return _isIOSResult = false;
-			if (/iP(hone|od|ad)/.test(navigator.userAgent)) return _isIOSResult = true;
-			const mtp = navigator.maxTouchPoints;
-			return _isIOSResult = navigator.platform === "MacIntel" && mtp !== void 0 && mtp > 0;
-		};
-		const getRect = (element) => {
-			const { offsetWidth, offsetHeight } = element;
-			return {
-				width: offsetWidth,
-				height: offsetHeight
-			};
-		};
-		const defaultKeyExtractor = (index) => index;
-		const defaultRangeExtractor = (range) => {
-			const start = Math.max(range.startIndex - range.overscan, 0);
-			const len = Math.min(range.endIndex + range.overscan, range.count - 1) - start + 1;
-			const arr = new Array(len);
-			for (let i = 0; i < len; i++) arr[i] = start + i;
-			return arr;
-		};
-		const observeElementRect = (instance, cb) => {
-			const element = instance.scrollElement;
-			if (!element) return;
-			const targetWindow = instance.targetWindow;
-			if (!targetWindow) return;
-			const handler = (rect) => {
-				const { width, height } = rect;
-				cb({
-					width: Math.round(width),
-					height: Math.round(height)
-				});
-			};
-			handler(getRect(element));
-			if (!targetWindow.ResizeObserver) return () => {};
-			const observer = new targetWindow.ResizeObserver((entries) => {
-				const run = () => {
-					const entry = entries[0];
-					if (entry == null ? void 0 : entry.borderBoxSize) {
-						const box = entry.borderBoxSize[0];
-						if (box) {
-							handler({
-								width: box.inlineSize,
-								height: box.blockSize
-							});
-							return;
-						}
-					}
-					handler(getRect(element));
-				};
-				instance.options.useAnimationFrameWithResizeObserver ? requestAnimationFrame(run) : run();
-			});
-			observer.observe(element, { box: "border-box" });
-			return () => {
-				observer.unobserve(element);
-			};
-		};
-		const addEventListenerOptions = { passive: true };
-		const supportsScrollend = typeof window == "undefined" ? true : "onscrollend" in window;
-		const observeOffset = (instance, cb, readOffset) => {
-			const element = instance.scrollElement;
-			if (!element) return;
-			const targetWindow = instance.targetWindow;
-			if (!targetWindow) return;
-			const registerScrollendEvent = instance.options.useScrollendEvent && supportsScrollend;
-			let offset = 0;
-			const fallback = registerScrollendEvent ? null : debounce(targetWindow, () => cb(offset, false), instance.options.isScrollingResetDelay);
-			const createHandler = (isScrolling) => () => {
-				offset = readOffset(element);
-				fallback?.();
-				cb(offset, isScrolling);
-			};
-			const handler = createHandler(true);
-			const endHandler = createHandler(false);
-			element.addEventListener("scroll", handler, addEventListenerOptions);
-			if (registerScrollendEvent) element.addEventListener("scrollend", endHandler, addEventListenerOptions);
-			return () => {
-				element.removeEventListener("scroll", handler);
-				if (registerScrollendEvent) element.removeEventListener("scrollend", endHandler);
-			};
-		};
-		const observeElementOffset = (instance, cb) => observeOffset(instance, cb, (el) => {
-			const { horizontal, isRtl } = instance.options;
-			return horizontal ? el.scrollLeft * (isRtl && -1 || 1) : el.scrollTop;
-		});
-		const measureElement = (element, entry, instance) => {
-			if (instance.options.useCachedMeasurements) {
-				const index = instance.indexFromElement(element);
-				const key = instance.options.getItemKey(index);
-				return instance.itemSizeCache.get(key) ?? instance.options.estimateSize(index);
-			}
-			if (entry == null ? void 0 : entry.borderBoxSize) {
-				const box = entry.borderBoxSize[0];
-				if (box) return Math.round(box[instance.options.horizontal ? "inlineSize" : "blockSize"]);
-			}
-			if (!entry) {
-				const index = instance.indexFromElement(element);
-				const key = instance.options.getItemKey(index);
-				const cachedSize = instance.itemSizeCache.get(key);
-				if (cachedSize !== void 0) return cachedSize;
-			}
-			return element[instance.options.horizontal ? "offsetWidth" : "offsetHeight"];
-		};
-		const scrollWithAdjustments = (offset, { adjustments = 0, behavior }, instance) => {
-			var _a, _b;
-			(_b = (_a = instance.scrollElement) == null ? void 0 : _a.scrollTo) == null || _b.call(_a, {
-				[instance.options.horizontal ? "left" : "top"]: offset + adjustments,
-				behavior
-			});
-		};
-		const elementScroll = scrollWithAdjustments;
-		var Virtualizer = class {
-			constructor(opts) {
-				this.unsubs = [];
-				this.scrollElement = null;
-				this.targetWindow = null;
-				this.isScrolling = false;
-				this.scrollState = null;
-				this.measurementsCache = [];
-				this._flatMeasurements = null;
-				this.itemSizeCache = /* @__PURE__ */ new Map();
-				this.itemSizeCacheVersion = 0;
-				this.laneAssignments = /* @__PURE__ */ new Map();
-				this.pendingMin = null;
-				this.prevLanes = void 0;
-				this.lanesChangedFlag = false;
-				this.lanesSettling = false;
-				this.pendingScrollAnchor = null;
-				this.scrollRect = null;
-				this.scrollOffset = null;
-				this.scrollDirection = null;
-				this.scrollAdjustments = 0;
-				this._iosDeferredAdjustment = 0;
-				this._iosTouching = false;
-				this._iosJustTouchEnded = false;
-				this._iosTouchEndTimerId = null;
-				this._intendedScrollOffset = null;
-				this.elementsCache = /* @__PURE__ */ new Map();
-				this.now = () => {
-					var _a, _b, _c;
-					return ((_c = (_b = (_a = this.targetWindow) == null ? void 0 : _a.performance) == null ? void 0 : _b.now) == null ? void 0 : _c.call(_b)) ?? Date.now();
-				};
-				this.observer = /* @__PURE__ */ (() => {
-					let _ro = null;
-					const get = () => {
-						if (_ro) return _ro;
-						if (!this.targetWindow || !this.targetWindow.ResizeObserver) return null;
-						return _ro = new this.targetWindow.ResizeObserver((entries) => {
-							entries.forEach((entry) => {
-								const run = () => {
-									const node = entry.target;
-									const index = this.indexFromElement(node);
-									if (!node.isConnected) {
-										this.observer.unobserve(node);
-										for (const [cacheKey, cachedNode] of this.elementsCache) if (cachedNode === node) {
-											this.elementsCache.delete(cacheKey);
-											break;
-										}
-										return;
-									}
-									if (this.shouldMeasureDuringScroll(index)) this.resizeItem(index, this.options.measureElement(node, entry, this));
-								};
-								this.options.useAnimationFrameWithResizeObserver ? requestAnimationFrame(run) : run();
-							});
-						});
-					};
-					return {
-						disconnect: () => {
-							var _a;
-							(_a = get()) == null || _a.disconnect();
-							_ro = null;
-						},
-						observe: (target) => {
-							var _a;
-							return (_a = get()) == null ? void 0 : _a.observe(target, { box: "border-box" });
-						},
-						unobserve: (target) => {
-							var _a;
-							return (_a = get()) == null ? void 0 : _a.unobserve(target);
-						}
-					};
-				})();
-				this.range = null;
-				this.setOptions = (opts2) => {
-					var _a, _b;
-					const merged = {
-						debug: false,
-						initialOffset: 0,
-						overscan: 1,
-						paddingStart: 0,
-						paddingEnd: 0,
-						scrollPaddingStart: 0,
-						scrollPaddingEnd: 0,
-						horizontal: false,
-						getItemKey: defaultKeyExtractor,
-						rangeExtractor: defaultRangeExtractor,
-						onChange: () => {},
-						measureElement,
-						initialRect: {
-							width: 0,
-							height: 0
-						},
-						scrollMargin: 0,
-						gap: 0,
-						indexAttribute: "data-index",
-						initialMeasurementsCache: [],
-						lanes: 1,
-						anchorTo: "start",
-						followOnAppend: false,
-						scrollEndThreshold: 1,
-						isScrollingResetDelay: 150,
-						enabled: true,
-						isRtl: false,
-						useScrollendEvent: false,
-						useAnimationFrameWithResizeObserver: false,
-						laneAssignmentMode: "estimate",
-						useCachedMeasurements: false
-					};
-					for (const key in opts2) {
-						const v = opts2[key];
-						if (v !== void 0) merged[key] = v;
-					}
-					const prevOptions = this.options;
-					let anchor = null;
-					let followOnAppend = null;
-					let edgeKeysChanged = false;
-					if (prevOptions !== void 0 && prevOptions.enabled && merged.enabled && merged.anchorTo === "end" && this.scrollElement !== null) {
-						const prevCount = prevOptions.count;
-						const nextCount = merged.count;
-						const measurements = this.getMeasurements();
-						const prevFirstKey = prevCount > 0 ? ((_a = measurements[0]) == null ? void 0 : _a.key) ?? prevOptions.getItemKey(0) : null;
-						const prevLastKey = prevCount > 0 ? ((_b = measurements[prevCount - 1]) == null ? void 0 : _b.key) ?? prevOptions.getItemKey(prevCount - 1) : null;
-						if (nextCount !== prevCount || prevCount > 0 && nextCount > 0 && (merged.getItemKey(0) !== prevFirstKey || merged.getItemKey(nextCount - 1) !== prevLastKey)) {
-							edgeKeysChanged = true;
-							const item = prevCount > 0 ? this.getVirtualItemForOffset(this.getScrollOffset()) ?? measurements[0] : null;
-							if (item) anchor = [item.key, this.getScrollOffset() - item.start];
-							const behavior = merged.followOnAppend === true ? "auto" : merged.followOnAppend || null;
-							if (behavior && nextCount > prevCount && this.isAtEnd(prevOptions.scrollEndThreshold) && (prevCount === 0 || merged.getItemKey(nextCount - 1) !== prevLastKey)) followOnAppend = behavior;
-						}
-					}
-					this.options = merged;
-					if (edgeKeysChanged) {
-						this.pendingMin = 0;
-						this.itemSizeCacheVersion++;
-					}
-					let anchorResolved = false;
-					let anchorDelta = 0;
-					if (anchor && this.scrollOffset !== null) {
-						const [anchorKey, anchorOffset] = anchor;
-						const newMeasurements = this.getMeasurements();
-						const { count, getItemKey } = this.options;
-						let idx = 0;
-						while (idx < count && getItemKey(idx) !== anchorKey) idx++;
-						if (idx < count) {
-							const anchorItem = newMeasurements[idx];
-							if (anchorItem) {
-								const newOffset = Math.max(0, anchorItem.start + anchorOffset);
-								if (newOffset !== this.scrollOffset) {
-									anchorDelta = newOffset - this.scrollOffset;
-									this.scrollOffset = newOffset;
-									anchorResolved = true;
-								}
-							}
-						}
-					}
-					if (anchorResolved || followOnAppend) this.pendingScrollAnchor = [
-						anchorResolved ? anchor[0] : null,
-						anchorResolved ? anchor[1] : 0,
-						followOnAppend,
-						anchorDelta
-					];
-				};
-				this.notify = (sync) => {
-					var _a, _b;
-					(_b = (_a = this.options).onChange) == null || _b.call(_a, this, sync);
-				};
-				this.maybeNotify = memo$1(() => {
-					this.calculateRange();
-					return [
-						this.isScrolling,
-						this.range ? this.range.startIndex : null,
-						this.range ? this.range.endIndex : null
-					];
-				}, (isScrolling) => {
-					this.notify(isScrolling);
-				}, {
-					key: false,
-					debug: () => this.options.debug,
-					initialDeps: [
-						this.isScrolling,
-						this.range ? this.range.startIndex : null,
-						this.range ? this.range.endIndex : null
-					]
-				});
-				this.cleanup = () => {
-					this.unsubs.filter(Boolean).forEach((d) => d());
-					this.unsubs = [];
-					this.observer.disconnect();
-					if (this.rafId != null && this.targetWindow) {
-						this.targetWindow.cancelAnimationFrame(this.rafId);
-						this.rafId = null;
-					}
-					this.scrollState = null;
-					this._iosDeferredAdjustment = 0;
-					this._iosTouching = false;
-					this._iosJustTouchEnded = false;
-					this.scrollElement = null;
-					this.targetWindow = null;
-				};
-				this._didMount = () => {
-					return () => {
-						this.cleanup();
-					};
-				};
-				this._willUpdate = () => {
-					var _a;
-					const scrollElement = this.options.enabled ? this.options.getScrollElement() : null;
-					if (this.scrollElement !== scrollElement) {
-						this.cleanup();
-						if (!scrollElement) {
-							this.maybeNotify();
-							return;
-						}
-						this.scrollElement = scrollElement;
-						if (this.scrollElement && "ownerDocument" in this.scrollElement) this.targetWindow = this.scrollElement.ownerDocument.defaultView;
-						else this.targetWindow = ((_a = this.scrollElement) == null ? void 0 : _a.window) ?? null;
-						this.elementsCache.forEach((cached) => {
-							this.observer.observe(cached);
-						});
-						this.unsubs.push(this.options.observeElementRect(this, (rect) => {
-							this.scrollRect = rect;
-							this.maybeNotify();
-						}));
-						this.unsubs.push(this.options.observeElementOffset(this, (offset, isScrolling) => {
-							if (isScrolling && this._intendedScrollOffset === null && offset === this.scrollOffset) return;
-							if (this._intendedScrollOffset !== null && Math.abs(offset - this._intendedScrollOffset) < 1.5) offset = this._intendedScrollOffset;
-							this._intendedScrollOffset = null;
-							this.scrollAdjustments = 0;
-							const prevOffset = this.getScrollOffset();
-							this.scrollDirection = isScrolling ? prevOffset === offset ? this.scrollDirection : prevOffset < offset ? "forward" : "backward" : null;
-							this.scrollOffset = offset;
-							this.isScrolling = isScrolling;
-							this._flushIosDeferredIfReady();
-							if (this.scrollState) this.scheduleScrollReconcile();
-							this.maybeNotify();
-						}));
-						if ("addEventListener" in this.scrollElement) {
-							const scrollEl = this.scrollElement;
-							const onTouchStart = () => {
-								this._iosTouching = true;
-								this._iosJustTouchEnded = false;
-								if (this._iosTouchEndTimerId !== null && this.targetWindow != null) {
-									this.targetWindow.clearTimeout(this._iosTouchEndTimerId);
-									this._iosTouchEndTimerId = null;
-								}
-							};
-							const onTouchEnd = () => {
-								this._iosTouching = false;
-								if (!isIOSWebKit() || this.targetWindow == null) return;
-								this._iosJustTouchEnded = true;
-								this._iosTouchEndTimerId = this.targetWindow.setTimeout(() => {
-									this._iosJustTouchEnded = false;
-									this._iosTouchEndTimerId = null;
-									this._flushIosDeferredIfReady();
-								}, 150);
-							};
-							scrollEl.addEventListener("touchstart", onTouchStart, addEventListenerOptions);
-							scrollEl.addEventListener("touchend", onTouchEnd, addEventListenerOptions);
-							this.unsubs.push(() => {
-								scrollEl.removeEventListener("touchstart", onTouchStart);
-								scrollEl.removeEventListener("touchend", onTouchEnd);
-								if (this._iosTouchEndTimerId !== null && this.targetWindow != null) {
-									this.targetWindow.clearTimeout(this._iosTouchEndTimerId);
-									this._iosTouchEndTimerId = null;
-								}
-							});
-						}
-						this._scrollToOffset(this.getScrollOffset(), {
-							adjustments: void 0,
-							behavior: void 0
-						});
-					}
-					const anchor = this.pendingScrollAnchor;
-					this.pendingScrollAnchor = null;
-					if (anchor && this.scrollElement && this.options.enabled) {
-						const [key, _offset, followOnAppend, anchorDelta] = anchor;
-						if (key !== null && !followOnAppend) if (isIOSWebKit() && (this.isScrolling || this._iosTouching || this._iosJustTouchEnded)) {
-							if (anchorDelta !== 0) this._iosDeferredAdjustment += anchorDelta;
-						} else this._scrollToOffset(this.getScrollOffset(), {
-							adjustments: void 0,
-							behavior: void 0
-						});
-						if (followOnAppend) this.scrollToEnd({ behavior: followOnAppend });
-					}
-				};
-				this._flushIosDeferredIfReady = () => {
-					if (this._iosDeferredAdjustment === 0) return;
-					if (this.isScrolling) return;
-					if (this._iosTouching) return;
-					if (this._iosJustTouchEnded) return;
-					const cur = this.getScrollOffset();
-					const max = this.getMaxScrollOffset();
-					if (cur < 0 || cur > max) return;
-					if (this._iosDeferredAdjustment < 0 && cur >= max - 1) {
-						this._iosDeferredAdjustment = 0;
-						return;
-					}
-					const delta = this._iosDeferredAdjustment;
-					this._iosDeferredAdjustment = 0;
-					this._scrollToOffset(cur, {
-						adjustments: this.scrollAdjustments += delta,
-						behavior: void 0
-					});
-				};
-				this.rafId = null;
-				this.getSize = () => {
-					if (!this.options.enabled) {
-						this.scrollRect = null;
-						return 0;
-					}
-					this.scrollRect = this.scrollRect ?? this.options.initialRect;
-					return this.scrollRect[this.options.horizontal ? "width" : "height"];
-				};
-				this.getScrollOffset = () => {
-					if (!this.options.enabled) {
-						this.scrollOffset = null;
-						return 0;
-					}
-					this.scrollOffset = this.scrollOffset ?? (typeof this.options.initialOffset === "function" ? this.options.initialOffset() : this.options.initialOffset);
-					return this.scrollOffset;
-				};
-				this.getMeasurementOptions = memo$1(() => [
-					this.options.count,
-					this.options.paddingStart,
-					this.options.scrollMargin,
-					this.options.getItemKey,
-					this.options.enabled,
-					this.options.lanes,
-					this.options.laneAssignmentMode,
-					this.options.gap
-				], (count, paddingStart, scrollMargin, getItemKey, enabled, lanes, laneAssignmentMode, gap) => {
-					if (this.prevLanes !== void 0 && this.prevLanes !== lanes) this.lanesChangedFlag = true;
-					this.prevLanes = lanes;
-					this.pendingMin = null;
-					return {
-						count,
-						paddingStart,
-						scrollMargin,
-						getItemKey,
-						enabled,
-						lanes,
-						laneAssignmentMode,
-						gap
-					};
-				}, { key: false });
-				this.getMeasurements = memo$1(() => [this.getMeasurementOptions(), this.itemSizeCacheVersion], ({ count, paddingStart, scrollMargin, getItemKey, enabled, lanes, laneAssignmentMode, gap }, _itemSizeCacheVersion) => {
-					const itemSizeCache = this.itemSizeCache;
-					if (!enabled) {
-						this.measurementsCache = [];
-						this.itemSizeCache.clear();
-						this.laneAssignments.clear();
-						return [];
-					}
-					if (this.laneAssignments.size > count) {
-						for (const index of this.laneAssignments.keys()) if (index >= count) this.laneAssignments.delete(index);
-					}
-					if (this.lanesChangedFlag) {
-						this.lanesChangedFlag = false;
-						this.lanesSettling = true;
-						this.measurementsCache = [];
-						this.itemSizeCache.clear();
-						this.laneAssignments.clear();
-						this.pendingMin = null;
-					}
-					if (this.measurementsCache.length === 0 && !this.lanesSettling) {
-						this.measurementsCache = this.options.initialMeasurementsCache;
-						this.measurementsCache.forEach((item) => {
-							this.itemSizeCache.set(item.key, item.size);
-						});
-					}
-					const min = this.lanesSettling ? 0 : this.pendingMin ?? 0;
-					this.pendingMin = null;
-					if (this.lanesSettling && this.measurementsCache.length === count) this.lanesSettling = false;
-					if (lanes === 1) {
-						const need = count * 2;
-						let flat = this._flatMeasurements;
-						if (!flat || flat.length < need) {
-							const next = new Float64Array(need);
-							if (flat && min > 0) next.set(flat.subarray(0, min * 2));
-							flat = next;
-							this._flatMeasurements = flat;
-						}
-						let runningStart;
-						if (min === 0) runningStart = paddingStart + scrollMargin;
-						else {
-							const prevIdx = min - 1;
-							runningStart = flat[prevIdx * 2] + flat[prevIdx * 2 + 1] + gap;
-						}
-						for (let i = min; i < count; i++) {
-							const key = getItemKey(i);
-							const measuredSize = itemSizeCache.get(key);
-							const size = typeof measuredSize === "number" ? measuredSize : this.options.estimateSize(i);
-							flat[i * 2] = runningStart;
-							flat[i * 2 + 1] = size;
-							runningStart += size + gap;
-						}
-						const view = createLazyMeasurementsView(count, flat, getItemKey);
-						this.measurementsCache = view;
-						return view;
-					}
-					const measurements = this.measurementsCache.slice(0, min);
-					const laneLastIndex = new Array(lanes).fill(void 0);
-					const laneEnds = new Float64Array(lanes);
-					let filledLanes = 0;
-					for (let m = 0; m < min; m++) {
-						const item = measurements[m];
-						if (item) {
-							if (laneLastIndex[item.lane] === void 0) filledLanes++;
-							laneLastIndex[item.lane] = m;
-							laneEnds[item.lane] = item.end;
-						}
-					}
-					for (let i = min; i < count; i++) {
-						const key = getItemKey(i);
-						const cachedLane = this.laneAssignments.get(i);
-						let lane;
-						let start;
-						const shouldCacheLane = laneAssignmentMode === "estimate" || itemSizeCache.has(key);
-						if (cachedLane !== void 0 && this.options.lanes > 1) {
-							lane = cachedLane;
-							const prevIndex = laneLastIndex[lane];
-							const prevInLane = prevIndex !== void 0 ? measurements[prevIndex] : void 0;
-							start = prevInLane ? prevInLane.end + gap : paddingStart + scrollMargin;
-						} else if (filledLanes === lanes) {
-							let bestLane = 0;
-							let bestEnd = laneEnds[0];
-							let bestIdx = laneLastIndex[0];
-							for (let l = 1; l < lanes; l++) {
-								const e = laneEnds[l];
-								if (e < bestEnd || e === bestEnd && laneLastIndex[l] < bestIdx) {
-									bestLane = l;
-									bestEnd = e;
-									bestIdx = laneLastIndex[l];
-								}
-							}
-							lane = bestLane;
-							start = bestEnd + gap;
-							if (shouldCacheLane) this.laneAssignments.set(i, lane);
-						} else {
-							lane = i % this.options.lanes;
-							start = paddingStart + scrollMargin;
-							if (shouldCacheLane) this.laneAssignments.set(i, lane);
-						}
-						const measuredSize = itemSizeCache.get(key);
-						const size = typeof measuredSize === "number" ? measuredSize : this.options.estimateSize(i);
-						const end = start + size;
-						measurements[i] = {
-							index: i,
-							start,
-							size,
-							end,
-							key,
-							lane
-						};
-						if (laneLastIndex[lane] === void 0) filledLanes++;
-						laneLastIndex[lane] = i;
-						laneEnds[lane] = end;
-					}
-					this.measurementsCache = measurements;
-					return measurements;
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.calculateRange = memo$1(() => [
-					this.getMeasurements(),
-					this.getSize(),
-					this.getScrollOffset(),
-					this.options.lanes
-				], (measurements, outerSize, scrollOffset, lanes) => {
-					if (measurements.length === 0 || outerSize === 0) {
-						this.range = null;
-						return null;
-					}
-					this.range = calculateRangeImpl(measurements, outerSize, scrollOffset, lanes, lanes === 1 && this._flatMeasurements != null ? this._flatMeasurements : null);
-					return this.range;
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.getVirtualIndexes = memo$1(() => {
-					let startIndex = null;
-					let endIndex = null;
-					const range = this.calculateRange();
-					if (range) {
-						startIndex = range.startIndex;
-						endIndex = range.endIndex;
-					}
-					this.maybeNotify.updateDeps([
-						this.isScrolling,
-						startIndex,
-						endIndex
-					]);
-					return [
-						this.options.rangeExtractor,
-						this.options.overscan,
-						this.options.count,
-						startIndex,
-						endIndex
-					];
-				}, (rangeExtractor, overscan, count, startIndex, endIndex) => {
-					return startIndex === null || endIndex === null ? [] : rangeExtractor({
-						startIndex,
-						endIndex,
-						overscan,
-						count
-					});
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.indexFromElement = (node) => {
-					const attributeName = this.options.indexAttribute;
-					const indexStr = node.getAttribute(attributeName);
-					if (!indexStr) {
-						console.warn(`Missing attribute name '${attributeName}={index}' on measured element.`);
-						return -1;
-					}
-					return parseInt(indexStr, 10);
-				};
-				this.shouldMeasureDuringScroll = (index) => {
-					var _a;
-					if (!this.scrollState || this.scrollState.behavior !== "smooth") return true;
-					const scrollIndex = this.scrollState.index ?? ((_a = this.getVirtualItemForOffset(this.scrollState.lastTargetOffset)) == null ? void 0 : _a.index);
-					if (scrollIndex !== void 0 && this.range) {
-						const bufferSize = Math.max(this.options.overscan, Math.ceil((this.range.endIndex - this.range.startIndex) / 2));
-						const minIndex = Math.max(0, scrollIndex - bufferSize);
-						const maxIndex = Math.min(this.options.count - 1, scrollIndex + bufferSize);
-						return index >= minIndex && index <= maxIndex;
-					}
-					return true;
-				};
-				this.measureElement = (node) => {
-					if (!node) {
-						this.elementsCache.forEach((cached, key2) => {
-							if (!cached.isConnected) {
-								this.observer.unobserve(cached);
-								this.elementsCache.delete(key2);
-							}
-						});
-						return;
-					}
-					const index = this.indexFromElement(node);
-					const key = this.options.getItemKey(index);
-					const prevNode = this.elementsCache.get(key);
-					if (prevNode !== node) {
-						if (prevNode) this.observer.unobserve(prevNode);
-						this.observer.observe(node);
-						this.elementsCache.set(key, node);
-					}
-					if ((!this.isScrolling || this.scrollState) && this.shouldMeasureDuringScroll(index)) this.resizeItem(index, this.options.measureElement(node, void 0, this));
-				};
-				this.resizeItem = (index, size) => {
-					var _a, _b;
-					if (index < 0 || index >= this.options.count) return;
-					let cachedSize;
-					let itemStart;
-					let key;
-					const flat = this._flatMeasurements;
-					if (this.options.lanes === 1 && flat !== null) {
-						key = this.options.getItemKey(index);
-						itemStart = flat[index * 2];
-						cachedSize = flat[index * 2 + 1];
-					} else {
-						const item = this.measurementsCache[index];
-						if (!item) return;
-						key = item.key;
-						itemStart = item.start;
-						cachedSize = item.size;
-					}
-					const itemSize = this.itemSizeCache.get(key) ?? cachedSize;
-					const delta = size - itemSize;
-					if (delta !== 0) {
-						const wasAtEnd = this.options.anchorTo === "end" && ((_a = this.scrollState) == null ? void 0 : _a.behavior) !== "smooth" && this.getVirtualDistanceFromEnd() <= this.options.scrollEndThreshold;
-						const prevTotalSize = wasAtEnd ? this.getTotalSize() : 0;
-						const scrollOffsetWithAdj = this.getScrollOffset() + this.scrollAdjustments;
-						const defaultShouldAdjust = !this.itemSizeCache.has(key) ? itemStart < scrollOffsetWithAdj : itemStart + itemSize <= scrollOffsetWithAdj && this.scrollDirection !== "backward";
-						const shouldAdjustScroll = ((_b = this.scrollState) == null ? void 0 : _b.behavior) !== "smooth" && (this.shouldAdjustScrollPositionOnItemSizeChange !== void 0 ? this.shouldAdjustScrollPositionOnItemSizeChange(this.measurementsCache[index] ?? {
-							index,
-							key,
-							start: itemStart,
-							size: cachedSize,
-							end: itemStart + cachedSize,
-							lane: 0
-						}, delta, this) : defaultShouldAdjust);
-						if (this.pendingMin === null || index < this.pendingMin) this.pendingMin = index;
-						this.itemSizeCache.set(key, size);
-						this.itemSizeCacheVersion++;
-						let adjustedSync = false;
-						if (wasAtEnd) adjustedSync = this.applyScrollAdjustment(this.getTotalSize() - prevTotalSize);
-						else if (shouldAdjustScroll) adjustedSync = this.applyScrollAdjustment(delta);
-						this.notify(adjustedSync);
-					}
-				};
-				this.getVirtualItems = memo$1(() => [this.getVirtualIndexes(), this.getMeasurements()], (indexes, measurements) => {
-					const virtualItems = [];
-					for (let k = 0, len = indexes.length; k < len; k++) {
-						const measurement = measurements[indexes[k]];
-						virtualItems.push(measurement);
-					}
-					return virtualItems;
-				}, {
-					key: false,
-					debug: () => this.options.debug
-				});
-				this.getVirtualItemForOffset = (offset) => {
-					const measurements = this.getMeasurements();
-					if (measurements.length === 0) return;
-					const flat = this._flatMeasurements;
-					const useFlat = this.options.lanes === 1 && flat != null;
-					return notUndefined(measurements[findNearestBinarySearch(0, measurements.length - 1, useFlat ? (i) => flat[i * 2] : (i) => notUndefined(measurements[i]).start, offset)]);
-				};
-				this.getMaxScrollOffset = () => {
-					if (!this.scrollElement) return 0;
-					if ("scrollHeight" in this.scrollElement) return this.options.horizontal ? this.scrollElement.scrollWidth - this.scrollElement.clientWidth : this.scrollElement.scrollHeight - this.scrollElement.clientHeight;
-					else {
-						const doc = this.scrollElement.document.documentElement;
-						return this.options.horizontal ? doc.scrollWidth - this.scrollElement.innerWidth : doc.scrollHeight - this.scrollElement.innerHeight;
-					}
-				};
-				this.getVirtualDistanceFromEnd = () => {
-					return Math.max(this.getTotalSize() - this.getSize() - this.getScrollOffset(), 0);
-				};
-				this.getDistanceFromEnd = () => {
-					return Math.max(this.getMaxScrollOffset() - this.getScrollOffset(), 0);
-				};
-				this.isAtEnd = (threshold = this.options.scrollEndThreshold) => {
-					return this.getDistanceFromEnd() <= threshold;
-				};
-				this.getOffsetForAlignment = (toOffset, align, itemSize = 0) => {
-					if (!this.scrollElement) return 0;
-					const size = this.getSize();
-					const scrollOffset = this.getScrollOffset();
-					if (align === "auto") align = toOffset >= scrollOffset + size ? "end" : "start";
-					if (align === "center") toOffset += (itemSize - size) / 2;
-					else if (align === "end") toOffset -= size;
-					const maxOffset = this.getMaxScrollOffset();
-					return Math.max(Math.min(maxOffset, toOffset), 0);
-				};
-				this.getOffsetForIndex = (index, align = "auto") => {
-					index = Math.max(0, Math.min(index, this.options.count - 1));
-					const size = this.getSize();
-					const scrollOffset = this.getScrollOffset();
-					const item = this.measurementsCache[index];
-					if (!item) return;
-					if (align === "auto") if (item.end >= scrollOffset + size - this.options.scrollPaddingEnd) align = "end";
-					else if (item.start <= scrollOffset + this.options.scrollPaddingStart) align = "start";
-					else return [scrollOffset, align];
-					if (align === "end" && index === this.options.count - 1) return [this.getMaxScrollOffset(), align];
-					const toOffset = align === "end" ? item.end + this.options.scrollPaddingEnd : item.start - this.options.scrollPaddingStart;
-					return [this.getOffsetForAlignment(toOffset, align, item.size), align];
-				};
-				this.scrollToOffset = (toOffset, { align = "start", behavior = "auto" } = {}) => {
-					this._iosDeferredAdjustment = 0;
-					const offset = this.getOffsetForAlignment(toOffset, align);
-					const now = this.now();
-					this.scrollState = {
-						index: null,
-						align,
-						behavior,
-						startedAt: now,
-						lastTargetOffset: offset,
-						stableFrames: 0
-					};
-					this._scrollToOffset(offset, {
-						adjustments: void 0,
-						behavior
-					});
-					this.scheduleScrollReconcile();
-				};
-				this.scrollToIndex = (index, { align: initialAlign = "auto", behavior = "auto" } = {}) => {
-					this._iosDeferredAdjustment = 0;
-					index = Math.max(0, Math.min(index, this.options.count - 1));
-					const offsetInfo = this.getOffsetForIndex(index, initialAlign);
-					if (!offsetInfo) return;
-					const [offset, align] = offsetInfo;
-					const now = this.now();
-					this.scrollState = {
-						index,
-						align,
-						behavior,
-						startedAt: now,
-						lastTargetOffset: offset,
-						stableFrames: 0
-					};
-					this._scrollToOffset(offset, {
-						adjustments: void 0,
-						behavior
-					});
-					this.scheduleScrollReconcile();
-				};
-				this.scrollBy = (delta, { behavior = "auto" } = {}) => {
-					const offset = this.getScrollOffset() + delta;
-					const now = this.now();
-					this.scrollState = {
-						index: null,
-						align: "start",
-						behavior,
-						startedAt: now,
-						lastTargetOffset: offset,
-						stableFrames: 0
-					};
-					this._scrollToOffset(offset, {
-						adjustments: void 0,
-						behavior
-					});
-					this.scheduleScrollReconcile();
-				};
-				this.scrollToEnd = ({ behavior = "auto" } = {}) => {
-					if (this.options.count > 0) {
-						this.scrollToIndex(this.options.count - 1, {
-							align: "end",
-							behavior
-						});
-						return;
-					}
-					this.scrollToOffset(Math.max(this.getTotalSize() - this.getSize(), 0), { behavior });
-				};
-				this.getTotalSize = () => {
-					var _a;
-					const measurements = this.getMeasurements();
-					let end;
-					if (measurements.length === 0) end = this.options.paddingStart;
-					else if (this.options.lanes === 1) {
-						const lastIdx = measurements.length - 1;
-						const flat = this._flatMeasurements;
-						if (flat != null) end = flat[lastIdx * 2] + flat[lastIdx * 2 + 1];
-						else end = ((_a = measurements[lastIdx]) == null ? void 0 : _a.end) ?? 0;
-					} else {
-						const endByLane = Array(this.options.lanes).fill(null);
-						let endIndex = measurements.length - 1;
-						while (endIndex >= 0 && endByLane.some((val) => val === null)) {
-							const item = measurements[endIndex];
-							if (endByLane[item.lane] === null) endByLane[item.lane] = item.end;
-							endIndex--;
-						}
-						end = Math.max(...endByLane.filter((val) => val !== null));
-					}
-					return Math.max(end - this.options.scrollMargin + this.options.paddingEnd, 0);
-				};
-				this.takeSnapshot = () => {
-					const snapshot = [];
-					if (this.itemSizeCache.size === 0) return snapshot;
-					const m = this.getMeasurements();
-					for (const item of m) if (item && this.itemSizeCache.has(item.key)) snapshot.push({
-						index: item.index,
-						key: item.key,
-						start: item.start,
-						size: item.size,
-						end: item.end,
-						lane: item.lane
-					});
-					return snapshot;
-				};
-				this._scrollToOffset = (offset, { adjustments, behavior }) => {
-					this._intendedScrollOffset = offset + (adjustments ?? 0);
-					this.options.scrollToFn(offset, {
-						behavior,
-						adjustments
-					}, this);
-				};
-				this.measure = () => {
-					this.pendingMin = null;
-					this.itemSizeCache.clear();
-					this.laneAssignments.clear();
-					this.itemSizeCacheVersion++;
-					this.notify(false);
-				};
-				this.setOptions(opts);
-			}
-			applyScrollAdjustment(delta, behavior) {
-				if (delta === 0) return false;
-				if (isIOSWebKit() && (this.isScrolling || this._iosTouching || this._iosJustTouchEnded)) {
-					this._iosDeferredAdjustment += delta;
-					return false;
-				} else {
-					this._scrollToOffset(this.getScrollOffset(), {
-						adjustments: this.scrollAdjustments += delta,
-						behavior
-					});
-					if (this.scrollOffset !== null) {
-						this.scrollOffset += this.scrollAdjustments;
-						if (this.scrollOffset < 0) this.scrollOffset = 0;
-						this.scrollAdjustments = 0;
-					}
-					return true;
-				}
-			}
-			scheduleScrollReconcile() {
-				if (!this.targetWindow) {
-					this.scrollState = null;
-					return;
-				}
-				if (this.rafId != null) return;
-				this.rafId = this.targetWindow.requestAnimationFrame(() => {
-					this.rafId = null;
-					this.reconcileScroll();
-				});
-			}
-			reconcileScroll() {
-				if (!this.scrollState) return;
-				if (!this.scrollElement) return;
-				if (this.now() - this.scrollState.startedAt > 5e3) {
-					this.scrollState = null;
-					return;
-				}
-				const offsetInfo = this.scrollState.index != null ? this.getOffsetForIndex(this.scrollState.index, this.scrollState.align) : void 0;
-				const targetOffset = offsetInfo ? offsetInfo[0] : this.scrollState.lastTargetOffset;
-				const STABLE_FRAMES = 1;
-				const targetChanged = targetOffset !== this.scrollState.lastTargetOffset;
-				if (!targetChanged && approxEqual(targetOffset, this.getScrollOffset())) {
-					this.scrollState.stableFrames++;
-					if (this.scrollState.stableFrames >= STABLE_FRAMES) {
-						if (this.getScrollOffset() !== targetOffset) this._scrollToOffset(targetOffset, {
-							adjustments: void 0,
-							behavior: "auto"
-						});
-						this.scrollState = null;
-						return;
-					}
-				} else {
-					this.scrollState.stableFrames = 0;
-					if (targetChanged) {
-						const viewport = this.getSize() || 600;
-						const distance = Math.abs(targetOffset - this.getScrollOffset());
-						const keepSmooth = this.scrollState.behavior === "smooth" && distance > viewport;
-						this.scrollState.lastTargetOffset = targetOffset;
-						if (!keepSmooth) this.scrollState.behavior = "auto";
-						this._scrollToOffset(targetOffset, {
-							adjustments: void 0,
-							behavior: keepSmooth ? "smooth" : "auto"
-						});
-					}
-				}
-				this.scheduleScrollReconcile();
-			}
-		};
-		const findNearestBinarySearch = (low, high, getCurrentValue, value) => {
-			while (low <= high) {
-				const middle = (low + high) / 2 | 0;
-				const currentValue = getCurrentValue(middle);
-				if (currentValue < value) low = middle + 1;
-				else if (currentValue > value) high = middle - 1;
-				else return middle;
-			}
-			if (low > 0) return low - 1;
-			else return 0;
-		};
-		function findNearestBinarySearchFlat(flat, high, value) {
-			let low = 0;
-			while (low <= high) {
-				const middle = (low + high) / 2 | 0;
-				const currentValue = flat[middle * 2];
-				if (currentValue < value) low = middle + 1;
-				else if (currentValue > value) high = middle - 1;
-				else return middle;
-			}
-			return low > 0 ? low - 1 : 0;
-		}
-		function calculateRangeImpl(measurements, outerSize, scrollOffset, lanes, flat) {
-			const lastIndex = measurements.length - 1;
-			if (measurements.length <= lanes) return {
-				startIndex: 0,
-				endIndex: lastIndex
-			};
-			if (lanes === 1 && flat !== null) {
-				const startIndex2 = findNearestBinarySearchFlat(flat, lastIndex, scrollOffset);
-				let endIndex2 = startIndex2;
-				const limit = scrollOffset + outerSize;
-				while (endIndex2 < lastIndex && flat[endIndex2 * 2] + flat[endIndex2 * 2 + 1] < limit) endIndex2++;
-				return {
-					startIndex: startIndex2,
-					endIndex: endIndex2
-				};
-			}
-			const getStart = (index) => measurements[index].start;
-			let startIndex = findNearestBinarySearch(0, lastIndex, getStart, scrollOffset);
-			let endIndex = startIndex;
-			if (lanes === 1) while (endIndex < lastIndex && measurements[endIndex].end < scrollOffset + outerSize) endIndex++;
-			else if (lanes > 1) {
-				const endPerLane = Array(lanes).fill(0);
-				while (endIndex < lastIndex && endPerLane.some((pos) => pos < scrollOffset + outerSize)) {
-					const item = measurements[endIndex];
-					endPerLane[item.lane] = item.end;
-					endIndex++;
-				}
-				const startPerLane = Array(lanes).fill(scrollOffset + outerSize);
-				while (startIndex >= 0 && startPerLane.some((pos) => pos >= scrollOffset)) {
-					const item = measurements[startIndex];
-					startPerLane[item.lane] = item.start;
-					startIndex--;
-				}
-				startIndex = Math.max(0, startIndex - startIndex % lanes);
-				endIndex = Math.min(lastIndex, endIndex + (lanes - 1 - endIndex % lanes));
-			}
-			return {
-				startIndex,
-				endIndex
-			};
-		}
-		//#endregion
-		//#region ../../../node_modules/.pnpm/@tanstack+react-virtual@3.14.9_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/@tanstack/react-virtual/dist/esm/index.js
-		const useIsomorphicLayoutEffect = typeof document !== "undefined" ? react.useLayoutEffect : react.useEffect;
-		function useVirtualizerBase({ useFlushSync = true, directDomUpdates = false, directDomUpdatesMode = "transform", ...options }) {
-			const rerender = react.useReducer((x) => x + 1, 0)[1];
-			const directRef = react.useRef({
-				enabled: directDomUpdates,
-				mode: directDomUpdatesMode,
-				container: null,
-				lastSize: null,
-				lastPositions: /* @__PURE__ */ new WeakMap(),
-				prevRange: null
-			});
-			directRef.current.enabled = directDomUpdates;
-			directRef.current.mode = directDomUpdatesMode;
-			const applyContainerSize = (instance2) => {
-				const state = directRef.current;
-				if (!state.enabled || !state.container) return;
-				const totalSize = instance2.getTotalSize();
-				if (totalSize !== state.lastSize) {
-					state.lastSize = totalSize;
-					const sizeAxis = instance2.options.horizontal ? "width" : "height";
-					state.container.style[sizeAxis] = `${totalSize}px`;
-				}
-			};
-			const applyDirectStyles = (instance2) => {
-				const state = directRef.current;
-				if (!state.enabled || !state.container) return;
-				applyContainerSize(instance2);
-				const horizontal = !!instance2.options.horizontal;
-				const useTransform = state.mode === "transform";
-				const posAxis = horizontal ? "left" : "top";
-				const scrollMargin = instance2.options.scrollMargin;
-				const items = instance2.getVirtualItems();
-				for (const item of items) {
-					const next = item.start - scrollMargin;
-					const el = instance2.elementsCache.get(item.key);
-					if (!el) continue;
-					if (state.lastPositions.get(el) === next) continue;
-					state.lastPositions.set(el, next);
-					if (useTransform) el.style.transform = horizontal ? `translate3d(${next}px, 0, 0)` : `translate3d(0, ${next}px, 0)`;
-					else el.style[posAxis] = `${next}px`;
-				}
-			};
-			const resolvedOptions = {
-				...options,
-				onChange: (instance2, sync) => {
-					var _a;
-					const state = directRef.current;
-					let shouldRerender = true;
-					if (state.enabled) {
-						applyDirectStyles(instance2);
-						const range = instance2.range;
-						const prev = state.prevRange;
-						shouldRerender = !prev || prev.isScrolling !== instance2.isScrolling || prev.startIndex !== (range == null ? void 0 : range.startIndex) || prev.endIndex !== (range == null ? void 0 : range.endIndex);
-						if (shouldRerender) state.prevRange = range ? {
-							startIndex: range.startIndex,
-							endIndex: range.endIndex,
-							isScrolling: instance2.isScrolling
-						} : null;
-					}
-					if (shouldRerender) if (useFlushSync && sync) (0, react_dom.flushSync)(rerender);
-					else rerender();
-					(_a = options.onChange) == null || _a.call(options, instance2, sync);
-				}
-			};
-			const [instance] = react.useState(() => {
-				const v = new Virtualizer(resolvedOptions);
-				return Object.assign(v, { containerRef: (node) => {
-					const state = directRef.current;
-					state.container = node;
-					state.lastSize = null;
-					if (node && state.enabled) {
-						const total = v.getTotalSize();
-						state.lastSize = total;
-						const axis = v.options.horizontal ? "width" : "height";
-						node.style[axis] = `${total}px`;
-					}
-				} });
-			});
-			instance.setOptions(resolvedOptions);
-			useIsomorphicLayoutEffect(() => {
-				return instance._didMount();
-			}, []);
-			useIsomorphicLayoutEffect(() => {
-				applyContainerSize(instance);
-				return instance._willUpdate();
-			});
-			useIsomorphicLayoutEffect(() => {
-				applyDirectStyles(instance);
-			});
-			return instance;
-		}
-		function useVirtualizer(options) {
-			return useVirtualizerBase({
-				observeElementRect,
-				observeElementOffset,
-				scrollToFn: elementScroll,
-				...options
-			});
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/diff@9.0.0/node_modules/diff/libesm/diff/base.js
@@ -5076,6 +3874,7 @@ window.__ModuleLoader__.load({
 		function stateOf(record) {
 			if (record.cell.isError) return "error";
 			if (record.cell.kind === "compacted" && record.cell.timeSeconds === null) return "running";
+			if (record.cell.assistantMetrics?.completedTime === null) return "running";
 			if ((record.cell.kind === "tool" || record.cell.kind === "subtool") && record.cell.outputDetail === void 0) return "running";
 			return "complete";
 		}
@@ -5452,7 +4251,7 @@ window.__ModuleLoader__.load({
 				}];
 			});
 		}
-		function RecordAttachments({ blocks, preview, renderImages, t }) {
+		function RecordAttachments({ blocks, preview, renderSlot, loadImage, t }) {
 			const attachments = recordAttachments(blocks, t);
 			if (attachments.length === 0) return null;
 			return (0, react_jsx_runtime.jsx)("ul", {
@@ -5460,13 +4259,14 @@ window.__ModuleLoader__.load({
 				"aria-label": t("attachment.list"),
 				children: attachments.map(({ block, index, name, metadata }) => (0, react_jsx_runtime.jsxs)("li", {
 					className: TrajectoryTable_module_css_default.attachmentRow,
-					children: [block.attachment !== void 0 ? renderImages({
+					children: [block.attachment !== void 0 ? renderSlot("conversation.trajectory.images", {
 						images: [{
 							attachment: block.attachment,
 							label: name
 						}],
 						align: "start",
-						thumbnail: true
+						thumbnail: true,
+						loadImage
 					}) : (0, react_jsx_runtime.jsx)("span", {
 						className: TrajectoryTable_module_css_default.attachmentIcon,
 						children: (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.FileTypeIcon, { path: name })
@@ -5642,7 +4442,7 @@ window.__ModuleLoader__.load({
 				})]
 			});
 		}
-		function ToolOutputBlocks({ blocks, error, errorDetail, preview, renderImages }) {
+		function ToolOutputBlocks({ blocks, error, errorDetail, preview, renderSlot, loadImage }) {
 			return (0, react_jsx_runtime.jsxs)("div", {
 				className: [
 					TrajectoryTable_module_css_default.resultBlocks,
@@ -5654,9 +4454,10 @@ window.__ModuleLoader__.load({
 					children: errorDetail
 				}), blocks.map((block, index) => block.attachment !== void 0 ? (0, react_jsx_runtime.jsx)("div", {
 					className: TrajectoryTable_module_css_default.messageImages,
-					children: renderImages({
+					children: renderSlot("conversation.trajectory.images", {
 						images: [{ attachment: block.attachment }],
-						align: "start"
+						align: "start",
+						loadImage
 					})
 				}, index) : block.content !== "" ? (0, react_jsx_runtime.jsx)("pre", {
 					className: TrajectoryTable_module_css_default.resultBlockText,
@@ -5664,7 +4465,7 @@ window.__ModuleLoader__.load({
 				}, index) : null)]
 			});
 		}
-		function MarkdownRecordContent({ record, rendered, preview = false, thinkingExpanded, onThinkingExpandedChange, onOpenCall, renderImages, t }) {
+		function MarkdownRecordContent({ record, rendered, preview = false, thinkingExpanded, onThinkingExpandedChange, onOpenCall, renderSlot, loadImage, t }) {
 			if (record.cell.sourceBlocks?.length && record.cell.sourceBlocks.every((block) => block.type === "tool-addition" || block.type === "tool-removal")) return (0, react_jsx_runtime.jsx)("pre", {
 				className: `${TrajectoryTable_module_css_default.payload} ${TrajectoryTable_module_css_default.toolUpdatePayload}`,
 				children: record.cell.inputDetail
@@ -5723,7 +4524,8 @@ window.__ModuleLoader__.load({
 						(0, react_jsx_runtime.jsx)(RecordAttachments, {
 							blocks: record.cell.sourceBlocks,
 							preview,
-							renderImages,
+							renderSlot,
+							loadImage,
 							t
 						})
 					]
@@ -5761,7 +4563,8 @@ window.__ModuleLoader__.load({
 				(0, react_jsx_runtime.jsx)(RecordAttachments, {
 					blocks: record.cell.sourceBlocks,
 					preview,
-					renderImages,
+					renderSlot,
+					loadImage,
 					t
 				})
 			] });
@@ -5810,7 +4613,7 @@ window.__ModuleLoader__.load({
 				})] }), (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("timing.duration") }), (0, react_jsx_runtime.jsx)("dd", { children: formatElapsedSeconds(null, t) })] })]
 			});
 		}
-		function RecordPayload({ record, direction, preview = false, renderImages, stringWrapping, t }) {
+		function RecordPayload({ record, direction, preview = false, renderSlot, loadImage, stringWrapping, t }) {
 			const value = direction === "input" ? record.cell.inputDetail : record.cell.outputDetail;
 			const missing = direction === "input" ? t("record.noPayload") : t("record.noResult");
 			if (!value) return (0, react_jsx_runtime.jsx)("p", {
@@ -5834,7 +4637,8 @@ window.__ModuleLoader__.load({
 				error,
 				errorDetail: error ? value : void 0,
 				preview,
-				renderImages
+				renderSlot,
+				loadImage
 			});
 			if (direction === "input" && (record.cell.kind === "user" || record.cell.kind === "context") || direction === "output" && record.cell.kind === "message") return (0, react_jsx_runtime.jsx)("div", {
 				className: [preview ? TrajectoryTable_module_css_default.markdownPreview : TrajectoryTable_module_css_default.markdownPayload, error ? TrajectoryTable_module_css_default.errorPayload : void 0].filter((className) => className !== void 0).join(" "),
@@ -6125,7 +4929,7 @@ window.__ModuleLoader__.load({
 		* @param props - Grouped trajectory data and whole-ledger fold state.
 		* @returns The ledger and an optional local record inspector.
 		*/
-		function TrajectoryTable({ t, stringWrapping, renderImages, requestNumbers: sessionRequestNumbers, turns, streamingCells = [], timelineFocusIndexes = null, searchMatchIndexes = null, onSelectedIndexChange, onRecordSelect, recordSelection = null, recordFocus = null, historyLoading = false, olderHistoryLoading = false, historyStartSeq, hasOlderRecords = false, onLoadOlder, onClearSelection, collapsedTurns, onToggleTurn, collapsedAssistants, onToggleAssistant, inspectCallId = null, onInspectApplied }) {
+		function TrajectoryTable({ t, stringWrapping, renderSlot, loadImage, requestNumbers: sessionRequestNumbers, turns, streamingCells = [], timelineFocusIndexes = null, searchMatchIndexes = null, onSelectedIndexChange, onRecordSelect, recordSelection = null, recordFocus = null, historyLoading = false, olderHistoryLoading = false, historyStartSeq, hasOlderRecords = false, onLoadOlder, onClearSelection, collapsedTurns, onToggleTurn, collapsedAssistants, onToggleAssistant, inspectCallId = null, onInspectApplied }) {
 			const [selectedRecordId, setSelectedRecordId] = (0, react.useState)(null);
 			const [selectedRequest, setSelectedRequest] = (0, react.useState)(null);
 			const [activeTab, setActiveTab] = (0, react.useState)("overview");
@@ -6191,7 +4995,7 @@ window.__ModuleLoader__.load({
 			const estimateVirtualRowSize = (0, react.useCallback)((index) => virtualRowStructure[index]?.height ?? 30, [virtualRowStructure]);
 			const getVirtualRowKey = (0, react.useCallback)((index) => virtualRowStructure[index]?.key ?? index, [virtualRowStructure]);
 			const getTableScrollElement = (0, react.useCallback)(() => tablePaneRef.current, []);
-			const rowVirtualizer = useVirtualizer({
+			const rowVirtualizer = (0, _tanstack_react_virtual.useVirtualizer)({
 				count: virtualizationEnabled ? virtualRowStructure.length : 0,
 				enabled: virtualizationEnabled,
 				estimateSize: estimateVirtualRowSize,
@@ -6236,7 +5040,7 @@ window.__ModuleLoader__.load({
 			const selectedState = selected === void 0 ? void 0 : stateOf(selected);
 			const selectedRequestInfo = selectedRequest === null ? void 0 : sessionRequestNumbers?.find((request) => requestIdentity(request) === selectedRequest.identity);
 			const selectedRequestRecords = (0, react.useMemo)(() => selectedRequestInfo === void 0 ? [] : allRecords.filter((record) => record.turn === selectedRequestInfo.turn && record.group === selectedRequestInfo.group), [allRecords, selectedRequestInfo]).map(currentRecord);
-			const selectedRequestAssistant = selectedRequestRecords.find((record) => record.cell.kind === "message");
+			const selectedRequestAssistant = selectedRequestRecords.find((record) => record.cell.kind === "message" && record.cell.requestOnly !== true);
 			const selectedRequestAnchor = selectedRequestAssistant ?? selectedRequestRecords[0];
 			const selectedRequestNumber = selectedRequestInfo?.number;
 			const selectedRequestState = selectedRequestInfo === void 0 ? void 0 : selectedRequestInfo.status ?? (selectedRequestAssistant?.cell.assistantMetrics?.completedTime === null ? "running" : selectedRequestAssistant === void 0 && selectedRequestRecords.some((record) => stateOf(record) === "running") ? "running" : "complete");
@@ -6882,18 +5686,14 @@ window.__ModuleLoader__.load({
 										(selectedRequestInfo.model ?? selectedRequestInfo.requestConfig?.model) !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.model") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestInfo.model ?? selectedRequestInfo.requestConfig?.model })] }),
 										(0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.toolCalls") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestToolCalls })] }),
 										selectedRequestSubtoolCalls > 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.subtoolCalls") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestSubtoolCalls })] }),
-										selectedRequestInfo.error !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.error") }), (0, react_jsx_runtime.jsx)("dd", {
-											className: TrajectoryTable_module_css_default.error,
+										selectedRequestInfo.error !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t(selectedRequestState !== "error" && selectedRequestInfo.retry !== void 0 ? "details.lastAttemptError" : "details.error") }), (0, react_jsx_runtime.jsx)("dd", {
+											className: selectedRequestState === "error" ? TrajectoryTable_module_css_default.error : void 0,
 											children: requestErrorMessage(selectedRequestInfo, t)
 										})] }),
-										selectedRequestInfo.retry !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.retry") }), (0, react_jsx_runtime.jsxs)("dd", { children: [
-											t("details.scheduled"),
-											" ",
-											selectedRequestInfo.maxRetries === void 0 ? selectedRequestInfo.retry : t("request.retryProgress", {
-												retry: selectedRequestInfo.retry,
-												maximum: selectedRequestInfo.maxRetries
-											})
-										] })] }),
+										selectedRequestInfo.retry !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.retry") }), (0, react_jsx_runtime.jsx)("dd", { children: selectedRequestInfo.maxRetries === void 0 ? selectedRequestInfo.retry : t("request.retryProgress", {
+											retry: selectedRequestInfo.retry,
+											maximum: selectedRequestInfo.maxRetries
+										}) })] }),
 										selectedRequestInfo.retryDelayMs !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.retryDelay") }), (0, react_jsx_runtime.jsx)("dd", { children: formatDurationMs(selectedRequestInfo.retryDelayMs, t) })] }),
 										selectedRequestResult !== void 0 && (0, react_jsx_runtime.jsxs)("div", { children: [(0, react_jsx_runtime.jsx)("dt", { children: t("details.result") }), (0, react_jsx_runtime.jsx)("dd", {
 											className: TrajectoryTable_module_css_default.overviewParentLinks,
@@ -7002,7 +5802,8 @@ window.__ModuleLoader__.load({
 									"data-summary-scroll-region": "",
 									children: (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 										record: selected,
-										renderImages,
+										renderSlot,
+										loadImage,
 										rendered: true,
 										thinkingExpanded,
 										onThinkingExpandedChange: setThinkingExpanded,
@@ -7107,7 +5908,8 @@ window.__ModuleLoader__.load({
 												},
 												children: (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 													record: selected,
-													renderImages,
+													renderSlot,
+													loadImage,
 													rendered: true,
 													preview: true,
 													thinkingExpanded,
@@ -7125,7 +5927,8 @@ window.__ModuleLoader__.load({
 														record: selected,
 														direction: "input",
 														preview: true,
-														renderImages,
+														renderSlot,
+														loadImage,
 														stringWrapping,
 														t
 													})
@@ -7139,7 +5942,8 @@ window.__ModuleLoader__.load({
 														record: selected,
 														direction: "output",
 														preview: true,
-														renderImages,
+														renderSlot,
+														loadImage,
 														stringWrapping,
 														t
 													})
@@ -7184,7 +5988,8 @@ window.__ModuleLoader__.load({
 								] }),
 								!promptSelected && selected !== void 0 && activeTab === "rendered" && (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 									record: selected,
-									renderImages,
+									renderSlot,
+									loadImage,
 									rendered: true,
 									thinkingExpanded,
 									onThinkingExpandedChange: setThinkingExpanded,
@@ -7193,7 +5998,8 @@ window.__ModuleLoader__.load({
 								}),
 								!promptSelected && selected !== void 0 && activeTab === "raw" && (0, react_jsx_runtime.jsx)(MarkdownRecordContent, {
 									record: selected,
-									renderImages,
+									renderSlot,
+									loadImage,
 									rendered: false,
 									thinkingExpanded,
 									onThinkingExpandedChange: setThinkingExpanded,
@@ -7208,7 +6014,8 @@ window.__ModuleLoader__.load({
 								!promptSelected && selected !== void 0 && activeTab === "input" && (selectedProgram === void 0 ? (0, react_jsx_runtime.jsx)(RecordPayload, {
 									record: selected,
 									direction: "input",
-									renderImages,
+									renderSlot,
+									loadImage,
 									stringWrapping,
 									t
 								}) : (0, react_jsx_runtime.jsx)(ProgramInput, {
@@ -7220,7 +6027,8 @@ window.__ModuleLoader__.load({
 								!promptSelected && selected !== void 0 && activeTab === "output" && (selectedProgram === void 0 ? (0, react_jsx_runtime.jsx)(RecordPayload, {
 									record: selected,
 									direction: "output",
-									renderImages,
+									renderSlot,
+									loadImage,
 									stringWrapping,
 									t
 								}) : (0, react_jsx_runtime.jsx)(ProgramOutput, {
@@ -8342,7 +7150,10 @@ window.__ModuleLoader__.load({
 					turn: partial.turn,
 					step: partial.step,
 					blocks: partial.blocks
-				}, index + 1, prevAbsTime, resultByCall, callStartById, callById, t, { streaming: true }), t);
+				}, index + 1, prevAbsTime, resultByCall, callStartById, callById, t, {
+					streaming: true,
+					timing: partial.timing
+				}), t);
 				if (partial.step > 0) pushStep(partial.turn, partial.step, laidList);
 				else for (const laid of laidList) pushMessage(partial.turn, laid);
 				const last = laidList[laidList.length - 1];
@@ -8505,7 +7316,8 @@ window.__ModuleLoader__.load({
 			let index = startIndex - 1;
 			const usage = node.usage;
 			const streaming = opts?.streaming === true;
-			const recordedStart = finiteTime(node.timing?.stepStartTime);
+			const timing = opts?.timing ?? node.timing;
+			const recordedStart = finiteTime(timing?.stepStartTime);
 			const messageDuration = streaming ? null : durationSeconds(node.time, recordedStart ?? prevAbsTime);
 			const nodeAbs = streaming ? null : finiteTime(node.time);
 			const messageText = node.blocks.filter((block) => block.kind === "text" && (!streaming || block.text !== "")).map((block) => block.kind === "text" ? block.text : "").join("\n\n");
@@ -8520,14 +7332,15 @@ window.__ModuleLoader__.load({
 				...messageText !== "" ? { outputDetail: messageText } : {},
 				...thinkingText !== "" ? { thinkingDetail: thinkingText } : {},
 				sourceBlocks: node.blocks.map((block) => assistantSourceBlock(block)),
+				...node.interrupted === true ? { isError: true } : {},
 				timeSeconds: messageDuration,
 				startedAt: recordedStart
 			};
 			attachUsage(message, usage);
 			message.assistantMetrics = {
-				timingRecorded: node.timing !== void 0,
-				stepStartTime: node.timing?.stepStartTime ?? null,
-				firstTokenTime: node.timing?.firstTokenTime ?? null,
+				timingRecorded: timing !== void 0,
+				stepStartTime: timing?.stepStartTime ?? null,
+				firstTokenTime: timing?.firstTokenTime ?? null,
 				completedTime: streaming ? null : finiteTime(node.time),
 				usageProvided: usage !== void 0,
 				outputTokens: Number.isFinite(usage?.outputTokens) ? usage?.outputTokens ?? null : null
@@ -8991,10 +7804,6 @@ window.__ModuleLoader__.load({
 		}
 		function TrajectoryView({ useSession, useTrajectory, useDuration, loadOlder, loadImage, setActualDuration, viewRequest, completeViewRequest, renderSlot, t, jsonStringWrapping }) {
 			const [collapsedTurns, setCollapsedTurns] = (0, react.useState)(EMPTY_TURN_IDS);
-			const renderImages = (0, react.useCallback)((owner) => renderSlot("conversation.trajectory.images", {
-				...owner,
-				loadImage
-			}), [loadImage, renderSlot]);
 			const [collapsedAssistants, setCollapsedAssistants] = (0, react.useState)(EMPTY_RECORD_IDS);
 			const [timelineSelection, setTimelineSelection] = (0, react.useState)(null);
 			const actualDuration = useDuration((value) => value);
@@ -9080,18 +7889,21 @@ window.__ModuleLoader__.load({
 						const provider = request?.providerMetadata?.provider ?? node?.providerMetadata?.provider;
 						const model = request?.providerMetadata?.model ?? node?.providerMetadata?.model;
 						const requestConfig = request?.requestConfig ?? node?.requestConfig;
+						const startedAt = request?.startedAt;
+						const completedAt = request === void 0 ? node?.time : request.completedAt;
+						const resultSeq = request?.resultSeq ?? node?.seq;
 						numbered.push({
 							seq: entry.seq,
 							turn,
 							step,
 							group: t("group.step", { step }),
 							number: index + 1,
-							...request?.status === void 0 ? {} : { status: request.status },
-							...request?.startedAt === void 0 ? {} : { startedAt: request.startedAt },
-							...request?.completedAt === void 0 ? {} : { completedAt: request.completedAt },
+							status: request?.status ?? (node?.interrupted === true ? "error" : "complete"),
+							...startedAt === void 0 ? {} : { startedAt },
+							...completedAt === void 0 ? {} : { completedAt },
 							...request?.error === void 0 ? {} : { error: request.error },
 							...request?.errorCode === void 0 ? {} : { errorCode: request.errorCode },
-							...request?.resultSeq === void 0 ? {} : { resultSeq: request.resultSeq },
+							...resultSeq === void 0 ? {} : { resultSeq },
 							...request?.retry === void 0 ? {} : { retry: request.retry },
 							...request?.maxRetries === void 0 ? {} : { maxRetries: request.maxRetries },
 							...request?.retryDelayMs === void 0 ? {} : { retryDelayMs: request.retryDelayMs },
@@ -9116,7 +7928,7 @@ window.__ModuleLoader__.load({
 						completedAt: request.completedAt,
 						...request.error === void 0 ? {} : { error: request.error },
 						...request.errorCode === void 0 ? {} : { errorCode: request.errorCode },
-						resultSeq: request.startSeq,
+						...request.status === "running" ? {} : { resultSeq: request.startSeq },
 						...request.providerMetadata?.provider === void 0 ? {} : { provider: request.providerMetadata.provider },
 						...request.providerMetadata?.model === void 0 ? {} : { model: request.providerMetadata.model },
 						...request.requestConfig === void 0 ? {} : { requestConfig: request.requestConfig },
@@ -9161,14 +7973,20 @@ window.__ModuleLoader__.load({
 				callSchemas,
 				t
 			]);
+			const timelinePartialSignature = partialStructureSignature(partial);
+			const partialStartTime = partial?.timing?.stepStartTime;
+			const partialFirstTokenTime = partial?.timing?.firstTokenTime;
 			const timelinePartial = (0, react.useMemo)(() => partial === null ? null : {
 				turn: partial.turn,
 				step: partial.step,
-				blocks: partial.blocks.map((block) => timelineBlock(block))
+				blocks: partial.blocks.map((block) => timelineBlock(block)),
+				...partial.timing === void 0 ? {} : { timing: partial.timing }
 			}, [
 				partialStep,
 				partialTurn,
-				partialStructureSignature(partial)
+				timelinePartialSignature,
+				partialStartTime,
+				partialFirstTokenTime
 			]);
 			const timelineTurns = (0, react.useMemo)(() => appendTrajectoryPartialLayout(finalized.turns, timelinePartial, finalized.lastIndex, t), [
 				finalized,
@@ -9328,7 +8146,8 @@ window.__ModuleLoader__.load({
 								...jsonStringWrapping,
 								label: t("record.wrapLines")
 							},
-							renderImages,
+							renderSlot,
+							loadImage,
 							requestNumbers,
 							turns: timelineTurns,
 							streamingCells,

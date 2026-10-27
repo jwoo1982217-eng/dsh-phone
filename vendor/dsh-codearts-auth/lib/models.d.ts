@@ -40,6 +40,28 @@ export interface RemoteModel {
     name: string;
 }
 /**
+ * 一次远端目录拉取的**完整性**结果（issue IKJVTF，审计 I3）。
+ *
+ * ## 为什么需要它
+ *
+ * CodeArts 的目录来自**两个独立端点**（`opengw gateway/config` 给 benefit 模型、
+ * `snap-access /v1/model/builtin` 给常规模型），而两处的失败路径都是
+ * `fetchSignedGet` **静默返回 `undefined`**。于是「一个成功、一个失败」时
+ * `models.length > 0` ⇒ 适配器判成「已拿到目录」⇒ **永久缓存**（
+ * `if (this.remoteModels !== undefined) return` 短路）⇒ 残缺目录固化，
+ * 只有重启 DSH 才能恢复（与 Cline 的缺陷② 完全同构）。
+ *
+ * ⇒ 取数函数必须**显式**回报「每个来源到底成功没有」，适配器据此决定
+ * 「只展示（`got`）」还是「也永久缓存（`complete`）」。
+ */
+export interface RemoteCatalogOutcome {
+    /** 各来源的成败（`gateway` / `builtin`），供适配器判完整性。 */
+    gatewayOk: boolean;
+    builtinOk: boolean;
+}
+/** 两个来源是否**都**取到了。 */
+export declare function isRemoteCatalogComplete(outcome: RemoteCatalogOutcome): boolean;
+/**
  * 去掉模型 id 末尾的日期版本后缀：deepseek-v4-flash-0731 → deepseek-v4-flash。
  * 远端 gateway/config 返回带日期后缀的 model_id（-0731 = 7月31日版本），
  * 但 chat 端点只认不带后缀的 id（InferHub.002002009.404 "model is not registered"）。
@@ -55,7 +77,15 @@ export declare function normalizeModelId(id: string): string;
  * 同时把 gateway/config 下发的 benefit 模型 id 集合写入独立缓存
  * （见 {@link saveBenefitCache}），供 chat 请求判定是否带 `maas_type: benefit`。
  */
-export declare function fetchCodeArtsRemoteModels(credential: CodeArtsCredential, fetcher?: typeof fetch): Promise<RemoteModel[]>;
+export declare function fetchCodeArtsRemoteModels(credential: CodeArtsCredential, fetcher?: typeof fetch, 
+/**
+ * 各来源成败的**出参**（issue IKJVTF，审计 I3）。
+ *
+ * ⚠️ 用出参而非改返回值：本函数的既有调用方与 10 条单测都按「返回数组」用，
+ * 改形状会波及它们；而完整性只对**适配器**有意义（它决定要不要永久缓存）。
+ * 不传即不关心完整性，行为逐字节不变。
+ */
+outcome?: RemoteCatalogOutcome): Promise<RemoteModel[]>;
 /**
  * 保存动态模型列表到缓存文件（原子写入 tmp+rename）。
  *

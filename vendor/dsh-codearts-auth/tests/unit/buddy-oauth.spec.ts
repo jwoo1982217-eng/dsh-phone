@@ -5,6 +5,7 @@ import {
   fetchAuthState,
   fetchModels,
   getAccount,
+  isBuddyCatalogComplete,
   loopGetToken,
   refreshToken,
   runBuddyLoginFlow,
@@ -355,6 +356,108 @@ describe('buddy fetchModels', () => {
     expect(await fetchModels(makeCredential(), fetcher)).toEqual([])
   })
 
+  /**
+   * ★ **各来源成败上报**（issue IKJVTF 复审，审计 I3）。
+   *
+   * buddy 的目录来自**两个**端点：scoped（`/console/enterprises/personal/models`）
+   * 与 `/v3/config`，两者 id 集合**不同**、必须取并集。失败路径静默返回空 ⇒
+   * 「一个成功、一个失败」时 `models.length > 0`，旧判据会判成「已拿到目录」
+   * ⇒ **永久缓存** ⇒ 只在另一个端点下发的变体及其促销倍率再也回不来。
+   */
+  describe('各来源成败（★ IKJVTF I3）', () => {
+    // ⚠️ 响应形状：模型**清单**来自 `data.agents[].models`，而 `data.models`
+    // 只是「id → 元数据」的映射（字段名是 `id`，不是 codearts 那种 `model_id`）。
+    // 只给 `data.models` 而 agents 为空时 `parseModelsFromConfig` 返回空表。
+    const SCOPED_BODY = JSON.stringify({
+      data: {
+        agents: [{ name: 'craft', models: ['hy4-preview'] }],
+        models: [{ id: 'hy4-preview', name: 'Hy4 Preview' }],
+      },
+    })
+    const CONFIG_BODY = JSON.stringify({
+      data: {
+        agents: [{ name: 'craft', models: ['hy4-preview-f'] }],
+        models: [{ id: 'hy4-preview-f', name: 'Hy4 Preview F' }],
+      },
+    })
+
+    it('★ 两个端点都成功 ⇒ scopedOk + configOk 皆为 true', async () => {
+      const fetcher = routeFetch([
+        { when: (url) => url.includes('/console/enterprises/'), respond: () => new Response(SCOPED_BODY, { status: 200 }) },
+        { when: (url) => url.includes('/v3/config'), respond: () => new Response(CONFIG_BODY, { status: 200 }) },
+      ])
+      const outcome = { scopedOk: false, configOk: false }
+      const models = await fetchModels(makeCredential(), fetcher, undefined, CODEBUDDY, outcome)
+      expect(models.length).toBeGreaterThan(0)
+      expect(outcome).toEqual({ scopedOk: true, configOk: true })
+      expect(isBuddyCatalogComplete(outcome)).toBe(true)
+    })
+
+    it('★ scoped 成功 + /v3/config 失败 ⇒ **不算完整**（hy4-preview-f 那类会丢）', async () => {
+      const fetcher = routeFetch([
+        { when: (url) => url.includes('/console/enterprises/'), respond: () => new Response(SCOPED_BODY, { status: 200 }) },
+        // /v3/config 一律 500
+        { when: (url) => url.includes('/v3/config'), respond: () => new Response('boom', { status: 500 }) },
+      ])
+      const outcome = { scopedOk: false, configOk: false }
+      const models = await fetchModels(makeCredential(), fetcher, undefined, CODEBUDDY, outcome)
+      // 目录**非空**（scoped 那一份拿到了）—— 旧判据据此判成「完整」。
+      expect(models.length).toBeGreaterThan(0)
+      // ★ 但完整性必须是 false，否则残缺目录被永久缓存。
+      expect(outcome).toEqual({ scopedOk: true, configOk: false })
+      expect(isBuddyCatalogComplete(outcome)).toBe(false)
+    })
+
+    it('★ scoped 失败 ⇒ 回退 /v3/config，configOk 为 true 而 scopedOk 为 false', async () => {
+      const fetcher = routeFetch([
+        { when: (url) => url.includes('/console/enterprises/'), respond: () => new Response('nope', { status: 500 }) },
+        { when: (url) => url.includes('/v3/config'), respond: () => new Response(CONFIG_BODY, { status: 200 }) },
+      ])
+      const outcome = { scopedOk: false, configOk: false }
+      const models = await fetchModels(makeCredential(), fetcher, undefined, CODEBUDDY, outcome)
+      expect(models.length).toBeGreaterThan(0)
+      expect(outcome).toEqual({ scopedOk: false, configOk: true })
+      // ⚠️ 这**不算完整**：scoped 那 30 个模型没拿到（两层回退的语义）。
+      expect(isBuddyCatalogComplete(outcome)).toBe(false)
+    })
+
+    it('★ 两个端点都失败 ⇒ 两者皆 false', async () => {
+      const fetcher = routeFetch([{ when: () => true, respond: () => new Response('nope', { status: 500 }) }])
+      const outcome = { scopedOk: false, configOk: false }
+      const models = await fetchModels(makeCredential(), fetcher, undefined, CODEBUDDY, outcome)
+      expect(models).toEqual([])
+      expect(outcome).toEqual({ scopedOk: false, configOk: false })
+    })
+
+    it('★ 无 access_token（早退）⇒ 两者皆 false（不能默认成 true）', async () => {
+      const fetcher = routeFetch([{ when: () => true, respond: () => new Response('{}', { status: 200 }) }])
+      const outcome = { scopedOk: true, configOk: true }
+      await fetchModels(makeCredential({ access_token: '' }), fetcher, undefined, CODEBUDDY, outcome)
+      expect(outcome).toEqual({ scopedOk: false, configOk: false })
+    })
+
+    it('★ config 成功但**形状不可识别**（200 + data: null）⇒ configOk 为 false', async () => {
+      // ⚠️ 不能靠「promotions 是否为空」反推：上游真的没有促销时它也是空的。
+      const fetcher = routeFetch([
+        { when: (url) => url.includes('/console/enterprises/'), respond: () => new Response(SCOPED_BODY, { status: 200 }) },
+        // 200 但 `data` 不是对象 ⇒ `requestConfig` 走 `empty` 分支（ok: false）
+        { when: (url) => url.includes('/v3/config'), respond: () => new Response(JSON.stringify({ data: null }), { status: 200 }) },
+      ])
+      const outcome = { scopedOk: false, configOk: false }
+      await fetchModels(makeCredential(), fetcher, undefined, CODEBUDDY, outcome)
+      expect(outcome.configOk).toBe(false)
+    })
+
+    it('不传 outcome ⇒ 行为与既有完全一致（返回数组）', async () => {
+      const fetcher = routeFetch([
+        { when: (url) => url.includes('/console/enterprises/'), respond: () => new Response(SCOPED_BODY, { status: 200 }) },
+        { when: (url) => url.includes('/v3/config'), respond: () => new Response(CONFIG_BODY, { status: 200 }) },
+      ])
+      const models = await fetchModels(makeCredential(), fetcher)
+      expect(models.map((m) => m.id)).toContain('hy4-preview')
+    })
+  })
+
   // 回归（Task 3 审查遗留）：默认仍发 codebuddy 身份，传 WorkBuddy 时必须
   // 换成 workbuddy —— 否则 WorkBuddy 会拿 CodeBuddy 的产品码请求 /v3/config。
   it('默认以 codebuddy 身份请求 /v3/config', async () => {
@@ -452,7 +555,20 @@ describe('buddy fetchModels', () => {
             modelPromotions: [{
               enabled: true, priority: 200, modelIds: ['hy4-preview-f'],
               discount: { discountedCredits: '0x', factor: 0 },
-              schedule: { timezone: 'Asia/Shanghai', validFrom: '2026-09-11T00:00:00+08:00', validUntil: '2026-10-11T00:00:00+08:00' },
+              // ⚠️ 促销窗口必须用**相对时间**（2026-10-11 实测的墙钟缺陷）：
+              //    原先写死 `validFrom: '2026-09-11T00:00:00+08:00'` /
+              //    `validUntil: '2026-10-11T00:00:00+08:00'`，于是**那一刻一过本用例就恒红**
+              //    ——实测 2026-10-11 00:10 起 `discountedCreditsRate` 变成 `undefined`。
+              //    这不是「fixture 恰好过期」，而是**测试对墙钟绝对时间敏感**的缺陷：
+              //    任何人任何时刻跑都会在某天开始必红，且失败原因（`undefined to be '免费'`）
+              //    与「促销逻辑坏了」长得一模一样。本文件其它 fixture 都用相对时间
+              //（见 `expires_at: String(Date.now() + 7_200_000)`），此处对齐。
+              //    格式与原先**逐字同形**（`+08:00` 墙上时间），只把值换成相对。
+              schedule: {
+                timezone: 'Asia/Shanghai',
+                validFrom: new Date(Date.now() - 30 * 86_400_000 + 8 * 3_600_000).toISOString().slice(0, 19) + '+08:00',
+                validUntil: new Date(Date.now() + 30 * 86_400_000 + 8 * 3_600_000).toISOString().slice(0, 19) + '+08:00',
+              },
             }],
           },
         }), { status: 200 }),

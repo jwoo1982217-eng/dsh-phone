@@ -189,6 +189,26 @@ export interface LobsteraiAdapterOptions {
     } | undefined>;
     /** 产品配置；默认 {@link LOBSTERAI}。 */
     product?: LobsteraiProduct;
+    /**
+     * 时钟（注入以便单测推进目录 TTL；缺省 `Date.now`）。
+     *
+     * ⚠️ 只用于**目录新鲜度**（`ensureRemoteModels` 的 `isCatalogFresh`），
+     *    不用于超时/退避计时 —— 那些仍走真实时钟。
+     *    ⚠️ **buddy 是例外**：它的 `catalogGate` 也吃这个时钟（冷却与
+     *    「距上次尝试 ≥10 秒」判定都走它），所以别把本行当成全仓库通用口径。
+     */
+    now?: () => number;
+    /**
+     * 远端目录**落地后**的通知回调（issue IKJVTF）。
+     *
+     * 由 `registerLobsteraiLlm` 注入为 `broadcastCatalogChanged(ctx)`。适配器本身
+     * 拿不到 `ctx`，故必须由接线层桥接（与 `readImage` 等回调同一模式）。
+     *
+     * ⚠️ 必要性：客户端 `ModelCatalogDirectory` 在 `status === 'ready'` 时**短路
+     * 返回缓存**，只在宿主事件上 `refresh()`。没有本回调时，冷启动首拉失败
+     * 缓存的**兜底表**会永久留在对话框里，远端目录真的落地也不重读。
+     */
+    onCatalogLoaded?: () => void;
 }
 /** LobsterAI 模型适配器。使用 Bearer access_token 鉴权，仅支持 SSE。 */
 export declare class LobsteraiAdapter extends LlmAdapter {
@@ -198,10 +218,23 @@ export declare class LobsteraiAdapter extends LlmAdapter {
     /** 动态模型缓存（首次 listModels 成功后填充）。 */
     private remoteModels;
     /**
+     * ⚠️ 上次**成功**读到远端目录的时刻（0 = 从未成功过）。
+     *
+     * ⚠️ 与 `remoteModels` **并存**、不是替代：`remoteModels` 存「有哪些模型」，
+     *    本字段存「何时读到的」。只有 `remoteModels` 时目录**永不刷新**（原行为）。
+     */
+    private catalogAt;
+    /**
      * 目录加载闸门：并发去重 + 失败/空结果冷却。
      * 依据见 `src/remote-catalog-gate.ts`（首屏「加载模型巨长」的实测归因）。
      */
     private readonly catalogGate;
+    /**
+     * ⚠️ **2026-10-08 Task 7c：三个方法收敛到共享骨架** `createModelCatalog`。
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架，
+     * 现在只剩 `toCatalogEntry`（本家私有形状 + wire/展示名分离的档位）。
+     */
+    private readonly catalog;
     /** 远端下发的模型元数据（id → 条目），listModels/resolveModel 共用。 */
     private remoteMeta;
     /** 产品级兜底模型索引（`product.fallbackModels` 的 id → 条目）。 */
@@ -217,7 +250,7 @@ export declare class LobsteraiAdapter extends LlmAdapter {
      */
     providerInfo(provider: string): LlmProviderInfo;
     /**
-     * 懒加载远端模型目录（仅拉取一次）。
+     * 懒加载远端模型目录（**每 20 分钟**重新拉一次，用户 2026-10-18 的要求）。
      *
      * `listModels` 与 `resolveModel` 共用：`resolveModel` 可能先于 `listModels`
      * 被调用（如直接从历史会话进入），此时同样需要触发一次拉取。
@@ -276,13 +309,52 @@ export declare class LobsteraiAdapter extends LlmAdapter {
      * 设置页必须渲染被关闭的模型（否则用户无法重新打开），而 `listModels` 会按
      * 黑名单过滤掉它们 —— RPC 层只能凭裸 id 补回，展示名与倍率随之丢失
      * （用户报障：「关闭的就没有显示倍率」）。详见 `model.list` 端点的注释。
+     *
+     * ⚠️ **2026-10-08 Task 7c**：骨架（含上面这条理由）已上移到共享实现
+     * `src/model-catalog.ts`，此处只剩委托。
      */
+    /**
+     * ★ **后台目录刷新器入口**（`src/index.ts` 的 `refreshOf` 调 `adapter.refresh?.()`）。
+     *
+     * ⚠️⚠️ 必须由适配器**显式转发** `catalog.refresh`：`ModelCatalog`（`model-catalog.ts`）
+     *    上的这个成员**不会**自动变成适配器的成员 —— `pruned()` 的 Proxy 只透传
+     *    **适配器自己的**成员（`dead-model-store.ts:748-749`）。
+     *    漏转发 ⇒ 刷新器「已武装」却对这家**空转**，且**零日志**（`refreshOf` 返回
+     *    `undefined` 时静默跳过 —— `index.ts` 的装配注释写着这件事）。
+     *    ⚠️ 与 `options.refresh`（HTTP 401 后的**凭据**重取）**不是同一件事**，
+     *    两者同名纯属巧合，**不得合并**。
+     */
+    refresh(): Promise<void>;
     listAllModels(): readonly {
         id: string;
         name: string;
     }[];
+    /**
+     * 把本家条目转成共享骨架的中间结构。
+     *
+     * ⚠️ 本家三处**真实差异**：
+     * 1. `contextWindow` 远端权威值优先、兜底表估值次之（见 `contextWindowFor`）；
+     * 2. `maxTokens` **仅当远端声明时**才带（不编造默认值）；
+     * 3. `reasoning` 的 `id` 用 **wire 值 `openclawLevel`**、`name` 用**产品侧
+     *    `level`** —— 两者来源不同，是本家最容易搞错的地方（见 `reasoningFor`）。
+     */
+    private toCatalogEntry;
+    private loadCatalogEntries;
+    /**
+     * 同步视图（`listAllModels` 用）。
+     *
+     * ⚠️ **不能** `await ensureRemoteModels()`（同步契约）—— 读 `remoteModels`
+     * 缓存，未落地时回退静态兜底表（这正是原实现的语义）。
+     */
+    private syncCatalogEntries;
     listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
-    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
+    /**
+     * 解析模型元信息。
+     *
+     * ⚠️ 原实现里的三处判据（context / maxTokens / reasoning）现已收敛到
+     * `toCatalogEntry`；骨架的 `resolveModel` 只做回填与「不声明未知」。
+     */
+    resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /**
      * 兼容 0.1.1-rc.2：新版 `LlmRuntime.prepareCall()` 会调用
      * `registration.adapter.prepareCall(...)`，而本仓库链接的 dsh-llm 副本

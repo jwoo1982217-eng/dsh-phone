@@ -492,3 +492,146 @@ describe('CodeArtsAuth refreshAll：以凭据为准的自愈', () => {
     expect(stored.refresh_token).toBe('RT2')
   })
 })
+
+/**
+ * ⚠️⚠️ 缺陷②：refresh_token 已过期且续期失败时，必须如实标 `refreshable: false`。
+ *
+ * ## 实测事故（2026-10-18）
+ *
+ * 两个 codearts 账号在「登录 + 30 天」当天报废，而池里 `refreshable` **仍是
+ * `true`** ⇒ 面板照常显示「· 自动续期」（`jet-hub.js` 的账号卡片），而账号
+ * 实际已死、**永远不会自愈**。
+ *
+ * 根因是华为 STS 的 refresh_token JWT 里 `exp` **恒等于「登录时刻 + 30 天」，
+ * 续期不延长它**（解开该账号全部历史凭据逐个核对：五次续期签发的 refresh_token
+ * `exp` 全部收敛到同一时刻），而 access_token 恒为 2 小时。
+ *
+ * ## 为什么已有那条 `RefreshTokenExpiredError` 分支救不了
+ *
+ * 它要求服务端把拒绝**分类成** `invalid_grant` / `ExpiredRefreshToken`。只要回包
+ * 是别的形状（代理改写、5xx、报文解析失败），就落进非终态分支 —— 而本例的
+ * refresh 是**永久**过期，重试再多次也不会成功 ⇒ 面板无限期谎报「可续期」。
+ *
+ * ⇒ 判据必须是**本地就能确定**的事实，且**两腿同时成立**：refresh 的 `exp` 已过
+ * **且** 这一次尝试真的失败了。
+ */
+describe('CodeArtsAuth refreshAll：refresh 已过期时的如实标记', () => {
+  const futureIso = (hours: number): string => new Date(Date.now() + hours * 3_600_000).toISOString()
+
+  /** 造一个**形状真实**的 refresh_token JWT（`exp` 可控）。 */
+  const jwtWithExp = (expSeconds: number): string => {
+    const b64 = (o: unknown): string => Buffer.from(JSON.stringify(o)).toString('base64url')
+    return `${b64({ alg: 'RS256' })}.${b64({ exp: expSeconds, typ: 'refresh_token' })}.sig`
+  }
+
+  async function seed(credentials: { set(ref: string, value: string): Promise<void> }, ref: string, overrides: Record<string, unknown> = {}) {
+    const { privateKeyJwk } = await generateDpopKeyPair()
+    await credentials.set(ref, JSON.stringify({
+      access_key_id: 'AK', secret_access_key: 'SK', security_token: 'ST',
+      expires_at: futureIso(2),
+      code_verifier: 'VERIFIER', dpop_private_key_jwk: privateKeyJwk,
+      ...overrides,
+    }))
+  }
+
+  it('⚠️ refresh 已过期 + 续期失败（**非** invalid_grant）→ 标 refreshable:false', async () => {
+    const { ctx, credentials } = makeContext()
+    // refresh 的 exp 是 1 小时前（事故形状：登录满 30 天那一刻）
+    await seed(credentials, 'CODEARTS_ACCOUNT_1', { refresh_token: jwtWithExp(Math.floor(Date.now() / 1000) - 3600) })
+    const pool = makePool([{ id: 'ca-1', credentialRef: 'CODEARTS_ACCOUNT_1', refreshable: true }])
+    // ⚠️ 关键：这里是 5xx / 代理错误，**不是** invalid_grant ⇒ 旧判据完全不生效。
+    mockedExchangeRefreshToken.mockRejectedValue(new Error('CodeArts token request failed: 503'))
+    const service = newService(ctx)
+    await service.refreshAll(pool)
+
+    expect(patchesFor(pool, 'ca-1')).toContainEqual({ refreshable: false })
+  })
+
+  it('⚠️ refresh **未**过期时不得标记（网络抖动不该把好账号作废）', async () => {
+    const { ctx, credentials } = makeContext()
+    await seed(credentials, 'CODEARTS_ACCOUNT_1', { refresh_token: jwtWithExp(Math.floor(Date.now() / 1000) + 20 * 86_400) })
+    const pool = makePool([{ id: 'ca-1', credentialRef: 'CODEARTS_ACCOUNT_1', refreshable: true }])
+    mockedExchangeRefreshToken.mockRejectedValue(new Error('CodeArts token request failed: 503'))
+    const service = newService(ctx)
+    await service.refreshAll(pool)
+
+    expect(patchesFor(pool, 'ca-1').some(p => p.refreshable === false)).toBe(false)
+  })
+
+  it('⚠️ 两腿缺一不可：refresh 本地已过期但**这次续期成功**时不得标记', async () => {
+    // 多端登录可能让云端重签过 refresh：本地这份过期不代表云端不接受。
+    // 所以仍先真发一次请求，让成功把它救回来。
+    const { ctx, credentials } = makeContext()
+    await seed(credentials, 'CODEARTS_ACCOUNT_1', { refresh_token: jwtWithExp(Math.floor(Date.now() / 1000) - 3600) })
+    const pool = makePool([{ id: 'ca-1', credentialRef: 'CODEARTS_ACCOUNT_1', refreshable: true }])
+    mockedExchangeRefreshToken.mockResolvedValue({
+      credentials: {
+        access_key_id: 'AK2', secret_access_key: 'SK2', security_token: 'ST2',
+        expiration: futureIso(2),
+      },
+      refresh_token: jwtWithExp(Math.floor(Date.now() / 1000) + 30 * 86_400),
+    } as never)
+    const service = newService(ctx)
+    await service.refreshAll(pool)
+
+    expect(patchesFor(pool, 'ca-1').some(p => p.refreshable === false)).toBe(false)
+  })
+
+  it('⚠️ 旧 ticket 凭据（refresh_token 非 JWT / 读不到 exp）**不得**被新判据误标', async () => {
+    // 读不到 exp 时必须按「不知」处理：既不因新腿而标记，也不 fail-closed 成终态。
+    // ⚠️ `refresh_token: ''` 走的是**既有**的「缺材料」分支（`isCodeArtsRefreshable`
+    // 为 false ⇒ 写 false），那是本来就正确的行为，与本次改动无关，故排除在外。
+    for (const token of ['RT', 'not-a-jwt', 'a.b.c']) {
+      const { ctx, credentials } = makeContext()
+      await seed(credentials, 'CODEARTS_ACCOUNT_1', { refresh_token: token })
+      const pool = makePool([{ id: 'ca-1', credentialRef: 'CODEARTS_ACCOUNT_1', refreshable: true }])
+      mockedExchangeRefreshToken.mockRejectedValue(new Error('boom'))
+      const service = newService(ctx)
+      await service.refreshAll(pool)
+      expect(patchesFor(pool, 'ca-1').some(p => p.refreshable === false), `refresh_token=${token}`).toBe(false)
+    }
+  })
+
+  it('空 refresh_token 走既有的「缺材料」分支写 false（本次改动不得改变它）', async () => {
+    const { ctx, credentials } = makeContext()
+    await seed(credentials, 'CODEARTS_ACCOUNT_1', { refresh_token: '' })
+    const pool = makePool([{ id: 'ca-1', credentialRef: 'CODEARTS_ACCOUNT_1', refreshable: true }])
+    const service = newService(ctx)
+    await service.refreshAll(pool)
+    expect(patchesFor(pool, 'ca-1')).toContainEqual({ refreshable: false })
+  })
+})
+
+describe('CodeArtsAuth refreshAll：提前续期（refresh 腿改变了请求时机）', () => {
+  const futureIso = (hours: number): string => new Date(Date.now() + hours * 3_600_000).toISOString()
+  const jwtWithExp = (expSeconds: number): string => {
+    const b64 = (o: unknown): string => Buffer.from(JSON.stringify(o)).toString('base64url')
+    return `${b64({ alg: 'RS256' })}.${b64({ exp: expSeconds, typ: 'refresh_token' })}.sig`
+  }
+
+  it('⚠️ access 还没进 lead 窗口、但 refresh 只剩 50 分钟 → 真的会发续期请求', async () => {
+    // 这正是 2026-10-18 事故那一刻的形状：access 剩 2 小时（未进 1 小时窗口）、
+    // refresh 只剩 50 分钟。旧判据在这里返回 false ⇒ 一直等到 access 窗口才放行，
+    // 而那时 refresh 已经死了。
+    const { ctx, credentials } = makeContext()
+    const { privateKeyJwk } = await generateDpopKeyPair()
+    await credentials.set('CODEARTS_ACCOUNT_1', JSON.stringify({
+      access_key_id: 'AK', secret_access_key: 'SK', security_token: 'ST',
+      expires_at: futureIso(2),
+      refresh_token: jwtWithExp(Math.floor(Date.now() / 1000) + 50 * 60),
+      code_verifier: 'VERIFIER', dpop_private_key_jwk: privateKeyJwk,
+    }))
+    const pool = makePool([{ id: 'ca-1', credentialRef: 'CODEARTS_ACCOUNT_1', refreshable: true }])
+    mockedExchangeRefreshToken.mockResolvedValue({
+      credentials: {
+        access_key_id: 'AK2', secret_access_key: 'SK2', security_token: 'ST2',
+        expiration: futureIso(2),
+      },
+      refresh_token: 'RT2',
+    } as never)
+    const service = newService(ctx)
+    await service.refreshAll(pool)
+
+    expect(mockedExchangeRefreshToken).toHaveBeenCalledTimes(1)
+  })
+})

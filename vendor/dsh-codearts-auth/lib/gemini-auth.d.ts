@@ -4,7 +4,7 @@
  * 登录走**浏览器回调式 OAuth**（见 `gemini-oauth.ts`：本地 `createServer` 起回调、
  * 立即返回 `loginUrl`），续期走 `refresh_token` grant。
  *
- * ## ⚠️ `refreshAll` 照 `src/service.ts:406`（codearts）范式，**不照** `minimax-auth.ts:281`
+ * ## ⚠️ `refreshAll` 照 `src/service.ts`（codearts）范式，**不照** `minimax-auth.ts`
  *
  * 旧范式第一行是 `if (!entry.refreshable) continue` —— 那让这个布尔变成一道
  * **单向门**：任何一次把它写成 false 的路径都会让该账号此后**永远不进循环**，
@@ -24,7 +24,7 @@ import { type StartedGeminiLoginFlow } from './gemini-oauth.js';
  * 过期信息提取器（供共享实现 `refreshAccountWithReconcile` 用）。
  *
  * ⚠️ `identityOf` 的语义是「**凭据内容**」（这里取 access_token）而**不是** ref 名
- * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts:67` 记录的坑）。
+ * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts` 记录的坑）。
  *
  * `refreshableOf` 是**诚实**的：Gemini 确实有 refresh 端点（`oauth2.googleapis.com/token`
  * 的 `refresh_token` grant），故提供它，让共享实现据此把池里的 `refreshable` 对账。
@@ -42,6 +42,17 @@ export interface GeminiAuthOptions {
     serviceName?: string;
     /** 注入的 fetch（测试用）。 */
     fetchImpl?: typeof fetch;
+    /**
+     * 按**账号 id** 取 fetcher（Gitee issue IKLTZ2 的代理支持）。
+     *
+     * ⚠️ **为什么不是再给一个 `fetchImpl` 就够了**：登录与续期都可能发生在
+     * **任意账号**上（`refreshAll` 逐账号、`refreshAccountCredential` 由 RPC
+     * 指定账号），而代理是**账号维度**的 ⇒ 必须能按账号现取，不能构造时定一份。
+     *
+     * ⚠️ **优先于 `fetchImpl`**：测试注入的单替身要盖过生产接线，否则单测里的
+     * `fetchImpl` 会被账号代理悄悄顶掉。
+     */
+    fetchFor?: (accountId: string) => typeof fetch;
     /** 回调端口覆盖（0 = 动态端口，默认）。 */
     callbackPort?: number;
 }
@@ -66,6 +77,16 @@ export declare class GeminiAuth extends Service {
     private readonly terminalWarned;
     constructor(ctx: Context, options?: GeminiAuthOptions);
     private get fetchImpl();
+    /**
+     * 取某账号的 fetcher（Gitee issue IKLTZ2）。
+     *
+     * ⚠️ **空账号 id = 直连**：`refresh()` 的单凭据兜底路径拿不到账号 id，
+     * 此时不查池（查了也是空）⇒ 退回全局 fetch。
+     *
+     * ⚠️ `fetchImpl`（单测替身）**优先**于 `fetchFor`：否则单测注入的替身会被
+     * 生产接线里的账号解析器顶掉，用例就测不到真正被调用的那条腿了。
+     */
+    private fetcherFor;
     private queueFor;
     private readCredential;
     /** 按值比较两份凭据（引用比较恒不相等）。 */
@@ -75,8 +96,14 @@ export declare class GeminiAuth extends Service {
      *
      * ⚠️ 不能在这里阻塞等授权完成 —— 前端 `window.open` 只在
      * transient activation 窗口内有效（见 AGENTS.md「两步式登录」）。
+     *
+     * @param options.accountId **占位账号的 id**（Gitee issue IKLTZ2）：
+     *   换 token 那一次请求必须能走该账号自己的代理，而登录开始时凭据还没落盘、
+     *   只有池里的占位条目认得它。缺省则直连。
      */
-    startLogin(): Promise<StartedGeminiLoginFlow>;
+    startLogin(options?: {
+        accountId?: string;
+    }): Promise<StartedGeminiLoginFlow>;
     /**
      * 落盘凭据（登录成功后调用）。
      *
@@ -92,7 +119,7 @@ export declare class GeminiAuth extends Service {
     }>;
     /** 解析默认单凭据。 */
     private resolveDefaultCredential;
-    /** 续期默认单凭据（`refreshTargets` 的兜底路径）。 */
+    /** 续期默认单凭据（批量续期表的兜底路径）。 */
     refresh(): Promise<void>;
     /**
      * 续期**指定 ref**（RPC `account.refresh` / 定时器）。
@@ -100,6 +127,9 @@ export declare class GeminiAuth extends Service {
      * ⚠️ 只读写传入的 ref，**不碰**默认单凭据 ref。
      * ⚠️ **走共享实现 `refreshAccountWithReconcile`** —— 它保证「凭据仍有效」时
      * 也把池值对账（否则 UI 会永远显示「已过期」）。
+     *
+     * ⚠️ `accountId` **刻意不读 `refName`** 反查账号：账号 id 与 ref 名之间没有
+     * 可逆映射（ref 由 RPC 随机生成），只能由调用方传入。
      */
     refreshAccountCredential(refName: string, pool?: AccountPool, accountId?: string): Promise<void>;
     /**
@@ -147,6 +177,11 @@ export declare class GeminiAuth extends Service {
      *
      * 抽出来供 `refresh` / `refreshAccountCredential` / `refreshAll` 共用 ——
      * 一旦字段合并逻辑分叉，就会出现「某条路径丢了 sub/email」。
+     *
+     * @param accountId 该凭据所属账号（空串 = 直连，见 `fetcherFor`）。
+     * @param onSignal 拿到本次请求 signal 的回调（IKLTZ2 审计 P2-2：调用方的
+     *   catch 需要区分「我们自己超时了」与「上游报错」—— 前者才是墙外症状，
+     *   而它**不带** `UND_ERR_*` 码，只能靠 `signal.aborted` 判）。
      */
     private refreshCredential;
 }

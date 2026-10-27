@@ -80,6 +80,8 @@ export function apply(ctx) {
   }
   ctx.effect(() => installZcodeComposerReset({rpcCall}), 'jet-hub: 对话页模型选择器额度重置')
   const chatGptCall = createChatGptCall(ctx.connection)
+  const isolatedLoginCall = async payload => unwrapRpcResult(
+    await ctx.connection.rpc.call('/desktop-isolated-login', 'manage', payload))
 
   /**
    * zcode 内部 captcha 载体的贡献循环（二期 Task 4）。
@@ -99,7 +101,7 @@ export function apply(ctx) {
     id: 'jet-hub',
     order: 50,
     label: () => 'Jet Hub',
-    inject: () => ({ rpcCall, chatGptCall }),
+    inject: () => ({ rpcCall, chatGptCall, isolatedLoginCall }),
   }, JetHubPage))
 
   /**

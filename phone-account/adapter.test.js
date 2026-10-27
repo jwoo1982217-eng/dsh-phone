@@ -54,6 +54,29 @@ test('durable images become native base64 image blocks without mutating history'
   assert.deepEqual(body.messages[0].content[0],{type:'image',source:{type:'base64',media_type:'image/png',data:'AQID'}});assert.equal(options.messages[0].content[0].attachment.attachmentId,'image-fixture');
  }finally{globalThis.fetch=original;}
 });
+test('screenshots returned by tools resolve attachments after tool-role projection',async()=>{
+ const original=globalThis.fetch;let body,reads=0;
+ const attachment={attachmentId:'tool-image-fixture',mediaType:'image/png',bytes:3,width:1,height:1};
+ globalThis.fetch=async(url,init)=>{body=JSON.parse(init.body);return mock(textEvents);};
+ const tool={role:'tool',toolCallId:'shot-1',content:[{type:'image',attachment}]};
+ const options={...request,messages:[request.messages[0],{role:'assistant',content:[{type:'tool-call',id:'shot-1',name:'screenshot',arguments:'{}'}]},tool]};
+ const before=JSON.stringify(options);
+ try{
+  await collect(make(undefined,()=>({readImage:async()=>{reads++;return {ref:attachment,data:new Uint8Array([1,2,3])};}})),options);
+  assert.equal(reads,1);assert.equal(body.messages.at(-1).content[0].content[0].type,'image');assert.equal(JSON.stringify(options),before);
+ }finally{globalThis.fetch=original;}
+});
+test('nested tool images retain model capability checks and missing-service errors before transport',async()=>{
+ const original=globalThis.fetch;let calls=0;
+ globalThis.fetch=async()=>{calls++;return mock(textEvents);};
+ const image={type:'image',attachment:{attachmentId:'nested-fixture',mediaType:'image/png',bytes:3,width:1,height:1}};
+ const options={...request,messages:[{role:'user',content:[{type:'tool-result',toolCallId:'shot-1',content:[image]}]}]};
+ try{
+  await assert.rejects(()=>collect(make(),options),e=>e.code==='UNSUPPORTED_CONTENT');
+  const textOnly=new AccountMessagesAdapter({options:()=>resolveAdapterOptions({models:[{id:'deepseek-flash',inputModalities:['text']}]},{get:()=>undefined}),resolveApiKey:async()=> 'grant-for-test',resolveUserId:()=> 'test-user',resolveAttachments:()=>({readImage:async()=>{throw Error('must not read');}})});
+  await assert.rejects(()=>collect(textOnly,options),e=>e.code==='UNSUPPORTED_CONTENT'&&/does not accept image/.test(e.message));assert.equal(calls,0);
+ }finally{globalThis.fetch=original;}
+});
 test('truncated stream and malformed tool JSON fail instead of pretending completion',async()=>{
  const original=globalThis.fetch;
  try{

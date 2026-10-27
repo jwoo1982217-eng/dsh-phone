@@ -404,7 +404,7 @@ export function toToolDefs(tools, style) {
     // OpenAI — the forward listener's own caller, or anything re-feeding this
     // with `{type:'function', function:{…}}` — used to lose every tool to the
     // `if (!name) continue` below, silently: the request went upstream with an
-    // empty tool list and only the fingerprint quartet's decoys came back.
+    // empty tool list and only the fingerprint gate's placeholders came back.
     const source = tool && typeof tool.function === 'object' && tool.function !== null && !Array.isArray(tool.function)
       ? tool.function
       : tool

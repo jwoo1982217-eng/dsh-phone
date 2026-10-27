@@ -17,6 +17,7 @@ import {
   type AutoCheckinStore,
 } from '../../src/auto-checkin.js'
 import type { BadgeRpcResult } from '../../src/usage-badge.js'
+import { descriptorOf, PROVIDER_REGISTRY } from '../../src/provider-registry.js'
 import { ZCODE } from '../../src/zcode-product.js'
 import type { RpcCreditsClaimAllResponse } from '../../src/types.js'
 
@@ -563,26 +564,64 @@ describe('自动签到：排除「签到有代价」的渠道', () => {
    * 产 captcha 的 provider，而没人记得登记。这里锁的不变式是：
    * **会产 captcha 的 claim 分支，必须逐个登记进排除表。**
    *
-   * 做法：按 `if (req.provider === X)` 把 `claimAll` 切成一段段，看哪几段里
-   * 出现了 `mintCaptcha`。（不用「X 前后 4000 字符」那种窗口 —— 分支体长度
-   * 一变就悄悄失配，那正是本仓库反复吃过的那类假绿。）
+   * ## ⚠️ 2026-10-08（Task 11-B）：从**源码文本断言**改为 **registry 断言**
+   *
+   * 原实现 `readFileSync('src/jet-hub-rpc.ts')` 后按 `if (req.provider === ZCODE.id)`
+   * 切分支、再在该段里找 `mintCaptcha`。它有两重问题：
+   *
+   * 1. **会被无关重构弄假失败** —— 它依赖 `case 'credits.claimAll':` 的分支体形状
+   *    （`case` 边界、`if (req.provider === X)` 的写法、`ZCODE.id` 是否还以字面量出现）。
+   *    本 PR 的 Task 2/3/4/6 都大改过 `jet-hub-rpc.ts`，这类断言已在别处红过多次；
+   * 2. **判据来源错位** —— 「谁该被排除」的**唯一真相源**是 `PROVIDER_REGISTRY` 的
+   *    `autoCheckinExcluded`（`isAutoCheckinExcluded` 已改为查它，见该函数注释）。
+   *    扫源码文本等于在断言「实现里恰好有那串字符」，而不是断言那条登记本身。
+   *
+   * 现在断言的**两条**（都来自 registry，与实现写法无关）：
+   * - `zcode` 的 `autoCheckinExcluded` 为 `true`（它就是唯一会产 captcha 的家）；
+   * - 它的 `dailyCheckin` 为 `true`（否则「排除」就退化成「这家不支持签到」，
+   *   那条登记也就失去了意义 —— 被排除的前提是**本可以**自动签到）。
+   *
+   * ⚠️ 行为侧（zcode 真的能签到、且真的会现产 captcha）由
+   * `tests/unit/claim-runtime-parity.spec.ts` 的
+   * 「★ 豁免者 zcode 真的能签到（真跑端点，证明特例分支没断）」守 ——
+   * 那条真跑 `credits.claimAll` 并断言**逐 plan 展开 outcome** +
+   * **captcha 现产次数**，比本文件的文本断言强得多，故这里不重复。
+   *
+   * ## ⚠️ 反空洞自检（本仓库踩过的坑，Task 6 的 `trae-model-id-selection` 曾中招）
+   *
+   * 旧形态是「在源码里找符合某模式的块，然后遍历它们断言」—— 一旦模式失配，
+   * 匹配到 **0 块**，循环体不执行，用例**恒绿**（「保险失效比变红更糟」）。
+   * 本用例改为**无循环的直断言**，故不存在该风险；
+   * 但「**排除表整体**有没有退化成空 / 有没有别的家也该进来」仍需一个锚点，
+   * 由下面的**集合级**断言承担（它同时守住「排除表不许被静默清空」）。
    */
-  it('反向守护：会产 captcha 的 claim 分支必须登记进排除表', async () => {
-    const { readFileSync } = await import('node:fs')
-    const source = readFileSync(new URL('../../src/jet-hub-rpc.ts', import.meta.url), 'utf-8')
-    // 只看 `credits.claimAll` 这一段：`req.provider === ZCODE.id` 在余额端点里
-    // 也会出现，不按 `case` 边界切就会把两个端点混进来数成两个分支。
-    const claimAllAt = source.indexOf("case 'credits.claimAll':")
-    expect(claimAllAt).toBeGreaterThan(-1)
-    const nextCase = source.indexOf("case '", claimAllAt + 1)
-    const claimAll = source.slice(claimAllAt, nextCase === -1 ? undefined : nextCase)
-    const heads = [...claimAll.matchAll(/if \(req\.provider === (ZCODE\.id)\)/g)]
-    expect(heads.length).toBe(1)
-    const body = claimAll.slice(heads[0]!.index)
-    // 该分支体取到下一个 provider 分支（或 case 结束）为止
-    const nextBranch = body.slice(1).search(/if \(req\.provider === /)
-    const branchBody = nextBranch === -1 ? body : body.slice(0, nextBranch + 1)
-    expect(branchBody).toContain('mintCaptcha')
+  it('反向守护：会产 captcha 的 claim 分支必须登记进排除表（registry 判据）', () => {
+    const zcode = descriptorOf('zcode')
+    // 被排除的前提是「本可以自动签到」—— 否则这条登记名不副实。
+    expect(zcode?.credits?.dailyCheckin, 'zcode 应在 registry 里声明可签到').toBe(true)
+    expect(zcode?.autoCheckinExcluded, 'zcode 必须登记为「自动签到有代价」').toBe(true)
+    // 排除表本身（它已由 registry 派生）如实反映该登记。
     expect(isAutoCheckinExcluded(ZCODE.id)).toBe(true)
+
+    /**
+     * ⚠️ **反空洞锚点**：「排除表 == registry 里 `autoCheckinExcluded === true` 的家」
+     * 且该集合**非空**。
+     *
+     * 少了它，把 `autoCheckinExcluded` 从 registry 里**整体删掉**会让上面三条
+     * 全部退化成「对着 undefined 断言」—— 而本用例仍可能因措辞变化而假绿。
+     * 断言集合**逐项相等**（不是 `toContain`）则两个方向都锁死：
+     * 谁把某家漏登记、或谁把不该排除的家加进来，都会红并点名。
+     */
+    const excluded = PROVIDER_REGISTRY
+      .filter((d) => d.autoCheckinExcluded === true)
+      .map((d) => d.id)
+      .sort()
+    expect(
+      excluded,
+      '排除表与 registry 漂移：多出 = 有家被误排除（用户会失去自动签到），'
+      + '少出 = 有家「签到有代价」却没被排除（每次启动都会拉起 headful 浏览器）',
+    ).toEqual(['zcode'])
+    // ⚠️ 写死 `['zcode']` 是**有意**的：新增同样要产 captcha 的家时，
+    //    这条会先红，逼作者复核「它是不是也该进排除表」（而不是静默漏掉）。
   })
 })

@@ -23,12 +23,11 @@ import type {
   GenerateOptions, LlmModelInfo, LlmProviderInfo, LlmResolvedModelInfo, StreamChunk,
 } from '@deepseek-ai/dsh-llm'
 import type { IdentitySlot } from './opencode-auth.js'
-import type { OpencodeAdapter, OpencodeAdapterOptions } from './opencode-adapter.js'
-import { getOpencodeCapabilitiesSync } from './opencode-capability.js'
-import { OpencodeAdapter as ZenAdapter } from './opencode-adapter.js'
+import type { OpencodeAdapter } from './opencode-inference-adapter.js'
+import { OpencodeAdapter as ZenAdapter } from './opencode-inference-adapter.js'
 import type { OpencodeLocalAdapter } from './opencode-local-adapter.js'
 import { deriveProjectId } from './opencode.js'
-import { OPENCODE, OPENCODE_INFERENCE_MODELS, usesInferenceLane } from './opencode-product.js'
+import { OPENCODE, OPENCODE_INFERENCE_MODELS, usesInferenceLane } from './opencode-inference-product.js'
 
 /** 快通道的匿名槽（`Bearer public`，直连出口 IP 记账）。 */
 export function opencodeInferenceSlot(): IdentitySlot {
@@ -43,9 +42,9 @@ export function opencodeInferenceSlot(): IdentitySlot {
 }
 
 /** 构造一个只走匿名快通道的 Zen 适配器实例。 */
-export function createOpencodeInferenceAdapter(options: Pick<OpencodeAdapterOptions, 'readImage' | 'warn'> = {}): OpencodeAdapter {
+export function createOpencodeInferenceAdapter(): OpencodeAdapter {
   const slot = opencodeInferenceSlot()
-  return new ZenAdapter({ ...options, identitySlots: async () => [slot] })
+  return new ZenAdapter({ identitySlots: async () => [slot] })
 }
 
 export interface OpencodeHybridOptions {
@@ -67,14 +66,6 @@ export class OpencodeHybridAdapter extends LlmAdapter {
     super()
   }
 
-  /** 已有视觉型号整体保留原生通道；不能用 /zen 的视觉声明冒充快通道已验证。 */
-  private useFast(model: string): boolean {
-    if (!usesInferenceLane(model)) return false
-    const local = this.local.service?.cachedModels().find(entry => entry.id === model)
-    const capability = getOpencodeCapabilitiesSync().find(entry => entry.id === model)
-    return local?.inputModalities.includes('image') !== true && capability?.modalities.includes('image') !== true
-  }
-
   providerInfo(provider: string): LlmProviderInfo {
     return { id: provider, name: OPENCODE.displayName }
   }
@@ -85,7 +76,7 @@ export class OpencodeHybridAdapter extends LlmAdapter {
     const seen = new Set(local.map((m) => m.id))
     // 快通道模型全部为免费档；与本地目录重名时以本地为准（本地优先，行为不变）。
     const extra = OPENCODE_INFERENCE_MODELS
-      .filter((m) => this.useFast(m.id) && !seen.has(m.id) && !disabled.has(m.id))
+      .filter((m) => !seen.has(m.id) && !disabled.has(m.id))
       .map((m) => ({ id: m.id, name: m.name, isFree: true }))
     return [...local, ...extra]
   }
@@ -97,20 +88,14 @@ export class OpencodeHybridAdapter extends LlmAdapter {
     // 只取快通道实测表内的条目：fast.listModels 的目录还含旧 /zen 免费模型，
     // 那些在本 provider 下没有可用通道，不能露给用户。
     const fast = (await this.fast.listModels(provider))
-      .filter((m) => this.useFast(m.id) && !seen.has(m.id) && !disabled.has(m.id))
+      .filter((m) => usesInferenceLane(m.id) && !seen.has(m.id) && !disabled.has(m.id))
     return [...local, ...fast]
   }
 
   async resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo> {
-    if (this.useFast(model)) return this.fast.resolveModel(provider, model, signal)
+    if (usesInferenceLane(model)) return this.fast.resolveModel(provider, model, signal)
     // OpencodeLocalAdapter.resolveModel 只有 (provider, id) 两个参数。
     return this.local.resolveModel(provider, model)
-  }
-
-  async prepareCall(provider: string, model: string, signal?: AbortSignal) {
-    // 后台能力刷新不能让同一次请求的元信息与发送切到两个不同通道。
-    const adapter = this.useFast(model) ? this.fast : this.local
-    return adapter.prepareCall(provider, model, signal)
   }
 
   handleRpc(method: string, payload: unknown): Promise<unknown | undefined> {
@@ -118,7 +103,7 @@ export class OpencodeHybridAdapter extends LlmAdapter {
   }
 
   async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    if (this.useFast(options.model)) {
+    if (usesInferenceLane(options.model)) {
       yield* this.fast.stream(options)
       return
     }

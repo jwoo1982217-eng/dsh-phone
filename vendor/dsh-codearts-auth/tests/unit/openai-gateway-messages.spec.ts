@@ -1,3 +1,4 @@
+import { normalizeHarnessMessages } from '../../src/message-shape.js'
 import { describe, expect, it } from 'vitest'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { parseModelRoute, toGenerateOptions, OpenAiGatewayError, normalizeReasoningEffort, normalizeMaxTokens, type ReasoningEffortNotice } from '../../src/openai-gateway/messages.js'
@@ -27,7 +28,9 @@ const bridge = {
  * 该模型根本不认识的档位硬塞过去。
  */
 describe('normalizeReasoningEffort', () => {
-  const ON_OFF = { reasoning: { efforts: [{ id: 'on' }, { id: 'off' }] } }
+  // ⚠️ 顺序按真实声明（强度序：`off` 在 `on` 前，Issue IKLIDV）。
+  // 翻译层按 rank 就近匹配、**不看位置**，故顺序在此不影响任何结论。
+  const ON_OFF = { reasoning: { efforts: [{ id: 'off' }, { id: 'on' }] } }
 
   it('★ 模型未声明思考档位时不下发该参数（而不是原样透传未知的档位）', () => {
     // 原样透传会得到 DSH 侧的 UNSUPPORTED_REASONING_EFFORT（实机报障原句）。
@@ -201,7 +204,7 @@ describe('OpenAI gateway request conversion', () => {  it('parses a namespaced m
   })
 
   it('maps generic reasoning levels to the provider declared on/off levels', () => {
-    const info = { reasoning: { efforts: [{ id: 'on' }, { id: 'off' }] } }
+    const info = { reasoning: { efforts: [{ id: 'off' }, { id: 'on' }] } }
     expect(normalizeReasoningEffort('max', info)).toBe('on')
     expect(normalizeReasoningEffort('high', info)).toBe('on')
     expect(normalizeReasoningEffort('none', info)).toBe('off')
@@ -316,5 +319,221 @@ describe('OpenAI gateway request conversion', () => {  it('parses a namespaced m
       messages: [{ role: 'user', content: 'hello' }],
       tool_choice: { type: 'function', function: { name: 'read' } },
     }, new AbortController().signal)).rejects.toThrow(/tool_choice/i)
+  })
+
+  // ⚠️⚠️ **真实缺陷回归**（Gitee issue IKLRIK，2026-10-14 用户报障）：
+  // 「空名 function_call 在网关两条入口都硬 400 —— 客户端每轮重放坏块，整条会话报废」。
+  //
+  // 客户端（Claude Desktop → cc-switch → 本机网关）历史里落了一条 `name: ""` 的
+  // `tool_use`，客户端回 `No such tool available:` —— 此后**每轮必 400**
+  //（`assistant.tool_calls contains an invalid function call`，实测 37ms）。
+  //
+  // 关键在于**位置**：下游每一层（`resolveToolPairing`，九个适配器都调它）对同一份
+  // 坏数据都是「剔除并继续」，而网关站在所有那些防线**之前**。同一个仓库里两套口径，
+  // 更严的那套在最外层 —— 于是可恢复数据在最外层变成致命参数错误。
+  // ⇒ 网关必须按同一取舍处理：**剔除，不拒绝**。
+  describe('★ 空名 tool_call 是剔除而不是 400（Issue IKLRIK）', () => {
+    const emptyNameCall = (id: string, args = '{"command":"ls"}') => ({
+      id, type: 'function', function: { name: '', arguments: args },
+    })
+
+    it('name 为空串：剔除该调用与配对的 tool 结果，其余历史照常发给上游（不再 400）', async () => {
+      const options = await toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'user', content: 'ping' },
+          { role: 'assistant', content: null, tool_calls: [emptyNameCall('call_bad')] },
+          { role: 'tool', tool_call_id: 'call_bad', content: 'No such tool available: ' },
+        ],
+      }, new AbortController().signal)
+
+      // 剔除的是**坏块本身**：不得在 wire 上留下空名调用。
+      expect(JSON.stringify(options.messages)).not.toContain('call_bad')
+      const blocks = normalizeHarnessMessages(options.messages).flatMap(message => message.content ?? [])
+      expect(blocks.filter(block => block.type === 'tool-call')).toHaveLength(0)
+      // ⚠️ 配对的工具结果必须**一并**剔除：孤儿 `tool-result` 上游照样拒。
+      expect(blocks.filter(block => block.type === 'tool-result')).toHaveLength(0)
+      // 正常历史不受影响（用户那句话还在）。
+      expect(options.messages[0].role).toBe('user')
+    })
+
+    it('同批里的其它调用不受影响（剔除是按条，不是整批）', async () => {
+      const options = await toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'user', content: 'ping' },
+          { role: 'assistant', content: null, tool_calls: [
+            emptyNameCall('call_bad'),
+            { id: 'call_ok', type: 'function', function: { name: 'Bash', arguments: '{"command":"ls"}' } },
+          ] },
+          { role: 'tool', tool_call_id: 'call_bad', content: 'No such tool available: ' },
+          { role: 'tool', tool_call_id: 'call_ok', content: 'file list' },
+        ],
+      }, new AbortController().signal)
+
+      const calls = normalizeHarnessMessages(options.messages)
+        .flatMap(message => message.content ?? [])
+        .filter(block => block.type === 'tool-call')
+      // 好的那条必须原样保留（含名字与参数）。
+      expect(calls).toEqual([{ type: 'tool-call', id: 'call_ok', name: 'Bash', arguments: '{"command":"ls"}' }])
+      const results = normalizeHarnessMessages(options.messages)
+        .flatMap(message => message.content ?? [])
+        .filter(block => block.type === 'tool-result')
+      // 只有好调用的结果留下 —— 坏调用那条结果已剔除，好调用的结果**不能**被连带剔掉。
+      expect(results.map((block: any) => block.toolCallId)).toEqual(['call_ok'])
+    })
+
+    // ⚠️ 判据必须用共享的 `hasUsableToolName`（**trim 后**非空），不能自己写
+    // `length > 0`：后者会把全空白名放过去，而上游同样拒它。
+    it('全空白名同样剔除（判据是 trim 后非空，不是 length > 0）', async () => {
+      const options = await toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'user', content: 'ping' },
+          { role: 'assistant', content: null, tool_calls: [
+            { id: 'call_blank', type: 'function', function: { name: '   ', arguments: '{}' } },
+          ] },
+          { role: 'tool', tool_call_id: 'call_blank', content: 'nope' },
+        ],
+      }, new AbortController().signal)
+      expect(JSON.stringify(options.messages)).not.toContain('call_blank')
+    })
+
+    // ⚠️ 反向边界：**只放宽「名字」这一格**。`id` 缺失是真·形状错误，不能一并放行 ——
+    // 那会让这条用例变成「什么都放过」的空断言。
+    it('id 缺失仍然报错（放宽的只有 name 这一格）', async () => {
+      await expect(toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'assistant', content: null, tool_calls: [
+            { type: 'function', function: { name: 'Bash', arguments: '{}' } },
+          ] },
+        ],
+      }, new AbortController().signal)).rejects.toThrow(/invalid function call/)
+    })
+
+    it('名字可用但 arguments 不是字符串仍然报错', async () => {
+      await expect(toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'assistant', content: null, tool_calls: [
+            { id: 'call_1', type: 'function', function: { name: 'Bash', arguments: { command: 'ls' } } },
+          ] },
+        ],
+      }, new AbortController().signal)).rejects.toThrow(/invalid function call/)
+    })
+
+    // ⚠️⚠️ **判据一致性守卫**（本仓库首条红线：同一语义不得有两套判据）。
+    // 本修法要在**两处**判断同一调用「坏不坏」：主转换（`convertToolCalls`）与
+    // 预扫（`collectUnusableCallIds`）。两处若各写一遍 id/名字判据，改一处忘另一处
+    // 就会**静默漂移**。
+    //
+    // ⚠️ **第一版这条用例没有牙**（反向验证实测：把预扫的 id 判据改成 trim、与主转换
+    // 漂移后，它**仍全绿**）—— 因为原用例的 id 都是「规整」的，两套判据结论恰好相同。
+    // **有区分力的输入是「id 带首尾空格」的坏调用**：客户端回传结果时用的就是**原样**
+    // id，于是预扫 trim 成 `call_bad` 去查、结果那侧是 `  call_bad  ` ⇒ 查不中 ⇒
+    // **孤儿 tool-result 泄漏到 wire 上**（漂移探针实测确有此残迹，而上游照样 400）。
+    // ⇒ 判据必须落在「原样 id」上：id 是不透明标识符，`trim` 会配错对象。
+    it('★ 预扫与主转换必须对同一条调用给出一致结论（id 带空格也不得漂移）', async () => {
+      // 混合历史：坏调用（空名）与好调用共存，且坏调用的 id 长度/形态各异，
+      // **含带首尾空格、含全空白名**两份。
+      const messages = [
+        { role: 'user', content: 'ping' },
+        { role: 'assistant', content: null, tool_calls: [
+          { id: 'call_bad_1', type: 'function', function: { name: '', arguments: '{}' } },
+          { id: 'call_ok', type: 'function', function: { name: 'Bash', arguments: '{"command":"ls"}' } },
+          { id: 'call_bad_2', type: 'function', function: { name: '   ', arguments: '{}' } },
+          { id: '  call_bad_3  ', type: 'function', function: { name: '', arguments: '{}' } },
+        ] },
+        { role: 'tool', tool_call_id: 'call_bad_1', content: 'no tool' },
+        { role: 'tool', tool_call_id: 'call_ok', content: 'ok' },
+        { role: 'tool', tool_call_id: 'call_bad_2', content: 'no tool' },
+        // ⚠️ 结果的 id 与调用**逐字符相同**（含首尾空格）—— 客户端就是这么回传的。
+        { role: 'tool', tool_call_id: '  call_bad_3  ', content: 'no tool' },
+      ]
+      const options = await toGenerateOptions(
+        { model: 'hub/hub-deepseek-v4.1-flash', messages },
+        new AbortController().signal,
+      )
+      const blocks = normalizeHarnessMessages(options.messages).flatMap(message => message.content ?? [])
+      const wire = JSON.stringify(options.messages)
+      // 三条坏调用**都**必须被剔除，且**都不留残迹**（含那条带空格的 id）。
+      expect(wire).not.toContain('call_bad_1')
+      expect(wire).not.toContain('call_bad_2')
+      expect(wire).not.toContain('call_bad_3')
+      // 好调用及其结果**都**必须保留。
+      expect(blocks.filter(block => block.type === 'tool-call')).toEqual([
+        { type: 'tool-call', id: 'call_ok', name: 'Bash', arguments: '{"command":"ls"}' },
+      ])
+      expect(blocks.filter(block => block.type === 'tool-result').map((block: any) => block.toolCallId))
+        .toEqual(['call_ok'])
+    })
+
+    // ⚠️⚠️ **重复 `call_id` 时好调用的回执被连带剔除**（对抗审计实测打穿的真回归，
+    // 两个端点同形）：第一版剔除判据是「结果 id 在**坏调用** id 集合里」，当同一个
+    // `call_id` 上**既有坏调用、又有好调用**时它无法区分两者 ⇒ 好调用的回执也被剔掉
+    // ⇒ **留下孤儿 `tool-call`**（上游照样拒）。实测 `tool-calls=["dup"], results=[]`。
+    // ⇒ 判据必须是「**该 id 上是否还有任何可用调用**」（`dropped && !kept`）。
+    it('★ 重复 call_id：坏调用不得连带剔掉好调用的回执（否则好调用变孤儿）', async () => {
+      const options = await toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'user', content: 'ping' },
+          { role: 'assistant', content: null, tool_calls: [
+            { id: 'dup', type: 'function', function: { name: '', arguments: '{}' } },
+            { id: 'dup', type: 'function', function: { name: 'Bash', arguments: '{"cmd":"ls"}' } },
+          ] },
+          { role: 'tool', tool_call_id: 'dup', content: 'file list' },
+        ],
+      }, new AbortController().signal)
+
+      const blocks = normalizeHarnessMessages(options.messages).flatMap(message => message.content ?? [])
+      expect(blocks.filter(block => block.type === 'tool-call')).toEqual([
+        { type: 'tool-call', id: 'dup', name: 'Bash', arguments: '{"cmd":"ls"}' },
+      ])
+      expect(blocks.filter(block => block.type === 'tool-result').map((block: any) => block.toolCallId))
+        .toEqual(['dup'])
+    })
+
+    // ⚠️⚠️ **tool_calls 全被剔光时，整条 assistant 消息也必须剔除**（独立审计实测指出）。
+    // 否则「剔除坏调用」只是把 400 从网关挪到了上游：这条 assistant 会变成
+    // **content 为空**的助手消息、成为 wire 上的**开头发言**（实测经
+    // `serializeMessages` 产出 `[{role:'assistant',content:''}]` 且**无任何 user 消息**）
+    // ⇒ 对 OpenAI 兼容端点是典型的 `model_param_invalid` 400。
+    //
+    // ⚠️ 边界（必须一起锁）：**正文非空**的 assistant 即使调用被剔光也要保留 ——
+    // 那是模型真实的发言、用户在界面上真看到的内容，剔掉会让它从历史里消失。
+    it('★ 坏调用全被剔光且正文为空：整条 assistant 必须剔除（不是留一条空的）', async () => {
+      const options = await toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'user', content: 'ping' },
+          { role: 'assistant', content: null, tool_calls: [emptyNameCall('call_bad')] },
+          { role: 'tool', tool_call_id: 'call_bad', content: 'No such tool available: ' },
+        ],
+      }, new AbortController().signal)
+
+      // 不得留下「content 为空」的 assistant（它会成为 wire 上的开头发言）。
+      const emptyAssistant = options.messages.filter(
+        message => message.role === 'assistant' && (message.content ?? []).length === 0,
+      )
+      expect(emptyAssistant).toHaveLength(0)
+      // 用户那句话照常在。
+      expect(options.messages.map(message => message.role)).toEqual(['user'])
+    })
+
+    it('★ 边界：正文非空的 assistant（调用被剔光）必须保留（那是模型真实发言）', async () => {
+      const options = await toGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        messages: [
+          { role: 'user', content: 'ping' },
+          { role: 'assistant', content: '我先看看', tool_calls: [emptyNameCall('call_bad')] },
+        ],
+      }, new AbortController().signal)
+
+      const assistant = options.messages.find(message => message.role === 'assistant')
+      expect(assistant).toBeDefined()
+      expect(assistant!.content).toEqual([{ type: 'text', text: '我先看看' }])
+    })
   })
 })

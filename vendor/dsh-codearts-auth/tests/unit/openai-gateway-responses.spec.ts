@@ -1,3 +1,4 @@
+import { normalizeHarnessMessages } from '../../src/message-shape.js'
 import { describe, expect, it } from 'vitest'
 import type { StreamChunk } from '@deepseek-ai/dsh-llm'
 import { OpenAiGatewayError } from '../../src/openai-gateway/messages.js'
@@ -391,6 +392,114 @@ describe('Responses API 请求转换', () => {
     expect(options.messages[1].content).toContainEqual(expect.objectContaining({
       type: 'tool-call', id: 'call-1', name: 'mcp__files____read',
     }))
+  })
+
+  // ⚠️⚠️ **真实缺陷回归**（Gitee issue IKLRIK）：历史里一条 `name: ""` 的
+  // `function_call` 让 `/v1/responses` 直接 400（`function_call requires call_id,
+  // name and string arguments`，实测 21ms），而把同一个字段换成 `name: "Bash"`
+  // 就是 200。坏块一旦落进客户端会话就被每轮原样重放 ⇒ **该会话永久不可用**。
+  // 下游（`resolveToolPairing`）对同一份数据是「剔除并继续」，网关必须同取舍。
+  describe('★ 空名 function_call 是剔除而不是 400（Issue IKLRIK）', () => {
+    it('name 为空串：剔除该调用与配对的 function_call_output，请求不再 400', async () => {
+      const options = await toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'message', role: 'user', content: 'ping' },
+          { type: 'function_call', call_id: 'rs_bad', name: '', arguments: '{"command":"ls"}' },
+          { type: 'function_call_output', call_id: 'rs_bad', output: 'No such tool available: ' },
+        ],
+        tools: [{ type: 'function', name: 'Bash', description: 'run a command', parameters: {} }],
+      }, abort())
+
+      expect(options.messages[0].role).toBe('user')
+      const blocks = normalizeHarnessMessages(options.messages).flatMap(message => message.content ?? [])
+      // 坏调用被剔除。
+      expect(blocks.filter(block => block.type === 'tool-call')).toHaveLength(0)
+      // ⚠️ 配对的工具结果**必须一并**剔除：留下孤儿结果上游照样拒（两侧都管同因）。
+      expect(blocks.filter(block => block.type === 'tool-result')).toHaveLength(0)
+    })
+
+    it('同批的其它调用及其结果不受影响（按条剔除，不是整批）', async () => {
+      const options = await toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'message', role: 'user', content: 'ping' },
+          { type: 'function_call', call_id: 'rs_bad', name: '', arguments: '{}' },
+          { type: 'function_call', call_id: 'rs_ok', name: 'Bash', arguments: '{"command":"ls"}' },
+          { type: 'function_call_output', call_id: 'rs_bad', output: 'No such tool available: ' },
+          { type: 'function_call_output', call_id: 'rs_ok', output: 'file list' },
+        ],
+      }, abort())
+
+      const blocks = normalizeHarnessMessages(options.messages).flatMap(message => message.content ?? [])
+      expect(blocks.filter(block => block.type === 'tool-call')).toEqual([
+        { type: 'tool-call', id: 'rs_ok', name: 'Bash', arguments: '{"command":"ls"}' },
+      ])
+      // 好调用的结果**不能**被连带剔掉。
+      expect(blocks.filter(block => block.type === 'tool-result').map((block: any) => block.toolCallId))
+        .toEqual(['rs_ok'])
+    })
+
+    it('全空白名同样剔除（判据是 trim 后非空，与适配器共享同一份）', async () => {
+      const options = await toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'message', role: 'user', content: 'ping' },
+          { type: 'function_call', call_id: 'rs_blank', name: '  ', arguments: '{}' },
+          { type: 'function_call_output', call_id: 'rs_blank', output: 'nope' },
+        ],
+      }, abort())
+      expect(JSON.stringify(options.messages)).not.toContain('rs_blank')
+    })
+
+    // ⚠️ 反向边界：**只放宽「名字」这一格**。名字**可用**却没有 `call_id` 仍是
+    // 真·形状错误（无从配对），必须照旧 400 —— 否则这条用例会退化成「什么都放过」
+    // 的空断言，而这正是本 issue 要求「不要一刀切放宽」的地方。
+    it('名字可用但 call_id 缺失仍然报错（放宽的只有 name 这一格）', async () => {
+      await expect(toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'message', role: 'user', content: 'ping' },
+          { type: 'function_call', name: 'Bash', arguments: '{}' },
+        ],
+      }, abort())).rejects.toThrow(/requires call_id, name and string arguments/)
+    })
+
+    // ⚠️ **两处都坏时的方向是刻意的**（判断顺序本身有语义）：`name` 与 `call_id`
+    // **同时**不可用时取「剔除」而不是 400。理由是名字不可用的调用本就无法回放，
+    // 而它正是本 issue 里让会话报废的那条数据 —— 对它的方向必须取「不 400」。
+    it('name 与 call_id 同时缺失时取剔除（不 400）：这正是会报废会话的那条数据', async () => {
+      const options = await toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'message', role: 'user', content: 'ping' },
+          { type: 'function_call', name: '', arguments: '{}' },
+        ],
+      }, abort())
+      expect(options.messages).toHaveLength(1)
+      expect(options.messages[0].role).toBe('user')
+    })
+
+    it('名字可用但 arguments 不是字符串仍然报错', async () => {
+      await expect(toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'message', role: 'user', content: 'ping' },
+          { type: 'function_call', call_id: 'rs_1', name: 'Bash', arguments: { command: 'ls' } },
+        ],
+      }, abort())).rejects.toThrow(/requires call_id, name and string arguments/)
+    })
+
+    // ⚠️ 剔除到最后一条不剩时，必须报**原有的**「没有可用消息」错误，
+    // 而不是静默发一个空 messages 数组给上游。
+    it('坏块是唯一内容时仍明确报错（不是静默发空历史）', async () => {
+      await expect(toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'function_call', call_id: 'rs_bad', name: '', arguments: '{}' },
+        ],
+      }, abort())).rejects.toThrow(/no usable message/)
+    })
   })
 })
 
@@ -836,5 +945,285 @@ describe('Responses API 输出（流式）', () => {
     ]), request)
     const completed = events.at(-1)!.data.response
     expect(completed.output[0].content[0].text).toBe('只有结束帧')
+  })
+
+  // ⚠️⚠️ **真实缺陷回归**（Gitee issue IKLRIK 第 3 条，响应向的对称缺口）：
+  // 名字始终不可用的 `function_call` 若把 `output_item.added` 发出去，客户端就会
+  // 照着建行并**持久化进会话**；之后每轮把这条 `{name:''}` 回传，网关入站再 400
+  // ⇒ 会话报废（这正是本次报障会话报废的起点）。
+  // ⇒ 判据：**名字不可用的工具调用一个事件都不发**（连 done 也不发），
+  //   并且不得进 `response.completed.output`。
+  describe('★ 空名 function_call 不得发给客户端（Issue IKLRIK 第 3 条）', () => {
+    it('名字始终不可用：不发任何 function_call 事件，且不进 output', async () => {
+      const events = await readSse(chunks([
+        { type: 'tool-call-delta', index: 0, id: 'call_bad' as never, name: '' as never, argumentsDelta: '{"command":"ls"}' },
+        { type: 'tool-call-delta', index: 0, id: 'call_bad' as never, name: undefined, argumentsDelta: '' },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]), request)
+
+      const names = events.map(event => event.event)
+      expect(names).not.toContain('response.output_item.added')
+      expect(names).not.toContain('response.output_item.done')
+      expect(names).not.toContain('response.function_call_arguments.delta')
+      expect(names).not.toContain('response.function_call_arguments.done')
+      const completed = events.at(-1)!.data.response
+      expect(completed.output.filter((item: any) => item.type === 'function_call')).toHaveLength(0)
+      // ⚠️ 整条流里都不得出现那个坏名字/id（否则客户端照样能持久化它）。
+      const wire = events.map(event => JSON.stringify(event.data)).join('')
+      expect(wire).not.toContain('call_bad')
+    })
+
+    // ⚠️ 非流式是与流式**另一条组装路径**（`hasContent` 过滤），必须单独锁：
+    // 只修一条等于「同一份历史在 stream:true 上放行、在 stream:false 上泄漏」。
+    it('非流式：同样不进 output（两条组装路径都要守）', async () => {
+      const result = await collectResponsesResult(chunks([
+        { type: 'tool-call-delta', index: 0, id: 'call_bad' as never, name: '' as never, argumentsDelta: '{}' },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]), 'resp_bad', 'qoder/qfmodel', request)
+      const output = result.output as Array<Record<string, any>>
+      expect(output.filter(item => item.type === 'function_call')).toHaveLength(0)
+      expect(JSON.stringify(result)).not.toContain('call_bad')
+    })
+
+    // ⚠️ 名字在**后续分片**才到是合法形态（首片只给 id/参数）：added 必须延后到
+    // 那一刻补发，且**此前攒下的参数要全量补发**，否则参数会整段丢掉。
+    it('名字在后续分片才到：added 延后补发，且已攒参数全量补发（不丢参数）', async () => {
+      const events = await readSse(chunks([
+        { type: 'tool-call-delta', index: 0, id: 'call_ok' as never, name: '' as never, argumentsDelta: '{"comm' },
+        { type: 'tool-call-delta', index: 0, id: 'call_ok' as never, name: undefined, argumentsDelta: 'and":"ls"}' },
+        { type: 'tool-call-delta', index: 0, id: 'call_ok' as never, name: 'Bash' as never, argumentsDelta: '' },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]), request)
+
+      const addedIndex = events.findIndex(event => event.event === 'response.output_item.added')
+      const deltaIndex = events.findIndex(event => event.event === 'response.function_call_arguments.delta')
+      // ⚠️ **顺序有牙**：added 必须排在任何 arguments.delta **之前** ——
+      // 否则客户端收到一个未知 item_id 的增量，严格实现会判协议错误。
+      expect(addedIndex).toBeGreaterThanOrEqual(0)
+      expect(deltaIndex).toBeGreaterThan(addedIndex)
+      expect(events[addedIndex].data.item).toMatchObject({ type: 'function_call', call_id: 'call_ok', name: 'Bash' })
+      // 参数一条都不能丢：分片拼接结果必须是完整的 JSON。
+      const deltas = events
+        .filter(event => event.event === 'response.function_call_arguments.delta')
+        .map(event => event.data.delta)
+        .join('')
+      expect(deltas).toBe('{"command":"ls"}')
+      const done = events.find(event => event.event === 'response.function_call_arguments.done')!.data
+      expect(done).toMatchObject({ name: 'Bash', arguments: '{"command":"ls"}' })
+      expect(events.at(-1)!.data.response.output[0]).toMatchObject({ type: 'function_call', name: 'Bash' })
+    })
+
+    // ⚠️⚠️ **名字的非空守卫**（issue 第 3 条点名的三处覆盖）：
+    // 分片带空串会盖掉已识别的名字 —— 而空串**不是 undefined**，旧判据
+    // `chunk.name !== undefined` 会放它过去，出站即 `unknown tool ""`。
+    it('★ 空串分片不得盖掉已识别的名字（delta 与 block-end 两处都要守）', async () => {
+      const events = await readSse(chunks([
+        { type: 'tool-call-delta', index: 0, id: 'call_1' as never, name: 'Bash' as never, argumentsDelta: '{"a"' },
+        // 后续分片带空串名字（实测形态）：无条件覆盖会把 Bash 抹成 ''。
+        { type: 'tool-call-delta', index: 0, id: 'call_1' as never, name: '' as never, argumentsDelta: ':1}' },
+        // block-end 同样带空串名字，且它是**权威覆盖**（后面不会再有帧来修）。
+        { type: 'block-end', index: 0, block: { type: 'tool-call', id: 'call_1' as never, name: '' as never, arguments: '{"a":1}' } },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]), request)
+
+      const added = events.find(event => event.event === 'response.output_item.added')!.data.item
+      expect(added.name).toBe('Bash')
+      const done = events.find(event => event.event === 'response.output_item.done')!.data.item
+      expect(done).toMatchObject({ type: 'function_call', name: 'Bash' })
+      // 关键：整条流里不得出现 `"name":""`（那正是会报废会话的形态）。
+      expect(events.map(event => JSON.stringify(event.data)).join('')).not.toContain('"name":""')
+    })
+
+    // ⚠️⚠️ **本修复自身的回归锁**（我第一版就是这么写错的，探针实测抓到）：
+    // `closeItem` 若以「**曾经**发过 added（`announced`）」为判据，则「首帧名字为空、
+    // `block-end` 才带真名」这种**正常形态**会被**整条丢弃** —— 而 `block-end` 正是
+    // 名字的权威来源（各适配器都在收尾循环里补发它）。
+    // ⇒ 判据必须是「名字**现在**是否可用」。丢一条名字与参数都齐全的真实调用，
+    //   比改前的坏形态更糟（用户看到工具调用凭空消失）。
+    it('★ 名字只在 block-end 才到（权威来源）：调用必须保留，不得整条丢弃', async () => {
+      const events = await readSse(chunks([
+        { type: 'tool-call-delta', index: 0, id: 'call_late' as never, name: '' as never, argumentsDelta: '{"cmd"' },
+        // `block-end` 才给出真实名字与完整参数（权威覆盖）。
+        { type: 'block-end', index: 0, block: { type: 'tool-call', id: 'call_late' as never, name: 'Bash' as never, arguments: '{"cmd":"ls"}' } },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]), request)
+
+      const completed = events.at(-1)!.data.response
+      const calls = completed.output.filter((item: any) => item.type === 'function_call')
+      expect(calls).toHaveLength(1)
+      expect(calls[0]).toMatchObject({ call_id: 'call_late', name: 'Bash', arguments: '{"cmd":"ls"}' })
+      // `added` 与 `done` 仍必须成对补齐（客户端按 added 建行、按 done 定稿）。
+      expect(events.filter(event => event.event === 'response.output_item.added')).toHaveLength(1)
+      expect(events.filter(event => event.event === 'response.output_item.done')).toHaveLength(1)
+    })
+
+    // ⚠️⚠️ **issue 附录第一条现场观察的正是这个形态**（既有缺陷，非本次引入，
+    // `git show HEAD` 可证旧代码无条件发出该增量）：
+    // 某 index 上**已经开着 reasoning 项**，随后又来 `tool-call-delta`（上游/聚合层
+    // 重试时 index 从 0 重排会这样）。旧代码会**用 reasoning 项的 `rs_…` id** 发出
+    // `function_call_arguments.delta` ⇒ 客户端组装出 `{id:'rs_…', name:''}` 并持久化，
+    // 每轮回传就是本 issue 的起点。
+    it('★ 同 index 已开 reasoning 项时来的 tool-call-delta：不得用 rs_ id 发 function_call 事件', async () => {
+      const events = await readSse(chunks([
+        { type: 'reasoning-delta', index: 0, text: '思考中' },
+        { type: 'tool-call-delta', index: 0, id: 'call_x' as never, name: 'Bash' as never, argumentsDelta: '{"cmd":"ls"}' },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]), request)
+
+      // 该 index 属于 reasoning ⇒ 不得出现任何 `function_call` 形态的事件。
+      const callEvents = events.filter(event =>
+        event.event.includes('function_call') || event.data.item?.type === 'function_call')
+      expect(callEvents).toHaveLength(0)
+      // ⚠️ 关键判据：不得有 `function_call` 增量（正是客户端组装出坏块的入口）。
+      expect(events.filter(event => event.event === 'response.function_call_arguments.delta')).toHaveLength(0)
+      // reasoning 项本身照常收尾，不受污染。
+      const completed = events.at(-1)!.data.response
+      expect(completed.output.map((item: any) => item.type)).toEqual(['reasoning'])
+    })
+
+    // ⚠️ **同一缺陷的对称方向**（同因同源，一起锁）：文本帧落在已开的**工具项**上。
+    // 旧行为会用 `fc_…` id 发出 `output_text.delta`，而正文在两处都不出现 ⇒
+    // **正文静默丢失**，客户端还可能把这段文本挂到工具调用行上。
+    it('★ 同 index 已开 function_call 项时来的 text-delta：不得用 fc_ id 发 output_text 事件', async () => {
+      const events = await readSse(chunks([
+        { type: 'tool-call-delta', index: 0, id: 'call_x' as never, name: 'Bash' as never, argumentsDelta: '{}' },
+        { type: 'text-delta', index: 0, text: '混进来的正文' },
+        { type: 'finish', reason: { kind: 'stop' } },
+      ]), request)
+
+      expect(events.filter(event => event.event === 'response.output_text.delta')).toHaveLength(0)
+      const completed = events.at(-1)!.data.response
+      // ⚠️ **关键判据是「不得挂错项」**：正文与工具调用是两件事，不能靠
+      // 「有没有 output_text.delta」一条断言就交代过去 —— 这里锁住 output 里
+      // 就是那一条工具调用，没有多出被污染的文本项。
+      expect(completed.output.map((item: any) => item.type)).toEqual(['function_call'])
+    })
+
+    // ⚠️ **刻意不写「方向 C」（异类 `block-end` 撞上已开项）的用例**：反向验证实测
+    // 「删掉该守卫 → 用例仍全绿」⇒ 那条守卫**没有可观测效果**（异类 `block-end` 被
+    // 灌进 reasoning 项后，`closeItem`/`outputItemJson` 仍按 `item.kind` 输出，
+    // `response.output` 逐字节相同）。写了就是恒真的虚假安全感。
+    // 守卫本身保留（与 `BlockAssembler` 同语义、且流式与非流式共用同一份判据），
+    // 但**不假装它有牙** —— 详见 `responses.ts` 的 `sameKind` 注释里那张证据表。
+  })
+
+  // ⚠️⚠️ **两条对抗审计实测打穿的回归**（我第一版修法引入的，都已修）。
+  describe('★ 对抗审计实测出的两条回归（Issue IKLRIK）', () => {
+    // ⚠️⚠️ **`output_index` 空洞**（P1）：`output_index` 的语义是「本项在 `output`
+    // 数组里的下标」。而 `outputOf` 会按 `hasContent` **过滤**掉无内容项 ——
+    // 原先对 `function_call` **恒**判 `true`（不会被过滤），故不产生空洞；本次修法
+    // 让它改按**名字是否可用**判 ⇒ 「名字不可用的工具项」会被过滤，若它仍在开项时
+    // **占掉了 `output_index 0`**，后面好项就从 1 开始而数组只有 1 项 ⇒ **下标越界**。
+    // 实测（对抗审计探针）：`added = [{oi:1, message}]` 而 `output.length === 1`。
+    // ⇒ 修法是**工具项的 `output_index` 延迟到真正发出/保留时才分配**。
+    it('★ 坏工具项不得占掉 output_index（否则后续项下标越界）', async () => {
+      const events = await readSse(chunks([
+        // index 0：空名工具调用（一个事件都不发、不进 output）
+        { type: 'tool-call-delta', index: 0, id: 'call_bad' as never, name: '' as never, argumentsDelta: '{}' },
+        // index 1：正常正文
+        { type: 'text-delta', index: 1, text: 'hello' },
+        { type: 'finish', reason: { kind: 'stop' } },
+      ]), request)
+
+      const completed = events.at(-1)!.data.response
+      const output = completed.output as Array<Record<string, any>>
+      expect(output).toHaveLength(1)
+      // 不变式：每个 `added` 事件的 `output_index` 必须**指向它自己的那一项**。
+      for (const event of events.filter(e => e.event === 'response.output_item.added')) {
+        const oi = event.data.output_index as number
+        expect(output[oi]).toBeDefined()
+        expect(output[oi].id).toBe(event.data.item.id)
+      }
+      // 该消息的 output_index 必须是 0（不是 1）。
+      expect(events.find(e => e.event === 'response.output_item.added')!.data.output_index).toBe(0)
+    })
+
+    it('★ 非流式同款：坏工具项不得占号（两条组装路径都要守）', async () => {
+      const result = await collectResponsesResult(chunks([
+        { type: 'tool-call-delta', index: 0, id: 'call_bad' as never, name: '' as never, argumentsDelta: '{}' },
+        { type: 'text-delta', index: 1, text: 'hello' },
+        { type: 'finish', reason: { kind: 'stop' } },
+      ]), 'resp_p1', 'qoder/qfmodel', request)
+      const output = result.output as Array<Record<string, any>>
+      expect(output.map(item => item.type)).toEqual(['message'])
+    })
+
+    // ⚠️⚠️ **重复 `call_id` 时好调用的回执被连带剔除**（P2）：第一版的剔除判据是
+    // 「结果 id 在**坏调用** id 集合里」，当同一个 `call_id` 上**既有坏调用、又有好
+    // 调用**时，它无法区分两者 ⇒ 好调用的回执也被剔掉 ⇒ **留下孤儿 `tool-call`**
+    // （上游照样拒）。实测（对抗审计探针，两端同形）：`tool-calls=["dup"],
+    // results=[]`。
+    // ⇒ 正确判据是「**该 id 上是否还有任何可用调用**」（`dropped && !kept`），
+    // 与下游 `resolveToolPairing` 的既有语义同一份。
+    it('★ 重复 call_id：坏调用不得连带剔掉好调用的回执（否则好调用变孤儿）', async () => {
+      const options = await toResponsesGenerateOptions({
+        model: 'hub/hub-deepseek-v4.1-flash',
+        input: [
+          { type: 'message', role: 'user', content: 'ping' },
+          { type: 'function_call', call_id: 'dup', name: '', arguments: '{}' },
+          { type: 'function_call', call_id: 'dup', name: 'Bash', arguments: '{"cmd":"ls"}' },
+          { type: 'function_call_output', call_id: 'dup', output: 'file list' },
+        ],
+      }, abort())
+
+      const blocks = normalizeHarnessMessages(options.messages).flatMap(message => message.content ?? [])
+      const calls = blocks.filter(block => block.type === 'tool-call')
+      const results = blocks.filter(block => block.type === 'tool-result')
+      // 好调用保留，且它的回执**必须一起保留**（否则 tool-call 无回执 = 孤儿）。
+      expect(calls).toEqual([{ type: 'tool-call', id: 'dup', name: 'Bash', arguments: '{"cmd":"ls"}' }])
+      expect(results.map((block: any) => block.toolCallId)).toEqual(['dup'])
+    })
+
+    // ⚠️⚠️ **B1：两条组装路径的 `output_index` 分配时刻必须同一份**（对抗审计以
+    // 并行工具 + **收尾逆序**实测打穿的回归）。`output_index` 的语义是「本项在
+    // `output[]` 里的下标」＝**开项顺序**；而各适配器的收尾顺序与开项顺序**相反**
+    //（工具块的 `block-end` 集中在流末尾补发，见 `buddy-adapter.ts` 的 `toolOrder` 段）。
+    // 我第一版让非流式在**收尾时**才占号 ⇒ 非流式退化成收尾顺序、与流式分叉
+    //（实测三工具场景：流式 `["cA","cB","cC"]` vs 非流式 `["cC","cB","cA"]`）。
+    //
+    // ⚠️ 判据必须是「**两条路径给出相同顺序**」，而不是各自内部自洽 ——
+    // 我原先那三条用例只覆盖「坏项被剔后不占号」，**锁不住分配时刻的漂移**。
+    // 且输入必须含**并行工具 + 收尾逆序**（顺序正确的单工具场景是恒真的）。
+    it('★ 并行工具 + 收尾逆序：流式与非流式必须给出同一顺序（= 开项顺序）', async () => {
+      const parallel = (): StreamChunk[] => [
+        { type: 'tool-call-delta', index: 0, id: 'cA' as never, name: 'Bash' as never, argumentsDelta: '{}' },
+        { type: 'tool-call-delta', index: 1, id: 'cB' as never, name: 'Bash' as never, argumentsDelta: '{}' },
+        { type: 'tool-call-delta', index: 2, id: 'cC' as never, name: 'Bash' as never, argumentsDelta: '{}' },
+        // ⚠️ 收尾完全逆序 2→1→0（与适配器的真实收尾形态一致）。
+        { type: 'block-end', index: 2, block: { type: 'tool-call', id: 'cC' as never, name: 'Bash' as never, arguments: '{}' } },
+        { type: 'block-end', index: 1, block: { type: 'tool-call', id: 'cB' as never, name: 'Bash' as never, arguments: '{}' } },
+        { type: 'block-end', index: 0, block: { type: 'tool-call', id: 'cA' as never, name: 'Bash' as never, arguments: '{}' } },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]
+      const events = await readSse(chunks(parallel()), request)
+      const streamIds = (events.at(-1)!.data.response.output as Array<Record<string, any>>)
+        .filter(item => item.type === 'function_call')
+        .map(item => item.call_id)
+      const nonstream = await collectResponsesResult(chunks(parallel()), 'resp_ord', 'qoder/qfmodel', request)
+      const nonstreamIds = (nonstream.output as Array<Record<string, any>>)
+        .filter(item => item.type === 'function_call')
+        .map(item => item.call_id)
+      // 顺序必须是**开项顺序**（不是收尾顺序）。
+      expect(streamIds).toEqual(['cA', 'cB', 'cC'])
+      // ⚠️ 核心不变式：两条路径**逐项相同**。
+      expect(nonstreamIds).toEqual(streamIds)
+    })
+
+    it('★ 工具先开、正文后开：两条路径的 output 顺序都必须取开项顺序', async () => {
+      const mixed = (): StreamChunk[] => [
+        { type: 'tool-call-delta', index: 0, id: 'cA' as never, name: 'Bash' as never, argumentsDelta: '{}' },
+        { type: 'text-delta', index: 1, text: '答案' },
+        // 工具先收尾、正文后收尾。
+        { type: 'block-end', index: 0, block: { type: 'tool-call', id: 'cA' as never, name: 'Bash' as never, arguments: '{}' } },
+        { type: 'block-end', index: 1, block: { type: 'text', text: '答案' } },
+        { type: 'finish', reason: { kind: 'tool-calls' } },
+      ]
+      const events = await readSse(chunks(mixed()), request)
+      const streamTypes = (events.at(-1)!.data.response.output as Array<Record<string, any>>).map(item => item.type)
+      const nonstream = await collectResponsesResult(chunks(mixed()), 'resp_mix', 'qoder/qfmodel', request)
+      const nonstreamTypes = (nonstream.output as Array<Record<string, any>>).map(item => item.type)
+      expect(streamTypes).toEqual(['function_call', 'message'])
+      expect(nonstreamTypes).toEqual(streamTypes)
+    })
   })
 })

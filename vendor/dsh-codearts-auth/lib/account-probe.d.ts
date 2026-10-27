@@ -28,6 +28,7 @@
  *    `resolveCredentialForAccount`（按 id，不检查 enabled），而非
  *    `getAvailableAccount`（自动选择，只认启用账号）。
  */
+import { type LlmAdapter } from '@deepseek-ai/dsh-llm';
 import type { BuddyCredential } from './buddy.js';
 import type { LobsteraiCredential } from './lobsterai.js';
 import type { QoderCredential } from './qoder.js';
@@ -73,6 +74,31 @@ export interface ProbeDeps {
     /** 单次探测超时；默认 {@link PROBE_TIMEOUT_MS}。 */
     timeoutMs?: number;
 }
+/**
+ * 按 provider 找到它的**探测适配器工厂**并造一个实例（Task 8）。
+ *
+ * ## ⚠️ 为什么未登记时**必须抛**，而不是落回某个默认适配器
+ *
+ * 旧实现是一条 `else if` 链，末尾的 `else` 兜底把**未登记的 provider** 交给
+ * 「**华为云 HMAC 签名**的 `CodeArtsAdapter`」去发别家凭据 ⇒
+ * 探测**必然失败**，而该 provider 的限流标记（UTC+8 当日 24:00）**永远清不掉**。
+ * 症状只是「重测按钮点了没用」—— 极难定位（`account-probe.ts` 的注释记录该缺陷
+ * **同型复发 4 次**：workbuddy → trae → qoder/qodercn/cline → zcode）。
+ *
+ * ⇒ 改为查能力注册表：**未登记 ⇒ 抛可读错误**（带 provider 名）。
+ * 这是**行为收紧**：未登记的渠道从「发一次必然失败的请求」变成「明确报不支持重测」。
+ * ⚠️ **该收紧是用户可见的**（2026-10-08 独立复审修正原注释的错误推论）：
+ * 原注释称「客户端能力表 `accountTest` 目前**只有 `gemini`**，故其余渠道本就没有入口」——
+ * 实测 `jet-hub.js` 里「重测所有」/「重置所有」/卡片级「重测」「重置」由
+ * **`supportsRateLimit`**（缺省 `true`）门控，与 `accountTest`（另一个「测试」按钮）
+ * **不是一个位** ⇒ 这些按钮对**所有未豁免 `rateLimit: false` 的渠道都会渲染**。
+ * 故本函数抛出的错误是**用户点得到**的路径（经 RPC 外层 catch 变成
+ * `jet-hub/handler-failed`），不是纯内部契约。
+ *
+ * ⚠️ 判据是 `runtime?.probe === undefined` —— **不能**只看 `runtimeOf(provider)`
+ * 是否有值：只注册了 `expiry` 等其它域的 provider **同样不支持重测**。
+ */
+export declare function adapterForProbe(provider: string, refName: string, credential: unknown, entry?: ProviderAccountEntry): LlmAdapter;
 /**
  * 重测单个账号：对该账号每个带限流标记的模型发一次真实请求，
  * 正常返回的模型清除标记。

@@ -503,9 +503,9 @@ export class RaccoonAuth extends Service {
     if (pool !== undefined) {
       try {
         // ⚠️ 返回类型是 `| null`（不是 undefined）—— 判空必须用 `!= null` 或显式 null。
-        const available = await pool.getAvailableAccount(this.product.id, '')
+        const available = await pool.getAvailableAccount<RaccoonCredential>(this.product.id, '')
         if (available !== null && available !== undefined) {
-          const credential = available.credential as unknown as RaccoonCredential
+          const credential = available.credential
           if (typeof credential?.access_token === 'string') return credential
         }
       } catch {

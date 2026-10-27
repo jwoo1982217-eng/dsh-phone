@@ -118,6 +118,34 @@ describe('index.ts 接线：聚合 provider', () => {
     expect(table).toBeGreaterThan(registered)
     expect(rpc).toBeGreaterThan(table)
   })
+
+  it('★★ 领取（claim）成功后必须清「临期折算缓存」（否则签到后 60 秒内 auto 仍说无候选）', () => {
+    // ⚠️⚠️ **真实缺陷，对抗审计实测证伪（2026-10-07）**：
+    //    `createExpiryProbe` 的折算缓存**也缓存 `UNUSABLE`**，而 `zcodeExpiry` 现在
+    //    把「余额为 0」判成 `UNUSABLE`（修掉「额度已尽仍被 auto 选中」）。zcode 的
+    //    每日赠送额度**要先领取才进 `balances` 桶** ⇒ 「先撞额度尽（写 `UNUSABLE`）
+    //    → 去签到成功 → 立刻用 auto」时，**最长 60 秒内 auto 仍说没有候选**，
+    //    用户会以为签到没用。
+    //
+    //    ⚠️ 旧实现不暴露它（那时「余额 0 但有可领活动」返回**当日**、不写 `UNUSABLE`）
+    //    —— 是本次收窄**引入**的时序。已有的两个清理入口（`onAccountAdded` /
+    //    拒绝表变更）**都不覆盖领取**：领取既不新增账号、也不改拒绝表。
+    //
+    // ⚠️ 判据测**意图**（领取路径真的调了清理），不写死整串 —— 容忍签名与写法扩展
+    //   （本仓库的接线断言惯例，见 `cline-adapter.spec.ts` 的注释）。
+    const rpc = readFileSync(join(here, '../../src/jet-hub-rpc.ts'), 'utf8')
+    // ① RPC 主入口：`credits.claimAll` 成功后清一次
+    expect(rpc, 'RPC 主入口必须按方法名判据清理')
+      .toMatch(/call\.method === 'credits\.claimAll'[\s\S]{0,200}clearExpiryCache/)
+    // ② 自动签到路径**绕过**主入口（它直接调 `handleMethod`）⇒ 必须单独清一次，
+    //    否则「启动时自动签到成功 → 用户马上用 auto」仍会撞缓存。
+    expect(rpc, '自动签到路径也必须清（它绕过 RPC 入口）')
+      .toMatch(/handleMethod\('credits\.claimAll'[\s\S]{0,300}clearExpiryCache/)
+    // ③ 适配器必须真的实现它（否则 `?.` 静默跳过 = 白接线）
+    const adapterSrc = readFileSync(join(here, '../../src/aggregate-adapter.ts'), 'utf8')
+    expect(adapterSrc, 'AggregateAdapter 必须实现 clearExpiryCache')
+      .toMatch(/clearExpiryCache\(\)[\s\S]{0,400}clear\?\.\(\)/)
+  })
 })
 
 /**

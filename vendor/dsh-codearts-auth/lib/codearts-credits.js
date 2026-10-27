@@ -1,3 +1,4 @@
+import { directFetch } from './direct-fetch.js';
 /**
  * 华为云 CodeArts 积分（「每日签到得积分」活动）。
  *
@@ -362,7 +363,7 @@ function parseCreditBalance(metrics) {
  *
  * 需要**失败原因**时用 {@link fetchCodeArtsAccountInfoDetailed}。
  */
-export async function fetchCodeArtsAccountInfo(credential, fetcher = fetch) {
+export async function fetchCodeArtsAccountInfo(credential, fetcher = directFetch) {
     const result = await fetchCodeArtsAccountInfoDetailed(credential, fetcher);
     return result.ok ? result.info : null;
 }
@@ -373,7 +374,7 @@ export async function fetchCodeArtsAccountInfo(credential, fetcher = fetch) {
  * 签名错误或凭据过期，把它们统一压成一句笼统文案，会让用户与排查者都拿不到
  * 线索（本仓库在 `credits.ts` / `lobsterai-credits.ts` 都刻意保留原始错误消息）。
  */
-export async function fetchCodeArtsAccountInfoDetailed(credential, fetcher = fetch) {
+export async function fetchCodeArtsAccountInfoDetailed(credential, fetcher = directFetch) {
     const url = `${CODEARTS_SNAP_ENGINE_URL}${CODEARTS_PACKAGE_INFO_PATH}`;
     const result = await signedSnapRequest('GET', url, credential, undefined, fetcher);
     if (!result.ok)
@@ -419,12 +420,12 @@ function parseActivity(item) {
  *
  * 需要**失败原因**时用 {@link fetchCodeArtsOpsActivitiesDetailed}。
  */
-export async function fetchCodeArtsOpsActivities(credential, fetcher = fetch) {
+export async function fetchCodeArtsOpsActivities(credential, fetcher = directFetch) {
     const result = await fetchCodeArtsOpsActivitiesDetailed(credential, fetcher);
     return result.ok ? result.activities : null;
 }
 /** 查询活动列表，失败时保留底层原因。 */
-export async function fetchCodeArtsOpsActivitiesDetailed(credential, fetcher = fetch) {
+export async function fetchCodeArtsOpsActivitiesDetailed(credential, fetcher = directFetch) {
     const url = `${CODEARTS_SNAP_ENGINE_URL}${CODEARTS_OPS_DELIVERY_PATH}?channel=${CODEARTS_OPS_CHANNEL}`;
     const result = await signedSnapRequest('GET', url, credential, undefined, fetcher);
     if (!result.ok)
@@ -460,7 +461,7 @@ export function findDailyCheckinActivity(activities) {
  * 注意第 3 步是**唯一的幂等保护**：本协议没有幂等键，也没有服务端
  * 「今天已签到」业务码可依赖，因此预检不能省。
  */
-export async function claimCodeArtsDailyCheckin(credential, fetcher = fetch) {
+export async function claimCodeArtsDailyCheckin(credential, fetcher = directFetch) {
     const infoResult = await fetchCodeArtsAccountInfoDetailed(credential, fetcher);
     if (!infoResult.ok) {
         return { kind: 'failed', code: -1, message: `账户信息查询失败：${infoResult.message}` };

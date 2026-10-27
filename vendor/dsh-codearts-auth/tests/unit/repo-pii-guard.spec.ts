@@ -4,7 +4,7 @@
  * ## 为什么需要它（真实缺陷，2026-10-06）
  *
  * 用户在 Gitee issue IKJQ3M 的复核过程中指出：`README.md` 里写着一个真实
- * 腾讯云账号的手机号（「实测白号 `18582895338` 第一轮仅…」）。它是**排查
+ * 腾讯云账号的手机号（「实测白号 `13011111100` 第一轮仅…」）。它是**排查
  * 过程中顺手贴进文档的实测证据**，但仓库是公开的，那个号码可被任何人检索。
  *
  * ⚠️ 这类泄露**极易复发**：实测记录天然带着「哪个账号、哪个号码、哪封邮箱」，
@@ -68,7 +68,7 @@ const FILES = trackedTextFiles()
 
 describe('仓库内不得残留真实个人敏感信息', () => {
   it('入库文本文件里没有完整 11 位手机号', () => {
-    // 真实缺陷：README.md 的「实测白号 18582895338」
+    // 真实缺陷：README.md 的「实测白号 13011111100」
     const re = /(?<!\d)1[3-9]\d{9}(?!\d)/g
     const hits: string[] = []
     for (const { path, text } of FILES) {
@@ -106,8 +106,8 @@ describe('仓库内不得残留真实个人敏感信息', () => {
     expect(FILES.length, '应扫到足量入库文件').toBeGreaterThan(200)
     expect(FILES.some((f) => f.path === 'README.md')).toBe(true)
     // 证明两条用例的正则在**未脱敏前**确实能命中（把它们锁死为有效判据）。
-    expect('实测白号 18582895338 第一轮'.match(/1[3-9]\d{9}/)).not.toBeNull()
-    expect('yinghaolin521@gmail.com'.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)).not.toBeNull()
+    expect('实测白号 13011111100 第一轮'.match(/1[3-9]\d{9}/)).not.toBeNull()
+    expect('nobody@example.test'.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)).not.toBeNull()
     // ⚠️ 豁免清单本身也要被验证，否则白名单可能悄悄放过真号码。
     expect(CONSTRUCTOR_SAMPLES.has('13011111100')).toBe(true)
   })

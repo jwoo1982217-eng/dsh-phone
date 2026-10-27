@@ -44,11 +44,11 @@ const WORKBUDDY_UA_CN = 'WorkBuddy/5.5.2 WorkBuddy/5.5.2 CLI/5.5.2';
  *
  * 以下字段与既有常量重复，属**待删除的重复定义**（等后续参数化任务把
  * `src/buddy.ts` / `src/buddy-auth.ts` 改为从本模块取值后即可删除）：
- * - `platform: 'ide'`          ↔ `src/buddy.ts:24`  `PLATFORM`
- * - `productCode: 'codebuddy'` ↔ `src/buddy.ts:79`  `BUDDY_PRODUCT_CODE`
- * - `userAgent: 'CodeBuddyIDE/1.106.1'` ↔ `src/buddy.ts:77`  `BUDDY_USER_AGENT`
- * - `defaultCredentialRef: 'BUDDY_ACCESS_TOKEN'` ↔ `src/buddy-auth.ts:27`  `BUDDY_CREDENTIAL_REF`
- * - `endpoint`/`apiDomain`     ↔ `src/buddy.ts:20/86`  `API_ENDPOINT` / `API_DOMAIN`
+ * - `platform: 'ide'`          ↔ `src/buddy.ts`  `PLATFORM`
+ * - `productCode: 'codebuddy'` ↔ `src/buddy.ts`  `BUDDY_PRODUCT_CODE`
+ * - `userAgent: 'CodeBuddyIDE/1.106.1'` ↔ `src/buddy.ts`  `BUDDY_USER_AGENT`
+ * - `defaultCredentialRef: 'BUDDY_ACCESS_TOKEN'` ↔ `src/buddy-auth.ts`  `BUDDY_CREDENTIAL_REF`
+ * - `endpoint`/`apiDomain`     ↔ `src/buddy.ts`  `API_ENDPOINT` / `API_DOMAIN`
  *
  * 迁移完成前两处取值必须保持一致，改动需同步（见文件头「迁移关系」）。
  */
@@ -173,6 +173,27 @@ export const CODEBUDDY = {
     cliVersion: '2.137.1',
     defaultCredentialRef: 'BUDDY_ACCESS_TOKEN',
     appendSessionParams: false,
+    // 合法登录站 / API 域：中国版登录站在 www.codebuddy.cn（`buddy.ts` 的
+    // WEBSITE_HOME），API 域是 copilot.tencent.com。两者都在本机真实凭据里出现过
+    // （12 条 `www.codebuddy.cn` + 8 条 `copilot.tencent.com`）。
+    //
+    // ⚠️⚠️ **`www.workbuddy.cn` 刻意不在这里**（虽然它是本产品的 `claimBase`）：
+    // 本字段的语义是「凭据里 `domain` 的合法值集合」，而 `domain` = token 的 `iss`
+    // 主机 = **登录站 / 认证 realm**。`www.workbuddy.cn` 是**成长中心网页站**
+    // （`claimBase` / `webBase`），**不签发 token**，因此永远不会作为 `iss` 出现在
+    // 凭据里 —— 把它登记进来属于**语义错位**。
+    //
+    // ⚠️ 更关键：`providerFromIssuer`（`plugin-src/client/backup-convert.js`）按
+    // 「host 含子串 `workbuddy`」分派，会把该域分派给 **workbuddy**；若这里也登记它，
+    // 两套判据对同一域给出**矛盾归属**（域表说 buddy、分派说 workbuddy）。
+    // 实测核对：登记它会让「knownDomains 归属 vs providerFromIssuer 归属」出现 1 处矛盾。
+    // ⇒ 两套判据必须同构：**只登记真正的 realm 主机**。
+    //
+    // ⚠️ 那「中国区旧 workbuddy 账号清不掉」怎么办？见 `knownDomains` 的注释：
+    // 未知域**保守保留**是刻意取舍（误留的代价远小于误删），且该域作为 realm
+    // **无任何实证**（本机 5 条 workbuddy 凭据的 `iss` 全是 `www.workbuddy.ai`）。
+    // 若将来拿到实证，正确修法是**同时**改分派判据与域表，不要只改一处。
+    knownDomains: ['copilot.tencent.com', 'www.codebuddy.cn', 'codebuddy.cn'],
     fallbackModels: CODEBUDDY_FALLBACK_MODELS,
 };
 /**
@@ -211,7 +232,7 @@ const WORKBUDDY_FALLBACK_MODELS = [
         // ⚠️ 档位取 5 档（issue IKJQSH）。本表是这两个模型的**唯一档位来源**：
         // 国际版 `/v3/config` 对它们**不下发 supportedEfforts**，只给一个单值
         // `reasoning: {effort:"high", summary:"auto"}`（即「固定 high、不提供选择」）。
-        // 而 `parseModelMeta`（src/buddy.ts:905）只认 `supportedEfforts` 数组与
+        // 而 `parseModelMeta`（src/buddy.ts）只认 `supportedEfforts` 数组与
         // `defaultEffort`，**不认识 `effort`** —— 故远端这个表态会被静默忽略，
         // 最终落到本表。写 `['high']` 意味着用户永远只有 high 可选，max 从未出现过。
         //
@@ -307,8 +328,13 @@ const WORKBUDDY_FALLBACK_MODELS = [
  *    登记为 `dailyCheckin: false` ⇒ 按钮不渲染 ⇒ `runTasks: true` 传不进来；
  * 2. **更根本的是**：contributor 在 !62 复审中实测确认 `www.workbuddy.ai` 后端
  *    **根本没有成长中心**（无任务列表、无 claim 端点）。故这不是「等将来开放」，
- *    而是「该产品没有这个功能」。`GROWTH_CAPABLE_PROVIDERS` 与客户端的
- *    `GROWTH_TASK_PROVIDERS` 都已据此**移除** `workbuddy`。
+ *    而是「该产品没有这个功能」。客户端 `GROWTH_TASK_PROVIDERS` 与宿主能力表
+ *    （`src/provider-credits.ts` 里**只有 buddy** 挂 `credits.afterClaim`）
+ *    都已据此**排除** `workbuddy`。
+ *
+ *    ⚠️ 2026-10-08（Task 4）：宿主侧原先另有一张手抄的 `GROWTH_CAPABLE_PROVIDERS`
+ *    集合，**已删除** —— 「哪家有成长中心」现在由「该家是否提供 `credits.afterClaim`」
+ *    回答（能力注册表说了算，不再有第二份可漂移的名单）。
  *
  * 两个字段保留是因为 `BuddyProduct` 把它们声明为必填；若将来类型放宽为可选，
  * 这里可以删掉（`claimBaseOf` / `webBaseOf` 已能正确处理空值并给出可读错误）。
@@ -343,9 +369,28 @@ export const WORKBUDDY = {
     defaultCredentialRef: 'WORKBUDDY_ACCESS_TOKEN',
     appendSessionParams: true,
     pluginVersion: '5.5.2',
+    // 国际版登录站与 API 域都是 www.workbuddy.ai（本机 5 条真实凭据的 iss 全是此值，
+    // 且本产品的 `apiDomain` 自引入起就从未是 `.cn`）。
+    // ⚠️ 这里列的是 `.ai` 的各 realm 主机形态。**没有 `.cn` 条目**：本机与 git 历史
+    // 均无 `.cn` 作为 WorkBuddy realm 的实证（`www.workbuddy.cn` 是中国区**成长中心**
+    // 站，见 `claimBase`，不是登录站）。
+    // ⚠️ 宁可多列本产品的合法域：`pruneAccountsWithForeignDomain` 只在**命中别的产品
+    // 的集合**时才删账号（见 `knownDomains` 的注释），故漏列会让跨机导入的账号被静默
+    // 删除；反之多列只会让一个本该清理的旧账号多留一会儿（它至多续期失败并在日志可见）。
+    knownDomains: ['www.workbuddy.ai', 'workbuddy.ai', 'auth.workbuddy.ai', 'api.workbuddy.ai'],
     fallbackModels: WORKBUDDY_FALLBACK_MODELS,
 };
-/** 全部产品配置，供按 id 查询与遍历注册使用。 */
+/**
+ * 全部 **CodeBuddy 系**产品配置，供按 id 查询与遍历注册使用。
+ *
+ * ⚠️ 只放同源产品（共用 cli-external-link 认证 + ProductProvider 机制）。
+ * **腾讯 OrcaTerm 不在此列**：它的登录是网页 cookie（微信扫码）而非
+ * `/v2/plugin/auth/state` 两步流程，塞进本表会让 `account.create` 把
+ * `product.endpoint`/`product.platform` 当有效值用，拼出
+ * `undefined/v2/plugin/auth/state?platform=undefined` 而失败
+ *（真机事故 2026-10-14）。OrcaTerm 的登录在 `jet-hub-rpc.ts` 的
+ * `account.create` 里走独立分支（见 `orcaterm-login.ts`）。
+ */
 export const ALL_PRODUCTS = [CODEBUDDY, WORKBUDDY];
 /** 按 provider id 取产品配置；未知 id 返回 undefined。 */
 export function productById(id) {

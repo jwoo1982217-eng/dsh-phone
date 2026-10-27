@@ -27,7 +27,7 @@ export function AutoclawLogin({ rpcCall, onClose, onSuccess }) {
       const phone = phoneRef.current?.value.trim() ?? ''
       if (!/^1[3-9]\d{9}$/.test(phone)) throw new Error('请输入 11 位有效手机号')
       if (!session.current) {
-        const result = await rpcCall('account.create', { provider: 'autoclaw' })
+        const result = await rpcCall('account.create', { provider: 'autoclaw', legacySms: true })
         session.current = result.accountId
         if (!live.current) { await rpcCall('autoclaw.cancel', { accountId: result.accountId }); return }
       }

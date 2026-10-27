@@ -39,10 +39,11 @@ export class NativeControlBridge {
       socket.once('close', () => { if (!settled) { cancel(); finish(Error('手机操作连接中断，结果未知；不要自动重复动作')); } });
     });
   }
-  async execute(owner, args, signal) {
+  async execute(owner, args, signal, command = 'execute') {
+    if (!['execute', 'virtual'].includes(command)) throw Error('无效的原生操作通道');
     const status = await this.call('status', { owner }, signal);
     let grant = status.grant;
     if (!grant) throw Error('请使用 DSH 手机工具同步现有会话权限');
-    return this.call('execute', { owner, epoch: grant.epoch, requestId: randomUUID(), args }, signal);
+    return this.call(command, { owner, epoch: grant.epoch, requestId: randomUUID(), args }, signal);
   }
 }

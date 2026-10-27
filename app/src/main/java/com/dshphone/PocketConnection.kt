@@ -15,11 +15,13 @@ class PocketConnection(
     private val activity: Activity,
     private val open: (String) -> Unit,
     private val legacy: () -> Unit,
+    private val peer: (() -> Unit)? = null,
 ) {
     private val preferences = activity.getSharedPreferences("pocket-connection", Activity.MODE_PRIVATE)
     fun savedUrl(): String? = preferences.getString("url", null)?.let(::normalize)
 
     fun openComputer() {
+        if (ComputerSelection(activity).isPeer() && peer != null) { peer.invoke(); return }
         val saved = savedUrl()
         if (saved != null) open(saved) else showConnections()
     }
@@ -27,7 +29,8 @@ class PocketConnection(
     fun showConnections() {
         val saved = savedUrl()
         val choices = mutableListOf<Pair<String, () -> Unit>>()
-        if (saved != null) choices.add("打开已连接电脑 · ${URI(saved).host}" to { open(saved) })
+        if (saved != null) choices.add("打开已连接电脑 · ${URI(saved).host}" to { ComputerSelection(activity).pocket(); open(saved) })
+        if (peer != null) choices.add("打开已配对电脑（加密连接）" to { peer.invoke() })
         choices.add("扫码连接电脑（Pocket）" to { scan() })
         choices.add("粘贴电脑访问链接" to { paste() })
         choices.add("原设备连接方式" to legacy)
@@ -72,6 +75,7 @@ class PocketConnection(
         val url = normalize(raw) ?: return false
         val uri = URI(url)
         preferences.edit().putString("url", "${uri.scheme}://${uri.rawAuthority}/").apply()
+        ComputerSelection(activity).pocket()
         open(url)
         return true
     }

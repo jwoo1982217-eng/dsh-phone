@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
-import { AccountPool } from '../../src/account-pool.js'
+import {
+  AccountPool,
+  rateLimitSinkEnabled,
+  sinkAccountToProviderEnd,
+} from '../../src/account-pool.js'
 import type { ProviderAccountEntry } from '../../src/types.js'
 
 /**
@@ -378,6 +382,406 @@ describe('AccountPool', () => {
     })
   })
 
+  /**
+   * **限额账号自动沉底**（用户 2026-10 报障）。
+   *
+   * ## 为什么需要它
+   *
+   * 取号永远是「服务端顺序里第一个可用账号」，没有轮转。于是 1 号账号只要
+   * 没撞限额就吃掉全部流量；它撞了才轮到 2 号；而它解禁后**又排在最前被立刻
+   * 捡回去**，2 号重新闲置。用户的资源包有使用期限，轮不到就白白过期 ——
+   * 原话：「每次都轮不完，等限额号好了因为排在前面又开始用刚好的限额号了，
+   * 后面的号的额度就白白过期了」。
+   *
+   * ⇒ 故「沉底」的价值**不在受限期间**（受限账号本来就被选号过滤），而在
+   * **解禁之后**：它留在末尾，不再抢占首位。
+   */
+  describe('限额账号自动沉底', () => {
+    const LIMIT_MODEL = 'deepseek-v4-flash'
+
+    /**
+     * 建账号并**备好凭据** —— 需要验证取号结果的用例必须用它，
+     * 否则 `getAvailableAccount` 会因解析不到凭据而返回 `null`（与本文件
+     * `reorderAccounts` 那组的 `seedThree` 同款）。
+     */
+    async function seed(ids: string[]): Promise<void> {
+      for (const id of ids) {
+        const ref = `BUDDY_ACCOUNT_${id.toUpperCase()}`
+        await ctx.credentials.set(credentialRef(ref), JSON.stringify({ access_token: id }))
+        await pool.addAccount(makeMockAccount({ id, credentialRef: ref }))
+      }
+    }
+
+    it('★ 命中限额的账号被移到本 provider 末尾', async () => {
+      await seed(['a', 'b', 'c'])
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() + 3600_000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'c', 'a'])
+    })
+
+    /**
+     * ★ 本组最核心的用例：**解禁之后不回弹**。
+     *
+     * 这正是用户报障的原话。沉底若只是"受限期间排后面"就毫无意义 ——
+     * 必须写进持久化的服务端顺序，解禁后仍留在末尾，后面的号才轮得到。
+     *
+     * ⚠️ 必须用 `clearModelRateLimits` 把标记**真正清掉**（彻底恢复可用）之后
+     * 再断言 —— 否则 `a` 仍被选号的限流过滤挡着，取到 `b` 是理所当然的，
+     * 那样这条用例就成了同义反复，证明不了「解禁后不抢回首位」。
+     */
+    it('★ 解禁之后仍留在末尾（不回弹，后续账号才轮得到）', async () => {
+      await seed(['a', 'b'])
+
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() + 3600_000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'a'])
+
+      // 到点解禁：标记被清掉，`a` 重新完全可用。
+      await pool.clearModelRateLimits('a')
+      const list = await pool.listAccounts('buddy')
+      expect(list.find(x => x.id === 'a')!.modelRateLimits).toBeUndefined()
+
+      // ★ 顺序没回弹 —— 这是本用例的核心断言。
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'a'])
+
+      // ★ 真正决定「会不会再霸占首位」的是取号：a 已完全可用，但首位的 b 仍先被用。
+      const picked = await pool.getAvailableAccount('buddy', LIMIT_MODEL)
+      expect(picked?.entry.id).toBe('b')
+    })
+
+    /** 多个账号连续限额 → 依次排到末尾，形成轮转。 */
+    it('★ 连续限额形成轮转：a 受限沉底、接着 b 受限，a 才有机会被用', async () => {
+      await seed(['a', 'b'])
+
+      // 首位 a 撞限额 → 沉底，b 顶上。
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() + 3600_000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'a'])
+      expect((await pool.getAvailableAccount('buddy', LIMIT_MODEL))?.entry.id).toBe('b')
+
+      // 接着 b 也撞限额 → 沉底到 a 之后（保持稳定，不打乱已有末尾顺序）。
+      await pool.updateModelRateLimit('b', LIMIT_MODEL, Date.now() + 3600_000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['a', 'b'])
+
+      // 两个都受限 → 选号确实拿不到号（此时不涉及"谁优先"）。
+      expect(await pool.getAvailableAccount('buddy', LIMIT_MODEL)).toBeNull()
+
+      // a 解禁 → 因为它在首位，重新可用；而 b 留在末尾继续受限。
+      await pool.clearModelRateLimits('a')
+      expect((await pool.getAvailableAccount('buddy', LIMIT_MODEL))?.entry.id).toBe('a')
+    })
+
+    /** 只动本 provider 的**槽位**，其它 provider 的账号绝对位置完全不变。 */
+    it('不波及其它 provider 的账号位置（槽位语义）', async () => {
+      await pool.addAccount(makeMockAccount({ id: 'b1', credentialRef: 'BUDDY_ACCOUNT_B1' }))
+      await pool.addAccount(makeMockAccount({ id: 'c1', provider: 'codearts', credentialRef: 'CODEARTS_ACCOUNT_C1' }))
+      await pool.addAccount(makeMockAccount({ id: 'b2', credentialRef: 'BUDDY_ACCOUNT_B2' }))
+      await pool.addAccount(makeMockAccount({ id: 'c2', provider: 'codearts', credentialRef: 'CODEARTS_ACCOUNT_C2' }))
+
+      await pool.updateModelRateLimit('b1', LIMIT_MODEL, Date.now() + 3600_000)
+      // buddy 占用的下标是 0 与 2 → 组内 b1 沉到 b2 之后，回填这**两个**槽位；
+      // 两个 codearts 账号（下标 1、3）纹丝不动。
+      expect((await pool.listAllAccounts()).map(x => x.id)).toEqual(['b2', 'c1', 'b1', 'c2'])
+    })
+
+    /**
+     * 「已在末位 + 标记无变化」是**完全不写盘**的路径。
+     *
+     * 限流是热路径（每次撞限额都调一次），此处省掉一次「整体重写 + 目录广播」
+     * 是有意义的；同时它也守着一个易错点：不能因为「沉底没做」就顺手把标记
+     * 也写了（或反过来多写一次顺序）。
+     */
+    it('已在末位且标记无变化时完全不写盘', async () => {
+      await seed(['a', 'b'])
+      const at = Date.now() + 3600_000
+      await pool.updateModelRateLimit('b', LIMIT_MODEL, at)
+      const callsAfterFirst = ctx.replaceCalls.length
+
+      // 同一个时刻再报一次：标记不变、b 也已在末位 → 两件事都无事可做。
+      await pool.updateModelRateLimit('b', LIMIT_MODEL, at)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['a', 'b'])
+      expect(ctx.replaceCalls.length).toBe(callsAfterFirst)
+    })
+
+    /** 已有更长的标记（早退分支）时**仍然要沉底** —— 账号此刻确实受限。 */
+    it('★ 已有更长标记时标记不覆盖，但仍然沉底', async () => {
+      await seed(['a', 'b'])
+      const real = Date.now() + 19 * 3600_000
+      // 先写一个长标记（此时 a 沉底）
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, real)
+
+      // 把 a 手动拖回首位，模拟用户操作
+      await pool.reorderAccounts('buddy', ['a', 'b'])
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['a', 'b'])
+
+      // 再报一个更短的时限：标记不覆盖，但 a 仍在限额中 → 必须再次沉底
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() + 60_000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'a'])
+      const list = await pool.listAccounts('buddy')
+      expect(list.find(x => x.id === 'a')!.modelRateLimits?.[LIMIT_MODEL]).toBe(real)
+    })
+
+    /**
+     * ⚠️ **写入一个「已经过去」的解禁时刻时不得沉底** —— 那种情况下账号此刻
+     * 其实是**可用**的（选号也会正常选它），把它沉底会让顺序与可用性互相矛盾。
+     *
+     * 这个场景是真实存在的：`trae-model-id-selection.spec.ts` 就用
+     * `Date.now() - 1000` 构造「标记已过期」，另有 provider 的解析兜底值可能
+     * 直接落在过去。实现里若只看「有没有被调用」而不看「生效后是否真受限」，
+     * 就会把一个完好的号莫名挪到末尾。
+     */
+    it('★ 解禁时刻已在过去时不沉底（该账号此刻其实是可用的）', async () => {
+      await seed(['a', 'b'])
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() - 1000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['a', 'b'])
+    })
+
+    /** 现值仍更长（且未过期）时，即便新值已过期，也不该让它浮上来。 */
+    it('★ 现值更长且仍有效时，传入过期新值不得解除沉底', async () => {
+      await seed(['a', 'b'])
+      const real = Date.now() + 19 * 3600_000
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, real)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'a'])
+
+      // 先把它拖回首位，再报一个已过期的短值：现值更长会被保留 → 仍受限 → 仍沉底
+      await pool.reorderAccounts('buddy', ['a', 'b'])
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() - 1000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'a'])
+    })
+
+    /** 开关可退回旧行为（`DSH_RATE_LIMIT_SINK=0`）。 */    it('DSH_RATE_LIMIT_SINK=0 时退回纯手动顺序', async () => {
+      await seed(['a', 'b'])
+      vi.stubEnv('DSH_RATE_LIMIT_SINK', '0')
+      try {
+        await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() + 3600_000)
+        expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['a', 'b'])
+      } finally {
+        vi.unstubAllEnvs()
+      }
+    })
+
+    /**
+     * ⚠️ 默认值必须是**开启**：`DSH_RATE_LIMIT_SINK` 未设置时不能退回旧行为。
+     *
+     * 这条守的是「默认开启」这个契约 —— 若哪天有人把判据写成 `Boolean(env[...])`，
+     * 未设置（undefined）会被当成关闭，本用例立刻变红。
+     */
+    it('★ 未设置环境变量时默认开启（不是默认关闭）', async () => {
+      await seed(['a', 'b'])
+      delete process.env.DSH_RATE_LIMIT_SINK
+      await pool.updateModelRateLimit('a', LIMIT_MODEL, Date.now() + 3600_000)
+      expect(pool.listAccountsByProvider('buddy').map(x => x.id)).toEqual(['b', 'a'])
+    })
+  })
+
+  /**
+   * 沉底的**纯函数**（不改盘、不依赖 ctx）—— 边界与槽位语义在这里锁死。
+   *
+   * 与 `allAccountsRateLimitedForModel` 同样是「从类里导出、单独可测」的写法。
+   */
+  describe('sinkAccountToProviderEnd（限定 provider 内沉底）', () => {
+    const e = (id: string, provider = 'buddy'): ProviderAccountEntry => ({
+      id,
+      provider,
+      nickname: id,
+      enabled: true,
+      credentialRef: `REF_${id}`,
+      createdAt: 1,
+      refreshable: true,
+    })
+
+    it('首位账号沉到本 provider 末尾', () => {
+      expect(sinkAccountToProviderEnd([e('a'), e('b'), e('c')], 'a')!.map(x => x.id))
+        .toEqual(['b', 'c', 'a'])
+    })
+
+    /**
+     * ★ 槽位语义：跨 provider 混排时，**其它 provider 的绝对下标不变**。
+     *
+     * 与 `reorderAccounts` 的隔离约定一致 —— 不让 buddy 的沉底顺带挪动
+     * CodeArts 账号的位置（那是跨面板的意外副作用）。
+     */
+    it('★ 不波及其它 provider 的绝对位置（槽位回填）', () => {
+      const list = [e('b1'), e('c1', 'codearts'), e('b2'), e('c2', 'codearts')]
+      expect(sinkAccountToProviderEnd(list, 'b1')!.map(x => x.id))
+        .toEqual(['b2', 'c1', 'b1', 'c2'])
+    })
+
+    it('组内其余账号保持相对顺序（稳定）', () => {
+      expect(sinkAccountToProviderEnd([e('a'), e('b'), e('c'), e('d')], 'b')!.map(x => x.id))
+        .toEqual(['a', 'c', 'd', 'b'])
+    })
+
+    it('已在末位 → null（调用方据此省掉写盘）', () => {
+      expect(sinkAccountToProviderEnd([e('a'), e('b')], 'b')).toBeNull()
+    })
+
+    it('只有一个账号 → null', () => {
+      expect(sinkAccountToProviderEnd([e('a')], 'a')).toBeNull()
+    })
+
+    it('账号不存在 → null', () => {
+      expect(sinkAccountToProviderEnd([e('a')], 'zzz')).toBeNull()
+    })
+
+    it('空列表 → null', () => {
+      expect(sinkAccountToProviderEnd([], 'a')).toBeNull()
+    })
+
+    /** 不修改入参（本仓库的纯函数约定）。 */
+    it('不修改入参数组', () => {
+      const list = [e('a'), e('b')]
+      sinkAccountToProviderEnd(list, 'a')
+      expect(list.map(x => x.id)).toEqual(['a', 'b'])
+    })
+
+    /**
+     * ★★ **Critical 回归用例**（真实缺陷，对抗审计实测证伪）。
+     *
+     * 原实现用 `group.findIndex(a => a.id === accountId)` 与
+     * `group.filter(a => a.id !== accountId)` —— **按 id 匹配**。同 provider 出现
+     * 两条同 id 时两者都命中同一条 ⇒ `nextGroup` 比 `slots` 短一格 ⇒ 回填在最后
+     * 一个槽位写入 `undefined`（`nextGroup[i]!` 的非空断言把它静默放过）。
+     *
+     * 后果：池里出现空洞 ⇒ 该 provider 的 `getAvailableAccount` / `listAccounts`
+     * 全部抛 `Cannot read properties of undefined`（整条推理链崩），且空洞经
+     * `JSON.stringify` 变 `null`、重启后被 `sanitizeAccounts` 丢弃 ⇒ **账号永久丢失**。
+     *
+     * 修法：按**对象引用**定位（`group.indexOf(entry)` / `a !== entry`）。
+     * 反向验证：改回按 id 匹配 → 本用例变红（返回数组含 `undefined`）。
+     *
+     * ⚠️ 另注：`sanitizeAccounts` 现在也按 id 去重（见 `jet-hub-store.spec.ts`），
+     * 那是**输入侧**的根治；本用例守的是**函数自身**的不变式 —— 两道防线都要有，
+     * 因为池里的数据可能来自任何未经归一化的路径（且历史遗留数据已存在磁盘上）。
+     */
+    it('★ 同 provider 两条同 id 时不写出 undefined 空洞（按引用匹配，非按 id）', () => {
+      const list = [e('dup'), e('other', 'codearts'), e('dup')]
+      const next = sinkAccountToProviderEnd(list, 'dup')
+      expect(next).not.toBeNull()
+      // 长度必须与输入一致，且不含任何空洞。
+      expect(next).toHaveLength(list.length)
+      expect(next!.some(x => x === undefined)).toBe(false)
+      // 全部元素都是原对象（引用保持，未被复制或替换成 undefined）。
+      for (const item of next!) expect(list).toContain(item)
+    })
+
+    it('★ 同 id 三种排布都不产生空洞', () => {
+      for (const order of [
+        ['dup', 'dup', 'x'],
+        ['dup', 'x', 'dup'],
+        ['x', 'dup', 'dup'],
+      ]) {
+        const list = order.map(id => e(id, id === 'x' ? 'codearts' : 'buddy'))
+        const next = sinkAccountToProviderEnd(list, 'dup')
+        if (next === null) continue
+        expect(next).toHaveLength(list.length)
+        expect(next.some(x => x === undefined)).toBe(false)
+      }
+    })
+
+    /**
+     * ★ 端到端：两条同 id + 一次限流 → 选号不再抛错（修复前会抛 TypeError）。
+     *
+     * 这条用例走**真实 AccountPool**，覆盖「输入侧去重」与「函数侧按引用」的合力。
+     */
+    it('★ 端到端：池里两条同 id 时沉底后选号不抛错', async () => {
+      const ctx = createMockContext()
+      const pool = new AccountPool(ctx as never)
+      // 直接灌入两条同 id（模拟历史遗留 / 未经归一化的写入路径）。
+      await pool.replaceAll([
+        { id: 'buddy-dup', provider: 'buddy', nickname: 'first', enabled: true, credentialRef: 'BUDDY_ACCOUNT_D1', createdAt: 1, refreshable: true },
+        { id: 'buddy-dup', provider: 'buddy', nickname: 'second', enabled: true, credentialRef: 'BUDDY_ACCOUNT_D2', createdAt: 2, refreshable: true },
+      ] as never, {})
+      await ctx.credentials.set(credentialRef('BUDDY_ACCOUNT_D1'), JSON.stringify({
+        access_token: 'T1', refresh_token: 'R1', expires_at: String(Date.now() + 3_600_000),
+      }))
+      await ctx.credentials.set(credentialRef('BUDDY_ACCOUNT_D2'), JSON.stringify({
+        access_token: 'T2', refresh_token: 'R2', expires_at: String(Date.now() + 3_600_000),
+      }))
+
+      // replaceAll 已去重 ⇒ 池里只剩一条；再触发限流走沉底路径。
+      await pool.updateModelRateLimit('buddy-dup', 'glm-5.2', Date.now() + 3_600_000)
+      const snap = await pool.listAllAccounts()
+      expect(snap.some(a => a === undefined || a === null)).toBe(false)
+      // 选号不抛错（修复前这里是 TypeError）。
+      await expect(pool.getAvailableAccount('buddy', 'glm-5.2')).resolves.toBeDefined()
+    })
+
+    /**
+     * ★★ **收口点回归**（真实缺口，我自己的第一版修复不完整、被探针抓出）：
+     *
+     * 去重原先只放在 `sanitizeAccounts`（归一化层），但 `addAccount` **不经过它**
+     * —— 它直接 `writeAccounts([...readAccounts(), entry])`。而 `addAccount` 有
+     * 20+ 个调用点（各 `*-auth.ts` 的登录落库、`account.create`、`opencode-rpc`、
+     * `ensureDefaultAnonymousSlot`），于是「池里两条同 id」**仍可达**。
+     *
+     * 后果不是崩溃（长度不变式兜底会拦下空洞），而是**沉底静默失效**：
+     * 兜底返回 `null` ⇒ 顺序不变 ⇒ 限额号解禁后仍抢占首位 ⇒ 用户报障的
+     * 「额度轮不完、白白过期」**原样复现**。用静默失效换掉崩溃只是把问题藏得更深。
+     *
+     * ⇒ 去重下沉到 `writeAccounts`（**唯一写入收口点**）。
+     * 反向验证：去掉 `writeAccounts` 里的去重 → 本用例变红（池里出现 2 条同 id）。
+     */
+    it('★ addAccount 不走 sanitizeAccounts，但 writeAccounts 收口必须去重', async () => {
+      const ctx = createMockContext()
+      const pool = new AccountPool(ctx as never)
+      const e = (id: string, ref: string, nickname: string) => ({
+        id, provider: 'buddy', nickname, enabled: true,
+        credentialRef: ref, createdAt: 1, refreshable: true,
+      })
+      await pool.addAccount(e('dup', 'BUDDY_ACCOUNT_D1', 'first') as never)
+      await pool.addAccount(e('dup', 'BUDDY_ACCOUNT_D2', 'second') as never)
+
+      const all = await pool.listAllAccounts()
+      expect(all.filter(a => a.id === 'dup')).toHaveLength(1)
+      // 保留首次出现的那条（与 sanitizeAccounts 同口径）。
+      expect(all.find(a => a.id === 'dup')!.nickname).toBe('first')
+    })
+
+    /**
+     * ★ 端到端（真实收口）：两条同 id + 一次限流 → **沉底真正生效**（顺序改变）。
+     *
+     * 这条与上面那条「不抛错」是**两件事**：不崩只说明兜底生效，而本用例要求
+     * 功能**确实工作**（限额号被移到本 provider 末尾）—— 这正是本 PR 的价值所在。
+     */
+    it('★ 端到端：同 id 输入被收口去重后，沉底真的生效（顺序改变）', async () => {
+      const ctx = createMockContext()
+      const pool = new AccountPool(ctx as never)
+      const e = (id: string, provider: string, ref: string, nickname: string) => ({
+        id, provider, nickname, enabled: true,
+        credentialRef: ref, createdAt: 1, refreshable: true,
+      })
+      await pool.addAccount(e('dup', 'buddy', 'BUDDY_ACCOUNT_D1', 'first') as never)
+      await pool.addAccount(e('other', 'codearts', 'CODEARTS_ACCOUNT_O1', 'other') as never)
+      await pool.addAccount(e('dup', 'buddy', 'BUDDY_ACCOUNT_D2', 'second') as never)
+      // 再加一个 buddy 账号，才能观察「沉到本 provider 末尾」。
+      await pool.addAccount(e('tail', 'buddy', 'BUDDY_ACCOUNT_T1', 'tail') as never)
+
+      const before = (await pool.listAllAccounts()).map(a => a.id)
+      expect(before).toEqual(['dup', 'other', 'tail'])   // dup 的第二条已被收口丢弃
+
+      await pool.updateModelRateLimit('dup', 'glm-5.2', Date.now() + 3_600_000)
+      const after = (await pool.listAllAccounts()).map(a => a.id)
+      // buddy 槽位是 0 与 2：dup 沉到末尾 ⇒ [tail, other, dup]
+      expect(after).toEqual(['tail', 'other', 'dup'])
+    })
+  })
+
+  describe('rateLimitSinkEnabled（默认开启的开关）', () => {
+    it('未设置 → 开启（默认值）', () => {
+      expect(rateLimitSinkEnabled({})).toBe(true)
+    })
+
+    it('显式关闭的几种写法都认', () => {
+      for (const v of ['0', 'false', 'off', 'no', 'FALSE', 'Off', ' 0 ']) {
+        expect(rateLimitSinkEnabled({ DSH_RATE_LIMIT_SINK: v })).toBe(false)
+      }
+    })
+
+    it('空串 / 其它值 → 视为默认开启（不因无法识别而关掉功能）', () => {
+      for (const v of ['', '   ', '1', 'true', 'yes', 'random']) {
+        expect(rateLimitSinkEnabled({ DSH_RATE_LIMIT_SINK: v })).toBe(true)
+      }
+    })
+  })
+
   it('should sweep expired rate limits', async () => {
     await pool.addAccount(makeMockAccount({
       modelRateLimits: { 'deepseek-v4-flash': Date.now() - 1000, 'deepseek-v4-pro': Date.now() + 3600000 },
@@ -386,6 +790,45 @@ describe('AccountPool', () => {
     const list = await pool.listAccounts('buddy')
     expect(list[0].modelRateLimits?.['deepseek-v4-flash']).toBeUndefined()
     expect(list[0].modelRateLimits?.['deepseek-v4-pro']).toBeDefined()
+  })
+
+  /**
+   * ★★ **High 端到端回归**（真实缺陷，对抗审计实测证伪）：
+   *
+   * 池里存在**超出 `Date` 范围**的限流标记（`1e308`，来自手工编辑的备份）时，
+   * 原先 `updateModelRateLimit` 的 `new Date(current).toISOString()` 会抛
+   * **`RangeError: Invalid time value`** —— 而 17 个调用点里 16 个没有 try，
+   * 异常直接冒到推理路径与「重测」路径。
+   *
+   * 修法：写入守卫与日志都走共享谓词 `isValidResetAtMs`；
+   * 坏现值被**新值覆盖**（自愈）而不是参与比较。
+   *
+   * 反向验证：把守卫改回 `!Number.isFinite(resetAtMs)` 且日志不保护现值 → 变红。
+   */
+  it('★ 池里有 1e308 坏标记时 updateModelRateLimit 不抛 RangeError（自愈）', async () => {
+    await ctx.credentials.set(credentialRef('BUDDY_ACCOUNT_BAD'), JSON.stringify({ access_token: 'T' }))
+    // 直接经 replaceAll 灌入坏值（模拟历史遗留 / 手工编辑的备份）。
+    await pool.replaceAll([
+      makeMockAccount({ id: 'bad', credentialRef: 'BUDDY_ACCOUNT_BAD', modelRateLimits: { 'deepseek-v4-flash': 1e308 } }),
+    ] as never, {})
+
+    // 不应抛错（修复前这里抛 RangeError）。
+    await expect(
+      pool.updateModelRateLimit('bad', 'deepseek-v4-flash', Date.now() + 3_600_000),
+    ).resolves.toBeUndefined()
+
+    // 坏值被新值覆盖（自愈），而不是留下一个恒真/恒假的脏标记。
+    const list = await pool.listAccounts('buddy')
+    const marker = list.find(a => a.id === 'bad')?.modelRateLimits?.['deepseek-v4-flash']
+    expect(marker).toBeGreaterThan(Date.now())
+  })
+
+  it('★ 写入守卫拒绝超出 Date 范围的解禁时刻（不落盘脏值）', async () => {
+    await ctx.credentials.set(credentialRef('BUDDY_ACCOUNT_G'), JSON.stringify({ access_token: 'T' }))
+    await pool.addAccount(makeMockAccount({ id: 'g', credentialRef: 'BUDDY_ACCOUNT_G' }))
+    await pool.updateModelRateLimit('g', 'deepseek-v4-flash', 1e308)
+    const list = await pool.listAccounts('buddy')
+    expect(list.find(a => a.id === 'g')?.modelRateLimits?.['deepseek-v4-flash']).toBeUndefined()
   })
 
   // ── 手动排序（Jet Hub 拖拽）──
@@ -814,6 +1257,67 @@ describe('AccountPool', () => {
       const list = await pool.listAllAccounts()
       expect(list.map(a => a.id)).toEqual(['buddy-001'])
     })
+
+    /**
+     * ⚠️ `mergeAccounts` 是「单独导入一个账号」的落地点，
+     * 它必须与 `replaceAll` 的**覆盖**语义严格相反。
+     */
+    it('mergeAccounts 只追加，不删不覆盖现有账号', async () => {
+      await pool.addAccount(makeMockAccount())
+      const added = await pool.mergeAccounts([
+        makeMockAccount({ id: 'buddy-002', credentialRef: 'BUDDY_ACCOUNT_002' }),
+      ])
+      expect(added).toEqual(['buddy-002'])
+      // ⚠️ 现有账号必须还在：这是「只增加」与「整体替换」的分水岭。
+      expect((await pool.listAllAccounts()).map(a => a.id)).toEqual(['buddy-001', 'buddy-002'])
+    })
+
+    it('mergeAccounts 跳过同 id 的现有账号（不覆盖其条目）', async () => {
+      await pool.addAccount(makeMockAccount({ nickname: '原名' }))
+      const added = await pool.mergeAccounts([
+        makeMockAccount({ nickname: '备份里的名字' }),
+      ])
+      expect(added).toEqual([])
+      const list = await pool.listAllAccounts()
+      expect(list).toHaveLength(1)
+      // 昵称仍是本机那个 —— 跳过意味着**一点都不改**。
+      expect(list[0]!.nickname).toBe('原名')
+    })
+
+    it('mergeAccounts 不改模型黑名单与永久积分锁定', async () => {
+      await pool.setModelDisabled('buddy', 'glm-5.2', true)
+      await pool.setPermanentLocked('buddy', true)
+      await pool.mergeAccounts([
+        makeMockAccount({ id: 'buddy-002', credentialRef: 'BUDDY_ACCOUNT_002' }),
+      ])
+      expect(pool.disabledModelsFor('buddy').has('glm-5.2')).toBe(true)
+      expect(pool.permanentLocked('buddy')).toBe(true)
+    })
+
+    it('mergeAccounts 归一化坏条目并丢弃（与 replaceAll 同口径）', async () => {
+      const added = await pool.mergeAccounts([
+        makeMockAccount({ id: 'buddy-002', credentialRef: 'BUDDY_ACCOUNT_002' }),
+        { id: 'broken', provider: 'buddy' } as ProviderAccountEntry,
+      ])
+      expect(added).toEqual(['buddy-002'])
+      expect((await pool.listAllAccounts()).map(a => a.id)).toEqual(['buddy-002'])
+    })
+
+    it('mergeAccounts 文件内重复 id 只新增一次', async () => {
+      const added = await pool.mergeAccounts([
+        makeMockAccount({ id: 'buddy-002', credentialRef: 'BUDDY_ACCOUNT_002' }),
+        makeMockAccount({ id: 'buddy-002', credentialRef: 'BUDDY_ACCOUNT_002' }),
+      ])
+      expect(added).toEqual(['buddy-002'])
+      expect((await pool.listAllAccounts()).map(a => a.id)).toEqual(['buddy-002'])
+    })
+
+    it('mergeAccounts 全部已存在时不落盘（避免无意义的写与广播）', async () => {
+      await pool.addAccount(makeMockAccount())
+      const added = await pool.mergeAccounts([makeMockAccount()])
+      expect(added).toEqual([])
+      expect((await pool.listAllAccounts()).map(a => a.id)).toEqual(['buddy-001'])
+    })
   })
 })
 
@@ -877,10 +1381,28 @@ describe('findAccountIdByCredential 的 provider 字段选择', () => {
 })
 
 describe('pruneAccountsWithForeignDomain', () => {
-  /** WorkBuddy 国际版的判定目标：域名是 www.workbuddy.ai */
-  const product = { id: 'workbuddy', apiDomain: 'www.workbuddy.ai' } as never
+  /**
+   * ⚠️⚠️ **判据已从「domain ≠ apiDomain」改为「domain 确证属于其它产品」**
+   * （真实缺陷，独立审计实测证伪）。
+   *
+   * 旧判据语义不成立：凭据里 `domain` 的语义是「**登录站**」（token 的 `iss` 主机），
+   * 不是请求端点域名 —— `X-Domain` 实际以 `product.apiDomain || credential.domain`
+   * 取值，凭据的 `domain` 只是兜底。本机实测 buddy 的 20 个真实账号里 `domain`
+   * 合法地有 `www.codebuddy.cn`（12 条）与 `copilot.tencent.com`（8 条）两种值，
+   * 那 12 条一直正常可用。旧判据把「**未知**」当成「失配」，跨机导入或上游新增
+   * realm 主机都会让**完全可用**的账号在下次启动被静默删除。
+   *
+   * 故测试里的 product 必须带 `knownDomains`，并把「别的产品的域」显式传进来。
+   */
+  const product = {
+    id: 'workbuddy',
+    apiDomain: 'www.workbuddy.ai',
+    knownDomains: ['www.workbuddy.ai', 'workbuddy.ai', 'auth.workbuddy.ai', 'api.workbuddy.ai'],
+  } as never
+  /** 中国版（CodeBuddy）的已知域：命中它才算「确证失配」。 */
+  const foreign = ['copilot.tencent.com', 'www.codebuddy.cn', 'codebuddy.cn']
 
-  it('删除 domain 指向旧端点（中国版）的 WorkBuddy 账号', async () => {
+  it('删除 domain 确证属于中国版（CodeBuddy）的 WorkBuddy 账号', async () => {
     const ctx = createMockContext()
     const pool = new AccountPool(ctx as never)
     await ctx.credentials.set(credentialRef('WORKBUDDY_ACCOUNT_OLD'), JSON.stringify({
@@ -893,7 +1415,7 @@ describe('pruneAccountsWithForeignDomain', () => {
       credentialRef: 'WORKBUDDY_ACCOUNT_OLD', createdAt: Date.now(), refreshable: true,
     })
 
-    const removed = await pool.pruneAccountsWithForeignDomain(product)
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
 
     expect(removed).toEqual(['workbuddy-old'])
     expect(await pool.listAllAccounts()).toHaveLength(0)
@@ -912,10 +1434,176 @@ describe('pruneAccountsWithForeignDomain', () => {
       credentialRef: 'WORKBUDDY_ACCOUNT_NEW', createdAt: Date.now(), refreshable: true,
     })
 
-    const removed = await pool.pruneAccountsWithForeignDomain(product)
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
 
     expect(removed).toEqual([])
     expect(await pool.listAllAccounts()).toHaveLength(1)
+  })
+
+  /**
+   * ★ 反向验证用例（新契约的核心价值）：本产品**合法但未在 apiDomain 里**的
+   * realm 主机必须保留。旧判据会在这里删账号 —— 这正是「跨机导入的 workbuddy
+   * 账号被静默删除」的真实形态（对抗审计用真实转换器输出证伪）。
+   */
+  it('★ 保留本产品合法的 realm 主机（auth./api. 子域），不因 ≠ apiDomain 而删', async () => {
+    const ctx = createMockContext()
+    const pool = new AccountPool(ctx as never)
+    for (const [ref, domain] of [
+      ['WORKBUDDY_ACCOUNT_SUB1', 'auth.workbuddy.ai'],
+      ['WORKBUDDY_ACCOUNT_SUB2', 'api.workbuddy.ai'],
+      ['WORKBUDDY_ACCOUNT_SUB3', 'workbuddy.ai'],
+    ] as const) {
+      await ctx.credentials.set(credentialRef(ref), JSON.stringify({
+        access_token: 'AT', refresh_token: 'RT',
+        expires_at: String(Date.now() + 3_600_000), domain,
+      }))
+      await pool.addAccount({
+        id: ref.toLowerCase(), provider: 'workbuddy', nickname: ref, enabled: true,
+        credentialRef: ref, createdAt: Date.now(), refreshable: true,
+      })
+    }
+
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
+
+    // 旧判据会删掉全部 3 条（它们都不等于 www.workbuddy.ai）。
+    expect(removed).toEqual([])
+    expect(await pool.listAllAccounts()).toHaveLength(3)
+  })
+
+  /**
+   * ★ 未知域保守保留：无法判定 ≠ 失配。
+   * 旧判据把「没见过的主机」一律当失配删除（跨机导入 / 上游改登录站即中招）。
+   */
+  it('★ 未知域保守保留（无法判定失配时不删）', async () => {
+    const ctx = createMockContext()
+    const pool = new AccountPool(ctx as never)
+    await ctx.credentials.set(credentialRef('WORKBUDDY_ACCOUNT_UNKNOWN'), JSON.stringify({
+      access_token: 'AT', refresh_token: 'RT',
+      expires_at: String(Date.now() + 3_600_000),
+      domain: 'some-future-realm.example.com',
+    }))
+    await pool.addAccount({
+      id: 'workbuddy-unknown', provider: 'workbuddy', nickname: '未知', enabled: true,
+      credentialRef: 'WORKBUDDY_ACCOUNT_UNKNOWN', createdAt: Date.now(), refreshable: true,
+    })
+
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
+
+    expect(removed).toEqual([])
+    expect(await pool.listAllAccounts()).toHaveLength(1)
+  })
+
+  it('未声明 knownDomains 的产品一律不删（安全默认值）', async () => {
+    const ctx = createMockContext()
+    const pool = new AccountPool(ctx as never)
+    await ctx.credentials.set(credentialRef('WORKBUDDY_ACCOUNT_X'), JSON.stringify({
+      access_token: 'AT', refresh_token: 'RT',
+      expires_at: String(Date.now() + 3_600_000),
+      domain: 'copilot.tencent.com',
+    }))
+    await pool.addAccount({
+      id: 'workbuddy-x', provider: 'workbuddy', nickname: 'X', enabled: true,
+      credentialRef: 'WORKBUDDY_ACCOUNT_X', createdAt: Date.now(), refreshable: true,
+    })
+
+    // 产品没有域信息 ⇒ 无从判定 ⇒ 即使传了 foreign 也不删。
+    const removed = await pool.pruneAccountsWithForeignDomain(
+      { id: 'workbuddy', apiDomain: 'www.workbuddy.ai' } as never,
+      foreign,
+    )
+
+    expect(removed).toEqual([])
+    expect(await pool.listAllAccounts()).toHaveLength(1)
+  })
+
+  /**
+   * ★ **两套域判据必须同构**（真实缺陷，最终审计实测证伪了我第四轮的修法）。
+   *
+   * 第四轮我一度把 `www.workbuddy.cn` 加进 `CODEBUDDY.knownDomains` 以让 prune
+   * 能清理「中国区旧 workbuddy 账号」。但探针实测暴露该修法**制造了新矛盾**：
+   *
+   * - `knownDomains` 说该域属于 **buddy**；
+   * - `providerFromIssuer`（`plugin-src/client/backup-convert.js`，按 host 含子串
+   *   `workbuddy` 分派）说它属于 **workbuddy**。
+   *
+   * ⇒ 同一域两套判据给出相反归属，正是本项目「同族判据必须逐格同构」铁律禁止的形态。
+   *
+   * 深查证据后确认**正确修法是撤回登记**：`knownDomains` 的语义是「凭据里 `domain`
+   * 的合法值」= **登录站 / 认证 realm**（token 的 `iss`），而 `www.workbuddy.cn` 是
+   * 成长中心**网页站**（`claimBase`），**不签发 token**、永不作为 `iss` 出现。
+   *
+   * 反向验证：把 `www.workbuddy.cn` 加回 `CODEBUDDY.knownDomains` → 本用例变红。
+   */
+  it('★ knownDomains 的每个域都必须与 providerFromIssuer 的归属一致（不矛盾）', async () => {
+    const { CODEBUDDY, WORKBUDDY } = await import('../../src/product.js')
+    const { providerFromIssuer } = await import('../../plugin-src/client/backup-convert.js')
+
+    const conflicts: string[] = []
+    for (const [productId, domains] of [
+      ['buddy', CODEBUDDY.knownDomains ?? []],
+      ['workbuddy', WORKBUDDY.knownDomains ?? []],
+    ] as const) {
+      for (const domain of domains) {
+        const dispatched = providerFromIssuer(`https://${domain}/auth/realms/copilot`)
+        if (dispatched !== productId) conflicts.push(`${domain}: 域表归 ${productId}，分派归 ${dispatched}`)
+      }
+    }
+    expect(conflicts).toEqual([])
+  })
+
+  it('★ 两个产品的 knownDomains 不得有交集（交集会让 own/foreign 判据同时命中）', async () => {
+    const { CODEBUDDY, WORKBUDDY } = await import('../../src/product.js')
+    const a = new Set((CODEBUDDY.knownDomains ?? []).map(d => d.toLowerCase()))
+    const inter = (WORKBUDDY.knownDomains ?? []).filter(d => a.has(d.toLowerCase()))
+    expect(inter).toEqual([])
+  })
+
+  /**
+   * ★ `replaceAll` 也必须走 `notifyAccountAdded` 收口（同族未修缺陷，对抗审计指出）。
+   *
+   * `mergeAccounts` 已补上通知，而 `replaceAll` 是备份导入的**默认模式**
+   * （影响面比 merge 更大）却同样绕过收口点 ⇒ 导入后的账号在最长 60 秒内
+   * 对 aggregate 路由不可见。
+   */
+  it('★ replaceAll 必须逐个通知「账号入库」订阅者（与 mergeAccounts 同款收口）', async () => {
+    const ctx = createMockContext()
+    const pool = new AccountPool(ctx as never)
+    const seen: string[] = []
+    pool.onAccountAdded((entry) => { seen.push(entry.id) })
+
+    await pool.replaceAll([
+      { id: 'r1', provider: 'buddy', nickname: 'r1', enabled: true, credentialRef: 'BUDDY_ACCOUNT_R1', createdAt: 1, refreshable: true },
+      { id: 'r2', provider: 'buddy', nickname: 'r2', enabled: true, credentialRef: 'BUDDY_ACCOUNT_R2', createdAt: 2, refreshable: true },
+    ] as never, {})
+
+    expect(seen.sort()).toEqual(['r1', 'r2'])
+  })
+
+  /**
+   * ★ **去重留痕**（真实缺口，最终审计实测证伪）：`replaceAll` 不调 `writeAccounts`，
+   * 故后者那条「丢弃了 N 条同 id」的告警在**备份导入默认模式**下不会触发 ——
+   * 而 `replace` 恰恰最可能遇到手工编辑的备份（含重复 id）。
+   *
+   * 后果：`accountsImported` 报载荷条目数、池里更少，且**零 warning** 解释差额。
+   *
+   * 反向验证：去掉 `replaceAll` 里那段 `dropped` 告警 → 本用例变红。
+   */
+  it('★ replaceAll 丢弃重复/坏条目时必须留日志（否则账号少了一条却无迹可查）', async () => {
+    const ctx = createMockContext()
+    const pool = new AccountPool(ctx as never)
+    const warns: string[] = []
+    ;(ctx as never as { logger: { warn: (m: string) => void } }).logger.warn = (m: string) => { warns.push(m) }
+
+    await pool.replaceAll([
+      { id: 'dup', provider: 'buddy', nickname: 'a', enabled: true, credentialRef: 'BUDDY_ACCOUNT_D1', createdAt: 1, refreshable: true },
+      { id: 'dup', provider: 'buddy', nickname: 'b', enabled: true, credentialRef: 'BUDDY_ACCOUNT_D2', createdAt: 2, refreshable: true },
+      { id: '', provider: 'buddy', credentialRef: 'BUDDY_ACCOUNT_D3' },
+    ] as never, {})
+
+    // 池里只剩 1 条（不变式成立）
+    expect((await pool.listAllAccounts()).map(a => a.id)).toEqual(['dup'])
+    // ★ 必须有日志解释差额
+    expect(warns.some(w => w.includes('replaceAll') && w.includes('丢弃'))).toBe(true)
   })
 
   it('不触碰其他 provider 的账号', async () => {
@@ -932,7 +1620,7 @@ describe('pruneAccountsWithForeignDomain', () => {
       credentialRef: 'BUDDY_ACCOUNT_KEEP', createdAt: Date.now(), refreshable: true,
     })
 
-    const removed = await pool.pruneAccountsWithForeignDomain(product)
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
 
     expect(removed).toEqual([])
     expect(await pool.listAllAccounts()).toHaveLength(1)
@@ -951,7 +1639,7 @@ describe('pruneAccountsWithForeignDomain', () => {
       credentialRef: 'WORKBUDDY_ACCOUNT_NODOMAIN', createdAt: Date.now(), refreshable: true,
     })
 
-    const removed = await pool.pruneAccountsWithForeignDomain(product)
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
 
     expect(removed).toEqual([])
     expect(await pool.listAllAccounts()).toHaveLength(1)
@@ -965,7 +1653,7 @@ describe('pruneAccountsWithForeignDomain', () => {
       credentialRef: 'WORKBUDDY_ACCOUNT_MISSING', createdAt: Date.now(), refreshable: true,
     })
 
-    const removed = await pool.pruneAccountsWithForeignDomain(product)
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
 
     expect(removed).toEqual([])
     expect(await pool.listAllAccounts()).toHaveLength(1)
@@ -980,19 +1668,21 @@ describe('pruneAccountsWithForeignDomain', () => {
       credentialRef: 'WORKBUDDY_ACCOUNT_BROKEN', createdAt: Date.now(), refreshable: true,
     })
 
-    const removed = await pool.pruneAccountsWithForeignDomain(product)
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
 
     expect(removed).toEqual([])
     expect(await pool.listAllAccounts()).toHaveLength(1)
   })
 
-  it('混合场景：只删失配的，保留其余', async () => {
+  it('混合场景：只删确证失配的，保留其余（含未知域）', async () => {
     const ctx = createMockContext()
     const pool = new AccountPool(ctx as never)
     for (const [ref, domain] of [
       ['WORKBUDDY_ACCOUNT_A', 'copilot.tencent.com'],
       ['WORKBUDDY_ACCOUNT_B', 'www.workbuddy.ai'],
       ['WORKBUDDY_ACCOUNT_C', 'copilot.tencent.com'],
+      ['WORKBUDDY_ACCOUNT_D', 'auth.workbuddy.ai'],
+      ['WORKBUDDY_ACCOUNT_E', 'unknown.example.com'],
     ] as const) {
       await ctx.credentials.set(credentialRef(ref), JSON.stringify({
         access_token: 'AT', refresh_token: 'RT',
@@ -1004,12 +1694,15 @@ describe('pruneAccountsWithForeignDomain', () => {
       })
     }
 
-    const removed = await pool.pruneAccountsWithForeignDomain(product)
+    const removed = await pool.pruneAccountsWithForeignDomain(product, foreign)
 
+    // 只有确证属于 CodeBuddy 的 A / C 被删；B（apiDomain）、D（合法子域）、
+    // E（未知域）全部保留。
     expect(removed.sort()).toEqual(['workbuddy_account_a', 'workbuddy_account_c'])
     const left = await pool.listAllAccounts()
-    expect(left).toHaveLength(1)
-    expect(left[0]!.id).toBe('workbuddy_account_b')
+    expect(left.map(a => a.id).sort()).toEqual([
+      'workbuddy_account_b', 'workbuddy_account_d', 'workbuddy_account_e',
+    ])
   })
 })
 
@@ -1956,6 +2649,68 @@ describe('AccountPool · setAccountsEnabled（供应商级批量启停）', () =
         { accounts?: ProviderAccountEntry[]; disabledModels?: Record<string, unknown> }
       expect(raw.accounts).toHaveLength(1)
       expect(raw.disabledModels).toBeDefined()
+    })
+  })
+
+  /**
+   * 「渠道原生搜索」总开关（PR95 审计补）。
+   *
+   * ⚠️ 本组的**存在理由**：本键加进来时只接了内存副本与 RPC，**两个持久化后端
+   * 都没接**（`load()` 既不读也不归一化、`SettingsStore.save()` 连写都不写），
+   * 于是用户关掉开关后**重启静默回到原生搜索**。上面那组网关用例逐条覆盖了
+   * 整条链，本键一条都没有 —— 加一个 `sanitizeXxx` 再给它写 7 条单测，
+   * 看上去「有覆盖」，其实真正该接的线一处没接。
+   *
+   * ⚠️ 判据必须是**跨实例读回**（与本节开头那条注释同因）：只断言同实例读回，
+   * 一个「没写磁盘」的实现照样骗过用例。
+   */
+  describe('渠道原生搜索总开关', () => {
+    it('默认启用（老用户升级后行为不变）', () => {
+      expect(new AccountPool(createMockContext() as never).nativeWebSearchEnabled()).toBe(true)
+    })
+
+    it('⚠️ 关闭后可读回，且跨实例落盘（关了就是关了）', async () => {
+      const seeded = createMockContext([makeMockAccount()])
+      const writer = new AccountPool(seeded as never)
+      expect(writer.nativeWebSearchEnabled()).toBe(true)
+      await writer.setNativeWebSearchEnabled(false)
+      expect(writer.nativeWebSearchEnabled()).toBe(false)
+
+      // 新实例从同一后端载入 —— 证明不是只改了内存副本。
+      expect(new AccountPool(seeded as never).nativeWebSearchEnabled()).toBe(false)
+    })
+
+    it('重新打开后可读回 true', async () => {
+      const seeded = createMockContext()
+      const pool = new AccountPool(seeded as never)
+      await pool.setNativeWebSearchEnabled(false)
+      await pool.setNativeWebSearchEnabled(true)
+      expect(pool.nativeWebSearchEnabled()).toBe(true)
+    })
+
+    it('⚠️ 改开关不得抹掉同一文档里的账号与黑名单', async () => {
+      const seeded = createMockContext([makeMockAccount()])
+      const pool = new AccountPool(seeded as never)
+      await pool.setNativeWebSearchEnabled(false)
+
+      const raw = seeded.replacePayloads.at(-1) as
+        { accounts?: ProviderAccountEntry[]; disabledModels?: Record<string, unknown>; nativeWebSearchEnabled?: boolean }
+      expect(raw.accounts).toHaveLength(1)
+      expect(raw.disabledModels).toBeDefined()
+      expect(raw.nativeWebSearchEnabled).toBe(false)
+    })
+
+    it('⚠️ 另一次无关写入不得把已关闭的本开关抹回启用', async () => {
+      // 与拒绝表那个真实缺陷同型：`SettingsStore.save` 是整体替换白名单，
+      // 漏掉本键时任何一次账号/黑名单/顺序写入都会把它从文档里删掉。
+      const seeded = createMockContext([makeMockAccount()])
+      const writer = new AccountPool(seeded as never)
+      await writer.setNativeWebSearchEnabled(false)
+      // 无关写入：不带本键（`ctx.cache` 里仍带着 false，由 queueStoreSave 快照带上）
+      const other = new AccountPool(seeded as never)
+      await other.setProviderOrder(['buddy'])
+
+      expect(new AccountPool(seeded as never).nativeWebSearchEnabled()).toBe(false)
     })
   })
 

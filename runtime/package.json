@@ -2,7 +2,7 @@
   "name": "dsh-phone-deploy",
   "private": true,
   "dependencies": {
-    "@deepseek-ai/dsh": "0.2.1-alpha.1",
+    "@deepseek-ai/dsh": "0.2.1-rc.2",
     "dsh-channel-qq": "file:../vendor/dsh-channel-qq",
     "dsh-codearts-auth": "file:../vendor/dsh-codearts-auth",
     "dsh-phone-account": "file:../phone-account",

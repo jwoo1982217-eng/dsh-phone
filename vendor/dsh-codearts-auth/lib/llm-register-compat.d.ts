@@ -75,6 +75,8 @@ export declare function recordThroughStream(openStream: () => AsyncIterable<unkn
     provider: string;
     model: string;
     startedAt: number;
+}, accountContext?: {
+    accountId: string;
 }): AsyncIterable<unknown>;
 /**
  * 幂等版的 `ctx.llm.registerAdapter`。

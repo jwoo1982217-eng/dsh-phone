@@ -1,5 +1,5 @@
 /**
- * CodeBuddy / WorkBuddy 的「锁定永久积分」**接线**回归（`src/index.ts`）。
+ * CodeBuddy / WorkBuddy 的「锁定永久积分」**接线**回归。
  *
  * ## 为什么单独守这个
  *
@@ -11,16 +11,36 @@
  * - Qoder 的 `modelId` 曾传空串，于是模型级限流过滤整体短路；
  * - Loomy 的锁定制过「绕过」的坑：锁定后绝不可落到单凭据兜底。
  *
- * 所以这里逐条钉住接线本身。UI 无法在单测里渲染（react 不在本仓库依赖内），
- * 故与 `loomy-wiring.spec.ts` 同款：**源码级断言 + 可执行部分用行为级验证**。
+ * ## ⚠️ Task 6 的改写（2026-10-08）
+ *
+ * 原先这一组是**源码文本断言**：两个已删除的 helper（声明体切片 / 调用块切片）
+ * 分别锚定 `src/index.ts` 里**已被删除**的那个编排闭包的声明与调用形，再对切出来的
+ * 源码串做 `toContain`。Task 6 把 12 个 `resolveCredential` 闭包收敛成
+ * `createCredentialResolver(...)`、并删除了那个闭包之后，那些锚点全部消失 ⇒ ~10 条红。
+ *
+ * 现在改为**驱动真实 `apply()`**：不关心源码长什么样，只看**行为**。
+ * 强度更高 —— 旧断言只证明「某行文本在某个函数体里」，新断言证明
+ * 「锁定时真实闭包真的抛错、真的不回落」。
+ *
+ * ⚠️ 保留的少量源码断言只用于守**纯文本形态**的约定（如「必须用
+ * `<PROVIDER>.id` 而非字面量」）—— 那类约定无法用行为区分。
+ *
+ * ⚠️ **注释里不复写被删掉的那两个锚点原文**：它们是「锚点已消失」这类核对会 grep
+ * 的字符串，写进注释会让核对**假命中**（同文件下方 `raccoon-wiring.spec.ts` 的约定）。
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
+import { credentialRef } from '@deepseek-ai/dsh-credentials'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { BuddyBalanceSelector, pickBuddyAccount } from '../../src/buddy-balance-selector.js'
 import { BUDDY_EXPIRING_WINDOW_DAYS } from '../../src/buddy-balance-rank.js'
 import { CODEBUDDY, WORKBUDDY } from '../../src/product.js'
+import { apply } from '../../src/index.js'
 import type { BuddyCredential } from '../../src/buddy.js'
 import type { CreditBalance } from '../../src/credits.js'
 
@@ -40,39 +60,23 @@ function codeOnly(source: string): string {
 
 const indexCode = codeOnly(indexSource)
 
-/** 取编排函数的**函数体**（以下一个 provider 注册语句为界，避免窗口溢出到调用方）。 */
-function pickHelperBody(): string {
-  const start = indexCode.indexOf('const pickBuddyCredential =')
-  expect(start, 'index.ts 里找不到 pickBuddyCredential').toBeGreaterThan(-1)
-  const end = indexCode.indexOf('const buddy = new BuddyAuth(ctx)', start)
-  expect(end, 'index.ts 里找不到 BuddyAuth 注册（分界标记变了要同步改本用例）').toBeGreaterThan(start)
-  return indexCode.slice(start, end)
+/** 造一份「`days` 天后到期、余额 `remaining`」的余额。 */
+function balance(remaining: number, days: number): CreditBalance {
+  return {
+    total: remaining,
+    expiredTotal: 0,
+    packages: [{
+      name: 'Bonus Pack', unit: 'credits', remaining, total: remaining, used: 0, active: true,
+      cycleStartTime: '', cycleEndTime: '', expiredTime: '',
+      deductionEndTime: Date.now() + days * 24 * 60 * 60 * 1000,
+    }],
+  }
 }
 
-/**
- * 取某个 provider 的 `pickBuddyCredential({ … })` **调用块**原文。
- *
- * 起点是紧邻 `product: <PROVIDER>` 之前的那次调用，终点是其闭合的 `})`。
- * 之所以要定位到「调用块」而不是整文件：接线类断言若只做全文件子串匹配，
- * 同一标识符在别处（选择器定义、文档注释）出现一次就会让断言恒真 ——
- * 已实测过这种同义反复（见下方 ★ 用例的注释）。
- *
- * @param productVar - `indexCode` 里 `product:` 后面那个变量名（TRAE / LOBSTERAI）。
- */
-function pickCallBlock(productVar: string): string {
-  const anchor = `const picked = await pickBuddyCredential({\n        product: ${productVar},`
-  const start = indexCode.indexOf(anchor)
-  expect(start, `index.ts 里找不到 ${productVar} 的 pickBuddyCredential 调用`).toBeGreaterThan(-1)
-  const end = indexCode.indexOf('\n      })', start)
-  expect(end, `${productVar} 的调用块没有闭合（接线形状变了要同步改本用例）`).toBeGreaterThan(start)
-  return indexCode.slice(start, end)
-}
-
-describe('index.ts 的接线', () => {
-  it('导入选号器与编排函数（漏 import 就等于没接）', () => {
+describe('index.ts 的接线（源码级，仅守纯文本形态的约定）', () => {
+  it('导入选号器（漏 import 就等于没接）', () => {
     expect(indexCode).toContain("from './buddy-balance-selector.js'")
     expect(indexCode).toContain('BuddyBalanceSelector')
-    expect(indexCode).toContain('pickBuddyAccount')
     // 报错文案里的窗口天数必须**运行时解析**（可用环境变量覆盖），
     // 不能在文案里写死字面量 —— 否则用户改了窗口，报错还在说 15 天。
     expect(indexCode).toContain("from './buddy-balance-rank.js'")
@@ -112,49 +116,6 @@ describe('index.ts 的接线', () => {
         /resolveCredential:\s*resolveBuddyCredentialByRef\b/,
       )
     }
-    // 编排的**入参**必须真的被传下去（只断言 `options.resolveCredential` 出现在
-    // 源码里是不够的 —— 它只有定义处一处命中，观测不到调用点）。
-    const body = pickHelperBody()
-    expect(body, '编排必须把 resolveCredential 传给 pickBuddyAccount').toMatch(
-      /pickBuddyAccount\([\s\S]*?resolveCredential,/,
-    )
-  })
-
-  it('所有走选号编排的 provider 都调 pickBuddyCredential', () => {
-    expect(indexCode).toMatch(/const picked = await pickBuddyCredential\(\{\s*\n\s*product: CODEBUDDY,/)
-    expect(indexCode).toMatch(/const picked = await pickBuddyCredential\(\{\s*\n\s*product: WORKBUDDY,/)
-    expect(indexCode).toMatch(/const picked = await pickBuddyCredential\(\{\s*\n\s*product: TRAE,/)
-    expect(indexCode).toMatch(/const picked = await pickBuddyCredential\(\{\s*\n\s*product: LOBSTERAI,/)
-    expect(indexCode.match(/await pickBuddyCredential\(\{/g)).toHaveLength(4)
-  })
-
-  /**
-   * ⚠️ 非 buddy 的 provider **必须**传自己的解析器：编排的缺省值是 buddy 系那一份，
-   * 而 TRAE / LobsterAI 的凭据结构不同（`TraeCredential` 有 uid/machine_id、
-   * `LobsteraiCredential` 另有字段）—— 用错解析器会静默产出错误形状的凭据。
-   */
-  it('★ TRAE / LobsterAI 显式传自己的凭据解析器（不得落到 buddy 缺省值）', () => {
-    // ⚠️ **必须在「编排调用块」范围内匹配**，不能全文件 `toContain`：
-    // 那两个标识符在选择器定义处（`new BuddyBalanceSelector({ resolveCredential: … }）`）
-    // 本来就各出现一次，于是哪怕把 `pickBuddyCredential` 调用里的那一行删掉、
-    // 让编排静默退回 buddy 缺省值，用例照样绿 —— 已实测复现（反向验证）。
-    // 任何崩不了的实现都能过的用例比没有更危险，故这里取「调用点到闭合」这一段。
-    const traeCall = pickCallBlock('TRAE')
-    expect(traeCall, 'TRAE 的 pickBuddyCredential 调用块').toContain('resolveCredential: resolveTraeCredentialByRef,')
-    const lobsteraiCall = pickCallBlock('LOBSTERAI')
-    expect(lobsteraiCall, 'LobsterAI 的 pickBuddyCredential 调用块').toContain('resolveCredential: resolveLobsteraiCredentialByRef,')
-  })
-
-  /**
-   * ⚠️ **TRAE 必须传 `isFreeModel`**（PR !68 审计补齐，buddy 系早已接上）。
-   *
-   * TRAE 确有 `rate: 0` 的**合法免费模型**（`trae.ts` 的 `readConsumptionRate`
-   * 注释 + `traeDisplayName` 把 0 显示成「免费」）。不跳过余额分档的话，
-   * 「锁定 + 账号只剩永久积分 + 选中免费模型」会抛「积分都已用尽」——
-   * 而免费模型根本不扣积分，错误信息把用户引向完全错误的排查方向。
-   */
-  it('★ TRAE 接线传 isFreeModel（免费模型不被锁定误拦）', () => {
-    expect(pickCallBlock('TRAE')).toContain('isFreeModel: await traeAdapter.isFreeModel(modelId)')
   })
 
   /**
@@ -166,6 +127,12 @@ describe('index.ts 的接线', () => {
    *
    * 判据取 `typeof parsed.access_token === 'string'`，与 `trae-auth.ts` /
    * `lobsterai-auth.ts` 的 `parseCredential` 逐字一致。
+   *
+   * ⚠️ Task 6 保留本条为源码断言：它守的是**解析器函数体内部**的判据强度，
+   * 而那是一个无法从「返回值」区分的实现细节（`{"broken":1}` 在两条实现下
+   * 的返回值相同 —— 都是被拒，但**原因**不同：形状校验 vs 后续 TypeError）。
+   * 该行为等价性由 `credential-resolver-parity.spec.ts` 的「回退凭据形状校验
+   * 失败 ⇒ 两者都 undefined」对拍。
    */
   it('★ 两家凭据解析器做形状校验（与各自 auth 的 parseCredential 对齐）', () => {
     for (const fn of ['resolveTraeCredentialByRef', 'resolveLobsteraiCredentialByRef']) {
@@ -202,112 +169,205 @@ describe('index.ts 的接线', () => {
     }
   })
 
-  /**
-   * ⚠️ **兜底必须带上 `picked.tried`**（PR !68 新增，此前是漏的）。
-   *
-   * 不带的话，档位最优但**凭据损坏**的账号会被 `getAvailableAccount` 立刻选回
-   * （池按手动顺序取第一个）⇒ 兜底**原地打转**，换号形同虚设。
-   * 这与 AGENTS.md 反复强调的「切号必须传 tried」是同一类缺陷。
-   *
-   * ⚠️ 已实测：删掉第三个参数后**全量单测照样全绿** —— 必须钉住。
-   */
-  it('★ 两家兜底调 getAvailableAccount 必须透传 picked.tried', () => {
-    for (const id of ['TRAE.id', 'LOBSTERAI.id']) {
-      const re = new RegExp(
-        `getAvailableAccount\\(${id}, modelId \\?\\? '', picked\\.tried\\)`,
-      )
-      expect(indexCode, `${id} 的兜底必须传 tried 排除集`).toMatch(re)
-    }
-  })
-
-  /**
-   * ⚠️ **Token 账本归属不能丢**：`reportLedgerAccount(<ID>.id, picked.accountId)`。
-   *
-   * `pickBuddyCredential` 的返回值新增 `accountId` 就是为了这个（PR 说明里专门写了
-   * 「重构时**保持不丢**」）。实测把这两行删掉、或把 provider 报成 `'buddy'`，
-   * **全量单测全绿** —— token 账本会把这笔消耗记到错误的 provider 上。
-   */
-  it('★ 两家回报 token 账本时用自己选中的账号（不得丢失或报错 provider）', () => {
-    for (const id of ['TRAE', 'LOBSTERAI']) {
-      const re = new RegExp(
-        `reportLedgerAccount\\(${id}\\.id, picked\\.accountId\\)`,
-      )
-      expect(indexCode, `${id} 必须回报 picked.accountId`).toMatch(re)
-    }
-  })
-
-  /**
-   * ⚠️ **`modelId` 必须透传给编排与兜底**。
-   *
-   * 漏传给编排 ⇒ 候选的模型级限流过滤整体短路（`if (key.length === 0) return true`）
-   * ⇒ 被标记限流的号仍被选中；漏传给兜底 ⇒ 同理短路。
-   * buddy 侧 `trae-model-id-selection.spec.ts` 防的是「传空串」，**防不了整行不传**。
-   */
-  it('★ 两家把 modelId 透传给编排与兜底（限流过滤不得短路）', () => {
-    for (const block of [pickCallBlock('TRAE'), pickCallBlock('LOBSTERAI')]) {
-      expect(block, '编排调用必须带 modelId').toMatch(/modelId,/)
-    }
-    for (const id of ['TRAE.id', 'LOBSTERAI.id']) {
-      expect(indexCode, `${id} 的兜底必须透传 modelId`).toMatch(
-        new RegExp(`getAvailableAccount\\(${id}, modelId \\?\\? ''`),
-      )
-    }
-  })
-
-  /**
-   * ⚠️ 候选必须**先**按 enabled + 模型限流过滤，余额分档只在候选内进行 ——
-   * 与 Loomy 同一约定（用户要求「策略建立在模型没有受限且账户没有被停用的基础上」）。
-   * 顺序反了就会出现「被限流的号因为积分多而被选中」。
-   */
-  it('候选过滤：provider id 取自产品配置、enabled、模型限流三项齐全', () => {
-    const body = pickHelperBody()
-    // provider 实参用 product.id 而非字面量（写死字面量在改名/多产品时会静默查不到账号）
-    expect(body).toContain('listAccountsByProvider(options.product.id)')
-    expect(body).toContain('filter(a => a.enabled)')
-    expect(body).toContain('const key = options.modelId ?? ')
-    expect(body).toContain('modelRateLimits[key]')
-    expect(body).toContain('Date.now() >= resetAt')
-  })
-
-  it('锁定状态按 provider 读，且判据是取反（permanentLocked=true ⇒ allowPermanent=false）', () => {
-    expect(pickHelperBody()).toContain('const allowPermanent = !pool.permanentLocked(options.product.id)')
-  })
-
-  /**
-   * ⚠️ **锁定时绝不可落到 `getAvailableAccount` 兜底** —— 那会绕过锁定、
-   * 照样消耗永久积分，使锁定形同虚设（Loomy 那条同因，用户明确要求报错）。
-   *
-   * ⚠️ 且必须**分两种原因报**（与 Loomy 同型缺陷）：把"余额查不到"报成
-   * "额度已用尽"，用户会去解锁或白等，而号其实有钱。
-   */
-  it('编排返回 locked 时直接抛错，函数体内不做任何兜底', () => {
-    const body = pickHelperBody()
-    expect(body).toMatch(/if \(picked\.kind === 'locked'\) \{/)
-    // 整个编排函数里都不该出现兜底取号 —— 兜底只属于未锁定的调用方路径
-    expect(body).not.toContain('getAvailableAccount')
-
-    const throws = body.match(/throw new Error\(/g) ?? []
-    expect(throws.length, '应有"查不到"与"确实用尽"两条报错').toBeGreaterThanOrEqual(2)
-    expect(body).toMatch(/picked\.reason\?\.kind === 'unknown'/)
-    // 两条文案各自说清
-    expect(body).toContain('无法确认是否有可用账号')
-    expect(body).toContain('没有可用账号')
-    // 文案要告诉用户去哪个面板解锁，并按窗口说清「什么算临时积分」
-    expect(body).toContain('options.displayName')
-    expect(body).toContain('buddyExpiringWindowDays()')
-    expect(body).toContain('解锁永久积分')
-  })
-
-  it('未锁定且编排没选到时，兜底必须带上 tried 排除集（否则原地打转）', () => {
-    // buddy 与 workbuddy 两处兜底都要传
-    const calls = indexCode.match(/pool\.getAvailableAccount\((?:CODEBUDDY|WORKBUDDY)\.id, modelId \?\? '', picked\.tried\)/g) ?? []
-    expect(calls).toHaveLength(2)
-  })
-
   it('两个 provider 各自的报错文案用其产品名', () => {
-    expect(indexCode).toContain("displayName: 'CodeBuddy'")
-    expect(indexCode).toContain("displayName: 'WorkBuddy'")
+    expect(indexCode).toContain("buddyLockedError('CodeBuddy')")
+    expect(indexCode).toContain("buddyLockedError('WorkBuddy')")
   })
+})
+
+/**
+ * **行为级**：驱动真实 `apply()`，逐个断言「锁定永久积分」在四家上的接线。
+ *
+ * ⚠️ 这一组替代了原先 ~10 条源码文本断言（见文件头）。它比文本断言强：
+ * 后者只证明「某段文本在某个函数体里」，前者证明**真实闭包真的这么做了**。
+ */
+describe('★ 锁定的真实行为（驱动 apply()，替代源码文本断言）', () => {
+  /** 锁定后只剩永久积分的那四家（各有自己的 selector 与文案）。 */
+  const LOCKED_PROVIDERS = [
+    { provider: 'buddy', name: 'CodeBuddy' },
+    { provider: 'workbuddy', name: 'WorkBuddy' },
+    { provider: 'lobsterai', name: 'LobsterAI' },
+    { provider: 'trae', name: 'TRAE' },
+  ] as const
+
+  const dirs: string[] = []
+
+  beforeEach(() => {
+    // ⚠️ 必须桩掉 fetch：`isFreeModel()` 会拉远端目录，余额查询会打上游端点。
+    // 桩成失败后目录拿不到（`isFreeModel` 保守返回 false = 付费），
+    // 余额查询失败 ⇒ 条目 `ok:false` ⇒ 锁定时报「无法确认」而非「已用尽」。
+    // 两种原因都由本组断言区分（见下）。
+    vi.stubGlobal('fetch', async () => { throw new Error('单测不发网络') })
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
+    dirs.length = 0
+  })
+
+  class FakeCredentials {
+    private store = new Map<string, string>()
+    private key(ref: unknown): string { return typeof ref === 'string' ? ref : String(ref) }
+    async resolve(ref: unknown) {
+      const value = this.store.get(this.key(ref))
+      return value === undefined ? undefined : { value, source: 'fake' }
+    }
+    async describe(ref: unknown) {
+      const configured = this.store.has(this.key(ref))
+      return { configured, source: configured ? 'fake' : undefined, writable: true }
+    }
+    async set(ref: unknown, value: string) { this.store.set(this.key(ref), value) }
+    async unset(ref: unknown) { this.store.delete(this.key(ref)) }
+  }
+  class FakeCommands {
+    register(): () => void { return () => {} }
+  }
+  class FakeLlm {
+    readonly adapterByProvider = new Map<string, unknown>()
+    registerConfigurableProviders(): { replace: () => void } { return { replace: () => {} } }
+    registerAdapter(providers: string[], adapter: unknown): { replace: () => void } {
+      for (const provider of providers) this.adapterByProvider.set(provider, adapter)
+      return { replace: () => {} }
+    }
+  }
+
+  interface TestCtx extends Context {
+    accountPool: {
+      addAccount(entry: Record<string, unknown>): Promise<void>
+      setPermanentLocked(provider: string, locked: boolean): Promise<void>
+    }
+    credentials: FakeCredentials
+    llm: FakeLlm
+  }
+
+  function boot(): TestCtx {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-lock-'))
+    dirs.push(dir)
+    process.env.DSH_JET_HUB_STATE_DIR = dir
+    const ctx = new Context() as TestCtx
+    ctx.provide('credentials', new FakeCredentials() as never)
+    ctx.provide('commands', new FakeCommands() as never)
+    ctx.provide('llm', new FakeLlm() as never)
+    apply(ctx as never)
+    return ctx
+  }
+
+  function resolveOf(ctx: TestCtx, provider: string): (modelId?: string) => Promise<unknown> {
+    const adapter = ctx.llm.adapterByProvider.get(provider) as {
+      options?: { resolveCredential?: (modelId?: string) => Promise<unknown> }
+      resolveCredential?: (modelId?: string) => Promise<unknown>
+    } | undefined
+    if (adapter === undefined) throw new Error(`provider ${provider} 未注册`)
+    const fn = adapter.options?.resolveCredential ?? adapter.resolveCredential
+    if (typeof fn !== 'function') throw new Error(`provider ${provider} 没有 resolveCredential`)
+    return fn.bind(adapter.options ?? adapter) as (modelId?: string) => Promise<unknown>
+  }
+
+  /** 放一个凭据可用的账号。 */
+  async function addAccount(ctx: TestCtx, provider: string): Promise<string> {
+    const id = `acct_${provider}_${Math.random().toString(36).slice(2, 8).replace(/[^a-z0-9]/g, '')}`
+    const ref = `${provider.toUpperCase()}_ACCOUNT_${id.toUpperCase()}`
+    await ctx.accountPool.addAccount({
+      id, provider, nickname: id, enabled: true, credentialRef: ref, createdAt: 0, refreshable: true,
+    })
+    await ctx.credentials.set(
+      credentialRef(ref),
+      JSON.stringify({ access_token: `tok-${id}`, refresh_token: 'rt', expires_at: Date.now() + 3_600_000 }),
+    )
+    return id
+  }
+
+  /**
+   * ⚠️ **锁定 + 余额查询失败 ⇒ 必须报「无法确认是否有可用账号」**。
+   *
+   * 这是「两种原因分开报」那条真实缺陷（用户报障 2026-09-29）：把一次网络抖动
+   * 报成「额度已用尽」，用户会去解锁或白等，而号其实有钱。
+   * 变异：把 `lockedError` 的两条分支合并成一条 ⇒ 本条红。
+   */
+  it.each(LOCKED_PROVIDERS)(
+    '$provider：锁定 + 余额查不到 ⇒ 抛「无法确认」而不是「额度已用尽」',
+    async ({ provider, name }) => {
+      const ctx = boot()
+      await ctx.accountPool.setPermanentLocked(provider, true)
+      await addAccount(ctx, provider)
+      const error = await resolveOf(ctx, provider)('glm-5.2').then(() => undefined, (e: Error) => e)
+      expect(error, `${provider} 锁定时必须抛错（绝不回落单凭据）`).toBeDefined()
+      expect(error?.message, `${name} 的文案应点名产品`).toContain(name)
+      expect(error?.message, '应报「无法确认」——余额查询失败不等于额度用尽').toContain('无法确认是否有可用账号')
+      expect(error?.message, '不得把它报成「额度已用尽」').not.toContain('没有可用账号。')
+    },
+    30_000,
+  )
+
+  /**
+   * ⚠️ **锁定时绝不回落单凭据 ref**。
+   *
+   * 旧闭包在「锁定 + 无可用账号」时直接抛错；若有人改成 `return undefined`
+   * 或让它落到 `readCredential(<PROVIDER>_ACCESS_TOKEN)`，锁定就形同虚设
+   *（Jet Hub 登录只写 `*_ACCOUNT_XXX`，那个 ref 本就不存在，于是症状是
+   * 「明明锁着却报未登录」而不是报锁定）。
+   *
+   * 判据：写一份**内容合法**的单凭据（形状能过校验），锁定时**不得**返回它。
+   * 变异：把 `throw plan.lockedError(...)` 改成 `return await fallback()` ⇒ 本条红。
+   */
+  it.each(LOCKED_PROVIDERS)(
+    '$provider：锁定 + 单凭据 ref 有合法凭据 ⇒ 仍必须抛错（不得回落）',
+    async ({ provider }) => {
+      const ctx = boot()
+      await ctx.accountPool.setPermanentLocked(provider, true)
+      await addAccount(ctx, provider)
+      // 写一份形状合法、内容正确的单凭据 —— 回落到它就会「看起来正常」。
+      await ctx.credentials.set(
+        credentialRef(`${provider.toUpperCase()}_ACCESS_TOKEN`),
+        JSON.stringify({ access_token: 'fallback-token', refresh_token: 'rt', expires_at: Date.now() + 3_600_000 }),
+      )
+      const outcome = await resolveOf(ctx, provider)('glm-5.2')
+        .then((value) => ({ kind: 'returned' as const, value }), (e: Error) => ({ kind: 'threw' as const, e }))
+      expect(outcome.kind, '锁定时必须抛错，绝不能返回单凭据').toBe('threw')
+    },
+    30_000,
+  )
+
+  /**
+   * ⚠️ **解锁时不得改变既有行为**：账号可用就正常返回凭据。
+   *
+   * 这是上一组（锁定时抛错）的**阳性对照** —— 没有它，一个「永远抛错」的
+   * 坏实现能让上一组全绿。
+   */
+  it.each(LOCKED_PROVIDERS)(
+    '$provider：解锁 + 账号可用 ⇒ 正常返回凭据（阳性对照）',
+    async ({ provider }) => {
+      const ctx = boot()
+      const id = await addAccount(ctx, provider)
+      const credential = await resolveOf(ctx, provider)('glm-5.2') as { access_token?: string } | undefined
+      expect(credential, `${provider} 解锁且账号可用时必须交出凭据`).toBeDefined()
+      expect(credential?.access_token, '取到的必须是池内那个账号的凭据').toBe(`tok-${id}`)
+    },
+    30_000,
+  )
+
+  /**
+   * ⚠️ **锁定状态按 provider 读**（不是全局一个开关）。
+   *
+   * 旧断言是源码文本 `!pool.permanentLocked(options.product.id)`。行为等价物：
+   * 只锁 A，B 必须照常可用 —— 若实现写成全局开关或读错 provider，
+   * B 会跟着被锁。
+   */
+  it('锁定是**按 provider** 的：只锁 buddy 时 workbuddy 照常可用', async () => {
+    const ctx = boot()
+    await ctx.accountPool.setPermanentLocked('buddy', true)
+    const buddyId = await addAccount(ctx, 'buddy')
+    const workbuddyId = await addAccount(ctx, 'workbuddy')
+
+    const buddyOutcome = await resolveOf(ctx, 'buddy')('glm-5.2')
+      .then((v) => ({ kind: 'returned' as const, v }), () => ({ kind: 'threw' as const }))
+    expect(buddyOutcome.kind, 'buddy 已锁定 ⇒ 必须抛错').toBe('threw')
+
+    const workbuddyCredential = await resolveOf(ctx, 'workbuddy')('glm-5.2') as { access_token?: string } | undefined
+    expect(workbuddyCredential?.access_token, 'workbuddy 未锁定 ⇒ 不得受 buddy 的锁定影响')
+      .toBe(`tok-${workbuddyId}`)
+    expect(buddyId, '（buddy 的账号确实建过）').toBeTruthy()
+  }, 30_000)
 })
 
 /**
@@ -319,7 +379,7 @@ describe('index.ts 的接线', () => {
  */
 describe('选号器按产品取 endpoint（两站不串味）', () => {
   const DAY = 24 * 60 * 60 * 1000
-  const balance: CreditBalance = {
+  const balanceFixture: CreditBalance = {
     total: 250,
     packages: [{
       name: 'Bonus Pack',
@@ -342,7 +402,7 @@ describe('选号器按产品取 endpoint（两站不串味）', () => {
       resolveCredential: async ref => ({ access_token: 'AT', domain: product.apiDomain } as BuddyCredential & { domain: string }) as unknown as BuddyCredential,
       fetchBalance: async (_credential, p) => {
         seen.push(`${p.endpoint}/v2/billing/meter/get-user-resource`)
-        return balance
+        return balanceFixture
       },
     })
   }
@@ -409,5 +469,6 @@ describe('选号器按产品取 endpoint（两站不串味）', () => {
     // ⇒ 该账号在锁定期间「等同于不可用」：这正是用户要的语义，不是缺陷
     expect(result.kind).toBe('locked')
     expect(BUDDY_EXPIRING_WINDOW_DAYS).toBe(15)
+    expect(seen).toEqual([])
   })
 })

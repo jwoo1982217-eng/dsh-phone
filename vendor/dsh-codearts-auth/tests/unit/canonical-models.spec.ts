@@ -135,6 +135,93 @@ describe('主通道声明（T4：qoder 的 id 是内部代号）', () => {
     // 而 name 通道能把内部代号接回真实模型键（id 通道做不到这件事）。
     expect(normalizeNameKey('GLM-5.3-Flash')).toBe('glm-5-3-flash')
   })
+
+  /**
+   * ⚠️⚠️ **accio 与 qoder 同因，必须走 `name` 通道**（用户要求，2026-10-13）。
+   *
+   * 用户的诉求原文：「accio 的 qwen3.8-flash，聚合当中的 qwen3.8-flash 轮换列表里要有」。
+   *
+   * accio 的 `modelCode` 是 `1Drift-F8hS3mK7pL2n` 这种**内部代号**（逐字实测，
+   * 见 `docs/agent-notes/providers-accio.md` §7）—— 与 qoder 的 `gfmodel`
+   * **完全同型**。走 id 通道的后果实测：
+   *
+   * | 通道 | accio 的 Qwen 3.8 Flash 归到 | 与 loomy/qoder/trae 同键？ |
+   * |---|---|---|
+   * | `id`（默认） | `1drift-f8hs3mk7pl2n` | ❌ 各成一个孤立虚拟模型 |
+   * | `name` | `qwen-3-8-flash` | ✅ 与三家同一个 |
+   *
+   * ⚠️ **这不是「省事」的开关**：`PRIMARY_CHANNEL` 的注释已写明「不要为了省事把
+   * qoder 改成 id」—— 本条是同一判据在 accio 上的**再应用**，判据是
+   * 「**该渠道的 id 对人类与其它渠道都无信息**」，而不是「哪个方便」。
+   */
+  it('★ accio 走 name 通道（它的 modelCode 是内部代号，与 qoder 同因）', () => {
+    expect(channelOf('accio')).toBe('name')
+  })
+
+  it('★ 回归：accio 的 Qwen 3.8 Flash 必须与 loomy / qoder / trae 归到同一个键', () => {
+    // ⚠️ 判据是「**跨渠道同键**」，不是「字符串相等」—— 后者是近同义反复
+    //    （见上面那条用例的注释：全分支终审 M1 已删过一组这种断言）。
+    //
+    // ⚠️⚠️ **键名是 `qwen3-8-flash`（无连字符），不是 `qwen-3-8-flash`** ——
+    //    这是实测的既有事实，不是笔误：loomy / trae / qoder 三家**都**走 **id 通道**
+    //    且 id 形如 `qwen3.8-flash` ⇒ `normalizeModelKey` 只转点号、**不插连字符**
+    //    ⇒ 得 `qwen3-8-flash`。而 accio 走 name 通道得 `qwen-3-8-flash`（**多一个
+    //    连字符**，因为展示名里 `Qwen 3.8` 的空格被转成了连字符）。
+    //    ⇒ 两者**看起来像同一个模型但键不同** ⇒ 会被拆成两个虚拟模型
+    //    ⇒ accio 必须在 `CANONICAL_OVERRIDES` 里显式指到既有键上。
+    //
+    // ⚠️⚠️ **`realId` 必须传 accio 的「对外 id」（slug），不是上游 `modelCode`**：
+    //    聚合读的是 `ctx.llm.listModels(provider)` 返回的 **`id`**，而 accio 的对外
+    //    id 自 2026-10-13 起就是 slug（见 `accio-adapter.ts` 的 `accioModelIdOf`）。
+    //    ⇒ 这条用例原先传 `'1Drift-F8hS3mK7pL2n'` 是**旧形态**，测的是一个聚合
+    //    实际收不到的场景；补丁的索引键也因此必须跟着改成 slug（否则静默失配）。
+    const KEY = 'qwen3-8-flash'
+    // ① accio：走 name 通道，但经**显式补丁**归到与三家相同的键。
+    expect(canonicalKeyFor('accio', 'qwen-3-8-flash', 'Qwen 3.8 Flash · x0.03')?.key).toBe(KEY)
+    // ② loomy / trae / qoder：既有行为，**逐字不变**（本补丁不得动它们）。
+    expect(canonicalKeyFor('loomy', 'qwen3.8-flash', 'qwen 3.8 flash · x0.8')?.key).toBe(KEY)
+    expect(canonicalKeyFor('trae', 'qwen3.8-flash', 'Qwen3.8-Flash · x0.08')?.key).toBe(KEY)
+    expect(canonicalKeyFor('qoder', 'qfmodel', 'Qwen3.8-Flash')?.key).toBe(KEY)
+    // ⇒ 四家同一个键 ⇒ 聚合里这一个虚拟模型的候选表会**同时含 accio**。
+    //    这就是用户要的「轮换列表里要有 accio」。
+  })
+
+  it('★ accio 的 Qwen 3.8 Max 与 loomy 同键（连字符形态本来就一致，无需补丁）', () => {
+    // ⚠️ 与 Flash **不同**：这一条的连字符形态恰好一致（loomy 的 id 是
+    //    `qwen-3.8-max`，本来就带连字符）⇒ 不需补丁也能归并。
+    //    把它单独锁住，是为了说明「补丁只加在**确实对不上**的那些上」，
+    //    而不是把 accio 整表无差别映射（那会遮住将来真实的对不上）。
+    // ⚠️ realId 传**对外 id（slug）** —— 聚合实际收到的就是这个（见上一条用例的说明）。
+    expect(canonicalKeyFor('accio', 'qwen-3-8-max', 'Qwen 3.8 Max · x0.44')?.key)
+      .toBe(canonicalKeyFor('loomy', 'qwen-3.8-max', 'qwen 3.8 max · x12.0')?.key)
+  })
+
+  it('★ accio 独有的模型（Qwen 3.8 27B / 3.5 A3B / Standard …）自成键，不得被强行并入别家', () => {
+    // ⚠️ 方向是**宁可拆开也不误并**：这些在上游是**独立的模型**（27B 与 A3B 是不同
+    //    规格）。把它们猜着并进 `qwen-3-8-flash` 会让请求打到**错的模型**且无提示
+    //    —— 与 `CANONICAL_OVERRIDES` 的「每条都必须有实测依据」同一条铁律。
+    // ⚠️ 第一列是**对外 id（slug）**，即 `accioModelIdOf` 的产物 / 聚合收到的 realId。
+    for (const [slug, name, key] of [
+      ['qwen-3-8-27b', 'Qwen 3.8 27B · x0.013', 'qwen-3-8-27b'],
+      ['qwen-3-5-a3b', 'Qwen 3.5 A3B · x0.13', 'qwen-3-5-a3b'],
+      ['standard', 'Standard · x0.13', 'standard'],
+      ['professional', 'Professional · x1', 'professional'],
+      ['ultimate', 'Ultimate · x2.8', 'ultimate'],
+    ] as const) {
+      expect(canonicalKeyFor('accio', slug, name)?.key, name).toBe(key)
+    }
+  })
+
+  it('★ 反向对照：若 accio 误走 id 通道，它会自成一个孤立键（故 name 是必需的）', () => {
+    const idKey = normalizeModelKey('1Drift-F8hS3mK7pL2n')
+    const nameKey = normalizeNameKey('Qwen 3.8 Flash')
+    // 两个结论**不同** ⇒ 走错了就无法聚合（这条才是「为什么必须 name」的判据）。
+    expect(idKey).not.toBe(nameKey)
+    // 且 id 通道那个键**不是**任何已登记的真实模型（它是上游代号）。
+    expect(canonicalDisplayName(idKey)).toBe(idKey)
+    // 而 name 通道能把 accio 接回真实模型键。
+    expect(nameKey).toBe('qwen-3-8-flash')
+  })
 })
 
 describe('排除集（T11：抽象别名不是真实模型）', () => {

@@ -5,7 +5,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(HERE, '../..')
-const JET_HUB_SOURCE = join(REPO_ROOT, 'plugin-src', 'client', 'jet-hub.js')
+/**
+ * ⚠️ 2026-10-08：图标常量已从 `jet-hub.js` 抽到纯数据模块
+ * `provider-icons.js`（`jet-hub.js` import 不了 react，见该模块文件头）。
+ * 常量声明文本未变，故这里只换路径。
+ */
+const JET_HUB_SOURCE = join(REPO_ROOT, 'plugin-src', 'client', 'provider-icons.js')
 
 /**
  * ⚠️ 提取脚本**不入库**（`scripts/` 整目录在 `.gitignore` 里：只读排查与研究工具
@@ -54,11 +59,11 @@ const loadIconTools = async (): Promise<IconTools> => {
  * （惰性读取：在收集阶段读不存在的文件会让整份套件变成 Failed Suite 而非 skip）。
  */
 describe('Cline 面板图标（必须来自官方提取，不得手绘）', () => {
-  /** 从客户端源码里取出 `CLINE_ICON` 的 data URI。 */
+  /** 从图标数据模块里取出 `CLINE_ICON` 的 data URI。 */
   function readIconDataUri(): string {
     const source = readFileSync(JET_HUB_SOURCE, 'utf8')
     const matched = /const CLINE_ICON = '([^']*)'/.exec(source)
-    if (matched === null) throw new Error("jet-hub.js 里找不到 const CLINE_ICON = '...' 声明")
+    if (matched === null) throw new Error("provider-icons.js 里找不到 const CLINE_ICON = '...' 声明")
     return matched[1]!
   }
 

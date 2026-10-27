@@ -55,6 +55,38 @@ export declare function signDpopJws(keyPair: DpopKeyPair, htm: string, htu: stri
 export declare class RefreshTokenExpiredError extends Error {
     constructor(message: string);
 }
+/**
+ * 从 JWT 载荷里读 `exp` / `iat`（秒级 → 毫秒）。
+ *
+ * ⚠️ **不解签名**：这里只用于「本地估算还剩多久」的调度判据，不作任何信任判断；
+ * 真正的信任判定由服务端在续期请求时做。若解析失败一律返回 `undefined`，
+ * 调用方必须按「读不到」处理（不得 fail-closed 成「已过期」）。
+ *
+ * ⚠️ 用 `atob` 而非 `Buffer`：本函数必须在**客户端 bundle**（`plugin-src/client`）
+ * 之外也可用，而 `atob` 在 Node 22+ 与浏览器里都是全局的，不需要 import。
+ */
+declare function readJwtTime(token: string, claim: 'exp' | 'iat'): number | undefined;
+/**
+ * refresh_token 的到期时刻（毫秒）；读不到返回 `undefined`。
+ *
+ * ## 为什么需要它（2026-10-18 实测两个账号同时报废的根因）
+ *
+ * 华为 STS 的 refresh_token JWT 里，`exp` **恒等于「登录时刻 + 30 天」**，
+ * **续期不会延长它** —— 解开该账号全部历史凭据的 JWT 逐个核对，09-25 / 10-16×3 /
+ * 10-18 五次续期签发的 refresh_token，`exp` 全都收敛到同一个值。
+ * 而 access_token 寿命恒为 2 小时。
+ *
+ * ⇒ 最后一天出现「access 剩 2 小时、refresh 只剩约 50 分钟」的不对称，
+ * 而 lead-time 判据原本**只看 access**，会在 refresh 死线之后才放行，
+ * 那一轮续期必然失败，账号彻底不可用。
+ *
+ * 供 `expiry-sync.ts` 的 lead-time 判据补第二条腿（提前续期）使用。
+ */
+export declare function refreshTokenExpiresAt(credential: {
+    refresh_token?: string;
+}): number | undefined;
+/** 导出给单测：直接解一个 JWT 的 `exp`/`iat`（毫秒）。 */
+export declare const __readJwtTimeForTest: typeof readJwtTime;
 /** 向 STS token 端点发起一次带 DPoP 的 token 请求。 */
 export declare function requestToken(body: Record<string, string>, keyPair: DpopKeyPair, fetcher?: typeof fetch): Promise<TokenResponse>;
 /** 授权码换取（登录回调收到 code 后调用）。 */
@@ -65,4 +97,5 @@ export declare function exchangeRefreshToken(refreshToken: string, codeVerifier:
 export declare function credentialFromTokenResponse(token: TokenResponse, pkce: PkcePair, keyPair: DpopKeyPair): CodeArtsCredential;
 /** 从持久化的私钥 JWK 恢复 DPoP 密钥对（公钥可从私钥 JWK 的 x/y 字段重建）。 */
 export declare function keyPairFromStoredJwk(jwk: DpopPrivateJwk): DpopKeyPair;
+export {};
 //# sourceMappingURL=oauth.d.ts.map

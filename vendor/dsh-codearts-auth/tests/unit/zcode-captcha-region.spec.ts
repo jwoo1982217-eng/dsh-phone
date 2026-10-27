@@ -336,9 +336,14 @@ describe('★ 源码级防回归', () => {
     const claimStart = rpcSource.indexOf("case 'credits.claimAll':")
     const start = rpcSource.indexOf('if (req.provider === ZCODE.id) {', claimStart)
     expect(start).toBeGreaterThan(-1)
-    const end = rpcSource.indexOf('const product = productById(req.provider)', start)
-    expect(end).toBeGreaterThan(start)
-    const branch = rpcSource.slice(start, end)
+    // ⚠️ 右边界必须是**结构**锚点（下一个 `case '`），不能是某一行具体代码：
+    //    原先写的是 `const product = productById(req.provider)`，而 Task 4 把
+    //    claimAll 的通用分支改成查表后**那一行不存在了** —— 断言会以
+    //    「end 不大于 start」失败，看起来像 zcode 分支出了问题，实际是锚点过期。
+    //    （本仓库已两次记录「源码文本断言被无关重构打红」这类假失败。）
+    const nextCase = rpcSource.indexOf("case '", start)
+    expect(nextCase, '找不到 zcode 分支的右边界（下一个 case）').toBeGreaterThan(start)
+    const branch = rpcSource.slice(start, nextCase)
 
     expect(branch).not.toContain('fetchCaptchaConfig()')
     expect(branch).toMatch(/claimDailyFor\(credential, async \(config\) => \{[\s\S]{0,120}?mintCaptcha\(config\)/)

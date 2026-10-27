@@ -172,8 +172,6 @@ export function parseCredentialText(text: string): OrcaTermCredential | null {
   const uin = pairs.get('uin')
   const skey = pairs.get('skey')
   if (uin && skey) return { kind: 'web', uin, skey, userId: pairs.get('userId') ?? '' }
-  const otSession = pairs.get('ot_session')
-  if (otSession && isJwt(otSession)) return { kind: 'desktop', otSession }
 
   // 裸 JWT
   const candidate = raw.replace(/^bearer\s+/i, '').trim()

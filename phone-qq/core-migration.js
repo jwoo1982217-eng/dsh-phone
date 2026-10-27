@@ -3,6 +3,9 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import {withMigrationLock,recoverTransactions,runTransaction,snapshot,durableJson,contained} from './core-transaction.js';
+import {preparePrivateSdkV2} from './private-sdk-v2.js';
+import {prepareCompatibilityPackages} from './compatibility-packages.js';
 
 async function manifest(directory) {
   try { return JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8')); }
@@ -14,7 +17,7 @@ async function manifest(directory) {
  * Explicit file URLs bypass normal Node resolution. Preserve registered URLs,
  * private rewind patches and all unlisted files; an unknown edit fails closed.
  */
-export async function migratePrivateSdk(tree, home) {
+async function migratePrivateSdkV1(tree, home) {
   const root = path.join(home, 'profiles/phone/.dsh-purge-runtime');
   let current;
   try { current = JSON.parse(await readFile(path.join(root, 'current.json'), 'utf8')); }
@@ -57,6 +60,7 @@ export async function migratePrivateSdk(tree, home) {
   }
   if (!pending.length) return { locations: [] };
   const backup = path.join(home, '.phone-core-backups', 'private-sdk-' + randomUUID());
+  await contained(home,path.relative(home,backup));
   await mkdir(path.join(backup, 'files'), { recursive: true, mode: 0o700 });
   await writeFile(path.join(backup, 'restore.json'), JSON.stringify({ active: path.relative(home, active), files: pending.map(({relative, previous, after}) => ({relative, previous, after})) }, null, 2), { mode: 0o600 });
   const written = [];
@@ -88,11 +92,36 @@ export async function migratePrivateSdk(tree, home) {
   return { backup, locations: pending.map(row => path.relative(home, row.target)) };
 }
 
+async function privateContext(tree,home) {
+  const currentFile=path.join(home,'profiles/phone/.dsh-purge-runtime/current.json');
+  let bytes;try{bytes=await readFile(currentFile);}catch(e){if(e.code==='ENOENT')return null;throw e;}
+  const stat=await lstat(currentFile);if(!stat.isFile()||stat.isSymbolicLink()||!(await realpath(path.dirname(currentFile))).startsWith((await realpath(home))+path.sep))throw Error('Private SDK state outside phone home or not regular');
+  const current=JSON.parse(bytes);
+  if(current.owner!=='dsh-purge-community-private-runtime-v1')return null;
+  if(current.phase!=='installed'||!/^[A-Za-z0-9_-]+$/.test(current.token??''))throw Error('Invalid active private SDK path/state');
+  const plugin=path.join(tree,'node_modules/dsh-phone-qq');
+  const plan=JSON.parse(await readFile(path.join(plugin,'private-sdk-patches.json'),'utf8'));
+  return{currentFile,current,plugin,plan,guard:{relative:path.relative(home,currentFile),sha256:createHash('sha256').update(bytes).digest('hex')}};
+}
+export async function migratePrivateSdk(tree,home){
+  tree=path.resolve(tree);home=path.resolve(home);
+  return withMigrationLock(tree,home,async()=>{
+    await recoverTransactions(home);
+    const p=await privateContext(tree,home);
+    if(!p||p.plan.version!==2)return migratePrivateSdkV1(tree,home);
+    const backup=path.join(home,'.phone-core-backups','private-sdk-'+randomUUID());
+    const row=await preparePrivateSdkV2(tree,home,p.plugin,p.currentFile,p.current,p.plan,backup);
+    if(!row)return{locations:[]};
+    await runTransaction(home,backup,[row],[p.guard]);
+    return{backup,locations:[row.target]};
+  });
+}
+
 /** Old phone profiles contain copied SDK packages which shadow the new tree.
  * Keep recoverable copies, and resolve only shipped official packages to the
  * current deployment. User plugins and all account/session files stay in place.
  */
-export async function migratePhoneCore(tree, home) {
+async function migratePhoneCoreUnlocked(tree, home) {
   tree = path.resolve(tree); home = path.resolve(home);
   const modules = path.join(tree, 'node_modules');
   const core = await manifest(path.join(modules, '@deepseek-ai/dsh'));
@@ -139,23 +168,32 @@ export async function migratePhoneCore(tree, home) {
         throw Error('Cannot safely migrate SDK package ' + name);
       }
       planned.push({ name, target, source: supplied.source, previousVersion: installed?.version ?? null,
-        backupRelative: path.join(base, name) });
+        backupRelative: path.join(base, name), before:await snapshot(target) });
     }
   }
-  const privateSdk = await migratePrivateSdk(tree, home);
-  if (!planned.length) return { version: core.version, migrated: [], ...privateSdk };
-  const backup = path.join(home, '.phone-core-backups', core.version + '-' + randomUUID());
-  await mkdir(backup, { recursive: true, mode: 0o700 });
-  // Save the complete plan before moving anything so interrupted upgrades are recoverable.
-  await writeFile(path.join(backup, 'restore.json'), JSON.stringify(planned, null, 2), { mode: 0o600 });
-  for (const row of planned) {
-    const saved = path.join(backup, row.backupRelative);
-    await mkdir(path.dirname(saved), { recursive: true, mode: 0o700 });
-    await rename(row.target, saved);
-    try { await symlink(row.source, row.target, 'dir'); }
-    catch (error) { await rename(saved, row.target); throw error; }
+  const p=await privateContext(tree,home);
+  let deploymentPlan=p?.plan;
+  if(!deploymentPlan){try{deploymentPlan=JSON.parse(await readFile(path.join(tree,'node_modules/dsh-phone-qq/private-sdk-patches.json'),'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}}
+  const backup=path.join(home,'.phone-core-backups',core.version+'-'+randomUUID());
+  const privateRow=p?.plan.version===2?await preparePrivateSdkV2(tree,home,p.plugin,p.currentFile,p.current,p.plan,backup):null;
+  const privateSdk=p?.plan.version===2?{locations:privateRow?[privateRow.target]:[]}:await migratePrivateSdkV1(tree,home);
+  const compatibilityRows=await prepareCompatibilityPackages(tree,home,deploymentPlan,backup);
+  if(!planned.length&&!privateRow&&!compatibilityRows.length)return{version:core.version,migrated:[],...privateSdk};
+  await contained(home,path.relative(home,backup));await mkdir(backup,{recursive:true,mode:0o700});
+  const rows=[...(privateRow?[privateRow]:[]),...compatibilityRows];
+  for(let index=0;index<planned.length;index++){
+    const row=planned[index],stage='stage/projection-'+index;
+    await mkdir(path.dirname(path.join(backup,stage)),{recursive:true,mode:0o700});
+    await symlink(row.source,path.join(backup,stage),'dir');
+    rows.push({target:path.relative(home,row.target),saved:row.backupRelative,stage,before:row.before,after:await snapshot(path.join(backup,stage))});
   }
-  return { version: core.version, migrated: [...new Set(planned.map(row => row.name))], locations: [...planned.map(row => row.backupRelative), ...privateSdk.locations] };
+  await durableJson(path.join(backup,'restore.json'),planned);
+  await runTransaction(home,backup,rows,p?.plan.version===2?[p.guard]:[]);
+  return{version:core.version,backup,migrated:[...new Set(planned.map(row=>row.name))],locations:[...planned.map(row=>row.backupRelative),...privateSdk.locations,...compatibilityRows.map(row=>row.target)]};
+}
+export async function migratePhoneCore(tree,home){
+  tree=path.resolve(tree);home=path.resolve(home);
+  return withMigrationLock(tree,home,async()=>{await recoverTransactions(home);return migratePhoneCoreUnlocked(tree,home);});
 }
 
 // Node canonicalizes the module URL but preserves the launch path in argv.

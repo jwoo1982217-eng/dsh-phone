@@ -4,6 +4,7 @@ import {
 } from '../../src/opencode-adapter.js'
 import { listIdentitySlots, type IdentitySlot } from '../../src/opencode-auth.js'
 import { OPENCODE, isFreeOpencodeModel } from '../../src/opencode-product.js'
+import { setModelsDevForTest } from '../../src/models-dev-cache.js'
 
 // ⚠️ 目录缓存是**模块级**的（按槽 id 分桶），不清会让前一个用例的目录
 // 泄漏到后一个 —— 表现为「明明给了自定义 fetchRemoteCatalog，
@@ -190,16 +191,12 @@ describe('目录可见性', () => {
     expect(models.map((m) => m.id)).toContain('glm-5.2')
   })
 
-  it('⚠️ 远端只有付费模型而当前只有匿名槽时：仍列出 /inference 免费模型', async () => {
-    // 2026-10-17 起 opencode 增加 /inference lane：免费模型不再依赖远端 /zen 目录，
-    // 因此「全付费远端 + 匿名槽」不再等于空目录（原断言编码的是旧行为）。
+  it('⚠️ 远端只有付费模型而当前只有匿名槽时：目录为空（DSH 隐藏该 provider 分组）', async () => {
     const only = new OpencodeAdapter({
       identitySlots: async () => [anonSlot()],
       fetchRemoteCatalog: catalogOf([{ id: 'glm-5.2', isFree: false, contextWindow: 200000 }]),
     })
-    const ids = (await only.listModels('opencode')).map((m) => m.id)
-    expect(ids).toContain('deepseek-v4.1-flash-free')
-    expect(ids).not.toContain('glm-5.2')
+    expect((await only.listModels('opencode')).length).toBe(0)
   })
 
   it('⚠️ 不可达模型永不出现在目录里（无论有没有账号）', async () => {
@@ -235,6 +232,13 @@ describe('resolveModel', () => {
   // —— 而 Zen `/v1/models` 实测**从不下发**该字段（85 条只有 4 个基础字段）。
   // 故这两条改用「catalog 给 0」与「未知模型」来锁真正要守的语义。
   it('⚠️ catalog 给 0 窗口时，能力表仍能提供窗口（issue IKJJ68 根因）', async () => {
+    // ⚠️ 2026-10-17：能力表的数据源改为**共享本地缓存**（models-dev-cache），
+    //   而它不再在导入时自举 —— 测试必须**显式种一份**能力数据。
+    //   这不是「测试变麻烦」，而是契约变清晰了：改前靠一个「模块加载时恰好
+    //   读过磁盘文件」的全态副作用，测试才碰巧有数据（冷启动无缓存时必然失败）。
+    setModelsDevForTest({
+      opencode: { 'big-pickle': { name: 'Big Pickle', limit: { context: 200000 } } },
+    })
     const a = new OpencodeAdapter({
       identitySlots: async () => [anonSlot()],
       fetchRemoteCatalog: async () => jsonResponse({ data: [{ id: 'big-pickle', context_window: 0 }] }),

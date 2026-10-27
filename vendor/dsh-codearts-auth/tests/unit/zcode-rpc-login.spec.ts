@@ -16,9 +16,12 @@
  *
  * ⚠ 这条路径上有**三个真实的坑**，都在实测中踩过：
  *
- * 1. **位置参数错位**：`registerJetHubRpc` 有 11 个 provider 形参，
+ * 1. ~~**位置参数错位**：`registerJetHubRpc` 有 11 个 provider 形参，
  *    测试里少传一个就会让 zcode 落到 raccoon 位置 —— 表现为
- *    `Cannot read properties of undefined (reading 'startLogin')`。
+ *    `Cannot read properties of undefined (reading 'startLogin')`。~~
+ *    **已消除**（2026-10-08，Task 9）：auth 实例改成**命名对象**（键是 provider id），
+ *    少一个键是编译错误而不是错位。⚠️ 这是**历史坑**，保留以解释本文件里
+ *    「显式摆出 13 个键」的桩为何长这样。
  * 2. **settings 桩必须返回可用 scope**：`createJetHubStore` 按
  *    「`settings.register` 是不是函数」选后端；给了 `register(){}`
  *    （返回 undefined）会走 `SettingsStore` 并报
@@ -28,9 +31,6 @@
  */
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
 import { registerJetHubRpc, JET_HUB_API_PATH } from '../../src/jet-hub-rpc.js'
 import { AccountPool } from '../../src/account-pool.js'
 import { ZcodeAuth } from '../../src/zcode-auth.js'
@@ -132,19 +132,25 @@ function makeRpc() {
   const zcode = new ZcodeAuth(ctx, { fetchImpl: impl })
   registerJetHubRpc(
     ctx, pool,
-    // ⚠ **11 个 provider 形参**，逐个具名 —— 少一个就错位（见文件头第 1 条）。
-    {} as never, // codearts
-    {} as never, // buddy
-    {} as never, // workbuddy
-    {} as never, // lobsterai
-    {} as never, // qoder
-    {} as never, // qoderCn
-    {} as never, // trae
-    {} as never, // cline
-    {} as never, // loomy
-    {} as never, // raccoon
-    {} as never, // minimax（2026-09-30 合并后新增，插在 zcode 前）
-    zcode as never,
+    // ⚠️ **命名对象**（2026-10-08 改，原为 11 个位置参数）：键是 **provider id**。
+    // 位置参数时代这里必须逐个具名摆 11 个槽位，少一个就整体错位
+    //（见文件头第 1 条）。
+    {
+      codearts: {} as never,
+      buddy: {} as never,
+      workbuddy: {} as never,
+      lobsterai: {} as never,
+      qoder: {} as never,
+      qodercn: {} as never,
+      trae: {} as never,
+      cline: {} as never,
+      loomy: {} as never,
+      raccoon: {} as never,
+      minimax: {} as never,
+      zcode: zcode as never,
+      gemini: {} as never,
+      officeace: {} as never,
+    } as never,
     undefined,
   )
   const h = handler()
@@ -363,10 +369,15 @@ describe('ZCode Jet Hub 登录接入', () => {
     const zcode = new ZcodeAuth(ctx, { fetchImpl: failing })
     registerJetHubRpc(
       ctx, pool,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
-      {} as never, // minimax（合并后插在 zcode 前）
-      zcode as never, undefined,
+      // ⚠️ 命名对象（2026-10-08 改）：只有 zcode 需要真实例，其余键占位。
+      {
+        codearts: {} as never, buddy: {} as never, workbuddy: {} as never,
+        lobsterai: {} as never, qoder: {} as never, qodercn: {} as never,
+        trae: {} as never, cline: {} as never, loomy: {} as never,
+        raccoon: {} as never, minimax: {} as never,
+        zcode: zcode as never, gemini: {} as never,
+      } as never,
+      undefined,
     )
     const h = handler()!
     const call = async (method: string, payload: unknown) => {
@@ -442,9 +453,15 @@ describe('ZCode Jet Hub 登录接入', () => {
     const zcode = new ZcodeAuth(ctx, { fetchImpl: (async () => new Response('{}')) as never })
     registerJetHubRpc(
       ctx, pool,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
-      {} as never, zcode as never, undefined,
+      // ⚠️ 命名对象（2026-10-08 改）：键是 provider id。
+      {
+        codearts: {} as never, buddy: {} as never, workbuddy: {} as never,
+        lobsterai: {} as never, qoder: {} as never, qodercn: {} as never,
+        trae: {} as never, cline: {} as never, loomy: {} as never,
+        raccoon: {} as never, minimax: {} as never,
+        zcode: zcode as never, gemini: {} as never,
+      } as never,
+      undefined,
     )
     const h = handler()!
     const call = async (method: string, payload: unknown) => {
@@ -478,9 +495,15 @@ describe('ZCode Jet Hub 登录接入', () => {
     const zcode = new ZcodeAuth(ctx, { fetchImpl: (async () => new Response('{}')) as never })
     registerJetHubRpc(
       ctx, pool,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
-      {} as never, zcode as never, undefined,
+      // ⚠️ 命名对象（2026-10-08 改）：键是 provider id。
+      {
+        codearts: {} as never, buddy: {} as never, workbuddy: {} as never,
+        lobsterai: {} as never, qoder: {} as never, qodercn: {} as never,
+        trae: {} as never, cline: {} as never, loomy: {} as never,
+        raccoon: {} as never, minimax: {} as never,
+        zcode: zcode as never, gemini: {} as never,
+      } as never,
+      undefined,
     )
     const h = handler()!
     const call = async (method: string, payload: unknown) => {
@@ -506,23 +529,71 @@ describe('ZCode Jet Hub 登录接入', () => {
     expect(polled.value?.done).toBe(true)
   })
 
-  it('位置参数顺序：zcode 必须排在 raccoon 之后（缺一个就错位）', () => {
-    // 源码级断言：防止将来加 provider 时把 zcode 的顺序改乱。
-    const source = readFileSync(
-      resolve(dirname(fileURLToPath(import.meta.url)), '../../src/index.ts'),
-      'utf8',
-    )
-    const call = /registerJetHubRpc\(([^)]*)\)/.exec(source)
-    expect(call?.[1]).toBeDefined()
-    const args = (call?.[1] ?? '').split(',').map((s) => s.trim())
-    // ctx, pool, 然后 13 个 provider（minimax → zcode → gemini），最后 modelAdapters。
-    // ⚠️ 新 provider 一律**追加在末尾**（gemini 排在 zcode 之后），既有调用点
-    // 才不用逐个补占位 —— 见 `registerJetHubRpc` 签名上方的注释。
-    expect(args.length).toBe(16)
-    expect(args[args.length - 5]).toBe('raccoon')
-    expect(args[args.length - 4]).toBe('minimax')
-    expect(args[args.length - 3]).toBe('zcode')
-    expect(args[args.length - 2]).toBe('gemini')
-    expect(args[args.length - 1]).toBe('modelAdapters')
+  /**
+   * ★ zcode 的 auth 实例被接到**正确的 provider 键**上（行为断言）。
+   *
+   * ## ⚠️ 2026-10-08 改：本用例原先断言的是**位置参数的顺序**
+   *
+   * 旧形态用 `readFileSync` + 正则取 `src/index.ts` 的实参串，断言
+   * `args.length === 16` 且 `args[12..15]` 依次是 `raccoon, minimax, zcode, gemini`。
+   * 那是**源码文本断言**，在本次「13 个位置参数 → 命名对象」重构下必然变红，
+   * 而它守的东西（zcode 没接错实例）**与位置无关** —— 键名即语义之后，
+   * 「错位」这个失效模式本身消失了。故改为**行为**断言：
+   * 驱动 `account.refresh`，看 zcode 的续期到底落到哪个实例上。
+   *
+   * ⚠️ 另有一条不变式由**类型检查**兜住，无需在此重复：
+   * `src/index.ts` 的调用点缺 `zcode` 键 ⇒ `pnpm typecheck` 直接失败
+   *（`JetHubAuths` 的 13 个字段都是必填）—— 比原来的字符串断言更强。
+   */
+  it('★ zcode 的续期落在 zcode 键指向的实例上（不是别的 provider）', async () => {
+    const refreshed: string[] = []
+    const stub = (name: string) => ({
+      refreshAccountCredential: async (ref: string) => { refreshed.push(`${name}:${ref}`) },
+    })
+    const { ctx, handler } = makeCtx()
+    const pool = new AccountPool(ctx)
+    await pool.addAccount({
+      id: 'zcode-wire-1',
+      provider: ZCODE.id,
+      nickname: 'wired',
+      enabled: true,
+      credentialRef: 'ZCODE_ACCOUNT_WIRE',
+      createdAt: Date.now(),
+      refreshable: true,
+    })
+
+    registerJetHubRpc(ctx, pool, {
+      codearts: stub('codearts') as never,
+      buddy: stub('buddy') as never,
+      workbuddy: stub('workbuddy') as never,
+      lobsterai: stub('lobsterai') as never,
+      qoder: stub('qoder') as never,
+      qodercn: stub('qodercn') as never,
+      trae: stub('trae') as never,
+      cline: stub('cline') as never,
+      loomy: stub('loomy') as never,
+      raccoon: stub('raccoon') as never,
+      minimax: stub('minimax') as never,
+      // ⚠️ 键是 provider id `zcode`，值是实例 —— 错位不可能，但「接到哪个实例」
+      //    仍要由行为证明（`authOf` 按 id 取，取错就落到别的 stub 上）。
+      zcode: stub('zcode') as never,
+      gemini: stub('gemini') as never,
+      officeace: {} as never,
+    })
+
+    const h = handler()
+    if (h === undefined) throw new Error('handler 未注册')
+    const res = await h(new Request('http://localhost/api/jet-hub', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        type: 'client-request', rpcId: 'r1', method: 'jet-hub',
+        payload: { method: 'account.refresh', payload: { accountId: 'zcode-wire-1' } },
+      }),
+    }))
+    const body = await res.json() as { result: { ok: boolean } }
+    expect(body.result.ok, 'zcode 续期应成功').toBe(true)
+    // 只有 zcode 那一个实例被调用，且带的是该账号自己的 ref。
+    expect(refreshed).toEqual(['zcode:ZCODE_ACCOUNT_WIRE'])
   })
 })

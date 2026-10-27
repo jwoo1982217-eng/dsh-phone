@@ -18,7 +18,7 @@ import { type MinimaxDeviceAuthorization } from './minimax-oauth.js';
  * 过期信息提取器（供共享实现 `refreshAccountWithReconcile` 用）。
  *
  * ⚠️ `identityOf` 的语义是「**凭据内容**」（这里是 access_token）而**不是** ref 名
- * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts:67` 记录的坑）。
+ * —— 传 ref 名会恒匹配失败且**静默无报错**（`src/expiry-sync.ts` 记录的坑）。
  *
  * ⚠️ `refreshableOf` 提供时共享实现会据此写池里的 `refreshable`。
  * MiniMax **确实有** refresh 端点，故提供它是**诚实**的

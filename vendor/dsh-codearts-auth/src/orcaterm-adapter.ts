@@ -1,3 +1,4 @@
+import { createDsmlMarkerNormalizer } from './sse.js'
 /**
  * 腾讯 OrcaTerm（遨驰终端）LLM adapter。
  *
@@ -539,6 +540,7 @@ export class OrcaTermAdapter {
     /** 取该 provider 的可用账号（账号池 + 凭据解析）。 */
     resolveCredential: (modelId: string) => Promise<OrcaTermCredential | undefined>
     /** 记录一次用量（失败也要记），供面板展示。 */
+    providerClosed?: () => boolean
     recordUsage?: (record: { at: number; model: string; ok: boolean; input: number; output: number }) => void
     /** 最近一次失败原因，面板展示。 */
     warn?: (message: string) => void
@@ -577,6 +579,7 @@ export class OrcaTermAdapter {
   }
 
   async listModels(provider: string): Promise<Array<Record<string, unknown>>> {
+    if (this.deps.providerClosed?.()) return []
     return ORCATerm_FALLBACK_MODELS.map((model) => ({
       provider,
       id: model.id,
@@ -595,7 +598,7 @@ export class OrcaTermAdapter {
       id: model,
       name: known?.name ?? model,
       inputModalities: ['text'],
-      context: { contextWindow: 131072 },
+      ...(known ? { context: { contextWindow: 131072 } } : {}),
       defaultMaxTokens: 8192,
     }
   }
@@ -669,6 +672,7 @@ export class OrcaTermAdapter {
       yield { type: 'finish', reason: { kind: 'error', failure: { message: '用户输入为空', code: 'EMPTY_INPUT' } } }
       return
     }
+    const dsmlFix = createDsmlMarkerNormalizer()
     const gate = new OrcaTermToolTextGate(prepared.tools.length > 0)
     const pending: StreamEvent[] = []
     let notify: (() => void) | null = null
@@ -677,7 +681,7 @@ export class OrcaTermAdapter {
     let outputText = '', reasoning = ''
     const push = (event: StreamEvent): void => { pending.push(event); notify?.(); notify = null }
     const completion = completeStreamed(credential, text, model, options.signal, (delta) => {
-      const safe = gate.feed(delta)
+      const safe = dsmlFix.push(gate.feed(delta))
       if (safe) { outputText += safe; push({ type: 'text-delta', index: 0, text: safe }) }
     }, {
       emphasisPrompt: prepared.emphasis,
@@ -728,7 +732,7 @@ export class OrcaTermAdapter {
       yield { type: 'finish', reason: { kind: 'error', failure: { message: String(error), code: 'INVALID_TOOL_CALL' } } }
       return
     }
-    const tail = gate.finish(calls.length > 0 || result.truncated === true)
+    const tail = dsmlFix.push(gate.finish(calls.length > 0 || result.truncated === true)) + dsmlFix.flush()
     if (tail) { outputText += tail; yield { type: 'text-delta', index: 0, text: tail } }
     if (outputText) yield { type: 'block-end', index: 0, block: { type: 'text', text: outputText } }
     if (reasoning) yield { type: 'block-end', index: 1, block: { type: 'reasoning', text: reasoning } }
@@ -757,12 +761,14 @@ export function registerOrcaTermLlm(
   ctx: Context,
   options: {
     resolveCredential: (modelId: string) => Promise<OrcaTermCredential | undefined>
+    providerClosed?: () => boolean
     recordUsage?: (record: { at: number; model: string; ok: boolean; input: number; output: number }) => void
     warn?: (message: string) => void
   },
 ): OrcaTermAdapter {
   const adapter = new OrcaTermAdapter({
     resolveCredential: options.resolveCredential,
+    providerClosed: options.providerClosed,
     recordUsage: options.recordUsage,
     warn: options.warn ?? ((message: string) => ctx.logger?.warn?.(message)),
   })

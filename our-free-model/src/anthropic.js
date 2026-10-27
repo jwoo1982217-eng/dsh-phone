@@ -45,6 +45,8 @@
  * @module src/anthropic.js
  */
 
+import { carryFailure, forwardFailure } from './failure.js'
+
 /** The plugin ships no tokenizer; the estimate below charges one token per
  *  four characters, the usual English-prose ratio, and a flat cost for each
  *  image because a base64 payload carries no dimensions to price properly. */
@@ -575,7 +577,8 @@ export function anthropicFrames(chunk, state) {
         const carried = string(reason.failure?.message)
         const message = carried !== '' ? carried : reason.kind === 'aborted' ? 'request aborted' : 'our free model failed the turn'
         state.stopReason = null
-        frames.push(sseFrame('error', { type: 'error', error: { type: 'api_error', message } }))
+        const failure = carryFailure(reason.failure, reason.kind)
+        frames.push(sseFrame('error', { type: 'error', error: forwardFailure({ error: message, failure }, true).error }))
         frames.push(sseFrame('message_stop', { type: 'message_stop' }))
         break
       }
@@ -768,7 +771,10 @@ export function foldAnthropicOutcome(outcome, chunk) {
       break
     case 'finish':
       if (chunk.reason?.kind === 'max-tokens') outcome.truncated = true
-      if (chunk.reason?.kind === 'error' || chunk.reason?.kind === 'aborted') outcome.error = chunk.reason.failure?.message
+      if (chunk.reason?.kind === 'error' || chunk.reason?.kind === 'aborted') {
+        outcome.failure = carryFailure(chunk.reason.failure, chunk.reason.kind)
+        outcome.error = outcome.failure.message
+      }
       break
     default: break
   }

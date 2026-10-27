@@ -5,6 +5,111 @@ window.__ModuleLoader__.load({
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+		let react_jsx_runtime = require("react/jsx-runtime");
+		let react = require("react");
+		//#region lib/types/client/FileReference.js
+		/** File navigation feedback belongs to the individual inline reference that requested it. */
+		/**
+		* Render a file chip and contain synchronous navigation failures without hiding the reference.
+		* @param props - JSON node, interaction policy, Session-authorized navigation, and locale seat.
+		* @returns an inline chip and, after a navigation failure, its body-portaled dialog.
+		*/
+		function FileReference({ node, raw, interactive, openFile, t }) {
+			const [failedPath, setFailedPath] = (0, react.useState)(null);
+			const { path, label } = node.data;
+			const close = () => {
+				setFailedPath(null);
+			};
+			const open = () => {
+				try {
+					openFile(path);
+				} catch {
+					setFailedPath(path);
+					return;
+				}
+				setFailedPath(null);
+			};
+			return (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.ReferenceChip, {
+				appearance: "file",
+				label,
+				title: raw,
+				...interactive ? { onActivate: open } : {}
+			}), interactive && failedPath === path && (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+				open: true,
+				onClose: close,
+				closeLabel: t("fileOpen.close"),
+				title: t("fileOpen.title"),
+				description: t("fileOpen.failed", { path }),
+				footer: (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [(0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "outline",
+					onClick: close,
+					children: t("fileOpen.close")
+				}), (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "primary",
+					onClick: open,
+					children: t("fileOpen.retry")
+				})] })
+			})] });
+		}
+		/**
+		* Render a directory as a label, even when the containing text permits file navigation.
+		* @param props - resolved directory data and the original reference spelling.
+		* @returns an inline non-interactive chip.
+		*/
+		function FolderReference({ node, raw }) {
+			return (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.ReferenceChip, {
+				appearance: "folder",
+				label: node.data.label,
+				title: raw
+			});
+		}
+		//#endregion
+		//#region lib/types/client/user-text-rules.js
+		function nextPath(text, from, folder) {
+			const tokens = /(?<!\S)(@"[^"\n]+"|@[^\s]+)/gu;
+			tokens.lastIndex = from;
+			for (let match = tokens.exec(text); match !== null; match = tokens.exec(text)) {
+				const token = match[0];
+				const raw = token.startsWith("@\"") ? token : token.replace(/[.,;:!?，。；：！？]+$/u, "");
+				if (raw.length <= 1) continue;
+				const path = raw.slice(1).replace(/^"|"$/gu, "");
+				if (path.endsWith("/") !== folder) continue;
+				const label = path.split(/[\\/]/u).filter(Boolean).at(-1) ?? raw.slice(1);
+				return {
+					start: match.index,
+					end: match.index + raw.length,
+					data: {
+						path,
+						label
+					}
+				};
+			}
+		}
+		/** Return the nearest complete file reference using original whitespace boundaries. */
+		const fileReferenceRule = {
+			id: "file",
+			order: 30,
+			match(text, from) {
+				const candidate = nextPath(text, from, false);
+				return candidate === void 0 ? void 0 : {
+					id: "file",
+					...candidate
+				};
+			}
+		};
+		/** Return the nearest trailing-slash directory using the file-reference grammar. */
+		const folderReferenceRule = {
+			id: "folder",
+			order: 30,
+			match(text, from) {
+				const candidate = nextPath(text, from, true);
+				return candidate === void 0 ? void 0 : {
+					id: "folder",
+					...candidate
+				};
+			}
+		};
+		//#endregion
 		//#region ../../context/file-reference/src/grammar.ts
 		/**
 		* Format a selected path as prompt text. Whitespace uses the quoted
@@ -104,7 +209,7 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region lib/types/client/locales.js
-		/** `reference` namespace dictionaries for the unified `@` source. */
+		/** `reference` dictionaries for the unified `@` source and inline file navigation. */
 		/** Dictionary namespace owned by this plugin. */
 		const NS = "reference";
 		/**
@@ -120,6 +225,10 @@ window.__ModuleLoader__.load({
 			"section.sessions": "对话",
 			"candidate.noCwd": "（无工作目录）",
 			"crumb.root": "工作区",
+			"fileOpen.title": "无法打开文件",
+			"fileOpen.failed": "无法打开“{path}”，请重试或关闭此提示",
+			"fileOpen.close": "关闭",
+			"fileOpen.retry": "重试",
 			"time.now": "刚刚",
 			"time.minutes": "{n}分钟",
 			"time.hours": "{n}小时",
@@ -134,6 +243,10 @@ window.__ModuleLoader__.load({
 			"section.sessions": "Sessions",
 			"candidate.noCwd": "(no cwd)",
 			"crumb.root": "Workspace",
+			"fileOpen.title": "Couldn’t open file",
+			"fileOpen.failed": "Couldn’t open “{path}”. Try again or close this message.",
+			"fileOpen.close": "Close",
+			"fileOpen.retry": "Retry",
 			"time.now": "now",
 			"time.minutes": "{n}min",
 			"time.hours": "{n}h",
@@ -151,10 +264,12 @@ window.__ModuleLoader__.load({
 			"remote",
 			"remote.fileReferences",
 			"remote.sessionReferenceResolver",
-			"sidebarRight"
+			"sidebarRight",
+			"slots",
+			"uiConversation"
 		];
 		/**
-		* Register the combined `@file` / `@session` source.
+		* Register the combined `@file` / `@session` source and independent file/folder text providers.
 		* @param ctx - client root context.
 		*/
 		function apply(ctx) {
@@ -164,6 +279,25 @@ window.__ModuleLoader__.load({
 			}), "ui-reference: dictionaries");
 			const t = ctx.locale.bind(NS);
 			const sessions = ctx.get("sessions");
+			ctx.uiConversation.userText.register(fileReferenceRule);
+			ctx.uiConversation.userText.register(folderReferenceRule);
+			ctx.slots.inject("conversation.user.text.node", function* () {
+				yield ctx.slots.register({
+					name: "conversation.user.text.node",
+					key: "file",
+					priority: 100,
+					locale: NS,
+					inject: (sessionId) => ({ openFile: (path) => {
+						const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd;
+						ctx.sidebarRight.openResource(fileAddressFor(sessionId, cwd, path));
+					} })
+				}, FileReference);
+				yield ctx.slots.register({
+					name: "conversation.user.text.node",
+					key: "folder",
+					priority: 100
+				}, FolderReference);
+			});
 			const source = {
 				trigger: "@",
 				name: "reference",

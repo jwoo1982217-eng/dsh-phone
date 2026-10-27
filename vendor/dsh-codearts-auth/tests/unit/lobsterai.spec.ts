@@ -83,6 +83,50 @@ describe('安全字段读取', () => {
     expect(readNumberField({ a: 'abc' }, 'a')).toBeUndefined()
     expect(readNumberField({}, 'a')).toBeUndefined()
   })
+
+  /**
+   * ★★ 溢出与上界（真实缺陷，2026-10-12 审计实测）。
+   *
+   * 本函数与 `src/lobsterai-credits.ts` 的 `parseNumericField` 是**同语义判据**
+   * （同属 LobsterAI 链路）。审计实测：原先**只有这一份缺 `Number.isFinite`**
+   * ⇒ 同一份报文在两条路径上结论相反：
+   *
+   * ```
+   * readNumberField({a:'9'.repeat(401)},'a')   = Infinity   ← 旧行为
+   * parseNumericField({a:'9'.repeat(401)},'a') = undefined
+   * ```
+   *
+   * ⚠️ 而且**光有 `Number.isFinite` 还不够**：308 位串（≈9.99e307）与
+   * JSON 合法字面量 `1e308` 都能通过它，却在 `Math.round(v*100)/100`
+   * 这类下游运算里**自己溢出**。故两处都卡同一个上界。
+   */
+  it('★★ 401 位数字串（溢出成 Infinity）→ undefined', () => {
+    const s401 = '9'.repeat(401)
+    expect(Number.isFinite(Number(s401)), '前提：确实溢出').toBe(false)
+    expect(readNumberField({ a: s401 }, 'a')).toBeUndefined()
+  })
+
+  it('★★ 308 位数字串（有限但下游会溢出）→ undefined', () => {
+    const s308 = '9'.repeat(308)
+    expect(Number.isFinite(Number(s308)), '前提：308 位是有限数').toBe(true)
+    expect(Math.round(Number(s308) * 100) / 100, '前提：下游确实会溢出')
+      .toBe(Number.POSITIVE_INFINITY)
+    expect(readNumberField({ a: s308 }, 'a')).toBeUndefined()
+  })
+
+  it('★★ JSON 合法字面量 1e308（数字形态）→ undefined', () => {
+    expect(Number.isFinite(1e308), '前提：1e308 是有限数').toBe(true)
+    expect(readNumberField({ a: 1e308 }, 'a')).toBeUndefined()
+  })
+
+  it('★ 上界不得误伤：真实量级（contextWindow / maxTokens / 倍率）照常解析', () => {
+    // 目录字段的真实量级：1e6 上下（contextWindow 最大 1M、倍率 < 100）。
+    for (const v of [1_048_576, 262_144, 0.03, 100, 0, -1, 1e15]) {
+      expect(readNumberField({ a: v }, 'a'), `数字 ${v} 不应被上界误伤`).toBe(v)
+    }
+    expect(readNumberField({ a: '1048576' }, 'a')).toBe(1_048_576)
+    expect(readNumberField({ a: '0.03' }, 'a')).toBe(0.03)
+  })
 })
 
 describe('统一信封解析', () => {

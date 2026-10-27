@@ -1,5 +1,5 @@
 /**
- * OpenCode Zen 产品配置与错误分类。
+ * OpenCode 免费推理产品配置与错误分类。
  *
  * ## 数据来源（设计文档 §0）
  *
@@ -55,7 +55,9 @@ export const OPENCODE: OpencodeProduct = {
   // ⚠️ 必须与客户端 `PROVIDERS` 里的 label 逐字一致（rail 宽度算式依赖它，
   // 且 `opencode-client-panel.spec.ts` 有跨文件一致性断言）。
   displayName: 'OpenCode',
-  baseUrl: 'https://opencode.ai/zen',
+  // 免费模型的新入口统一挂在 /inference/v1；/zen/v1 对匿名免费模型
+  // 会返回 FreeTierError。这里保留 v1 后缀拆分，便于复用下方路径字段。
+  baseUrl: 'https://opencode.ai/inference',
   chatPath: '/v1/chat/completions',
   modelsPath: '/v1/models',
   // ⚠️ 与本仓库其余 provider 的流式超时常量同档（保守值）。
@@ -64,8 +66,11 @@ export const OPENCODE: OpencodeProduct = {
   // ⚠️ 匿名凭证是**字面量** `public`：opencode 官方 CLI 在没有 key 时自己就用它
   // （其 provider.ts 的 opencode 分支：`options: ok ? {} : { apiKey: 'public' }`）。
   anonymousKey: 'public',
-  // ⚠️ 兜底 UA 版本号。接线层会用真机 `opencode --version` 的结果覆盖它。
-  defaultUserAgent: 'opencode/1.18.22',
+  // ⚠️ 兜底 UA。**v2 形状**（`opencode/<channel>/<version>/<client>`，major ≥ 2）：
+  // 旧的 `opencode/1.18.22` 自 2026-10-14 起被上游按名字拒掉（403 FreeTierError）。
+  // 接线层会用真机 `opencode --version` 的结果改写成同形状（`opencode.ts` 的
+  // `opencodeUserAgentForVersion`）。
+  defaultUserAgent: 'opencode/latest/2.0.26/cli',
   /**
    * 模型能力元数据源（**远端**，能力的主来源）。
    *
@@ -93,16 +98,30 @@ export interface OpencodeFallbackModel {
 }
 
 /**
- * 兜底模型表（**以真机实测为准**，2026-10-01）。
+ * 兜底模型表（**以真机实测为准**，2026-10-01 建立；2026-10-16 复核）。
  *
- * ⚠️ 每条都对应 `docs/superpowers/specs/2026-10-02-opencode-zen-endpoint-matrix.md`
- * 里一次成功的真实请求。`isFree` 的含义是「**匿名通道**（`Bearer public`）
- * 能否使用」，不是官方定价表的 Free 标记 —— 这是本插件唯一关心的维度。
+ * ⚠️ 每条都对应一次成功的真实请求。`isFree` 的含义是「**匿名通道**
+ * （`Bearer public`）能否使用」，不是官方定价表的 Free 标记 —— 这是本插件
+ * 唯一关心的维度。
  *
  * ⚠️ `ling-3.0-flash-fin-free` **已移除**：官方 docs 说它走 `/v1/messages`
  * （Anthropic），而该端点当前对匿名与付费 key 都返回 500（与 body 形态无关），
  * chat 端点则是 404 路由不存在 ⇒ 它在两条通道上都不可用，留在目录里只会
  * 让用户点到一个必然失败的模型。
+ *
+ * ## 2026-10-16 复核（`GET /inference/v1/models`，`Bearer public`，88 条）
+ *
+ * - 新增两条免费模型：`deepseek-v4.1-flash-free`、`glm-5.3-flash-free`
+ *   （清单在列；models.dev 的 `cost.input`/`cost.output` 均为 0，即免费判定
+ *   的权威来源）。窗口取 models.dev 的 `limit.context` = 200000。
+ * - ⚠️ 当次复核**未能**补上逐模型的匿名对话实测：本机出口当时被
+ *   `429 FreeUsageLimitError` 挡住（retry-after ≈ 12h）。两行的 `isFree: true`
+ *   依据是「匿名清单在列 + models.dev 计费为 0 + id 自带 `-free`」三条一致，
+ *   与表中既有免费行的判定口径相同；等出口恢复后应补一次直连对话验证。
+ * - `mimo-v2.5-free` / `nemotron-3-ultra-free` / `union-alpha` 已**不在**当次
+ *   清单里（models.dev 仍把它们标为免费）。它们**保留**在本表：本表是远端
+ *   目录拉取失败时的兜底名册，而远端拉取成功时以远端清单为准（不在清单里的
+ *   条目自然不会出现）。删掉只会让离线名册更短，不会修好任何东西。
  */
 export const OPENCODE_FALLBACK_MODELS: readonly OpencodeFallbackModel[] = [
   // ── 匿名可用（chat 端点，无需 key）──
@@ -111,6 +130,8 @@ export const OPENCODE_FALLBACK_MODELS: readonly OpencodeFallbackModel[] = [
   { id: 'longcat-2.5-preview-free', name: 'LongCat 2.5 Preview Free', isFree: true, contextWindow: 262144 },
   { id: 'mimo-v2.6-flash-free', name: 'MiMo-V2.6-Flash Free', isFree: true, contextWindow: 262144 },
   { id: 'mimo-v2.5-free', name: 'MiMo-V2.5 Free', isFree: true, contextWindow: 262144 },
+  { id: 'deepseek-v4.1-flash-free', name: 'DeepSeek V4.1 Flash Free', isFree: true, contextWindow: 200000 },
+  { id: 'glm-5.3-flash-free', name: 'GLM 5.3 Flash Free', isFree: true, contextWindow: 200000 },
   // ⚠️ 这两个官方 docs 标注走 `/v1/models/{id}`（Gemini 风格），但**实测
   // chat 端点也通** ⇒ 按 chat 处理。**以实测为准，不以 docs 为准。**
   { id: 'nemotron-3-ultra-free', name: 'Nemotron 3 Ultra Free', isFree: true, contextWindow: 262144 },

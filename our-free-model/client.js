@@ -24,10 +24,15 @@ window.__ModuleLoader__.load({
     const module = { exports: {} }
     const exports = module.exports
     const React = require('react')
+    const ReactDOM = require('react-dom')
     const { createElement: h, Fragment, useState, useEffect, useMemo, useRef, useCallback } = React
 
     const NS = 'settings.ourFreeModel'
     const inject = ['slots', 'locale']
+    const SPONSOR_CARD_URL = 'https://beichenapi.com/register?aff=DL49WAC2DQNG'
+    // Sponsor artwork, scaled proportionally for the existing 56px tile.
+    const SPONSOR_LOGO = 'data:image/png;base64,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'
+
 
     // ── copy ──────────────────────────────────────────────────────────────────
     const DICT = {
@@ -48,6 +53,9 @@ window.__ModuleLoader__.load({
         'state.unavailable': '暂不可用',
         'state.throttled': '暂不可用',
         'state.unknown': '未探测',
+        'state.listed': '已列出 · 未实测',
+        'roster.selectable': '可选模型',
+        'hint.listed': '来自渠道目录，未做逐模型推理测试；不代表对话或工具调用成功。',
         'hint.region': '该模型按出口地区放行。开启网络代理后，插件会在下一次探测自动把它移入可用分组。',
         'hint.unknown': '尚未探测，默认保持可达。',
         'hint.hidden': '探测显示网关点名了它却不路由它，因此已从模型选择器中移除；某一次探测重新通过，它会自己回来。',
@@ -58,10 +66,25 @@ window.__ModuleLoader__.load({
         'tag.thinkingShared': '思考不可关',
         'tag.rung': '默认档上限',
         'tag.rungTitle': '各档位实际发出的输出上限：{ladder}。档位是思考与回答共用的额度，且不会超过上面的最长输出与设置里的单次上限。',
+        'tag.levels': '思考档',
+        'tag.levelsTitle': '该模型自己声明的思考档位，选中后按原值下发到上游的 reasoning_effort 字段；档位之外的取值会被上游拒绝。',
+        'effort.off': '关闭',
+        'effort.minimal': '最小',
+        'effort.low': '低',
+        'effort.medium': '中',
+        'effort.high': '高',
+        'effort.xhigh': '极高',
+        'effort.max': '最大',
         'tag.context': '上下文',
         'tag.output': '最长输出',
         'tag.latency': '首字',
         'tag.eacChannel': 'EAC 渠道 · 协付',
+        'tag.new': 'NEW',
+        'tag.newTitle': '新上线的模型，经 EAC 渠道转发自 OpenCode 免费车道。',
+        'tag.hot': '爆',
+        'tag.hotTitle': '当前最热门的免费模型之一。',
+        'tag.fast': '高速',
+        'tag.fastTitle': '响应快、吞吐高，适合长对话与连续调用。',
         'tag.kiloChannel': 'Kilo 渠道 · 免费池（prompt 可能被上游记录用于改进服务，勿发送敏感内容）',
         'roster.noLane': 'EAC 协付模型在当前运行环境不可用：宿主未提供可识别的桌面 / Web 配置，因此不加载该渠道。',
         'section.models': '模型清单',
@@ -100,7 +123,7 @@ window.__ModuleLoader__.load({
         'eac.intro': 'EAC 渠道的对话在服务器侧校验授权：用 GitHub 登录，并给 {repo} 点一个 Star，即可解锁。登录在浏览器里完成，无需复制粘贴；取消 Star 后授权会自动失效。',
         'eac.login': '使用 GitHub 登录',
         'eac.starting': '正在打开浏览器…',
-        'eac.waiting': '请在授权页完成 GitHub 登录；完成后本页会自动确认。授权页未打开时可点击下方按钮。',
+        'eac.waiting': '已打开浏览器授权页；若没有自动打开，请手动访问下面的地址完成授权。完成后本页会自动确认。',
         'eac.open': '打开授权页面',
         'eac.copy': '复制链接',
         'eac.copied': '已复制',
@@ -213,15 +236,27 @@ window.__ModuleLoader__.load({
         'forward.lanAlso': '其它地址：{list}',
         'pref.enabled': '启用免费模型',
         'pref.exposeRegion': '展示地区受限模型',
+        'pref.hideFreeModels': '隐藏匿名与 Kilo 免费模型',
+        'pref.hideEacModels': '隐藏 EAC 模型',
+        'visibility.showModel': '在模型选择器中显示',
+        'visibility.hidden': '已隐藏',
+        'visibility.unlisted': '未公开模型',
+        'visibility.groupHidden': '整组已隐藏，请先关闭上方的整组隐藏开关。',
+        'visibility.hint': '隐藏仅影响模型选择器和网关清单，不影响历史会话；仍可在这里恢复显示。',
+        'routing.capacity': '链路能力交集',
+        'routing.capacityUnavailable': '暂时无法读取链路能力交集，请重试。',
         'pref.interval': '自动探测间隔（分钟）',
         'pref.maxTokens': '单次输出上限（token）',
         'pref.egress': '当前出口',
         'pref.probedAt': '最近探测',
-        'bench.run': '快速测一次',
-        'bench.running': '快测中（最多60秒）…',
-        'bench.result': '快测 · 首帧 {ttft}ms · 输出 {tps} tok/s · 推理 {reasoning} tok',
+        'pref.measuredAt': '最近测量',
+        'bench.run': '测一次',
+        'bench.running': '测量中…',
+        'bench.notSaved': '结果未能保存，请检查数据目录；刷新后可能丢失。',
+        'bench.result': '文本响应通过 · 首帧 {ttft}ms · 输出 {tps} tok/s · 推理 {reasoning} tok',
         'ann.preamble': '前言',
         'ann.models': '模型清单',
+        'ann.newlane': '新模型上线',
         'ann.steps': '使用步骤',
         'ann.features': '功能介绍',
         'ann.later': '稍后再说',
@@ -229,7 +264,10 @@ window.__ModuleLoader__.load({
         'ann.openSettings': '打开设置页',
         'ann.p1': '免密：安装即可用，不需要注册、不需要填任何 API Key。',
         'ann.p2': '清单跟随上游：模型集合、上下文长度与能力每次刷新都重新拉取。',
-        'ann.p3': '诚实的能力声明：探测不出来的能力不会显示，思考强度档位是真实生效的输出预算上限。',
+        'ann.p3': '诚实的能力声明：探测不出来的能力不会显示，思考强度档位是真实生效的输出上限。',
+        'ann.n1': '两个新模型已通过 EAC 渠道上线，由 OpenCode 免费车道转发：DeepSeek V4.1 Flash Free 与 GLM 5.3 Flash Free。',
+        'ann.n2': '它们排在 EAC 模型页最前面，带红色 NEW / 爆 徽标和「高速」标签，一眼就能找到。',
+        'ann.n3': '两个模型都真实支持思考档位（低 / 高 / 最大），DeepSeek 还能关闭思考；档位直接下发到上游，不是提示词。',
         'ann.s1': '在输入框的模型选择器里选 “Our Free Model” 分组下的任意模型。',
         'ann.s2': '需要更强推理时点开 Effort 档位；它是真实下发的输出预算，不是提示词。',
         'ann.s3': '想被其它本地工具调用：设置页 → 本地转发 → 启用，把 Base URL 和 Key 填进去。',
@@ -242,12 +280,13 @@ window.__ModuleLoader__.load({
         'ann.updates': '公告与升级',
         'ann.u1': '公告中心：仓库主人推送的新公告会实时到达，支持图文排版（HTML）。',
         'ann.u2': '系统通知：开启后，新公告与插件更新会弹出系统级通知。',
-        'ann.u3': '应用内升级：新版本发布后可直接在设置页升级，无需重新安装。',
-        'ann.u4': '热重载：升级与本插件的代码更新即时生效，不需要重启应用。',
+        'ann.u3': '应用内升级：自主管理的安装可在设置页升级；宿主管理的安装请通过原安装方式更新。',
+        'ann.u4': '自主管理的安装可尝试应用内升级与热重载；宿主管理的安装请通过原安装方式更新，按宿主提示重新加载。',
         'section.news': '公告中心',
         'section.newsHint': '公告由仓库主人推送，本页实时接收。',
         'section.upgrade': '插件升级',
-        'section.upgradeHint': '在应用内直接升级插件，无需重新安装或重启。',
+        'section.upgradeHint': '更新方式取决于安装来源；由宿主管理的安装请通过原安装方式更新。',
+        'upgrade.managed': '此安装由安装它的宿主管理，请通过原安装方式更新；插件内检查、升级和热重载不可用。',
         'news.unread': '{n} 条未读',
         'news.allRead': '全部已读',
         'news.markRead': '标记已读',
@@ -307,19 +346,54 @@ window.__ModuleLoader__.load({
         'nav.tab.free': '免费模型',
         'nav.tab.eac': 'EAC 模型',
         'nav.tab.channels': '白嫖模型接入',
+        'nav.tab.picks': '推荐项目',
         'star.cta': '点个 Star',
         'star.title': '在 GitHub 上给本仓库点 Star',
+        'picks.title': '推荐项目',
+        'picks.sub': '同一作者的一组开源项目：把 Agent 装进原生桌面、让上百个插件和谐共存、把视频和设计留在这台机器上。用得上，就顺手点个 Star。',
+        'picks.foot': 'Star 是开源项目唯一的「工资条」——它决定作者还能投入多少时间。这里的项目都免费、开源、无广告，点一下就是最实在的支持。',
+        'picks.stars': 'Stars',
+        'picks.forks': 'Forks',
+        'picks.fork': 'Fork',
+        'picks.totalStars': '{c} 个推荐项目共 {n} 个 Star',
+        'picks.updated': '最近更新',
+        'picks.stale': '缓存数据',
+        'picks.liveFailed': '暂时读不到 GitHub 数据，数字稍后自动补上——不影响下面的链接。',
+        'picks.getDesktop': '下载安装',
+        'picks.getPack': '安装说明',
+        'picks.getDesign': '安装说明',
+        'picks.star': '点个 Star',
+        'picks.starHint': '在 GitHub 上打开并点 Star',
+        'picks.desktop.badge': '桌面工作台',
+        'picks.desktop.tagline': '把 Agent 的能力，组织成一张真正能工作的桌面。',
+        'picks.desktop.body': '基于 DeepSeek Harness 的开源桌面工作台：Tauri 原生窗口、随包 Node 运行时，双击即进入工作。项目文件、会话变更、插件目录与皮肤市场都在一处，Windows / Linux / macOS 都有安装包。',
+        'picks.desktop.tag1': 'Tauri 原生窗口',
+        'picks.desktop.tag2': '随包运行时',
+        'picks.desktop.tag3': '文件协作与还原',
+        'picks.desktop.tag4': '插件市场与皮肤',
+        'picks.pack.badge': '插件整合包',
+        'picks.pack.tagline': '揽尽万象：让数百个 DSH 插件和谐共存。',
+        'picks.pack.body': '为 DSH Desktop 提供插件目录、批量安装、更新与移除管理，内置 72 个基线子插件、皮肤预览与 Prompt 合集；固定摘要清单逐字节校验，装出来的环境完整可信。',
+        'picks.pack.tag1': '72 个基线插件',
+        'picks.pack.tag2': '批量安装 / 更新',
+        'picks.pack.tag3': '皮肤预览',
+        'picks.pack.tag4': '摘要校验',
+        'picks.design.badge': '设计工作台',
+        'picks.design.tagline': '在本地把视频和设计做完，不把素材交给别人。',
+        'picks.design.body': 'DeepSeek Harness 的本地视频制作与设计插件：多轨剪辑、模板与设计体系、原生预览画布，成品导出为真实文件。全流程在本机完成，素材与工程留在自己硬盘上。',
+        'picks.design.tag1': '多轨剪辑',
+        'picks.design.tag2': '模板与设计体系',
+        'picks.design.tag3': '原生预览画布',
+        'picks.design.tag4': '真实文件导出',
         'free.title': '免费模型',
         'free.sub': '免登录、免 Key、免配置：目录包含匿名与 Kilo 模型，实际可用性以本机探测或测速为准。',
+        'sponsor.bannerTag': '中转站',
+        'sponsor.bannerTitle': '北辰 API 中转站',
+        'sponsor.bannerDescription': 'OFM 官方合作中转站，为用户提供稳定、开放、高性价比的大模型 API 接入服务。支持 Claude、ChatGPT、Grok、Gemini、智谱 GLM、Kimi、DeepSeek 等主流模型，适合在 Codex、Gemini CLI、Claude Code 及其他开发工具中统一配置使用。邀请可获百分之十的返现。',
+        'sponsor.bannerCta': '立即查看',
         'free.tankLabel': '匿名线路已验证可用占比',
-        'free.tankNote': '水位 = 已确认可用的匿名模型占比（{ok}/{total}）；待确认 {unknown} 个。',
-        'free.tankEmpty': '匿名线路尚无明确探测结果，可用度待确认。',
-        'free.pending': '待确认',
-        'free.verified': '匿名已验证可用',
-        'free.directoryNote': '免费目录 {total} 个（匿名 {anonymous} · Kilo {kilo}）。目录数量不代表全部已测通。',
-        'free.selectable': '可选模型',
-        'free.listed': '已列入目录',
-        'free.kiloUnprobed': '上游已返回模型清单，未自动探测；可按需快速测速。',
+        'free.tankNote': '水位 = 当前可用模型占比（{ok}/{total}）',
+        'free.tankEmpty': '尚未探测，水位按已声明模型占位。',
         'eac.title': 'EAC 模型',
         'eac.sub': '本机独立连接 EAC：GitHub 登录并 star 本仓库后解锁，与免费车道互不影响。',
         'eac.tankLabel': '协付池压力',
@@ -333,6 +407,9 @@ window.__ModuleLoader__.load({
         'chan.meta.accounts': '账号',
         'chan.meta.models': '模型',
         'chan.act.add': '添加账号',
+        'chan.zcode.provider': '登录渠道',
+        'chan.zcode.bigmodel': 'bigmodel.cn',
+        'chan.zcode.zai': 'z.ai 国际版',
         'chan.act.refresh': '续期',
         'chan.act.test': '测试',
         'chan.act.delete': '移除',
@@ -340,9 +417,11 @@ window.__ModuleLoader__.load({
         'chan.fold.accounts': '账号',
         'chan.fold.models': '模型',
         'chan.noAccount': '还没有账号——点「添加账号」开始登录。',
-        'chan.enabled': '启用',
+        'chan.enabled': '已启用',
+        'chan.act.enable': '启用',
+        'chan.act.disable': '停用',
         'chan.expires.never': '长效',
-        'chan.disabled': '已关闭',
+        'chan.disabled': '已停用',
         'chan.login.title': '登录 {name}',
         'chan.login.step1': '在浏览器中完成登录（若没有自动打开，点下面的按钮）。',
         'chan.login.step2': '登录成功后本页会自动完成，无需复制任何东西。',
@@ -359,6 +438,8 @@ window.__ModuleLoader__.load({
         'chan.credit.today': '今日已领 {credit}',
         'chan.model.free': '免费额度',
         'chan.model.dead': '已下架',
+        'chan.model.hidden': '已隐藏',
+        'chan.model.restore': '恢复显示',
         'chan.model.off': '关闭',
         'chan.model.on': '开启',
         'chan.model.enableAll': '全部开启',
@@ -371,6 +452,7 @@ window.__ModuleLoader__.load({
         'nav.tab.ledger': '数据看板',
         'nav.tab.logs': '运行日志',
         'nav.tab.gateway': '网关设置',
+        'nav.tab.upgrade': '插件升级',
         'chan.titleSingle': '渠道',
         'dash.title': '数据看板',
         'dash.sub': '渠道模型的 Token 消耗与推理指标：输入/输出/思考/缓存逐项统计，账号与模型双维度透视。',
@@ -668,6 +750,9 @@ window.__ModuleLoader__.load({
         'state.unavailable': 'Unavailable',
         'state.throttled': 'Temporarily unavailable',
         'state.unknown': 'Not probed',
+        'state.listed': 'Listed · not tested',
+        'roster.selectable': 'Selectable models',
+        'hint.listed': 'Listed by the channel; inference has not been tested. This does not confirm chat or tool use.',
         'hint.region': 'This model is gated by egress country. Once a proxy changes your egress, the next probe moves it into the available group by itself.',
         'hint.unknown': 'Not probed yet, so it stays reachable.',
         'hint.hidden': 'The gateway names it but refuses to route it, so it is out of the model picker. It returns by itself as soon as a probe gets through.',
@@ -678,10 +763,25 @@ window.__ModuleLoader__.load({
         'tag.thinkingShared': 'Thinking always on',
         'tag.rung': 'Default ceiling',
         'tag.rungTitle': 'What each rung actually sends: {ladder}. A rung is one ceiling shared by thinking and the answer, and it never exceeds the max output above or the per-call ceiling in settings.',
+        'tag.levels': 'Thinking levels',
+        'tag.levelsTitle': 'The levels this model declares itself; the selected one is sent as-is in the upstream reasoning_effort field, and a value outside the set is rejected upstream.',
+        'effort.off': 'Off',
+        'effort.minimal': 'Minimal',
+        'effort.low': 'Low',
+        'effort.medium': 'Medium',
+        'effort.high': 'High',
+        'effort.xhigh': 'Extra high',
+        'effort.max': 'Max',
         'tag.context': 'Context',
         'tag.output': 'Max output',
         'tag.latency': 'First token',
         'tag.eacChannel': 'EAC lane · co-paid',
+        'tag.new': 'NEW',
+        'tag.newTitle': 'Just added: relayed to the EAC lane from OpenCode’s free tier.',
+        'tag.hot': '爆',
+        'tag.hotTitle': 'One of the most requested free models right now.',
+        'tag.fast': 'Fast',
+        'tag.fastTitle': 'Quick first token and high throughput — good for long or back-to-back turns.',
         'tag.kiloChannel': 'Kilo channel · free pool (prompts may be logged by the upstream provider — never send sensitive content)',
         'roster.noLane': 'The co-paid EAC models are unavailable in this composition: the host did not present a recognized desktop or web profile, so the lane is not loaded.',
         'section.models': 'Model roster',
@@ -833,15 +933,27 @@ window.__ModuleLoader__.load({
         'forward.lanAlso': 'Also reachable at {list}',
         'pref.enabled': 'Enable free models',
         'pref.exposeRegion': 'Show region-limited models',
+        'pref.hideFreeModels': 'Hide anonymous and Kilo free models',
+        'pref.hideEacModels': 'Hide EAC models',
+        'visibility.showModel': 'Show in model picker',
+        'visibility.hidden': 'Hidden',
+        'visibility.unlisted': 'Unlisted models',
+        'visibility.groupHidden': 'This group is hidden. Turn off the group switch above first.',
+        'visibility.hint': 'Hiding affects the model picker and gateway listing only. Existing sessions keep working; restore visibility here.',
+        'routing.capacity': 'Chain capability intersection',
+        'routing.capacityUnavailable': 'Cannot load chain capacities right now. Please retry.',
         'pref.interval': 'Auto-probe interval (minutes)',
         'pref.maxTokens': 'Output ceiling per call (tokens)',
         'pref.egress': 'Current egress',
         'pref.probedAt': 'Last probe',
-        'bench.run': 'Quick test',
-        'bench.running': 'Quick test (up to 60s)…',
-        'bench.result': 'quick test · first frame {ttft}ms · {tps} tok/s · {reasoning} reasoning tokens',
+        'pref.measuredAt': 'Last measurement',
+        'bench.run': 'Run once',
+        'bench.running': 'Measuring…',
+        'bench.notSaved': 'The result could not be saved. Check the data directory; it may be lost after refresh.',
+        'bench.result': 'Text response passed · first frame {ttft}ms · {tps} tok/s · {reasoning} reasoning tokens',
         'ann.preamble': 'Preamble',
         'ann.models': 'Model roster',
+        'ann.newlane': 'New models',
         'ann.steps': 'How to use',
         'ann.features': 'What it does',
         'ann.later': 'Later',
@@ -850,6 +962,9 @@ window.__ModuleLoader__.load({
         'ann.p1': 'No credentials: install and use it — no sign-up, no API key to paste.',
         'ann.p2': 'The roster follows upstream: models, context lengths and capabilities are re-fetched on every refresh.',
         'ann.p3': 'Honest capability claims: anything a probe cannot confirm stays hidden, and each effort level is a real output budget.',
+        'ann.n1': 'Two new models are live on the EAC lane, relayed from OpenCode’s free tier: DeepSeek V4.1 Flash Free and GLM 5.3 Flash Free.',
+        'ann.n2': 'They lead the EAC models page, marked with a red NEW / 爆 badge and a “Fast” tag.',
+        'ann.n3': 'Both expose real thinking levels (Low / High / Max), and DeepSeek can also switch thinking off; the level goes to the upstream as-is, not as a prompt hint.',
         'ann.s1': 'Pick any model under the “Our Free Model” group in the composer’s model selector.',
         'ann.s2': 'For harder reasoning, open the Effort menu — it sends a real budget, not a prompt hint.',
         'ann.s3': 'To serve other local tools: Settings → Local forward → enable, then copy the base URL and key.',
@@ -862,12 +977,13 @@ window.__ModuleLoader__.load({
         'ann.updates': 'News & upgrades',
         'ann.u1': 'Announcement center: pushes from the repository owner arrive live, with rich (HTML) layout.',
         'ann.u2': 'OS notifications: once enabled, new announcements and plugin updates raise system-level toasts.',
-        'ann.u3': 'In-app upgrades: install new releases straight from the settings page, no reinstall needed.',
-        'ann.u4': 'Hot reload: upgrades and code changes take effect immediately, without restarting the app.',
+        'ann.u3': 'In-app upgrades: self-managed installs can update from settings; host-managed installs use their original installation method.',
+        'ann.u4': 'Self-managed installs can use in-app upgrades and hot reload. For host-managed installs, update through the original installation method and reload as instructed by the host.',
         'section.news': 'Announcement center',
         'section.newsHint': 'Published by the repository owner; this page receives them live.',
         'section.upgrade': 'Plugin upgrade',
-        'section.upgradeHint': 'Upgrade in-app — no reinstall, no restart.',
+        'section.upgradeHint': 'Update according to the installation source; host-managed installs use their original installation method.',
+        'upgrade.managed': 'This installation is managed by the host that installed it. Update through the original installation method; in-plugin checks, upgrades and hot reload are unavailable.',
         'news.unread': '{n} unread',
         'news.allRead': 'Mark all read',
         'news.markRead': 'Mark read',
@@ -927,19 +1043,54 @@ window.__ModuleLoader__.load({
         'nav.tab.free': 'Free models',
         'nav.tab.eac': 'EAC models',
         'nav.tab.channels': 'Free channels',
+        'nav.tab.picks': 'Picks',
         'star.cta': 'Star',
         'star.title': 'Star this repository on GitHub',
+        'picks.title': 'Recommended projects',
+        'picks.sub': 'A set of open-source projects by the same author: bringing the agent to a native desktop, keeping hundreds of plugins working together, and keeping video and design work on this machine. If they are useful, a star is the thanks they understand.',
+        'picks.foot': 'A star is the only payslip an open-source project gets — it decides how much more time the author can spend. Every project here is free, open source and ad-free; one click is the most concrete support there is.',
+        'picks.stars': 'Stars',
+        'picks.forks': 'Forks',
+        'picks.fork': 'Fork',
+        'picks.totalStars': '{n} stars across {c} projects',
+        'picks.updated': 'Last push',
+        'picks.stale': 'cached',
+        'picks.liveFailed': 'GitHub numbers are unreachable right now; they will fill in later — the links below are unaffected.',
+        'picks.getDesktop': 'Download',
+        'picks.getPack': 'Install guide',
+        'picks.getDesign': 'Install guide',
+        'picks.star': 'Star it',
+        'picks.starHint': 'Open GitHub and star',
+        'picks.desktop.badge': 'Desktop workbench',
+        'picks.desktop.tagline': 'Agent capability, organized into a desktop that actually works.',
+        'picks.desktop.body': 'An open-source desktop workbench built on DeepSeek Harness: a Tauri native window with Node bundled in, so a double-click lands you in the work. Project files, session changes, a plugin catalog and a skin market in one place — with installers for Windows, Linux and macOS.',
+        'picks.desktop.tag1': 'Tauri native window',
+        'picks.desktop.tag2': 'Bundled runtime',
+        'picks.desktop.tag3': 'File changes & revert',
+        'picks.desktop.tag4': 'Plugin market & skins',
+        'picks.pack.badge': 'Plugin suite',
+        'picks.pack.tagline': 'Embracing all creation: hundreds of DSH plugins, living together.',
+        'picks.pack.body': 'A catalog, batch install, update and removal manager for DSH Desktop, carrying 72 baseline sub-plugins, skin previews and prompt sets; a pinned digest manifest verifies every byte, so an install is complete and trustworthy.',
+        'picks.pack.tag1': '72 baseline plugins',
+        'picks.pack.tag2': 'Batch install / update',
+        'picks.pack.tag3': 'Skin previews',
+        'picks.pack.tag4': 'Digest verification',
+        'picks.design.badge': 'Design workbench',
+        'picks.design.tagline': 'Finish video and design work locally, without handing your footage to anyone.',
+        'picks.design.body': 'A local video-production and design plugin for DeepSeek Harness: multi-track editing, templates and a design system, a native preview canvas, and exports that are real files. The whole pipeline runs on this machine, so footage and projects stay on your own disk.',
+        'picks.design.tag1': 'Multi-track editing',
+        'picks.design.tag2': 'Templates & design system',
+        'picks.design.tag3': 'Native preview canvas',
+        'picks.design.tag4': 'Real file export',
         'free.title': 'Free models',
         'free.sub': 'No login, no key, no setup: the directory includes anonymous and Kilo models. Availability depends on local probes or tests.',
+        'sponsor.bannerTag': 'Relay',
+        'sponsor.bannerTitle': 'Beichen API relay',
+        'sponsor.bannerDescription': 'OFM’s official relay partner provides stable, open and cost-effective model API access. Claude, ChatGPT, Grok, Gemini, GLM, Kimi and DeepSeek are supported for one consistent setup in Codex, Gemini CLI, Claude Code and other developer tools. Invite others to receive 10% cashback.',
+        'sponsor.bannerCta': 'View now',
         'free.tankLabel': 'Verified anonymous availability',
-        'free.tankNote': 'Water level = verified anonymous models ({ok}/{total}); {unknown} unconfirmed.',
-        'free.tankEmpty': 'No conclusive anonymous probe results yet; availability is unconfirmed.',
-        'free.pending': 'Unconfirmed',
-        'free.verified': 'Anonymous verified',
-        'free.directoryNote': 'Free directory: {total} models ({anonymous} anonymous · {kilo} Kilo). Listing does not mean every model has passed a test.',
-        'free.selectable': 'Selectable models',
-        'free.listed': 'Listed',
-        'free.kiloUnprobed': 'Listed by upstream, without an automatic probe. Run a quick test as needed.',
+        'free.tankNote': 'Water level = share of reachable models ({ok}/{total})',
+        'free.tankEmpty': 'Not probed yet; the level stands at the declared roster.',
         'eac.title': 'EAC models',
         'eac.sub': 'This device connects to EAC independently: sign in with GitHub and star the repository to unlock.',
         'eac.tankLabel': 'Co-paid pool pressure',
@@ -953,6 +1104,9 @@ window.__ModuleLoader__.load({
         'chan.meta.accounts': 'Accounts',
         'chan.meta.models': 'Models',
         'chan.act.add': 'Add account',
+        'chan.zcode.provider': 'Sign-in route',
+        'chan.zcode.bigmodel': 'bigmodel.cn',
+        'chan.zcode.zai': 'z.ai international',
         'chan.act.refresh': 'Refresh',
         'chan.act.test': 'Test',
         'chan.act.delete': 'Remove',
@@ -961,6 +1115,8 @@ window.__ModuleLoader__.load({
         'chan.fold.models': 'Models',
         'chan.noAccount': 'No account yet — press “Add account” to sign in.',
         'chan.enabled': 'Enabled',
+        'chan.act.enable': 'Enable',
+        'chan.act.disable': 'Disable',
         'chan.expires.never': 'Long-lived',
         'chan.disabled': 'Disabled',
         'chan.login.title': 'Sign in to {name}',
@@ -979,6 +1135,8 @@ window.__ModuleLoader__.load({
         'chan.credit.today': '{credit} claimed today',
         'chan.model.free': 'Free quota',
         'chan.model.dead': 'Retired',
+        'chan.model.hidden': 'Hidden',
+        'chan.model.restore': 'Restore visibility',
         'chan.model.off': 'Hide',
         'chan.model.on': 'Show',
         'chan.model.enableAll': 'Show all',
@@ -991,6 +1149,7 @@ window.__ModuleLoader__.load({
         'nav.tab.ledger': 'Dashboard',
         'nav.tab.logs': 'Request log',
         'nav.tab.gateway': 'Gateway',
+        'nav.tab.upgrade': 'Plugin upgrade',
         'chan.titleSingle': 'Channel',
         'dash.title': 'Usage dashboard',
         'dash.sub': 'Token spend and inference metrics for the channel models: input/output/reasoning/cache, pivoted by account and by model.',
@@ -1283,14 +1442,15 @@ window.__ModuleLoader__.load({
     // colour, callouts lost their border. Every use of those two names carries a
     // fallback for exactly that reason.
     const CSS = `
+/* dsh-phone opaque settings surface */
+@media(max-width:700px){body.dsh-phone-mobile .VOzbGW_overlay{background:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-base,#fff))!important;isolation:isolate}}
+
 /* ═══════════════════════════════════════════════════════════════════════
    Our Free Model — visual system
    统一令牌：所有色值取自宿主 --dsw-alias-* 变量，昼夜由宿主切换。
    层级约定：layer-3 凹槽/页面底 · layer-2 面板 · layer-1 浮起元素。
    动效约定：transform/opacity 优先；常规 150–300ms、覆盖层 300–400ms。
    ═══════════════════════════════════════════════════════════════════════ */
-/* dsh-phone opaque settings surface */
-@media(max-width:700px){body.dsh-phone-mobile .VOzbGW_overlay{background:var(--dsw-alias-bg-layer-1,var(--dsw-alias-bg-base,#fff))!important;isolation:isolate}}
 .ofm_root{--ease-instrument:cubic-bezier(.16,1,.3,1);--ease-settle:cubic-bezier(.34,1.4,.4,1);--gap:14px;display:flex;flex-direction:column;gap:calc(var(--gap)*1.4);max-width:1080px;font-size:13px;line-height:1.55;color:var(--dsw-alias-label-primary);-webkit-font-smoothing:antialiased}
 .ofm_root::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
 .ofm_root>*{position:relative;z-index:1}
@@ -1342,6 +1502,12 @@ window.__ModuleLoader__.load({
 .ofm_tags{display:flex;gap:5px;flex-wrap:wrap}
 .ofm_tag{font-size:10.5px;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 70%,transparent);border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary)}
 .ofm_chantag{font-size:10px;font-weight:650;padding:2px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-business-primary) 50%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 9%,transparent);color:var(--dsw-alias-state-business-primary);white-space:nowrap}
+/* ══ 新品/热门徽标与高速标签（置顶的 opencode 免费模型） ═════════════════ */
+.ofm_newtag{flex:none;font-size:9.5px;font-weight:750;letter-spacing:.4px;padding:2px 7px;border-radius:999px;color:#fff;background:var(--dsw-alias-state-error-primary);box-shadow:0 1px 4px color-mix(in srgb,var(--dsw-alias-state-error-primary) 45%,transparent);white-space:nowrap;text-transform:uppercase}
+.ofm_hottag{flex:none;font-size:10px;font-weight:700;line-height:1;padding:2px 6px;border-radius:999px;color:#fff;background:var(--dsw-alias-state-error-primary);box-shadow:0 1px 4px color-mix(in srgb,var(--dsw-alias-state-error-primary) 45%,transparent);white-space:nowrap}
+.ofm_tag.fast{color:var(--dsw-alias-state-success-primary);border-color:color-mix(in srgb,var(--dsw-alias-state-success-primary) 45%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-success-primary) 10%,transparent);font-weight:650}
+.ofm_card.pinned{border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 42%,var(--dsw-alias-border-l2));box-shadow:inset 0 1px 0 rgb(255 255 255 / 6%),0 2px 6px color-mix(in srgb,var(--dsw-alias-state-error-primary) 14%,transparent),0 6px 18px color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,transparent)}
+.ofm_card.pinned:hover{border-color:color-mix(in srgb,var(--dsw-alias-state-error-primary) 62%,var(--dsw-alias-border-l2))}
 .ofm_metrics{display:flex;gap:12px;font-size:11px;color:var(--dsw-alias-label-tertiary);flex-wrap:wrap}
 .ofm_metrics b{color:var(--dsw-alias-label-secondary);font-weight:600;font-variant-numeric:tabular-nums}
 .ofm_note{font-size:11px;color:var(--dsw-alias-label-tertiary);line-height:1.5}
@@ -1404,7 +1570,7 @@ window.__ModuleLoader__.load({
 .ofm_input:hover{border-color:color-mix(in srgb,var(--dsw-alias-border-l2) 60%,var(--dsw-alias-label-tertiary))}
 .ofm_input:focus{outline:none;border-color:var(--dsw-alias-state-business-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-state-business-primary) 20%,transparent)}
 /* ══ 开关（spring 滑块） ═══════════════════════════════════════════════ */
-.ofm_switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.ofm_switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;appearance:none;background:transparent;border:0;padding:0;font:inherit;color:inherit}
 .ofm_switch i{width:36px;height:20px;border-radius:999px;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l2);box-shadow:inset 0 1px 3px rgb(0 0 0 / 8%);position:relative;transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;flex:none}
 .ofm_switch:hover i{filter:brightness(1.05)}
 .ofm_switch[aria-checked="true"]:hover i{filter:brightness(1.08)}
@@ -1424,11 +1590,10 @@ window.__ModuleLoader__.load({
 .ofm_stat b{display:block;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
 .ofm_stat span{font-size:10.5px;color:var(--dsw-alias-label-tertiary)}
 /* ══ 公告（首次引导） ══════════════════════════════════════════════════ */
-/* The onboarding slot is mounted inside the collapsed sidebar foot of the shell,
-   so a card that stays in flow inherits a 55 px-wide, overflow-hidden column. The
-   scrim is therefore fixed to the viewport; the shell sets no transform, filter
-   or contain on any ancestor, so nothing re-anchors it. Mask colour, blur and
-   z-index mirror the Modal layer of the shell so this reads as first-party. */
+    /* The onboarding slot is mounted inside the shell, but Announcement portals its
+       scrim into document.body so third-party sidebar stacking contexts cannot trap
+       the fixed overlay. Mask colour, blur and z-index mirror the Modal layer of the
+       shell so this reads as first-party. */
 .ofm_scrim{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:var(--dsw-alias-bg-mask-1, rgb(0 0 0 / 32%));backdrop-filter:var(--dsw-mask-blur, blur(8px)) saturate(140%);-webkit-backdrop-filter:var(--dsw-mask-blur, blur(8px)) saturate(140%);animation:ofm-fadein .24s ease}
 @keyframes ofm-fadein{from{opacity:0}to{opacity:1}}
 .ofm_ann{width:min(620px,92vw);max-height:min(86vh,640px);border-radius:18px;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 94%,transparent);box-shadow:inset 0 1px 0 rgb(255 255 255 / 8%),0 28px 80px rgb(0 0 0 / 40%);overflow:hidden;display:flex;flex-direction:column;animation:ofm-popin .36s cubic-bezier(.16,1,.3,1)}
@@ -1514,6 +1679,21 @@ window.__ModuleLoader__.load({
 .ofm_modalbody p{margin:0 0 6px}
 .ofm_modalfoot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--dsw-alias-border-l1);background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 72%,transparent)}
 @media (max-width:720px){.ofm_sec_hint{margin-left:0;width:100%}.ofm_pills{margin-left:0;width:100%}}
+/* ══ 北辰 API 赞助横幅：免费模型页首屏入口，与桌面端保持独立 ═══════ */
+.ofm_sponsor_banner{position:relative;display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:14px;padding:13px 16px;border:1px solid rgb(121 151 204 / 42%);border-radius:14px;overflow:hidden;background:linear-gradient(115deg,#0b1425 0%,#17253d 54%,#263654 100%);color:#f3f7ff;box-shadow:0 9px 20px rgb(12 24 49 / 20%),inset 0 1px 0 rgb(255 255 255 / 13%)}
+.ofm_sponsor_banner::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.36;background-image:linear-gradient(rgb(126 164 225 / 15%) 1px,transparent 1px),linear-gradient(90deg,rgb(126 164 225 / 15%) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(90deg,black,transparent 85%)}
+.ofm_sponsor_banner::after{content:"";position:absolute;inset:auto -12% -80% 35%;height:180%;pointer-events:none;background:radial-gradient(ellipse,rgb(96 137 222 / 22%),transparent 68%);transform:rotate(-7deg)}
+.ofm_sponsor_banner>*{position:relative;z-index:1}
+.ofm_sponsor_logo{display:flex;flex-direction:column;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:#f8fbff;color:#c8470b;box-shadow:0 5px 11px rgb(0 0 0 / 22%),inset 0 0 0 1px rgb(255 255 255 / 80%);transform:rotate(4deg);font-weight:800;letter-spacing:-1px;line-height:1}
+.ofm_sponsor_logo span{font-size:16px}
+.ofm_sponsor_logo small{margin-top:4px;padding-top:3px;border-top:1px solid currentColor;font-size:7px;letter-spacing:1px}
+.ofm_sponsor_bannerbody{min-width:0}
+.ofm_sponsor_kicker{display:inline-flex;align-items:center;padding:2px 8px;border:1px solid rgb(0 194 232 / 55%);border-radius:999px;background:rgb(0 144 186 / 18%);color:#38d9f4;font-size:10px;font-weight:700;letter-spacing:.2px}
+.ofm_sponsor_banner h3{margin:4px 0 3px;color:#f6f8ff;font-size:clamp(17px,2vw,22px);font-weight:780;letter-spacing:-.45px;line-height:1.15}
+.ofm_sponsor_banner p{max-width:75ch;margin:0;color:rgb(220 229 246 / 82%);font-size:10.5px;line-height:1.45}
+.ofm_sponsor_cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:92px;padding:8px 12px;border:1px solid rgb(255 255 255 / 72%);border-radius:10px;background:linear-gradient(180deg,#f9fbff,#dfe8f7);box-shadow:0 4px 10px rgb(0 0 0 / 18%),inset 0 1px 0 #fff;color:#253651;font-size:11px;font-weight:750;text-decoration:none;white-space:nowrap;transition:transform .18s var(--ease-instrument),box-shadow .18s ease,filter .18s ease}
+.ofm_sponsor_cta:hover{transform:translateY(-2px);filter:brightness(1.04);box-shadow:0 9px 20px rgb(0 0 0 / 24%),inset 0 1px 0 #fff}
+.ofm_sponsor_cta:active{transform:translateY(0)}
 /* ══ GitHub star 按钮 ══════════════════════════════════════════════════ */
 .ofm_starbtn{position:relative;display:inline-flex;gap:7px;align-items:center;padding:7px 15px;border-radius:999px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-business-primary) 55%,transparent);background:linear-gradient(140deg,color-mix(in srgb,var(--dsw-alias-state-business-primary) 16%,transparent),transparent 70%);color:var(--dsw-alias-state-business-primary);text-decoration:none;font-weight:650;font-size:12.5px;transition:transform .18s ease,box-shadow .22s ease,color .22s ease,background .22s ease;white-space:nowrap;overflow:hidden}
 .ofm_starbtn svg{transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
@@ -2147,6 +2327,54 @@ window.__ModuleLoader__.load({
 .ofm_snippet{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.6;padding:9px 11px;border-radius:10px;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);white-space:pre;overflow:auto;max-height:230px}
 @media (max-width:600px){.ofm_duo{grid-template-columns:1fr}.ofm_picklist{grid-template-columns:1fr}.ofm_member{flex-wrap:wrap}}
 @media (prefers-reduced-motion:reduce){.ofm_rise,.ofm_page{animation:none}.ofm_pickrow,.ofm_member,.ofm_meter i,.ofm_card,.ofm_kpi,.ofm_chan{transition:none}.ofm_root .ofm_card:hover,.ofm_pickrow:hover:not(:disabled){transform:none}}
+
+/* ── 推荐项目页：两张「去点 Star」的卡片 ─────────────────────────────────
+   这一页只有一件事要促成——点开仓库、点下 Star。所以卡片比常规模型卡大一档，
+   入场逐张错峰（--i 由调用方给），悬停抬升；主 CTA 是渐变星按钮，带一圈呼吸
+   光环与悬停扫光；数字用 count-up 落地。全部只动 transform/opacity/颜色。
+   动效降级：文件末尾的 reduced-motion 块统一关掉位移与动画。 */
+.ofm_recogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:14px;align-items:stretch}
+.ofm_recocard{position:relative;display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:18px;border:1px solid var(--dsw-alias-border-l2);background:linear-gradient(168deg,color-mix(in srgb,var(--dsw-alias-bg-layer-3) 86%,transparent),color-mix(in srgb,var(--dsw-alias-bg-layer-2) 80%,transparent));box-shadow:inset 0 1px 0 rgb(255 255 255 / 7%),0 2px 8px rgb(0 0 0 / 5%),0 14px 34px color-mix(in srgb,var(--dsw-alias-state-business-primary) 6%,transparent);overflow:hidden;animation:ofm-reco-in .5s var(--ease-instrument) backwards;animation-delay:calc(var(--i,0)*90ms);transition:transform .24s var(--ease-instrument),box-shadow .28s ease,border-color .2s ease}
+.ofm_recocard::before{content:"";position:absolute;inset:-45% 45% 50% -35%;pointer-events:none;opacity:0;background:radial-gradient(58% 58% at 32% 32%,color-mix(in srgb,var(--dsw-alias-state-business-primary) 13%,transparent),transparent 72%);transition:opacity .4s ease}
+.ofm_recocard:hover::before{opacity:1}
+.ofm_recocard:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--dsw-alias-state-business-primary) 55%,var(--dsw-alias-border-l2));box-shadow:inset 0 1px 0 rgb(255 255 255 / 10%),0 18px 44px color-mix(in srgb,var(--dsw-alias-state-business-primary) 15%,transparent)}
+@keyframes ofm-reco-in{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+.ofm_recotop{display:flex;align-items:center;gap:11px;min-width:0}
+.ofm_recomark{display:flex;align-items:center;justify-content:center;width:42px;height:42px;flex:none;border-radius:13px;color:var(--dsw-alias-label-on-accent,#fff);background:linear-gradient(145deg,var(--dsw-alias-state-business-primary),color-mix(in srgb,var(--dsw-alias-state-business-primary) 55%,var(--dsw-alias-label-primary)));box-shadow:inset 0 1px 0 rgb(255 255 255 / 28%),0 4px 12px color-mix(in srgb,var(--dsw-alias-state-business-primary) 24%,transparent);transition:transform .3s var(--ease-settle)}
+.ofm_recomark svg{width:22px;height:22px;fill:currentColor}
+.ofm_recocard:hover .ofm_recomark{transform:rotate(-4deg) scale(1.06)}
+.ofm_recoid{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ofm_reconame{font-size:15px;font-weight:700;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ofm_recorepo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--dsw-alias-label-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ofm_recobadge{margin-left:auto;flex:none;font-size:10.5px;font-weight:650;padding:3px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-business-primary) 45%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-business-primary) 10%,transparent);color:var(--dsw-alias-state-business-primary);white-space:nowrap}
+.ofm_recotagline{margin:0;font-size:13.5px;font-weight:650;line-height:1.5;letter-spacing:-.1px}
+.ofm_recobody{margin:0;flex:1;font-size:12px;line-height:1.75;color:var(--dsw-alias-label-secondary)}
+.ofm_recochips{display:flex;gap:6px;flex-wrap:wrap}
+.ofm_recochip{font-size:10.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--dsw-alias-border-l1);background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 66%,transparent);color:var(--dsw-alias-label-secondary);transition:border-color .16s ease,color .16s ease,transform .16s ease}
+.ofm_recochip:hover{border-color:color-mix(in srgb,var(--dsw-alias-state-business-primary) 45%,var(--dsw-alias-border-l1));color:var(--dsw-alias-label-primary);transform:translateY(-1px)}
+.ofm_recofoot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:auto;padding-top:12px;border-top:1px solid var(--dsw-alias-border-l1)}
+.ofm_recofacts{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+.ofm_recofact{display:flex;align-items:baseline;gap:5px}
+.ofm_recofact b{font-size:13.5px;font-weight:700;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums}
+.ofm_recoacts{display:flex;gap:8px;align-items:center;margin-left:auto}
+.ofm_recogo{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 58%,transparent);color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;transition:border-color .16s ease,color .16s ease,transform .16s ease,background .16s ease}
+.ofm_recogo:hover{border-color:color-mix(in srgb,var(--dsw-alias-state-business-primary) 50%,var(--dsw-alias-border-l2));color:var(--dsw-alias-label-primary);background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 82%,transparent);transform:translateY(-1px)}
+.ofm_recogo svg{width:12px;height:12px;fill:currentColor;opacity:.7;transition:transform .2s var(--ease-instrument)}
+.ofm_recogo:hover svg{transform:translateX(2px)}
+.ofm_recostar{position:relative;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;overflow:hidden;font-size:13px;font-weight:700;letter-spacing:.1px;text-decoration:none;white-space:nowrap;color:var(--dsw-alias-label-on-accent,#fff);background:linear-gradient(135deg,var(--dsw-alias-state-business-primary),color-mix(in srgb,var(--dsw-alias-state-business-primary) 58%,var(--dsw-alias-label-primary)));box-shadow:inset 0 1px 0 rgb(255 255 255 / 26%),0 6px 18px color-mix(in srgb,var(--dsw-alias-state-business-primary) 28%,transparent);transition:transform .18s var(--ease-settle),box-shadow .24s var(--ease-instrument),filter .2s ease}
+.ofm_recostar:hover{transform:translateY(-2px) scale(1.02);filter:saturate(1.06);box-shadow:inset 0 1px 0 rgb(255 255 255 / 32%),0 12px 28px color-mix(in srgb,var(--dsw-alias-state-business-primary) 34%,transparent)}
+.ofm_recostar:active{transform:scale(.97)}
+.ofm_recostar svg{width:16px;height:16px;fill:currentColor;transition:transform .5s var(--ease-settle)}
+.ofm_recostar:hover svg{transform:rotate(72deg) scale(1.15)}
+.ofm_recostar::after{content:"";position:absolute;top:0;bottom:0;width:36%;left:-45%;pointer-events:none;background:linear-gradient(100deg,transparent,rgb(255 255 255 / 38%),transparent);transform:skewX(-18deg);transition:left .6s var(--ease-instrument)}
+.ofm_recostar:hover::after{left:115%}
+.ofm_recostarring{position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:1px solid color-mix(in srgb,var(--dsw-alias-state-business-primary) 62%,transparent);animation:ofm-reco-ring 2.8s var(--ease-instrument) infinite}
+@keyframes ofm-reco-ring{0%{opacity:.6;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.22)}}
+.ofm_recoglow{position:absolute;inset:-50% -12% auto;height:175%;z-index:0;pointer-events:none;background:radial-gradient(42% 52% at 24% 62%,color-mix(in srgb,var(--dsw-alias-state-business-primary) 15%,transparent),transparent 70%),radial-gradient(38% 46% at 78% 38%,color-mix(in srgb,var(--dsw-alias-state-success-primary) 11%,transparent),transparent 72%);filter:blur(10px);animation:ofm-reco-aurora 18s ease-in-out infinite alternate}
+@keyframes ofm-reco-aurora{from{transform:translate3d(-3%,1%,0) scale(1)}to{transform:translate3d(3%,-2%,0) scale(1.08)}}
+.ofm_reconote{margin:0;font-size:11px;line-height:1.6;color:var(--dsw-alias-label-tertiary)}
+@media (max-width:600px){.ofm_recogrid{grid-template-columns:1fr}.ofm_recoacts{width:100%;margin-left:0}}
+@media (prefers-reduced-motion:reduce){.ofm_recocard,.ofm_recostar,.ofm_recogo,.ofm_recochip,.ofm_recomark{animation:none;transition:border-color .12s ease,background .12s ease,box-shadow .12s ease,opacity .12s ease,color .12s ease}.ofm_recocard:hover,.ofm_recostar:hover,.ofm_recostar:active,.ofm_recogo:hover,.ofm_recochip:hover,.ofm_recocard:hover .ofm_recomark{transform:none}.ofm_recostar::after,.ofm_recostarring,.ofm_recoglow{display:none}}
 `
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -2642,31 +2870,49 @@ window.__ModuleLoader__.load({
     }
 
     // ── model roster ──────────────────────────────────────────────────────────
-    function freeCatalog(catalog) {
-      return catalog.filter(m => !m.channel || m.channel === 'kilo')
-    }
-
     function ModelCard(props) {
-      const { model: m, t, onBench, bench, locked, eacLogin } = props
-      const listed = m.channel === 'kilo' && !m.probedAt
+      const { model: m, t, onBench, bench, locked, eacLogin, onVisibility, busy } = props
+      const listed = m.availabilitySource === 'listing'
+      const manual = m.availabilitySource === 'manual'
       const stateKey = `state.${m.availability}`
-      const dim = m.availability !== 'available'
+      const dim = !listed && m.availability !== 'available'
       const rung = (m.budgets ?? []).find(row => row.isDefault === true)
-      return h('article', { className: 'ofm_card' + (dim ? ' dim' : '') },
+      // A model that declares its own thinking levels shows them beside the
+      // ceiling tag, so the card names what the composer's Effort menu offers.
+      // Each id is looked up with a literal call so the dictionary lint can see
+      // the key, and an id with no translation falls back to the id itself.
+      const levelName = id => id === 'disabled' || id === 'none' ? t('effort.off')
+        : id === 'minimal' ? t('effort.minimal')
+          : id === 'low' ? t('effort.low')
+            : id === 'medium' ? t('effort.medium')
+              : id === 'high' ? t('effort.high')
+                : id === 'xhigh' ? t('effort.xhigh')
+                  : id === 'max' ? t('effort.max') : id
+      const levels = Array.isArray(m.efforts) && m.efforts.length > 0
+        ? m.efforts.map(levelName).join(' / ')
+        : undefined
+      return h('article', { className: 'ofm_card' + (dim ? ' dim' : '') + (m.pinned === true ? ' pinned' : '') },
         h('div', { className: 'ofm_cardhead' },
           m.channel === 'eac' ? h('span', { className: 'ofm_chantag', title: t('tag.eacChannel') }, 'EAC') : null,
           m.channel === 'eac' && locked === true ? h('span', { className: 'ofm_chantag', title: t('eac.lockedTitle') }, '🔒') : null,
           m.channel === 'kilo' ? h('span', { className: 'ofm_chantag', title: t('tag.kiloChannel') }, 'Kilo') : null,
           h('span', { className: 'ofm_cardname', title: m.name }, m.name),
-          h('span', { className: 'ofm_badge ' + (listed ? 'unknown' : m.availability) }, listed ? t('free.listed') : t(stateKey))),
-        h('div', { className: 'ofm_id', title: m.id }, m.id),
+          m.isNew === true ? h('span', { className: 'ofm_newtag', title: t('tag.newTitle') }, t('tag.new')) : null,
+          m.hot === true ? h('span', { className: 'ofm_hottag', title: t('tag.hotTitle') }, t('tag.hot')) : null,
+          h('span', { className: 'ofm_badge ' + (listed ? 'unknown' : m.availability), title: listed ? t('hint.listed') : undefined }, listed ? t('state.listed') : t(stateKey))),
+        h('div', { className: 'ofm_id', title: m.id }, m.label ?? m.id),
         h('div', { className: 'ofm_tags' },
+          m.hiddenByUser === true ? h('span', { className: 'ofm_tag' }, t('visibility.hidden')) : null,
+          m.fast === true ? h('span', { className: 'ofm_tag fast', title: t('tag.fastTitle') }, t('tag.fast')) : null,
           h('span', { className: 'ofm_tag' }, m.vision ? t('tag.vision') : t('tag.text')),
           m.reasoning ? h('span', { className: 'ofm_tag' }, m.canDisableThinking === false ? t('tag.thinkingShared') : t('tag.thinking')) : null,
           h('span', { className: 'ofm_tag' }, `${t('tag.context')} ${kilo(m.contextWindow)}`),
           h('span', { className: 'ofm_tag' }, `${t('tag.output')} ${kilo(m.maxOutput)}`),
-          rung === undefined ? null : h('span', { className: 'ofm_tag', title: t('tag.rungTitle').replace('{ladder}', m.budgets.map(row => `${row.name} ${kilo(row.tokens)}`).join(' · ')) },
-            `${t('tag.rung')} ${kilo(rung.tokens)}`)),
+          rung === undefined ? null
+            : h('span', { className: 'ofm_tag', title: t('tag.rungTitle').replace('{ladder}', m.budgets.map(row => `${row.name} ${kilo(row.tokens)}`).join(' · ')) },
+              `${t('tag.rung')} ${kilo(rung.tokens)}`),
+          levels === undefined ? null
+            : h('span', { className: 'ofm_tag', title: t('tag.levelsTitle') }, `${t('tag.levels')} ${levels}`)),
         m.channel === 'eac' && locked === true
           ? h(Fragment, null,
             h('p', { className: 'ofm_note' }, t('eac.lockedNote')),
@@ -2674,30 +2920,44 @@ window.__ModuleLoader__.load({
               h(Button, { kind: 'primary', disabled: eacLogin.busy || eacLogin.pending !== null, onClick: eacLogin.login },
                 eacLogin.busy ? t('eac.starting') : t('eac.login'))))
           : null,
-        listed ? h('p', { className: 'ofm_note' }, t('free.kiloUnprobed'))
+        listed ? h('p', { className: 'ofm_note' }, t('hint.listed'))
+          : manual && m.availability !== 'available' ? h('p', { className: 'ofm_note' }, m.detail || t(stateKey))
           : m.availability === 'region-blocked' ? h('p', { className: 'ofm_note' }, t('hint.region'))
           : m.availability === 'unknown' ? h('p', { className: 'ofm_note' }, t('hint.unknown'))
             : m.availability === 'unavailable' ? h('p', { className: 'ofm_note', title: m.detail ?? '' }, t('hint.hidden'))
               : h('div', { className: 'ofm_metrics' },
                 m.ttftMs === undefined || m.ttftMs === 0 ? null : h('span', null, t('tag.latency'), ' ', h('b', null, Math.round(m.ttftMs)), ' ms'),
-                h('span', null, t('pref.probedAt'), ' ', h('b', null, ago(m.probedAt, t.locale)))),
+                h('span', null, manual ? t('pref.measuredAt') : t('pref.probedAt'), ' ', h('b', null, ago(m.probedAt, t.locale)))),
         m.canDisableThinking === false ? h('p', { className: 'ofm_note' }, t('hint.sharedBudget')) : null,
+        onVisibility === undefined ? null : h('div', { className: 'ofm_sec' },
+          h(Switch, { checked: m.hiddenByUser !== true, label: t('visibility.showModel'),
+            disabled: busy || m.hiddenByGroup === true, onChange: () => onVisibility(m) }),
+          m.hiddenByGroup === true ? h('p', { className: 'ofm_note' }, t('visibility.groupHidden')) : null),
         onBench === undefined ? null : h('div', { className: 'ofm_row' },
           h(Button, { disabled: bench?.running === true, onClick: () => onBench(m) }, bench?.running === true ? t('bench.running') : t('bench.run')),
           bench?.result === undefined ? null : h('span', { className: 'ofm_note' }, bench.result)))
     }
 
     function Roster(props) {
-      const { summary, t, onBench, benches, auth, eacLogin, only } = props
+      const { summary, t, onBench, benches = {}, auth, eacLogin, only, onApply, busy } = props
       // `only` splits the same roster across the two model pages: the EAC page
-      // shows the co-paid entries, the free page anonymous and Kilo entries. Filtering
+      // shows the co-paid entries, the free page everything else. Filtering
       // here (rather than in each page) keeps one definition of what a route
       // group means.
       const roster = only === undefined ? summary.catalog
         : only === 'eac' ? summary.catalog.filter(m => m.channel === 'eac')
-          : freeCatalog(summary.catalog)
-      const available = roster.filter(m => m.route === 'our-free-model' || (only === 'eac' && m.channel === 'eac'))
-      const limited = roster.filter(m => m.route === 'our-free-model-region')
+          : summary.catalog.filter(m => m.channel !== 'eac')
+      // Featured rows lead their group: the pinned flag rides the catalog row, so
+      // the order is the same on the EAC page and in the onboarding roster, and a
+      // row that is not featured keeps its upstream order.
+      const lead = list => [...list].sort((a, b) => (b.pinned === true ? 1 : 0) - (a.pinned === true ? 1 : 0))
+      const available = lead(roster.filter(m => m.route === 'our-free-model'))
+      const limited = lead(roster.filter(m => m.route === 'our-free-model-region'))
+      const unlisted = lead(roster.filter(m => m.route !== 'our-free-model' && m.route !== 'our-free-model-region'))
+      const toggleModel = onApply === undefined ? undefined : model => {
+        const ids = summary.settings.hiddenModelIds ?? []
+        return onApply({ hiddenModelIds: ids.includes(model.id) ? ids.filter(id => id !== model.id) : [...ids, model.id] })
+      }
       // 只有拿到过明确判定（网关答过 /eac/status）且未授权时才上锁：状态未知
       // 不该显示一把凭空的锁，网关不可达时本地记录仍算已授权。
       const locked = auth !== undefined && auth.available === true && auth.authorized !== true
@@ -2707,6 +2967,7 @@ window.__ModuleLoader__.load({
             hint === undefined ? null : h('span', { className: 'ofm_sec_hint' }, hint)),
           h('div', { className: 'ofm_grid' }, list.map(m => h(ModelCard, {
             key: m.id, model: m, t, onBench, locked: m.channel === 'eac' && locked, eacLogin,
+            onVisibility: toggleModel, busy,
             bench: { running: benches[m.id]?.running === true, ...benches[m.id]?.result === undefined ? {} : { result: benches[m.id].result } },
           }))))
       // The lane closed at the gate is the one "no EAC models" case the page can
@@ -2714,12 +2975,17 @@ window.__ModuleLoader__.load({
       // the group never renders and nothing else on the page names the reason.
       const laneNote = summary.laneAvailable === false && !summary.catalog.some(m => m.channel === 'eac')
         ? h('p', { className: 'ofm_note' }, t('roster.noLane')) : null
-      // 暂不可用的模型不再单独成组展示（用户要求移除「不在选择器中」区块）：
-      // 它们的状态仍在上方统计芯片与每张卡的徽章里如实可见。
       return h(Fragment, null,
         laneNote,
-        group(only === 'free' ? t('free.selectable') : t('state.available'), available),
-        group(t('state.region-blocked'), limited, t('hint.region')))
+        onApply === undefined ? null : h('div', { className: 'ofm_sec' },
+          h('p', { className: 'ofm_note' }, t('visibility.hint')),
+          h(Switch, { checked: summary.settings.hideFreeModels === true, disabled: busy,
+            label: t('pref.hideFreeModels'), onChange: () => onApply({ hideFreeModels: summary.settings.hideFreeModels !== true }) }),
+          h(Switch, { checked: summary.settings.hideEacModels === true, disabled: busy,
+            label: t('pref.hideEacModels'), onChange: () => onApply({ hideEacModels: summary.settings.hideEacModels !== true }) })),
+        group(t('roster.selectable'), available),
+        group(t('state.region-blocked'), limited, t('hint.region')),
+        group(t('visibility.unlisted'), unlisted))
     }
 
     // ── dashboard ─────────────────────────────────────────────────────────────
@@ -2818,6 +3084,9 @@ window.__ModuleLoader__.load({
       return { active, capacityKnown, pct, rawPct, level }
     }
 
+    /** The GitHub star every call to action on this page carries. */
+    const STAR_GLYPH = 'M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z'
+
     /** The repository every page's star button points at, opened in a new tab. */
     function StarButton(props) {
       const { t, repo = POOL_REPO_URL } = props
@@ -2829,7 +3098,7 @@ window.__ModuleLoader__.load({
         rel: 'noreferrer noopener',
         title: `${t('star.title')} · ${repo}`,
       }, h('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' },
-        h('path', { d: 'M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z' })),
+        h('path', { d: STAR_GLYPH })),
         label)
     }
     /** Where the pool's capacity number comes from, in one sentence. */
@@ -2964,7 +3233,7 @@ window.__ModuleLoader__.load({
         }
         setBusy(true); setNotice('')
         try {
-          const started = await post('/eac/login/start', undefined, 20_000)
+          const started = await post('/eac/login/start', undefined, 30_000)
           if (current !== attempt.current) { popup?.close(); return }
           if (started?.error !== undefined) { popup?.close(); popup = null }
           if (started?.error !== undefined) { setNotice(t('eac.startFailed').replace('{reason}', started.error)); return }
@@ -3029,9 +3298,8 @@ window.__ModuleLoader__.load({
               h('div', null, t('eac.waiting')),
               h(Button, { kind: 'ghost', disabled: busy, onClick: cancel }, t('eac.cancel')),
               h('div', { style: { display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 } },
-                h('code', { className: 'ofm_mono', style: { padding: '4px 8px', flex: 1, minWidth: 200, wordBreak: 'break-all' } }, pending.url),
-                h(Button, { kind: 'ghost', onClick: () => copy(pending.url, ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600) } }) }, copied ? t('eac.copied') : t('eac.copy')),
-                h('a', { className: 'ofm_btn', href: pending.url, target: '_blank', rel: 'noopener noreferrer' }, t('eac.open')))))
+                h('a', { 'aria-label': t('eac.open'), href: pending.url, target: '_blank', rel: 'noreferrer noopener', className: 'ofm_mono', style: { padding: '4px 8px', flex: 1, minWidth: 0, overflowWrap: 'anywhere' } }, pending.url),
+                h(Button, { kind: 'ghost', onClick: () => copy(pending.url, ok => { if (ok) { setCopied(true); setTimeout(() => setCopied(false), 1600) } }) }, copied ? t('eac.copied') : t('eac.copy')))))
           : null,
         notice !== '' ? h('p', { className: 'ofm_note' }, notice) : null)
     }
@@ -3400,6 +3668,9 @@ window.__ModuleLoader__.load({
         h('div', { className: 'ofm_row', style: { gap: 20 } },
           h(Switch, { checked: settings.enabled !== false, label: t('pref.enabled'), onChange: () => onApply({ enabled: !(settings.enabled !== false) }) }),
           h(Switch, { checked: settings.exposeRegionModels !== false, label: t('pref.exposeRegion'), onChange: () => onApply({ exposeRegionModels: !(settings.exposeRegionModels !== false) }) })),
+        h('div', { className: 'ofm_row', style: { gap: 20 } },
+          h(Switch, { checked: settings.hideFreeModels === true, disabled: busy, label: t('pref.hideFreeModels'), onChange: () => onApply({ hideFreeModels: settings.hideFreeModels !== true }) }),
+          h(Switch, { checked: settings.hideEacModels === true, disabled: busy, label: t('pref.hideEacModels'), onChange: () => onApply({ hideEacModels: settings.hideEacModels !== true }) })),
         h('div', { className: 'ofm_row' },
           field(t('pref.interval'), h('input', { className: 'ofm_input', style: { maxWidth: 100 }, value: draft?.probeIntervalMinutes ?? 15, onChange: e => setDraft(c => ({ ...c, probeIntervalMinutes: Number(e.target.value.replace(/\D/g, '')) || 0 })) })),
           field(t('pref.maxTokens'), h('input', { className: 'ofm_input', style: { maxWidth: 120 }, value: draft?.defaultMaxTokens ?? 32768, onChange: e => setDraft(c => ({ ...c, defaultMaxTokens: Number(e.target.value.replace(/\D/g, '')) || 0 })) })),
@@ -3493,71 +3764,156 @@ window.__ModuleLoader__.load({
     }
 
     // ── in-app upgrade ───────────────────────────────────────────────────────
+    function syncUpgradeOwner(control, data) {
+      const managed = data?.managed === true
+      if (control.current.managed !== managed) {
+        control.current.managed = managed
+        control.current.generation += 1
+        control.current.phase = ''
+      }
+    }
+    // Status requests may overlap (SSE, an action, or a remount). Only the newest
+    // mounted request may publish an installation owner or an error.
+    function useUpgradeStatus(control) {
+      const [state, setState] = useState({ status: 'loading', data: undefined, error: '' })
+      const sequence = useRef(0)
+      const mounted = useRef(true)
+      const reload = useCallback(async () => {
+        const request = ++sequence.current
+        control.current.ready = false
+        setState(current => ({ ...current, status: 'loading', error: '' }))
+        try {
+          const data = await api('/update/status')
+          if (!mounted.current || request !== sequence.current) return
+          syncUpgradeOwner(control, data)
+          control.current.data = data
+          control.current.ready = true
+          setState({ status: 'ready', data, error: '' })
+          return data
+        } catch (error) {
+          if (!mounted.current || request !== sequence.current) return
+          setState(current => ({ ...current, status: 'error', error: String(error?.message ?? error) }))
+        }
+      }, [])
+      useEffect(() => {
+        mounted.current = true
+        void reload()
+        return () => { mounted.current = false; sequence.current += 1; control.current.generation += 1 }
+      }, [reload])
+      return { ...state, reload }
+    }
     function UpgradePanel(props) {
       const { t, settings, onApply, busy } = props
-      const status = useAsync(() => api('/update/status'), [])
+      const control = useRef({ managed: false, generation: 0, phase: '', ready: false })
+      const status = useUpgradeStatus(control)
       const [phase, setPhase] = useState('')
       const [message, setMessage] = useState('')
       const [error, setError] = useState('')
+      const data = status.data
+      const managed = data?.managed === true
+      syncUpgradeOwner(control, data)
+      control.current.data = data
+      control.current.ready = status.status === 'ready'
+      useEffect(() => {
+        setPhase(''); setMessage(''); setError('')
+      }, [managed])
       useEffect(() => {
         const handler = event => {
+          control.current.generation += 1
+          control.current.phase = ''
           const version = event.detail?.version ?? ''
-          setPhase('')
-          setError('')
-          setMessage(version === '' ? '' : t('upgrade.done').replace('{version}', version))
-          status.reload()
+          setPhase(''); setError('')
+          setMessage(control.current.managed || version === '' ? '' : t('upgrade.done').replace('{version}', version))
+          void status.reload()
         }
         window.addEventListener('ofm:upgraded', handler)
         return () => window.removeEventListener('ofm:upgraded', handler)
-      }, [status.reload])
-      const data = status.data
-      const check = async () => {
-        setPhase('checking'); setError('')
-        try { await post('/update/check', undefined, 60_000); status.reload() } catch (err) { setError(String(err?.message ?? err)) } finally { setPhase('') }
+      }, [status.reload, t])
+      const begin = next => {
+        const snapshot = control.current.data
+        if (control.current.managed || !control.current.ready || control.current.phase !== '' || snapshot?.applying === true) return null
+        if (next !== 'checking' && snapshot?.recoveryRequired === true) return null
+        if (next === 'applying' && snapshot?.available !== true) return null
+        control.current.phase = next
+        const token = ++control.current.generation
+        setPhase(next); setError(''); setMessage('')
+        return token
       }
-      const applyUpgrade = async () => {
-        setPhase('applying'); setError(''); setMessage(t('upgrade.phase.download'))
+      const current = token => token === control.current.generation && !control.current.managed
+      const finish = token => {
+        if (!current(token)) return false
+        control.current.phase = ''; setPhase('')
+        return true
+      }
+      const check = async () => {
+        const token = begin('checking')
+        if (token === null) return
         try {
-          const result = await post('/update/apply', {}, 600_000)
-          // Hot reload closes the old SSE connection. The response must finish
-          // our local phase even if `upgraded` arrives before reconnection.
-          setPhase('')
-          setMessage(t('upgrade.phase.install'))
-          if (result?.version !== undefined) setMessage(t('upgrade.doneRefresh').replace('{version}', result.version))
-          status.reload()
+          await post('/update/check', undefined, 60_000)
+          if (finish(token)) void status.reload()
         } catch (err) {
-          setPhase(''); setMessage('')
-          setError(String(err?.message ?? err))
-          status.reload()
+          if (!finish(token)) return
+          await status.reload()
+          if (current(token)) setError(String(err?.message ?? err))
         }
       }
+      const applyUpgrade = async () => {
+        const token = begin('applying')
+        if (token === null) return
+        setMessage(t('upgrade.phase.download'))
+        try {
+          const result = await post('/update/apply', {}, 600_000)
+          // The response releases controls even when hot reload closes SSE.
+          if (!finish(token)) return
+          setMessage(result?.version === undefined ? t('upgrade.phase.install') : t('upgrade.doneRefresh').replace('{version}', result.version))
+          void status.reload()
+        } catch (err) {
+          if (!finish(token)) return
+          setMessage('')
+          await status.reload()
+          if (current(token)) setError(String(err?.message ?? err))
+        }
+      }
+      const reload = async () => {
+        const token = begin('reloading')
+        if (token === null) return
+        setMessage(t('upgrade.phase.reload'))
+        try { await post('/reload') } catch (err) {
+          if (!current(token)) return
+          setMessage('')
+          await status.reload()
+          if (current(token)) setError(String(err?.message ?? err))
+        } finally { finish(token) }
+      }
       const notes = useMemo(() => parseSafeHtml(data?.notes ?? ''), [data?.notes])
-      const upToDate = data !== undefined && data.latest !== '' && data.available === false
+      const upToDate = !managed && status.status === 'ready' && data !== undefined && data.latest !== '' && data.available === false
         && data.applying !== true && data.recoveryRequired !== true && data.versionMismatch !== true
       return h(Panel, null,
         h('div', { className: 'ofm_upgradecards' },
           h('span', { className: 'ofm_pill strong' }, `${t('upgrade.current')}: ${data?.current || '…'}`),
           data?.installedVersion !== undefined ? h('span', { className: 'ofm_pill' }, `${t('upgrade.installed')}: ${data.installedVersion || '…'}`) : null,
           data?.latest !== undefined && data.latest !== '' ? h('span', { className: 'ofm_pill' }, `${t('upgrade.latest')}: ${data.latest}`) : null,
-          data?.available === true ? h('span', { className: 'ofm_pill' }, h('span', { className: 'ofm_dot warn' }), t('upgrade.available').replace('{version}', data.latest)) : null,
+          !managed && data?.available === true ? h('span', { className: 'ofm_pill' }, h('span', { className: 'ofm_dot warn' }), t('upgrade.available').replace('{version}', data.latest)) : null,
           upToDate ? h('span', { className: 'ofm_pill' }, h('span', { className: 'ofm_dot ok' }), t('upgrade.upToDate')) : null,
           h('span', { className: 'ofm_pill' }, `${t('upgrade.checkedAt')}: ${data?.checkedAt ? ago(data.checkedAt, t.locale) : t('upgrade.never')}`)),
         h('div', { className: 'ofm_row' },
-          h(Button, { disabled: phase !== '' || status.status !== 'ready', onClick: check }, phase === 'checking' ? t('upgrade.checking') : t('upgrade.check')),
-          data?.available === true ? h(Button, { kind: 'primary', disabled: phase !== '' || data.applying === true || data.recoveryRequired === true, onClick: applyUpgrade }, phase === 'applying' ? t('upgrade.applying') : t('upgrade.apply')) : null,
+          h(Button, { disabled: managed || phase !== '' || status.status !== 'ready' || data?.applying === true, onClick: check }, !managed && phase === 'checking' ? t('upgrade.checking') : t('upgrade.check')),
+          data?.available === true ? h(Button, { kind: 'primary', disabled: managed || status.status !== 'ready' || phase !== '' || data.applying === true || data.recoveryRequired === true, onClick: applyUpgrade }, !managed && phase === 'applying' ? t('upgrade.applying') : t('upgrade.apply')) : null,
           h('a', {
             className: 'ofm_btn ofm_starlink',
             href: 'https://github.com/Ebony-Vinyl/dsh-our-free-model',
             target: '_blank',
             rel: 'noopener noreferrer',
           }, h('span', { 'aria-hidden': 'true' }, '\u2606'), t('upgrade.star'))),
-        phase === 'applying' ? h('div', { className: 'ofm_prog' }, h('i')) : null,
-        data?.recoveryRequired === true ? h('div', { className: 'ofm_callout ofm_error' },
+        managed ? h('div', { className: 'ofm_callout', role: 'status' }, t('upgrade.managed')) : null,
+        status.status === 'error' ? h('div', { className: 'ofm_callout ofm_error' }, t('loadFailed'), ' ', status.error) : null,
+        !managed && phase === 'applying' ? h('div', { className: 'ofm_prog', role: 'progressbar', 'aria-label': t('upgrade.applying') }, h('i')) : null,
+        !managed && data?.recoveryRequired === true ? h('div', { className: 'ofm_callout ofm_error' },
           h('div', null, t('upgrade.recovery'),
             data.recoveryBackup ? h('p', { className: 'ofm_note' }, `${t('upgrade.backup')}: ${data.recoveryBackup}`) : null)) : null,
-        data?.versionMismatch === true ? h('div', { className: 'ofm_callout' }, t('upgrade.mismatch')) : null,
-        message !== '' ? h('p', { className: 'ofm_note' }, message) : null,
-        (error || data?.error) ? h('div', { className: 'ofm_callout ofm_error' }, t('upgrade.failed').replace('{message}', error || data.error)) : null,
+        !managed && data?.versionMismatch === true ? h('div', { className: 'ofm_callout' }, t('upgrade.mismatch')) : null,
+        !managed && message !== '' ? h('p', { className: 'ofm_note' }, message) : null,
+        !managed && (error || data?.error) ? h('div', { className: 'ofm_callout ofm_error' }, t('upgrade.failed').replace('{message}', error || data.error)) : null,
         notes.length > 0 ? h('div', { className: 'ofm_sec', style: { gap: 4 } },
           h('span', { className: 'ofm_note' }, t('upgrade.notes')),
           h('div', { className: 'ofm_upnotes ofm_newsbody' }, ...htmlToReact(notes))) : null,
@@ -3566,14 +3922,165 @@ window.__ModuleLoader__.load({
           t('upgrade.from').replace('{from}', data.lastApplied.from ?? '?'),
           ` → ${data.lastApplied.to ?? '?'} · ${ago(data.lastApplied.at, t.locale)}`,
           data.lastApplied.ok === false && data.lastApplied.error ? ` — ${data.lastApplied.error}` : '') : null,
-        h('p', { className: 'ofm_note' }, (settings.updateCheckHours ?? 0) > 0 ? t('upgrade.auto').replace('{n}', String(settings.updateCheckHours)) : t('upgrade.autoOff')),
+        !managed ? h('p', { className: 'ofm_note' }, (settings.updateCheckHours ?? 0) > 0 ? t('upgrade.auto').replace('{n}', String(settings.updateCheckHours)) : t('upgrade.autoOff')) : null,
         h('div', { className: 'ofm_row' },
-          h(Button, { disabled: phase !== '' || data?.applying === true || data?.recoveryRequired === true, onClick: () => {
-            setPhase('reloading'); setError(''); setMessage(t('upgrade.phase.reload'))
-            post('/reload').catch(err => { setMessage(''); setError(String(err?.message ?? err)) }).finally(() => { setPhase('') })
-          } }, phase === 'reloading' ? t('reload.reloading') : t('reload.now')),
-          h(Switch, { checked: settings.autoReloadWatch === true, label: t('reload.auto'), onChange: () => onApply({ autoReloadWatch: !(settings.autoReloadWatch === true) }) }),
-          h('span', { className: 'ofm_note' }, t('reload.done').replace('{n}', String(settings.reloadCount ?? 0)))))
+          h(Button, { disabled: managed || status.status !== 'ready' || phase !== '' || data?.applying === true || data?.recoveryRequired === true, onClick: reload }, phase === 'reloading' && !managed ? t('reload.reloading') : t('reload.now')),
+          h(Switch, { checked: !managed && settings.autoReloadWatch === true, disabled: managed || status.status !== 'ready' || phase !== '' || busy, label: t('reload.auto'), onChange: () => { if (!control.current.managed && control.current.ready && control.current.phase === '' && !busy) onApply({ autoReloadWatch: !(settings.autoReloadWatch === true) }) } }),
+          managed ? null : h('span', { className: 'ofm_note' }, t('reload.done').replace('{n}', String(settings.reloadCount ?? 0)))))
+    }
+
+    function UpgradePage(props) {
+      const { t, settings, onApply, busy } = props
+      return h('div', { className: 'ofm_page' },
+        h(PageHero, { title: t('section.upgrade'), sub: t('section.upgradeHint') }),
+        h(UpgradePanel, { t, settings, onApply, busy }))
+    }
+
+    // ── 推荐项目页 ────────────────────────────────────────────────────────────
+    // 这一页只有一个任务：让人点开仓库、点下 Star。所以文案是「说清它解决什么
+    // 问题」，动作是「一眼能看到的星按钮」，数字是宿主 /picks 取回的真实 Star /
+    // Fork / 最近提交——拿不到就整块不显示，绝不用占位数字凑版面（这块页面的
+    // 全部说服力都在数字是真的）。每张卡片的文案按语言直写 t('字面量')，字典
+    // 保持可 grep；各仓库的地址与「第二个动作」在这里各写一份。
+    const RECO_LINKS = {
+      desktop: { repo: 'https://github.com/Ebony-Vinyl/EAC-Desktop', extra: 'https://github.com/Ebony-Vinyl/EAC-Desktop/releases' },
+      pack: { repo: 'https://github.com/Ebony-Vinyl/EAC-Pack', extra: 'https://github.com/Ebony-Vinyl/EAC-Pack#git-安装' },
+      designWorld: { repo: 'https://github.com/Ebony-Vinyl/EAC-design-world', extra: 'https://github.com/Ebony-Vinyl/EAC-design-world#安装' },
+    }
+    const RECO_DESKTOP_MARK = 'M1.4 3.1h13.2a.7.7 0 01.7.7v6a.7.7 0 01-.7.7H1.4a.7.7 0 01-.7-.7v-6a.7.7 0 01.7-.7zM5.6 12h4.8v1.4H5.6z'
+    const RECO_PACK_MARK = 'M8 1.2l6.3 3.2L8 7.6 1.7 4.4 8 1.2zM12.9 7.3l1.4.7L8 11.2 1.7 8l1.4-.7L8 9.8l4.9-2.5zM12.9 10.6l1.4.7L8 14.5 1.7 11.3l1.4-.7L8 13.1l4.9-2.5z'
+    const RECO_DESIGN_MARK = 'M2.6 1.6h7.1l3.7 3.7v7.1a2 2 0 01-2 2H2.6a2 2 0 01-2-2V3.6a2 2 0 012-2zm.9 1.9v7.6h9V6.1h-2.5a1 1 0 01-1-1V3.5H3.5zm8.7 2.1h.6v-1.4l-.6-.6v2zM4.2 7.1h7.6a.7.7 0 010 1.4H4.2a.7.7 0 010-1.4zm0 3h5.2a.7.7 0 010 1.4H4.2a.7.7 0 010-1.4z'
+    const RECO_EXT_MARK = 'M3.75 2A1.75 1.75 0 002 3.75v8.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0014 12.25v-4.5a.75.75 0 00-1.5 0v4.5a.25.25 0 01-.25.25h-8.5a.25.25 0 01-.25-.25v-8.5a.25.25 0 01.25-.25h4.5a.75.75 0 000-1.5h-4.5zM9.5 2a.75.75 0 000 1.5h2.19L7.22 7.97a.75.75 0 101.06 1.06l4.47-4.47v2.19a.75.75 0 001.5 0v-4a.75.75 0 00-.75-.75h-4z'
+
+    /** 2,034 — a star count is read, not computed, so it keeps its separators. */
+    const grouped = value => String(Math.max(0, Math.round(Number(value) || 0))).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+    /**
+     * 0 → n in about a second, once per arrival.
+     *
+     * The page's whole argument is that these numbers are real and moving, and a
+     * number that counts up reads as a live reading rather than a printed one.
+     * Reduced motion skips straight to the value — the number is the point, the
+     * motion is not.
+     */
+    function useCountUp(target) {
+      const [value, setValue] = useState(target ?? null)
+      useEffect(() => {
+        if (typeof target !== 'number') return
+        const reduced = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+          && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (reduced) { setValue(target); return }
+        const started = Date.now()
+        let raf = 0
+        const tick = () => {
+          const progress = Math.min(1, (Date.now() - started) / 900)
+          setValue(Math.round(target * (1 - Math.pow(1 - progress, 3))))
+          if (progress < 1) raf = requestAnimationFrame(tick)
+        }
+        raf = requestAnimationFrame(tick)
+        return () => cancelAnimationFrame(raf)
+      }, [target])
+      return value
+    }
+
+    function RecoCard(props) {
+      const { t, index, stat, mark, name, repo, badge, tagline, body, chips, repoUrl, extraUrl, extraLabel } = props
+      const stars = stat !== null && typeof stat.stars === 'number' ? stat.stars : null
+      const shown = useCountUp(stars)
+      const forks = stat !== null && typeof stat.forks === 'number' ? stat.forks : null
+      const pushedAt = stat !== null && typeof stat.pushedAt === 'number' ? stat.pushedAt : null
+      const stale = stat !== null && stat.stale === true
+      // One fork is one fork; the label is the only place the page can tell.
+      const forkLabel = forks === 1 ? t('picks.fork') : t('picks.forks')
+      return h('article', { className: 'ofm_recocard', style: { '--i': String(index) } },
+        h('div', { className: 'ofm_recotop' },
+          h('span', { className: 'ofm_recomark', 'aria-hidden': 'true' }, h('svg', { viewBox: '0 0 16 16' }, h('path', { d: mark }))),
+          h('div', { className: 'ofm_recoid' },
+            h('span', { className: 'ofm_reconame' }, name),
+            h('span', { className: 'ofm_recorepo' }, repo)),
+          h('span', { className: 'ofm_recobadge' }, badge)),
+        h('p', { className: 'ofm_recotagline' }, tagline),
+        h('p', { className: 'ofm_recobody' }, body),
+        h('div', { className: 'ofm_recochips' }, chips.map(chip => h('span', { key: chip, className: 'ofm_recochip' }, chip))),
+        h('div', { className: 'ofm_recofoot' },
+          h('div', { className: 'ofm_recofacts' },
+            stars === null ? null : h('span', { className: 'ofm_recofact' },
+              h('b', null, grouped(shown ?? stars)),
+              h('span', null, t('picks.stars')),
+              stale ? h('span', { className: 'ofm_reconote' }, t('picks.stale')) : null),
+            forks === null ? null : h('span', { className: 'ofm_recofact' }, h('b', null, grouped(forks)), h('span', null, forkLabel)),
+            pushedAt === null ? null : h('span', { className: 'ofm_recofact' }, h('b', null, ago(pushedAt, t.locale)), h('span', null, t('picks.updated')))),
+          h('div', { className: 'ofm_recoacts' },
+            h('a', { className: 'ofm_recogo', href: extraUrl, target: '_blank', rel: 'noreferrer noopener' },
+              extraLabel,
+              h('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, h('path', { d: RECO_EXT_MARK }))),
+            h('a', {
+              className: 'ofm_recostar', href: repoUrl, target: '_blank', rel: 'noreferrer noopener',
+              title: `${t('picks.starHint')} · ${repo}`,
+            },
+              h('span', { className: 'ofm_recostarring', 'aria-hidden': 'true' }),
+              h('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, h('path', { d: STAR_GLYPH })),
+              t('picks.star')))))
+    }
+
+    function PicksPage(props) {
+      const { t } = props
+      const picks = useAsync(() => api('/picks'), [])
+      const repos = picks.data?.repos ?? []
+      const statOf = id => repos.find(row => row.id === id) ?? null
+      // A cold read gives the host four seconds to reach GitHub, so a slow first
+      // answer can land after the page is already on screen. One delayed re-read
+      // fills the numbers in; the flag makes sure it is one, not a poll.
+      const [retried, setRetried] = useState(false)
+      const numbers = repos.some(row => typeof row.stars === 'number')
+      useEffect(() => {
+        if (retried || numbers || picks.status !== 'ready') return undefined
+        const timer = setTimeout(() => { setRetried(true); picks.reload() }, 6000)
+        return () => clearTimeout(timer)
+      }, [retried, numbers, picks.status, picks.reload])
+      // The project count and star total cover the same successfully read rows.
+      const counted = repos.filter(row => Number.isFinite(row.stars))
+      const total = counted.reduce((sum, row) => sum + row.stars, 0)
+      return h('div', { className: 'ofm_page' },
+        h('header', { className: 'ofm_hero ofm_glass' },
+          h('span', { className: 'ofm_recoglow', 'aria-hidden': 'true' }),
+          h('div', { className: 'ofm_pagehead' },
+            h('div', { className: 'ofm_pagetitle' },
+              h('h2', null, t('picks.title')),
+              h('p', { className: 'ofm_pagesub' }, t('picks.sub'))),
+            h('div', { className: 'ofm_pills' },
+              total > 0 ? h(Pill, { strong: true }, t('picks.totalStars').replace('{n}', grouped(total)).replace('{c}', grouped(counted.length))) : null,
+              h(StarButton, { t })))),
+        h('div', { className: 'ofm_recogrid' },
+          h(RecoCard, {
+            t, index: 0, stat: statOf('eac-desktop'), mark: RECO_DESKTOP_MARK,
+            name: 'EAC-Desktop', repo: 'Ebony-Vinyl/EAC-Desktop',
+            badge: t('picks.desktop.badge'),
+            tagline: t('picks.desktop.tagline'),
+            body: t('picks.desktop.body'),
+            chips: [t('picks.desktop.tag1'), t('picks.desktop.tag2'), t('picks.desktop.tag3'), t('picks.desktop.tag4')],
+            repoUrl: RECO_LINKS.desktop.repo, extraUrl: RECO_LINKS.desktop.extra, extraLabel: t('picks.getDesktop'),
+          }),
+          h(RecoCard, {
+            t, index: 1, stat: statOf('eac-pack'), mark: RECO_PACK_MARK,
+            name: 'EAC-Pack', repo: 'Ebony-Vinyl/EAC-Pack',
+            badge: t('picks.pack.badge'),
+            tagline: t('picks.pack.tagline'),
+            body: t('picks.pack.body'),
+            chips: [t('picks.pack.tag1'), t('picks.pack.tag2'), t('picks.pack.tag3'), t('picks.pack.tag4')],
+            repoUrl: RECO_LINKS.pack.repo, extraUrl: RECO_LINKS.pack.extra, extraLabel: t('picks.getPack'),
+          }),
+          h(RecoCard, {
+            t, index: 2, stat: statOf('eac-design-world'), mark: RECO_DESIGN_MARK,
+            name: 'EAC-design-world', repo: 'Ebony-Vinyl/EAC-design-world',
+            badge: t('picks.design.badge'),
+            tagline: t('picks.design.tagline'),
+            body: t('picks.design.body'),
+            chips: [t('picks.design.tag1'), t('picks.design.tag2'), t('picks.design.tag3'), t('picks.design.tag4')],
+            repoUrl: RECO_LINKS.designWorld.repo, extraUrl: RECO_LINKS.designWorld.extra, extraLabel: t('picks.getDesign'),
+          })),
+        picks.status === 'error' ? h('p', { className: 'ofm_reconote' }, t('picks.liveFailed')) : null,
+        h('p', { className: 'ofm_reconote' }, t('picks.foot')))
     }
 
     // ── 白嫖模型接入页 ────────────────────────────────────────────────────────
@@ -3644,29 +4151,66 @@ window.__ModuleLoader__.load({
      * does not offer it still renders the free and EAC pages, with this one
      * explaining itself instead of breaking.
      */
+    function sameChannelTransport(left, right) {
+      return left === right || (left !== null && right !== null
+        && typeof left === 'object' && typeof right === 'object'
+        && left.connection === right.connection && left.call === right.call)
+    }
+
+    function channelTransport(rpc) {
+      return typeof rpc?.transport === 'function' ? rpc.transport() : rpc
+    }
+
     function useChannelRpc(ctx, summary) {
       const mode = summary?.channels?.mode
-      return useMemo(() => {
+      const ctxRef = useRef(ctx)
+      ctxRef.current = ctx
+      const readTransport = useCallback(() => {
+        const current = ctxRef.current
         let connection
-        try { connection = ctx?.connection } catch { connection = undefined }
-        if (connection === undefined && typeof ctx?.get === 'function') {
-          try { connection = ctx.get('connection') } catch { connection = undefined }
+        try { connection = current?.connection } catch { /* service not provided yet */ }
+        if (connection === undefined || connection === null) {
+          try { connection = current?.get?.('connection') } catch { /* service not provided yet */ }
         }
-        const rpc = async (method, payload, timeoutMs = 60_000) => {
-          if (connection?.rpc?.call === undefined) throw new Error('no-connection')
-          const controller = new AbortController()
-          const timer = setTimeout(() => controller.abort(), timeoutMs)
-          try {
-            const channel = mode === 'shared' ? '/jet-hub' : '/api'
-            const endpoint = mode === 'shared' ? 'manage' : mode === 'shared-legacy' ? 'jet-hub' : 'channel-pack'
-            const result = await connection.rpc.call(channel, endpoint, { method, payload }, controller.signal)
-            if (result?.ok === true) return result.value
-            if (result?.ok === false) throw new Error(result.error?.message ?? result.error?.code ?? 'rpc-failed')
-            return result
-          } finally { clearTimeout(timer) }
+        try {
+          const call = connection?.rpc?.call
+          return typeof call === 'function' ? { connection, call } : null
+        } catch { return null }
+      }, [])
+      const [transport, setTransport] = useState(readTransport)
+      useEffect(() => {
+        let alive = true
+        const check = () => {
+          if (!alive) return
+          const next = readTransport()
+          setTransport(previous => sameChannelTransport(previous, next) ? previous : next)
         }
-        return { available: connection?.rpc?.call !== undefined, rpc }
-      }, [ctx, mode])
+        check()
+        const timer = setInterval(check, 500)
+        return () => { alive = false; clearInterval(timer) }
+      }, [readTransport])
+      // Context wrappers do not invalidate readers; actual transport replacement does.
+      const rpc = useCallback(async (method, payload, timeoutMs = 60_000) => {
+        const latest = readTransport()
+        if (latest === null) throw new Error('no-connection')
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const channel = mode === 'shared' ? '/jet-hub' : '/api'
+          const endpoint = mode === 'shared' ? 'manage' : mode === 'shared-legacy' ? 'jet-hub' : 'channel-pack'
+          const result = await latest.call.call(latest.connection.rpc, channel, endpoint, { method, payload }, controller.signal)
+          if (result?.ok === true) return result.value
+          if (result?.ok === false) throw new Error(result.error?.message ?? result.error?.code ?? 'rpc-failed')
+          return result
+        } finally { clearTimeout(timer) }
+      }, [readTransport, transport, mode])
+      rpc.transport = readTransport
+      return { available: transport !== null, rpc }
+    }
+
+    const ZCODE_PROVIDER_KEY = 'ofm:zcode:login-provider'
+    function closeLoginPopup(popup) {
+      try { if (popup && !popup.closed) popup.close() } catch { /* best effort */ }
     }
 
     /** Human text for a millisecond timestamp, or the long-lived marker. */
@@ -3694,6 +4238,15 @@ window.__ModuleLoader__.load({
       const balanceGeneration = useRef(0)
       const claimPending = useRef(false)
       const creditCapability = CHANNEL_CREDITS[channel.id]
+      const [zcodeProvider, setZcodeProvider] = useState(() => {
+        try { return window.localStorage?.getItem(ZCODE_PROVIDER_KEY) === 'zai' ? 'zai' : 'bigmodel' } catch { return 'bigmodel' }
+      })
+      const loginAttempt = useRef(null)
+      const chooseZcodeProvider = value => {
+        if (value !== 'bigmodel' && value !== 'zai') return
+        setZcodeProvider(value)
+        try { window.localStorage?.setItem(ZCODE_PROVIDER_KEY, value) } catch { /* preference still applies this session */ }
+      }
       const balanceLabel = creditCapability?.unit === 'tokens' ? t('chan.credits.tokens')
         : creditCapability?.unit === 'dollars' ? t('chan.credits.dollars')
           : creditCapability?.quota ? t('chan.credits.quota') : t('chan.credits.left')
@@ -3795,19 +4348,75 @@ window.__ModuleLoader__.load({
       // the browser flow finishes in the background and `login.poll` sees the
       // credential appear. The placeholder account is real from the first
       // moment, so the card can poll against it.
+      useEffect(() => {
+        if (loginAttempt.current?.cancelled) {
+          loginAttempt.current = null
+          setBusy(value => value === 'add' ? '' : value)
+        }
+        return () => {
+          const attempt = loginAttempt.current
+          if (attempt) { attempt.cancelled = true; closeLoginPopup(attempt.popup) }
+        }
+      }, [channel.id])
+      useEffect(() => {
+        const attempt = loginAttempt.current
+        if (!attempt || sameChannelTransport(attempt.transport, channelTransport(rpc))) return
+        attempt.cancelled = true
+        closeLoginPopup(attempt.popup)
+        loginAttempt.current = null
+        setBusy(value => value === 'add' ? '' : value)
+      }, [rpc])
       const startLogin = async () => {
+        if (loginAttempt.current && !loginAttempt.current.cancelled) return
+        const attempt = { popup: null, cancelled: false, transport: channelTransport(rpc) }
+        const current = () => !attempt.cancelled && sameChannelTransport(attempt.transport, channelTransport(rpc))
+        loginAttempt.current = attempt
         setBusy('add'); setNotice('')
+        // Reserve inside the click; a delayed RPC would lose transient activation.
         try {
-          const value = await rpc('account.create', { provider: channel.id }, 90_000)
+          attempt.popup = window.open('about:blank', '_blank')
+          if (attempt.popup) attempt.popup.opener = null
+        } catch { closeLoginPopup(attempt.popup); attempt.popup = null }
+        try {
+          const value = await rpc('account.create', {
+            provider: channel.id,
+            ...channel.id === 'zcode' ? { zcodeProvider } : {},
+          }, 90_000)
+          if (!current()) { attempt.cancelled = true; closeLoginPopup(attempt.popup); return }
           const accountId = value?.accountId
           const url = value?.loginUrl
           if (typeof accountId !== 'string' || accountId === '') throw new Error('bad-answer')
           if (typeof url === 'string' && url !== '') {
-            try { window.open(url, '_blank', 'noopener') } catch { /* the modal offers the link too */ }
-          }
+            const target = new URL(url)
+            if (url.length > 2048 || !['http:', 'https:'].includes(target.protocol) || target.username || target.password) throw new Error('bad-login-url')
+            let opened = false
+            try {
+              if (attempt.popup && !attempt.popup.closed) {
+                attempt.popup.location.replace(url)
+                opened = true
+                attempt.popup = null
+              }
+            } catch { /* the host can open it instead */ }
+            closeLoginPopup(attempt.popup); attempt.popup = null
+            if (!opened) {
+              try { opened = (await post('/open-external', { url }, 15_000))?.opened === true } catch { /* manual link remains available */ }
+            }
+            if (!current()) { attempt.cancelled = true; return }
+            if (!opened) {
+              try { window.open(url, '_blank', 'noopener') } catch { /* the modal offers the link too */ }
+            }
+          } else { closeLoginPopup(attempt.popup); attempt.popup = null }
           setLogin({ accountId, url: typeof url === 'string' ? url : '', startedAt: Date.now() })
           setOpen('accounts')
-        } catch (error) { onError(channel, error) } finally { setBusy('') }
+        } catch (error) {
+          closeLoginPopup(attempt.popup)
+          if (current()) onError(channel, error)
+        } finally {
+          if (loginAttempt.current === attempt && !attempt.cancelled) {
+            loginAttempt.current = null
+            setBusy('')
+          }
+        }
       }
 
       // Poll the placeholder until its credential lands. Ten minutes matches the
@@ -3916,6 +4525,17 @@ window.__ModuleLoader__.load({
               ? creditCapability.quota ? t('chan.credits.loaded').replace('{count}', String((balances ?? []).filter(row => Number.isFinite(row.balance?.total)).length)) : kilo(balancesTotal)
               : balances === undefined ? '…' : '—')) : null),
         h('div', { className: 'ofm_chanacts' },
+          channel.id === 'zcode' ? h('div', { className: 'ofm_seg', role: 'group', 'aria-label': t('chan.zcode.provider') },
+            h('button', {
+              type: 'button', disabled: busy !== '' || !rpc,
+              'aria-pressed': zcodeProvider === 'bigmodel',
+              onClick: () => chooseZcodeProvider('bigmodel'),
+            }, t('chan.zcode.bigmodel')),
+            h('button', {
+              type: 'button', disabled: busy !== '' || !rpc,
+              'aria-pressed': zcodeProvider === 'zai',
+              onClick: () => chooseZcodeProvider('zai'),
+            }, t('chan.zcode.zai'))) : null,
           h('button', { type: 'button', className: 'ofm_btn', disabled: busy !== '' || !rpc, 'aria-busy': busy === 'add' ? 'true' : undefined, onClick: startLogin }, busy === 'add' ? '…' : t('chan.act.add')),
           accountsCount > 0 ? h('button', {
             type: 'button', className: 'ofm_btn ghost', disabled: busy !== '' || !rpc, 'aria-busy': busy === 'refreshAll' ? 'true' : undefined,
@@ -3993,7 +4613,7 @@ window.__ModuleLoader__.load({
                         await rpc('account.update', { accountId: row.id, patch: { enabled: row.enabled === false } })
                         onChanged(); await loadAccounts()
                       }),
-                    }, row.enabled === false ? t('chan.enabled') : t('chan.disabled')),
+                    }, row.enabled === false ? t('chan.act.enable') : t('chan.act.disable')),
                     h('button', {
                       type: 'button', className: 'ofm_minibtn danger', disabled: busy !== '' || !rpc,
                       onClick: () => void removeAccount(row.id),
@@ -4024,13 +4644,15 @@ window.__ModuleLoader__.load({
                 h('span', { className: 'ofm_id', title: model.id }, model.name ?? model.id),
                 model.isFree === true ? h('span', { className: 'ofm_tagpill free' }, t('chan.model.free')) : null,
                 model.dead === true ? h('span', { className: 'ofm_tagpill dead' }, t('chan.model.dead')) : null,
+                model.disabled === true ? h('span', { className: 'ofm_tagpill' }, t('chan.model.hidden')) : null,
                 h('button', {
                   type: 'button', className: 'ofm_minibtn', disabled: busy !== '' || !rpc,
                   onClick: () => accountAction('model:' + model.id, '', async () => {
-                    await rpc('model.setDisabled', { provider: channel.id, modelId: model.id, disabled: model.disabled !== true })
+                    if (model.dead === true) await rpc('model.clearDead', { provider: channel.id, modelId: model.id })
+                    else await rpc('model.setDisabled', { provider: channel.id, modelId: model.id, disabled: model.disabled !== true })
                     await loadModels(); onChanged()
                   }),
-                }, model.disabled === true ? t('chan.model.on') : t('chan.model.off'))))))) : null)
+                }, model.dead === true ? t('chan.model.restore') : model.disabled === true ? t('chan.model.on') : t('chan.model.off'))))))) : null)
 
       const modal = login === null ? null : h('div', { className: 'ofm_scrim' },
         h('div', { className: 'ofm_modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('chan.login.title').replace('{name}', channel.name) },
@@ -4072,22 +4694,41 @@ window.__ModuleLoader__.load({
       // the failure *reason* when the probes never come back.
       const [ready, setReady] = useState(pack.state === 'ready')
 
-      const loadStatus = useCallback(async (attempt = 0) => {
+      const statusGeneration = useRef(0)
+      const statusRetry = useRef(null)
+      const statusRequest = useRef(0)
+      const statusApplied = useRef(0)
+      const loadStatus = useCallback(async (attempt = 0, generation = statusGeneration.current) => {
+        if (attempt === 0) { clearTimeout(statusRetry.current); statusRetry.current = null }
         if (!available) return
+        const request = ++statusRequest.current
+        const transport = channelTransport(rpc)
+        const current = () => generation === statusGeneration.current && request >= statusApplied.current
+          && sameChannelTransport(transport, channelTransport(rpc))
         try {
           const value = await rpc('provider.status', { providers: CHANNEL_PROVIDERS.map(row => row.id) })
+          if (!current()) return
+          statusApplied.current = request
           setStatuses(value?.statuses ?? {})
           setReady(true)
           setError('')
         } catch (err) {
+          if (!current()) return
           // The pack imports asynchronously on a cold start; retry a bounded
           // few times before believing the failure and surfacing the reason.
-          if (attempt < 4) { setTimeout(() => { void loadStatus(attempt + 1) }, 4000); return }
+          if (attempt < 4) {
+            clearTimeout(statusRetry.current)
+            statusRetry.current = setTimeout(() => { if (current()) void loadStatus(attempt + 1, generation) }, 4000)
+            return
+          }
           setError(String(err?.message ?? err))
         }
       }, [available, rpc])
 
-      useEffect(() => { void loadStatus() }, [loadStatus])
+      useEffect(() => {
+        void loadStatus()
+        return () => { statusGeneration.current++; clearTimeout(statusRetry.current); statusRetry.current = null }
+      }, [loadStatus])
       // A second poll loop, slow: the pack pushes nothing for accounts changed
       // in another window, and a stale count on this page is the kind of quiet
       // wrongness that reads as a bug. Local actions refresh immediately.
@@ -5282,7 +5923,18 @@ window.__ModuleLoader__.load({
           h('span', { className: 'ofm_pickmeta' },
             h('span', { className: 'ofm_id' }, row.id),
             h('span', { className: 'ofm_tag' }, lanes[row.channel] ?? row.channel),
+            row.contextWindow > 0 ? h('span', { className: 'ofm_tag' }, `${t('tag.context')} ${kilo(row.contextWindow)}`) : null,
+            row.maxOutput > 0 ? h('span', { className: 'ofm_tag' }, `${t('tag.output')} ${kilo(row.maxOutput)}`) : null,
             row.vision === true ? h('span', { className: 'ofm_tag' }, t('tag.vision')) : null)))))
+    }
+
+    function ChainCapacity({ capacity, t }) {
+      if (!capacity) return null
+      return h('div', { className: 'ofm_tags', 'aria-label': t('routing.capacity') },
+        h('span', { className: 'ofm_note' }, t('routing.capacity')),
+        h('span', { className: 'ofm_tag' }, `${t('tag.context')} ${kilo(capacity.contextWindow)}`),
+        h('span', { className: 'ofm_tag' }, `${t('tag.output')} ${kilo(capacity.maxOutput)}`),
+        h('span', { className: 'ofm_tag' }, capacity.vision ? t('tag.vision') : t('tag.text')))
     }
 
     /**
@@ -5305,6 +5957,9 @@ window.__ModuleLoader__.load({
       const [error, setError] = useState('')
       const byId = new Map(models.map(row => [row.id, row]))
       const lanes = LANE_LABEL(t)
+      const preview = useAsync(() => members.length
+        ? post('/combos/preview', { models: members })
+        : Promise.resolve({ capacity: null }), [members, models])
 
       const move = (index, delta) => setMembers(current => {
         const next = [...current]
@@ -5372,10 +6027,15 @@ window.__ModuleLoader__.load({
             return h('div', { key: `${id}#${index}`, className: 'ofm_member' },
               h('span', { className: 'ofm_id', title: id }, row?.name ?? id),
               h('span', { className: 'ofm_tag' }, lanes[row?.channel] ?? ''),
+              row?.contextWindow > 0 ? h('span', { className: 'ofm_tag' }, `${t('tag.context')} ${kilo(row.contextWindow)}`) : null,
               miniBtn('↑', () => move(index, -1), { disabled: busy || index === 0, title: t('routing.moveUp') }),
               miniBtn('↓', () => move(index, 1), { disabled: busy || index === members.length - 1, title: t('routing.moveDown') }),
               miniBtn(t('routing.removeMember'), () => setMembers(current => current.filter((_, at) => at !== index)), { danger: true, disabled: busy }))
           })),
+        preview.status === 'error'
+          ? h('p', { className: 'ofm_note' }, t('routing.capacityUnavailable'))
+          : preview.status === 'loading' && members.length ? h('p', { className: 'ofm_note' }, t('loading'))
+            : h(ChainCapacity, { capacity: preview.data?.capacity, t }),
         h('div', { className: 'ofm_row' },
           h(Button, { kind: 'ghost', disabled: busy, onClick: () => setPicking(value => !value) }, picking ? t('routing.cancel') : t('routing.addMember'))),
         picking ? h(ModelPicker, { t, models, chosen: members, onPick: id => setMembers(current => [...current, id]) }) : null,
@@ -5398,7 +6058,7 @@ window.__ModuleLoader__.load({
      * broken", and the user is the only one who can tell which one it is.
      */
     function ChainCard(props) {
-      const { t, chain, resolved, missing, lookup, onEdit, onDelete, confirming, index } = props
+      const { t, chain, resolved, missing, lookup, onEdit, onDelete, confirming, index, capacity } = props
       const lanes = LANE_LABEL(t)
       const usable = chain.enabled !== false && resolved.length > 0
       return h('div', { className: 'ofm_card ofm_rise', style: { animationDelay: `${Math.min(index, 8) * 22}ms` } },
@@ -5409,6 +6069,7 @@ window.__ModuleLoader__.load({
           h('span', null, chain.id),
           h('span', null, chain.strategy === 'round-robin' ? t('routing.strategy.roundRobin') : t('routing.strategy.fallback')),
           h('span', null, t('routing.memberCount').replace('{n}', String((chain.models ?? []).length)))),
+        h(ChainCapacity, { capacity, t }),
         h('div', { className: 'ofm_row' },
           h('span', { className: 'ofm_note' }, t('routing.resolved')),
           resolved.length === 0
@@ -5499,6 +6160,7 @@ window.__ModuleLoader__.load({
             chains.length === 0 ? null : h('div', { className: 'ofm_grid' }, chains.map((chain, index) => h(ChainCard, {
               key: chain.id, t, index, chain, lookup,
               resolved: resolvedOf(chain), missing: missingOf(chain),
+              capacity: (panel.data?.usable ?? []).find(row => row.id === chain.id),
               confirming: confirm === chain.id,
               onEdit: () => setEditing({ chain }),
               onDelete: () => { if (confirm === chain.id) void remove(chain.id); else setConfirm(chain.id) },
@@ -5545,12 +6207,16 @@ window.__ModuleLoader__.load({
       const bench = async model => {
         setBenches(current => ({ ...current, [model.id]: { running: true } }))
         try {
-          // Quick tests use a small turn and the lowest declared thinking level;
-          // the host cancels its upstream after 60 seconds. Chat settings stay independent.
-          const result = await post('/bench', { model: model.id }, 65_000)
-          setBenches(current => ({ ...current, [model.id]: { running: false, result: t('bench.result').replace('{ttft}', result.ttftMs).replace('{tps}', result.tokensPerSecond ?? '—').replace('{reasoning}', result.reasoningTokens) } }))
+          // 默认档（balanced）而不是 deep：测速要回答的是“这个模型日常多快”，
+          // 默认档就是日常档；deep 每次最多烧 32K 输出 token，且经常把固定
+          // bench 会话自己打到 429。
+          // The backend owns the 300s total budget; leave 30s for its final response.
+          const result = await post('/bench', { model: model.id }, 330_000)
+          setBenches(current => ({ ...current, [model.id]: { running: false, result: t('bench.result').replace('{ttft}', result.ttftMs).replace('{tps}', result.tokensPerSecond ?? '—').replace('{reasoning}', result.reasoningTokens ?? '—') + (result.persisted === false ? ' · ' + t('bench.notSaved') : '') } }))
+          summary.reload()
         } catch (error) {
           setBenches(current => ({ ...current, [model.id]: { running: false, result: String(error?.message ?? error) } }))
+          summary.reload()
         }
       }
 
@@ -5565,7 +6231,7 @@ window.__ModuleLoader__.load({
       // absorbed channels stay out of the tally — their cards carry their own
       // availability badge, and a lane that is never probed would otherwise
       // read as a permanently green slice of this gauge.
-      const counts = data.catalog.filter(m => !m.channel).reduce((acc, m) => ({ ...acc, [m.availability]: (acc[m.availability] ?? 0) + 1 }), {})
+      const counts = data.catalog.filter(m => !m.channel).reduce((acc, m) => ({ ...acc, [m.availabilitySource === 'listing' ? 'unknown' : m.availability]: (acc[m.availabilitySource === 'listing' ? 'unknown' : m.availability] ?? 0) + 1 }), {})
       return h(Shell, {
         t: tagged, data, counts, summary, stats, eacAuth, setEacAuth, eacLogin,
         busy, setBusy, apply, bench, benches, ctx: props.ctx,
@@ -5583,7 +6249,7 @@ window.__ModuleLoader__.load({
     // The active page lives in localStorage so a reload — or the hot reload the
     // upgrader triggers — comes back to the page the user was reading.
     const TAB_KEY = 'ofm.tab'
-    const TABS = ['free', 'eac', 'channels', 'aggregate', 'saver', 'routing', 'ledger', 'logs', 'gateway']
+    const TABS = ['free', 'eac', 'channels', 'aggregate', 'saver', 'routing', 'ledger', 'logs', 'gateway', 'upgrade', 'picks']
 
     function Shell(props) {
       const { t, data, counts, summary, stats, eacAuth, setEacAuth, eacLogin, busy, setBusy, apply, bench, benches, ctx } = props
@@ -5595,6 +6261,8 @@ window.__ModuleLoader__.load({
       })
       const tabRefs = useRef({})
       const [glider, setGlider] = useState({ left: 0, top: 0, width: 0, height: 0 })
+      const [catalogBusy, setCatalogBusy] = useState(false)
+      const catalogPending = useRef(false)
       useEffect(() => {
         try { window.localStorage?.setItem(TAB_KEY, tab) } catch { /* storage unavailable */ }
         const node = tabRefs.current[tab]
@@ -5604,17 +6272,25 @@ window.__ModuleLoader__.load({
         if (node !== undefined && node !== null) setGlider({ left: node.offsetLeft, top: node.offsetTop, width: node.offsetWidth, height: node.offsetHeight })
       }, [tab, t.locale])
 
-      const refresh = async () => {
-        setBusy(true)
-        try { await post('/refresh', undefined, 600_000); summary.reload(); stats.reload() } finally { setBusy(false) }
+      const runCatalog = async path => {
+        if (catalogPending.current) return
+        catalogPending.current = true
+        setCatalogBusy(true)
+        try {
+          await post(path, undefined, 600_000)
+          summary.reload(); stats.reload()
+        } catch (error) {
+          showToast({ title: t('settings.failed'), body: String(error?.message ?? error), tone: 'warn' })
+        } finally {
+          catalogPending.current = false
+          setCatalogBusy(false)
+        }
       }
-      const reprobe = async () => {
-        setBusy(true)
-        try { await post('/reprobe', undefined, 600_000); summary.reload() } finally { setBusy(false) }
-      }
+      const refresh = () => runCatalog('/refresh')
+      const reprobe = () => runCatalog('/reprobe')
 
       const tabs = [
-        ['free', t('nav.tab.free'), freeCatalog(data.catalog).length],
+        ['free', t('nav.tab.free'), data.catalog.filter(m => !m.channel || m.channel === 'kilo').length],
         ['eac', t('nav.tab.eac'), data.catalog.filter(m => m.channel === 'eac').length],
         ['channels', t('nav.tab.channels'), CHANNEL_PROVIDERS.length],
         ['aggregate', t('nav.tab.aggregate'), data.catalog.filter(m => m.channel === 'aggregate').length],
@@ -5623,6 +6299,8 @@ window.__ModuleLoader__.load({
         ['ledger', t('nav.tab.ledger'), null],
         ['logs', t('nav.tab.logs'), null],
         ['gateway', t('nav.tab.gateway'), null],
+        ['upgrade', t('nav.tab.upgrade'), null],
+        ['picks', t('nav.tab.picks'), null],
       ]
       const nav = h('nav', { className: 'ofm_nav' },
         h('span', { className: 'ofm_navbrand' },
@@ -5654,9 +6332,13 @@ window.__ModuleLoader__.load({
                   ? h(LogsPage, { t, ctx, summary: data })
                   : tab === 'gateway'
                     ? h(GatewayPage, { t, ctx, summary: data })
+                    : tab === 'upgrade'
+                      ? h(UpgradePage, { t, settings: data.settings, onApply: apply, busy })
+                    : tab === 'picks'
+                      ? h(PicksPage, { t })
                     : tab === 'eac'
-                      ? h(EacPage, { t, data, counts, summary, stats, eacAuth, setEacAuth, eacLogin, busy, apply, bench, benches, refresh, reprobe })
-                      : h(FreePage, { t, data, counts, summary, stats, eacAuth, eacLogin, busy, apply, bench, benches, refresh, reprobe })
+                      ? h(EacPage, { t, data, counts, summary, stats, eacAuth, setEacAuth, eacLogin, busy, catalogBusy, apply, bench, benches, refresh, reprobe })
+                      : h(FreePage, { t, data, counts, summary, stats, eacAuth, eacLogin, busy, catalogBusy, apply, bench, benches, refresh, reprobe })
 
       return h('div', { className: 'ofm_root ofm_shell' },
         h('div', { className: 'ofm_aurora', 'aria-hidden': 'true' }, h('i'), h('i'), h('i')),
@@ -5664,29 +6346,38 @@ window.__ModuleLoader__.load({
         page)
     }
 
+    function SponsorBanner({ t }) {
+      return h('aside', { className: 'ofm_sponsor_banner', 'aria-label': t('sponsor.bannerTitle') },
+        h('div', { className: 'ofm_sponsor_logo', 'aria-hidden': 'true' },
+          h('img', { src: SPONSOR_LOGO, alt: '', width: 56, height: 56, style: { display: 'block', objectFit: 'contain', borderRadius: 'inherit' } })),
+        h('div', { className: 'ofm_sponsor_bannerbody' },
+          h('span', { className: 'ofm_sponsor_kicker' }, t('sponsor.bannerTag')),
+          h('h3', null, t('sponsor.bannerTitle')),
+          h('p', null, t('sponsor.bannerDescription'))),
+        h('a', { className: 'ofm_sponsor_cta', href: SPONSOR_CARD_URL, target: '_blank', rel: 'noopener noreferrer' },
+          h('span', null, t('sponsor.bannerCta')), h('span', { 'aria-hidden': 'true' }, '↗')))
+    }
+
     function FreePage(props) {
-      const { t, data, counts, summary, stats, eacAuth, eacLogin, busy, apply, bench, benches, refresh, reprobe } = props
+      const { t, data, counts, summary, stats, eacAuth, eacLogin, busy, catalogBusy, apply, bench, benches, refresh, reprobe } = props
       // The denominator is the free lane's own roster — the only slice the
       // verdicts describe. Dividing by the whole catalog (which also carries
       // the never-probed EAC and Kilo entries) read a 6-of-10 lane as ~17%.
       const total = data.catalog.filter(m => !m.channel).length
       const ok = counts.available ?? 0
-      const unknown = counts.unknown ?? 0
-      const confirmed = ok + (counts['region-blocked'] ?? 0) + (counts.unavailable ?? 0)
-      const directory = freeCatalog(data.catalog)
       // The tank reads the free lane's own health: the share of the declared
       // roster this machine can actually reach. Same thresholds as the pool
       // gauge, so the two pages' tanks never disagree about what "busy" looks
       // like — only about what the water is measuring.
-      const pct = total > 0 && confirmed > 0 ? Math.max(0, Math.min(100, Math.round(100 * ok / total))) : null
+      const pct = total > 0 ? Math.max(0, Math.min(100, Math.round(100 * ok / total))) : null
       const ratio = total > 0 ? ok / total : 0
       // Thresholds for *availability* (not load): most of a frontier roster being
       // reachable is the healthy case, so "busy" starts below 60% rather than
       // below two thirds — the pool gauge's own cut-offs measure queue pressure
       // and would paint a perfectly usable lane amber.
-      const level = pct === null ? '' : ratio >= 0.6 ? 'ok' : ratio >= 0.3 ? 'busy' : 'over'
-      const availabilityLabel = `${t('free.tankLabel')} ${pct === null ? t('free.pending') : `${pct}%`}`
+      const level = ratio >= 0.6 ? 'ok' : ratio >= 0.3 ? 'busy' : 'over'
       return h('div', { className: 'ofm_page' },
+        h(SponsorBanner, { t }),
         h('header', { className: 'ofm_hero ofm_glass' },
           h('div', { className: 'ofm_pagehead' },
             h('div', { className: 'ofm_pagetitle' },
@@ -5697,42 +6388,38 @@ window.__ModuleLoader__.load({
               h(Pill, null, `${t('pref.egress')} ${data.egress?.country ?? data.egress?.ip ?? '—'}`),
               h(Pill, null, `${t('pref.probedAt')} ${ago(data.probedAt, t.locale)}`))),
           h('div', { className: 'ofm_tankrow' },
-            h(Tank, { pct, level, size: 'xl', label: availabilityLabel }),
+            h(Tank, { pct, level, size: 'xl', label: `${t('free.tankLabel')} ${pct ?? '—'}%` }),
             h('div', { className: 'ofm_tankside' },
               h('div', { className: 'ofm_pooltop' },
                 h('span', { className: `ofm_poolbadge ${level}` },
                   h('span', { className: 'ofm_pooldot' }),
-                  availabilityLabel),
+                  `${t('free.tankLabel')} ${pct ?? '—'}%`),
                 h(StarButton, { t })),
               h('div', { className: 'ofm_poolstats' },
-                h('div', { className: 'ofm_stat' }, h('b', null, String(ok)), h('span', null, t('free.verified'))),
-                h('div', { className: 'ofm_stat' }, h('b', null, String(unknown)), h('span', null, t('free.pending'))),
+                h('div', { className: 'ofm_stat' }, h('b', null, String(ok)), h('span', null, t('state.available'))),
                 h('div', { className: `ofm_stat${(counts['region-blocked'] ?? 0) > 0 ? ' hot' : ''}` },
                   h('b', null, String(counts['region-blocked'] ?? 0)), h('span', null, t('state.region-blocked'))),
                 h('div', { className: 'ofm_stat' }, h('b', null, String(counts.unavailable ?? 0)), h('span', null, t('state.unavailable')))),
               h('div', { className: 'ofm_poolmeta' },
-                h('span', { className: 'ofm_note' }, pct !== null
-                  ? t('free.tankNote').replace('{ok}', String(ok)).replace('{total}', String(total)).replace('{unknown}', String(unknown))
+                h('span', { className: 'ofm_note' }, total > 0
+                  ? t('free.tankNote').replace('{ok}', String(ok)).replace('{total}', String(total))
                   : t('free.tankEmpty')),
-                h('span', { className: 'ofm_note' }, t('free.directoryNote')
-                  .replace('{total}', String(directory.length)).replace('{anonymous}', String(total))
-                  .replace('{kilo}', String(directory.filter(m => m.channel === 'kilo').length)))),
+                h('span', { className: 'ofm_note' }, t('meta.description'))),
               h('div', { className: 'ofm_row' },
-                h(Button, { disabled: busy, onClick: refresh }, summary.status === 'loading' ? t('probing') : t('refresh')),
-                h(Button, { disabled: busy, onClick: reprobe }, t('reprobe')))))),
-        h(Section, { title: t('section.models'), hint: t('section.modelsHint') }, h(Roster, { summary: data, t, onBench: bench, benches, auth: eacAuth, eacLogin, only: 'free' })),
+                h(Button, { disabled: busy || catalogBusy, onClick: refresh }, catalogBusy || summary.status === 'loading' ? t('probing') : t('refresh')),
+                h(Button, { disabled: busy || catalogBusy, onClick: reprobe }, t('reprobe')))))),
+        h(Section, { title: t('section.models'), hint: t('section.modelsHint') }, h(Roster, { summary: data, t, onBench: bench, benches, auth: eacAuth, eacLogin, only: 'free', onApply: apply, busy })),
         h(Section, { title: t('section.dash'), hint: t('section.dashHint') },
           stats.status === 'ready' && stats.data !== undefined ? h(Dashboard, { stats: stats.data, summary: data, t })
             : h('p', { className: 'ofm_note' }, t('loading'))),
         h(Section, { title: t('section.forward'), hint: t('section.forwardHint') }, h(Forward, { settings: data.settings, t, onApply: apply, busy })),
         h(Section, { title: t('section.egress'), hint: t('section.egressHint') }, h(Egress, { settings: data.settings, t, onApply: apply, busy })),
         h(Section, { title: t('section.prefs'), hint: t('section.prefsHint') }, h(Preferences, { summary: data, t, onApply: apply, busy })),
-        h(Section, { title: t('section.news'), hint: t('section.newsHint') }, h(NewsPanel, { t })),
-        h(Section, { title: t('section.upgrade'), hint: t('section.upgradeHint') }, h(UpgradePanel, { t, settings: data.settings, onApply: apply, busy })))
+        h(Section, { title: t('section.news'), hint: t('section.newsHint') }, h(NewsPanel, { t })))
     }
 
     function EacPage(props) {
-      const { t, data, summary, eacAuth, setEacAuth, eacLogin, busy, bench, benches, refresh, reprobe } = props
+      const { t, data, summary, eacAuth, setEacAuth, eacLogin, busy, catalogBusy, apply, bench, benches, refresh, reprobe } = props
       const { pool, poolError } = usePool()
       const reading = pool === undefined || pool === null ? null : poolReading(pool)
       const levelText = reading === null ? '' : reading.level === 'over' ? t('pool.levelOver') : reading.level === 'busy' ? t('pool.levelBusy') : t('pool.levelOk')
@@ -5742,6 +6429,7 @@ window.__ModuleLoader__.load({
           ?? (poolError !== '' ? poolError : t('pool.reasonUnknown')))
         : ''
       return h('div', { className: 'ofm_page' },
+        h(SponsorBanner, { t }),
         h('header', { className: 'ofm_hero ofm_glass' },
           h('div', { className: 'ofm_pagehead' },
             h('div', { className: 'ofm_pagetitle' },
@@ -5780,15 +6468,25 @@ window.__ModuleLoader__.load({
                   h('span', { className: 'ofm_note' }, `${t('pool.reach')} ${reading.rawPct ?? '—'}%`),
                   h('span', { className: 'ofm_note' }, capacityText(pool, t)))),
               h('div', { className: 'ofm_row' },
-                h(Button, { disabled: busy, onClick: refresh }, summary.status === 'loading' ? t('probing') : t('refresh')),
-                h(Button, { disabled: busy, onClick: reprobe }, t('reprobe')))))),
+                h(Button, { disabled: busy || catalogBusy, onClick: refresh }, catalogBusy || summary.status === 'loading' ? t('probing') : t('refresh')),
+                h(Button, { disabled: busy || catalogBusy, onClick: reprobe }, t('reprobe')))))),
         h(Section, { title: t('section.eac'), hint: t('section.eacHint') }, h(EacAuth, { t, auth: eacAuth, eacLogin })),
-        h(Section, { title: t('section.models'), hint: t('section.modelsHint') }, h(Roster, { summary: data, t, onBench: bench, benches, auth: eacAuth, eacLogin, only: 'eac' })),
+        h(Section, { title: t('section.models'), hint: t('section.modelsHint') }, h(Roster, { summary: data, t, onBench: bench, benches, auth: eacAuth, eacLogin, only: 'eac', onApply: apply, busy })),
         h(Section, { title: t('section.news'), hint: t('section.newsHint') }, h(NewsPanel, { t })))
     }
 
     // ── announcement ──────────────────────────────────────────────────────────
-    const PAGES = ['ann.preamble', 'ann.models', 'ann.steps', 'ann.features', 'ann.updates']
+    const PAGES = ['ann.preamble', 'ann.newlane', 'ann.models', 'ann.steps', 'ann.features', 'ann.updates']
+
+    function announcementPortalHost() {
+      let host = document.querySelector('[data-ofm-announcement-root]')
+      if (host === null) {
+        host = document.createElement('div')
+        host.setAttribute('data-ofm-announcement-root', 'true')
+        document.body.appendChild(host)
+      }
+      return host
+    }
 
     function Announcement(props) {
       const { t, complete, openSection, page, setPage, summary, acknowledged } = props
@@ -5805,7 +6503,11 @@ window.__ModuleLoader__.load({
         try { await post(`/announcement/ack?version=${encodeURIComponent(summary?.announcementVersion ?? '')}`) } catch { /* ack is best effort */ }
         complete()
       }
-      return h('div', { className: 'ofm_scrim' },
+      const host = announcementPortalHost()
+      useEffect(() => () => {
+        if (host.parentNode !== null) host.parentNode.removeChild(host)
+      }, [host])
+      return ReactDOM.createPortal(h('div', { className: 'ofm_scrim' },
         h('div', { className: 'ofm_ann', role: 'dialog', 'aria-modal': 'true', 'aria-label': t('title') },
           h('div', { className: 'ofm_annhead' },
             h('h2', { className: 'ofm_anntitle' }, t('title')),
@@ -5819,7 +6521,7 @@ window.__ModuleLoader__.load({
             page === 0 ? h(Button, { kind: 'ghost', onClick: finish }, t('ann.later')) : h(Button, { kind: 'ghost', onClick: () => setPage(p => Math.max(0, p - 1)) }, '‹'),
             last
               ? h(Button, { kind: 'primary', onClick: async () => { await finish(); openSection?.('our-free-model') } }, t('ann.openSettings'))
-              : h(Button, { kind: 'primary', onClick: () => setPage(p => Math.min(PAGES.length - 1, p + 1)) }, '›'))))
+              : h(Button, { kind: 'primary', onClick: () => setPage(p => Math.min(PAGES.length - 1, p + 1)) }, '›')))), host)
     }
 
     const list = (t, keys) => keys.map(key => h('li', { key }, t(key)))
@@ -5830,7 +6532,10 @@ window.__ModuleLoader__.load({
         h('h3', null, t('ann.preamble')),
         h('p', null, t('ann.pitch')),
         h('ul', null, list(t, ['ann.p1', 'ann.p2', 'ann.p3'])))
-      if (page === 1) {
+      if (page === 1) return h(Fragment, null,
+        h('h3', null, t('ann.newlane')),
+        h('ul', null, list(t, ['ann.n1', 'ann.n2', 'ann.n3'])))
+      if (page === 2) {
         // Advertised models first: this page is the tour a new user reads before
         // they pick anything, and a refused id at the top of it is a bad first
         // impression of a lane that is actually working.
@@ -5843,10 +6548,10 @@ window.__ModuleLoader__.load({
             h('span', null, `${t(`state.${m.availability}`)} · ${m.vision ? t('tag.vision') : t('tag.text')} · ${kilo(m.contextWindow)}`)))),
           rows.some(m => m.availability === 'region-blocked') ? h('p', { className: 'ofm_note' }, t('hint.region')) : null)
       }
-      if (page === 2) return h(Fragment, null,
+      if (page === 3) return h(Fragment, null,
         h('h3', null, t('ann.steps')),
         h('ul', null, list(t, ['ann.s1', 'ann.s2', 'ann.s3', 'ann.s4'])))
-      if (page === 3) return h(Fragment, null,
+      if (page === 4) return h(Fragment, null,
         h('h3', null, t('ann.features')),
         h('ul', null, list(t, ['ann.f1', 'ann.f2', 'ann.f3', 'ann.f4', 'ann.f5'])))
       return h(Fragment, null,
@@ -5865,10 +6570,6 @@ window.__ModuleLoader__.load({
       } catch { return 'en' }
     }
 
-    // HTTP/1 limits a browser to six ordinary connections per origin. The host
-    // already owns a plugin event stream in each tab; another permanent stream
-    // per tab can leave no connection for session/list. Share this optional
-    // notification stream across tabs without touching the host's transport.
     function sharedPushSource(url, options = {}) {
       const Source = options.EventSource ?? globalThis.EventSource
       const Channel = options.BroadcastChannel ?? globalThis.BroadcastChannel
@@ -5962,7 +6663,7 @@ window.__ModuleLoader__.load({
       }, 'our-free-model: styles')
 
       // ── push subscription ───────────────────────────────────────────────────
-      // One EventSource shared across this browser's tabs: new announcements become
+      // One EventSource for the whole app surface: new announcements become
       // toasts (and OS notifications when opted in), urgent ones open a modal,
       // update availability and completed upgrades broadcast onto window so
       // whichever panel is mounted can refresh itself. EventSource reconnects
@@ -6126,7 +6827,7 @@ window.__ModuleLoader__.load({
     exports.inject = inject
     exports.name = 'our-free-model'
     // Headless test seams use the same stub React as scripts/client-lint.mjs.
-    exports.__test = { parseSafeHtml, safeUrl, sanitizeStyle, htmlToDom, buildHeatCells, Heatmap, ChannelsPage, UpgradePanel, useEacLogin, EacAuth, EacStatusPill, useChannelRpc, sharedPushSource }
+    exports.__test = { parseSafeHtml, safeUrl, sanitizeStyle, htmlToDom, buildHeatCells, Heatmap, ChannelsPage, UpgradePanel, useEacLogin, EacAuth, PicksPage, RecoCard, DICT, useChannelRpc, Shell, CSS, EacStatusPill, sharedPushSource }
     return module.exports
   },
 })

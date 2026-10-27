@@ -271,3 +271,132 @@ describe('QoderAuth refreshAll（只按 refreshable 过滤，不看 enabled）',
     expect(readCred(credentials, 'QODER_ACCESS_TOKEN').access_token).toBe('tok')
   })
 })
+
+// ── 远端模型目录（2026-10-20）──
+//
+// 为什么由 auth 服务取数、而不是适配器自己解析凭据：适配器的
+// `resolveCredential` 会 `reportAccount`（写「本次实际使用的账号」），而目录请求
+// 是周期性的（20 分钟刷新器）⇒ 会把额度标记改写到目录用的账号上。
+// 本组用例把「池只读」这条性质钉住。
+describe('QoderAuth.fetchModels（远端模型目录）', () => {
+  /** 带 uid 的凭据（加密目录请求必需）。 */
+  const credWithUid = JSON.stringify(buildQoderCredential(
+    parseQoderTokenPayload({ token: 'tok', refresh_token: 'ref', user_id: 'uid-1' }),
+    { machineId: 'm-1' },
+  ))
+
+  /** 一段真机形状的 `chat` 场景响应（dfmodel 已免费、mmodel 已改名）。 */
+  const remoteBody = {
+    chat: [
+      {
+        key: 'dfmodel', display_name: 'DeepSeek-Flash', enable: true,
+        is_vl: true, is_reasoning: false, is_free: true,
+        price_factor: 0, original_price_factor: 0.1,
+        context_config: { '1M': { token_count: 1_000_000 } },
+      },
+      {
+        key: 'mmodel', display_name: 'MiniMax-M3.1-Flash', enable: true,
+        is_vl: true, price_factor: 0.1,
+        context_config: { '200K': { token_count: 200_000 } },
+      },
+    ],
+  }
+  const okResponse = (): Response =>
+    new Response(JSON.stringify(remoteBody), { status: 200, headers: { 'content-type': 'application/json' } })
+
+  /** 假的账号池；只实现本路径用到的读方法。 */
+  function fakePool(credential: unknown): { pool: never; reads: ReturnType<typeof vi.fn>; writes: ReturnType<typeof vi.fn> } {
+    const reads = vi.fn(async () => (credential === undefined
+      ? null
+      : { entry: { id: 'a1', provider: 'qoder', credentialRef: 'QODER_ACCOUNT_A' }, credential }))
+    const writes = vi.fn(async () => undefined)
+    return {
+      pool: { getAvailableAccount: reads, updateAccount: writes, listAccounts: vi.fn(async () => []) } as never,
+      reads,
+      writes,
+    }
+  }
+
+  it('用池里可用账号的凭据拉远端目录（WASM 签名 → GET → 解析）', async () => {
+    const { ctx } = makeCtx()
+    const fetcher = vi.fn(async () => okResponse()) as unknown as typeof fetch
+    const auth = newService(ctx, fetcher)
+    const { pool, writes } = fakePool(JSON.parse(credWithUid) as unknown)
+    const models = await auth.fetchModels(pool)
+    expect(models.map((m) => m.id)).toEqual(['dfmodel', 'mmodel'])
+    expect(models[0]?.priceFactor).toBe(0)
+    expect(models[0]?.isFree).toBe(true)
+    expect(models[1]?.name).toBe('MiniMax-M3.1-Flash')
+    const [url, init] = (fetcher as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]!
+    expect(url).toContain('/api/v2/model/list?Encode=1')
+    expect(String((init.headers as Record<string, string>).Authorization)).toMatch(/^Bearer COSY\./)
+    // ⚠️ 池必须**只读**：这条路径不得写任何账号字段（否则会污染额度/限流账）。
+    expect(writes).not.toHaveBeenCalled()
+  })
+
+  it('池里没有可用账号 ⇒ 回退本实例默认 ref 的凭据', async () => {
+    const { ctx } = makeCtx([['QODER_ACCESS_TOKEN', credWithUid]])
+    const fetcher = vi.fn(async () => okResponse()) as unknown as typeof fetch
+    const auth = newService(ctx, fetcher)
+    const models = await auth.fetchModels(fakePool(undefined).pool)
+    expect(models).toHaveLength(2)
+  })
+
+  it('既没有池账号也没有默认凭据 ⇒ 返回空数组，且**不打日志**（未登录是常态）', async () => {
+    const { ctx } = makeCtx()
+    const warn = vi.fn()
+    ;(ctx as unknown as { logger: unknown }).logger = { warn, info: vi.fn(), error: vi.fn() }
+    const fetcher = vi.fn()
+    const auth = newService(ctx, fetcher as unknown as typeof fetch)
+    expect(await auth.fetchModels(fakePool(undefined).pool)).toEqual([])
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('HTTP 失败 ⇒ 返回空数组（调用方回退兜底表）并**留一条 warn**', async () => {
+    const { ctx } = makeCtx([['QODER_ACCESS_TOKEN', credWithUid]])
+    const warn = vi.fn()
+    ;(ctx as unknown as { logger: unknown }).logger = { warn, info: vi.fn(), error: vi.fn() }
+    const fetcher = (async () => new Response(
+      JSON.stringify({ code: '105', message: 'Login expired' }), { status: 403 },
+    )) as unknown as typeof fetch
+    const auth = newService(ctx, fetcher)
+    expect(await auth.fetchModels()).toEqual([])
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]?.[0])).toContain('Login expired')
+  })
+
+  it('⚠️ 池**读失败**（reject）⇒ 返回空数组、不抛穿（失败不升级成 provider 报错）', async () => {
+    // 对抗审计实测：删掉那一行 `.catch(() => null)` 时 111 条用例**全绿** ⇒
+    // 「池读 reject 不炸」这条腿当时零守卫；且原实现的 `await` 在 `try` **之外**，
+    // rejection 会直接抛穿 fetchModels，绕开「失败即回退兜底表」的契约。
+    const { ctx } = makeCtx([['QODER_ACCESS_TOKEN', credWithUid]])
+    const warn = vi.fn()
+    ;(ctx as unknown as { logger: unknown }).logger = { warn, info: vi.fn(), error: vi.fn() }
+    const fetcher = vi.fn(async () => okResponse()) as unknown as typeof fetch
+    const auth = newService(ctx, fetcher)
+    const brokenPool = {
+      getAvailableAccount: vi.fn(async () => { throw new Error('pool store corrupted') }),
+      updateAccount: vi.fn(),
+      listAccounts: vi.fn(async () => []),
+    } as never
+    // 池坏了但**默认 ref 有凭据** ⇒ 仍应正常出目录（这是"池读失败不致命"的正解）。
+    const models = await auth.fetchModels(brokenPool)
+    expect(models.map((m) => m.id)).toEqual(['dfmodel', 'mmodel'])
+    // 池坏 + 连默认 ref 也没有 ⇒ 返回 []（而不是把 rejection 抛给调用方）。
+    const { ctx: ctx2 } = makeCtx()
+    const auth2 = newService(ctx2, fetcher)
+    await expect(auth2.fetchModels(brokenPool)).resolves.toEqual([])
+  })
+
+  it('⚠️ 凭据缺 uid 时**不发请求**（签名必然无效），返回空数组并留痕', async () => {
+    const { ctx } = makeCtx([['QODER_ACCESS_TOKEN', credJson]])
+    const warn = vi.fn()
+    ;(ctx as unknown as { logger: unknown }).logger = { warn, info: vi.fn(), error: vi.fn() }
+    const fetcher = vi.fn()
+    const auth = newService(ctx, fetcher as unknown as typeof fetch)
+    expect(await auth.fetchModels()).toEqual([])
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(String(warn.mock.calls[0]?.[0])).toContain('uid')
+  })
+})

@@ -45,9 +45,7 @@ async function rpcFixture(f = fetcher()) {
   const pool = new AccountPool(ctx)
   await pool.addAccount({ id: 'fixture', provider: 'zcode', credentialRef: 'fixture', nickname: 'fixture', enabled: true, refreshable: false, createdAt: 1 })
   const auth = new ZcodeAuth(ctx, { fetchImpl: f })
-  registerJetHubRpc(ctx, pool,
-    {} as never, {} as never, {} as never, {} as never, {} as never, {} as never,
-    {} as never, {} as never, {} as never, {} as never, {} as never, auth, {} as never)
+  registerJetHubRpc(ctx, pool, {codearts: {} as never, buddy: {} as never, workbuddy: {} as never, lobsterai: {} as never, qoder: {} as never, qodercn: {} as never, trae: {} as never, cline: {} as never, loomy: {} as never, raccoon: {} as never, minimax: {} as never, zcode: auth, gemini: {} as never} as never)
   expect(handler).toBeDefined()
   const call = (method: string, payload: unknown = { provider: 'zcode' }) => handler!('manage', { method, payload }, new AbortController().signal)
   return { pool, auth, call, fetch: f }

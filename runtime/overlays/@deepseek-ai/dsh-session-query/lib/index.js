@@ -98,10 +98,11 @@ var SessionCorpus = class {
 		const persisted = persistence === void 0 ? [] : await listPersisted(persistence, signal);
 		signal?.throwIfAborted();
 		const records = /* @__PURE__ */ new Map();
-		for (const header of persisted) records.set(header.id, {
+		for (const { header, formatStatus } of persisted) records.set(header.id, {
 			header: structuredClone(header),
 			live: false,
-			persisted: true
+			persisted: true,
+			...formatStatus === void 0 ? {} : { formatStatus }
 		});
 		for (const session of this._ctx.sessions.list()) {
 			const durable = records.get(session.id);
@@ -109,7 +110,8 @@ var SessionCorpus = class {
 			records.set(session.id, {
 				header: structuredClone(session.header),
 				live: true,
-				persisted: durable !== void 0
+				persisted: durable !== void 0,
+				formatStatus: "current"
 			});
 		}
 		return [...records.values()].sort(compareSessions);
@@ -133,7 +135,7 @@ var SessionCorpus = class {
 		}
 		const persistence = this._persistence;
 		if (persistence === void 0) throw notFound$1(sessionId);
-		const listed = (await listPersisted(persistence, signal)).find((header) => header.id === sessionId);
+		const listed = (await listPersisted(persistence, signal)).find((snapshot) => snapshot.header.id === sessionId);
 		signal?.throwIfAborted();
 		if (listed === void 0) throw notFound$1(sessionId);
 		const loaded = await inspectPersisted(persistence, sessionId, signal);
@@ -144,7 +146,7 @@ var SessionCorpus = class {
 			signal?.throwIfAborted();
 			return snapshot;
 		}
-		assertSessionHeadersCompatible(loaded.header, listed);
+		assertSessionHeadersCompatible(loaded.header, listed.header);
 		const snapshot = {
 			header: structuredClone(loaded.header),
 			inheritedEventCount: loaded.inheritedEventCount,
@@ -196,7 +198,7 @@ var SessionCorpus = class {
 			});
 			return orderedResults(ids, resolved);
 		}
-		const persistedById = new Map(persisted.map((header) => [header.id, header]));
+		const persistedById = new Map(persisted.map(({ header }) => [header.id, header]));
 		const resolvePersisted = async (sessionId) => {
 			const listed = persistedById.get(sessionId);
 			if (listed === void 0) {
@@ -282,7 +284,7 @@ function orderedResults(ids, resolved) {
 }
 async function listPersisted(persistence, signal) {
 	try {
-		return (await persistence.list(signal === void 0 ? void 0 : { signal })).map((snapshot) => snapshot.header);
+		return await persistence.list(signal === void 0 ? void 0 : { signal });
 	} catch (error) {
 		if (signal?.aborted) signal.throwIfAborted();
 		throw new SessionQueryError(`session persistence listing failed: ${errorMessage$1(error)}`, "SESSION_QUERY_PERSISTENCE_FAILED", { cause: error });

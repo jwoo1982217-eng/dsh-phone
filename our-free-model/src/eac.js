@@ -82,6 +82,7 @@ export { laneFetch as directFetch }
  * sniff window, so first tokens still flow out unheld.
  */
 function laneFetch(url, { method = 'GET', headers = {}, body = undefined, signal } = {}) {
+  if (signal?.aborted === true) return Promise.reject(new UpstreamError('request aborted', CODE.aborted))
   if (typeof lane.fetch === 'function') return lane.fetch(url, { method, headers, body, signal })
   return new Promise((resolve, reject) => {
     const target = new URL(url)

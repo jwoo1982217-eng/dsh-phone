@@ -76,7 +76,7 @@ function harness(options: {
   preference?: BadgePreference
   now?: () => number
 } = {}) {
-  const calls = { balances: 0, quota: 0, preference: 0 }
+  const calls = { balances: 0, quota: 0, preference: 0, balanceAccountIds: [] as (string[] | null)[] }
   const state = {
     balances: options.balances ?? { accounts: [balanceRow('a', balance([pkg('Bonus Pack', 100)]))] },
     quota: options.quota as RpcClineQuotaResponse | { error: { code: string; message: string } } | 'throw' | undefined,
@@ -84,11 +84,20 @@ function harness(options: {
     preference: options.preference ?? ('auto' as BadgePreference),
   }
   const deps: UsageBadgeDeps = {
-    collectBalances: async () => {
+    // ⚠️ 桩必须**复刻真实端点的裁剪语义**（2026-10-15 加 `accountIds`）：真实
+    //    `credits.balances` 会按它过滤账号行。桩若忽略它，用例就会看到「停用账号
+    //    也在结果里」—— 那是**桩与实现语义不一致**造成的假红（我第一版正是如此）。
+    //    ⚠️ 同时记录**每次调用传了什么** ⇒ 用例可以断言「徽标真的只要求启用账号」
+    //    （那才是本改动的收益：只断言结果看不出「少查了几个号」）。
+    collectBalances: async (_provider: string, accountIds?: readonly string[]) => {
       calls.balances += 1
-      return 'error' in state.balances
-        ? { ok: false as const, error: state.balances.error }
-        : { ok: true as const, value: state.balances }
+      calls.balanceAccountIds.push(accountIds === undefined ? null : [...accountIds])
+      if ('error' in state.balances) return { ok: false as const, error: state.balances.error }
+      const wanted = accountIds === undefined ? undefined : new Set(accountIds)
+      const rows = wanted === undefined
+        ? state.balances.accounts
+        : state.balances.accounts.filter((row) => wanted.has(row.accountId))
+      return { ok: true as const, value: { ...state.balances, accounts: rows } }
     },
     collectQuota: async () => {
       calls.quota += 1
@@ -137,12 +146,45 @@ describe('createUsageBadge：账号过滤', () => {
     expect(result.value.preference).toBe('auto')
   })
 
+  it('★★ 徽标**只要求**启用账号的读数（2026-10-15，规格 §7-8：停用账号少查）', async () => {
+    // ⚠️⚠️ 判据必须是**传给端点的 accountIds**，而不是「结果里没有 b」——
+    //    后者在「查全部再过滤」的旧实现下同样成立（我第一版就只断言了结果，
+    //    那样本改动**零守卫**：把取号改回「不传 accountIds」用例照样绿）。
+    //    收益恰恰在于**少发请求**，故必须断言请求本身。
+    const { badge, calls } = harness({
+      accounts: [account('a', true), account('b', false), account('c', true)],
+      balances: {
+        accounts: [
+          balanceRow('a', balance([pkg('Bonus Pack', 100)])),
+          balanceRow('b', balance([pkg('Bonus Pack', 999)])),
+          balanceRow('c', balance([pkg('Bonus Pack', 50)])),
+        ],
+      },
+    })
+    await badge.read('buddy')
+    expect(calls.balanceAccountIds, '★ 必须传启用账号的 id（b 是停用的，不该被查）')
+      .toEqual([['a', 'c']])
+  })
+
+  it('★ 全部账号都停用 ⇒ 传**空数组**（= 一条都不查），不是「省略 = 查全部」', async () => {
+    // ⚠️ 这一格最容易被写成反义（`[]` 被当成 falsy 而退回「查全部」）——
+    //    那样「全部停用」反而会去查全部账号，与收益相反。
+    const { badge, calls } = harness({
+      accounts: [account('a', false)],
+      balances: { accounts: [balanceRow('a', balance([pkg('Bonus Pack', 100)]))] },
+    })
+    const result = await badge.read('buddy')
+    expect(calls.balanceAccountIds, '★ 空数组必须原样传下去（不是省略）').toEqual([[]])
+    expect(result.ok && result.value.accounts).toEqual([])
+  })
+
   it('老文档缺 enabled 字段时视为启用（与 provider.status 同判据）', async () => {
     const legacy = { ...account('a'), enabled: undefined } as unknown as ProviderAccountEntry
-    const { badge } = harness({ accounts: [legacy] })
+    const { badge, calls } = harness({ accounts: [legacy] })
     const result = await badge.read('buddy')
     expect(result.ok && result.value.disabledCount).toBe(0)
     expect(result.ok && result.value.accounts.length).toBe(1)
+    expect(calls.balanceAccountIds, '缺 enabled ⇒ 视为启用 ⇒ 要查它').toEqual([['a']])
   })
 })
 

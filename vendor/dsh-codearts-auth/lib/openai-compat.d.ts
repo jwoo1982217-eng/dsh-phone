@@ -79,8 +79,64 @@ export declare function serializeMessages(messages: readonly {
 }[], imageUrls?: ReadonlyMap<string, string>): Array<Record<string, unknown>>;
 /** 安全读取 Error.message。 */
 export declare function errorMessage(error: unknown): string;
-/** 从错误体提取可读 detail 文本。 */
+/**
+ * 读取错误体里 `detail` 字段的可读文本（字符串，或 `{message}` 嵌套对象）。
+ *
+ * ## 为什么单独成函数（Gitee issue IKLBSH A1）
+ *
+ * 上游代理的顶层 catch 常把异常包成
+ * `{"error":"acp-proxy failure","detail":"<真实原因>"}`：`error` 那条腿能取出的
+ * 只是**没有信息量的摘要**，而真正的原因（连接超时 / 鉴权细节 / 上游栈信息）
+ * 全在 `detail` 里。只认前者时用户只看到四个字，**根因完全不可见**。
+ *
+ * ⚠️⚠️ **本仓库有 6 份同义的 `errorDetail`**（`openai-compat` / `llm-adapter` /
+ * `buddy-adapter` / `lobsterai-adapter` / `trae-adapter` / `accio-adapter`）。
+ * 6 份各写一条判据必然漂移 —— 那正是本仓库首条红线「同一语义两套判据」的形态
+ * （`llm-adapter.ts` 的注释里就记着「两处改一处时**必须同时改另一处**」）。
+ * 故这条腿**只留一份实现**，其余 5 份 import 它。
+ *
+ * ⚠️ **证据强度如实标注：没有真实报文**。866 个真实会话（解压后 3.0 GB，
+ * 覆盖全部 `turn/end` 错误事件）里 `"detail"` **零命中**
+ * （`scripts/tmp-scan-iklbsh.mjs`）。该形态的依据是 ① 上游代理类实现的既有惯例、
+ * ② harness 自带的 `providerErrorDetail`（`dsh-llm-deepseek/lib/index.js`）
+ * 本身就**产出** `{message, detail}` 这一对字段。
+ * 属于「结构上必然可达、但未实测」的一条腿。
+ *
+ * ⚠️ **只加不减**（与 `errorDetail` 的既有纪律一致）：本函数只影响原先
+ * 「所有腿都落空 ⇒ 退回整段裸 JSON」那一种形态；它排在**最后**一条腿，
+ * 既有腿的优先级与产出**逐字节不变**。
+ */
+export declare function detailFieldText(value: unknown): string | undefined;
+/**
+ * 从错误体提取可读 detail 文本（**含**顶层 `detail` 字段）。
+ *
+ * ## ⚠️⚠️ 这个函数是**展示**出口；`httpErrorCode` 一类**分类**出口必须排除 detail 腿
+ *
+ * `detail` 对展示有价值，但它会**加长分类判据的输入** ⇒ 可能翻转错误码
+ * （真实净回归，两轮审计独立确证）：
+ *
+ * | 报文 | 只算既有腿 | 加上 detail 腿 |
+ * |---|---|---|
+ * | `{"message":"bad request","detail":"insufficient quota"}` | `INVALID_REQUEST` | **`QUOTA_EXCEEDED`** |
+ * | `{"message":"bad request","detail":"prompt is too long for this model"}` | `INVALID_REQUEST` | **`CONTEXT_WINDOW_EXCEEDED`** |
+ *
+ * 后者还会**触发 DSH 的上下文溢出压缩** —— 纯展示改进换来行为变更，且**零守卫**
+ * （我加的用例只断言返回值，没有一条锁分类结果）。
+ *
+ * ⇒ 处置：**默认保持含 detail（= 展示行为不变）**，只有**分类调用点**显式传
+ * `{ forClassify: true }` 把它排除。本仓库需要排除的只有 `llm-adapter.ts` 的
+ * **两处**（`httpErrorCode` 与 4xx 额度判据）—— 它们是 `errorDetail` 产物
+ * 的**唯一**分类消费者（buddy 的 `httpErrorCode` 刻意收**原始 body**，见其注释）。
+ */
 export declare function errorDetail(body: string): string;
+/**
+ * 从错误体提取**分类用**的可读文本 —— **不含**顶层 `detail` 字段。
+ *
+ * ⚠️ 分类调用点（`httpErrorCode` / `isSseQuotaExhaustedErrorCode` 一类）
+ * **必须**走本出口，理由与实测表见 {@link errorDetail}。
+ * 本出口保证分类输入与「加 detail 腿之前」**逐字节相同**。
+ */
+export declare function errorDetailForClassify(body: string): string;
 /** 将 HTTP 状态码映射为 harness 错误码。 */
 export declare function httpErrorCode(status: number): string;
 /**
@@ -139,6 +195,17 @@ export interface ConsumeOpenAiSseOptions {
      */
     maxTokens?: number;
     /**
+     * 是否把正文里的 **DSML 工具调用块**解析为结构化 tool-call。
+     *
+     * ⚠️ **只在该通道确实用 DSML 时开启**（与注入 `buildDsmlSystemPrompt`
+     * **成对出现**）：适配器不把 `tools` 发给上游、改为把 schema 注入 system
+     * 提示，模型便以 `<｜DSML｜tool_calls>` 文本输出调用 —— 本消费器必须
+     * 把它解析回来，否则整段标签当正文显示，工具**永不执行**。
+     *
+     * 关闭时本消费器行为与从前**逐字节一致**（纯文本通道不受影响）。
+     */
+    dsmlToolMode?: boolean;
+    /**
      * 每解析成功一帧就回调一次（**旁路观测**，不得影响流本身）。
      *
      * Cline 用它取网关下发的路由元数据（真正服务这笔请求的上游渠道），
@@ -150,6 +217,7 @@ export interface ConsumeOpenAiSseOptions {
      */
     onFrame?: (data: Record<string, unknown>) => void;
 }
+export { fixDsmlMarkers, createDsmlMarkerNormalizer } from './sse.js';
 /**
  * 消费 OpenAI 兼容的 SSE 响应并产出 `StreamChunk`。
  *

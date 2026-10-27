@@ -1,9 +1,33 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { handleOpencodeRpc, type OpencodePoolLike } from '../../src/opencode-rpc.js'
 import { deriveProjectId } from '../../src/opencode.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+
+/**
+ * ⚠️ **代理路径的 fetch 来自外部 undici**（`proxyFetch` 与 dispatcher 同源，
+ * 见 issue IKK4BY），故 `vi.stubGlobal('fetch', …)` **拦不到它** ——
+ * 必须单独给 undici 的 fetch 装替身。
+ *
+ * ⚠️ 用 `importOriginal` 展开而不是整模块替换：`ProxyAgent` / `Pool` 必须保持
+ * **真实**，否则 `buildProxyDispatcher` 会失去构造能力（那测的就不是本 provider 了）。
+ */
+const undiciFetchSpy = vi.hoisted(() => vi.fn())
+vi.mock('undici', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('undici')>()),
+  fetch: undiciFetchSpy,
+}))
+
+/**
+ * ⚠️ 统一在 `afterEach` 收尾，**不要**在各用例里手写 `mockReset()`：
+ * 手写版一旦某条断言在中途抛错，那行 `mockReset()` 就被跳过，
+ * 被污染的替身会**泄漏到下一条用例**（表现为随机性的假失败，极难排查）。
+ */
+afterEach(() => {
+  undiciFetchSpy.mockReset()
+  vi.unstubAllGlobals()
+})
 
 interface Result { ok: boolean; value?: unknown; error?: { message: string } }
 
@@ -66,10 +90,20 @@ describe('分派归属（真实事故 2026-10-02）', () => {
   it('⚠️ 主 handleMethod 在 switch 之前先试 opencode 分支', () => {
     // Jet Hub 只有一条通道（connection.fetch.register → handleMethod），
     // 若不并入它的 switch，所有 opencode.* 方法都落在 default → unknown method。
+    //
+    // ⚠️⚠️ **不得用固定字符窗口切片**（2026-10-17 修）：原判据是
+    //    `slice(at, at + 900)`，而本 fork 在同一函数里新增了 `modelscope.` 改道分支
+    //    及其注释 ⇒ `switch (method)` 被挤出那 900 字符 ⇒
+    //    `body.indexOf('switch (method)')` 变成 -1，而 `177 < -1` 为假 ⇒ 假红。
+    //    ⚠️ **判据没抓住先怀疑判据本身**（本仓库反复记录的教训）：
+    //    魔数窗口对本文件里「任何新增分支/注释」都是定时炸弹，与被测行为无关。
+    // ⇒ 改为**锚点式**：从 `handleMethod` 起，取到**第一个** `switch (method)` 为止。
     const at = hubRpc.indexOf('async function handleMethod(')
-    const body = hubRpc.slice(at, at + 900)
+    expect(at, 'handleMethod 不存在').toBeGreaterThan(-1)
+    const sw = hubRpc.indexOf('switch (method)', at)
+    expect(sw, 'handleMethod 里没有 switch (method)').toBeGreaterThan(at)
+    const body = hubRpc.slice(at, sw)
     expect(body).toMatch(/handleOpencodeRpc\(/)
-    expect(body.indexOf('handleOpencodeRpc(')).toBeLessThan(body.indexOf('switch (method)'))
   })
 })
 
@@ -223,13 +257,27 @@ describe('opencode.testProxy', () => {
   it('经代理查出出口 IP 并返回', async () => {
     const { call } = harness()
     const stub = vi.fn(async () => new Response(JSON.stringify({ status: 'success', query: '1.2.3.4', country: 'US' }), { status: 200 }))
-    vi.stubGlobal('fetch', stub as never)
+    undiciFetchSpy.mockImplementation(stub as never)
     const r = await call('opencode.testProxy', { proxy: '127.0.0.1:7897' })
-    vi.unstubAllGlobals()
     expect(r.ok).toBe(true)
     expect((r.value as { exitIp: string }).exitIp).toBe('1.2.3.4')
     expect((r.value as { country: string }).country).toBe('US')
+    // ⚠️ 断言的仍是**生产不变式**：有代理时必须带上与 fetch 同源的 dispatcher。
     expect(stub.mock.calls[0]![1]).toHaveProperty('dispatcher')
+  })
+
+  it('⚠️ 代理路径用的是 undici 自带的 fetch（不是全局 fetch）', async () => {
+    // 这条锁死缺陷 IKK4BY 的修法：全局 fetch + 外部 dispatcher 会在
+    // Node 22/24 上恒抛 UND_ERR_INVALID_ARG（跨实例 handler 契约冲突）。
+    const { call } = harness()
+    const globalSpy = vi.fn(async () => new Response('不该被调用', { status: 200 }))
+    vi.stubGlobal('fetch', globalSpy as never)
+    undiciFetchSpy.mockImplementation(
+      (async () => new Response(JSON.stringify({ status: 'success', query: '9.9.9.9' }), { status: 200 })) as never,
+    )
+    const r = await call('opencode.testProxy', { proxy: '127.0.0.1:7897' })
+    expect(r.ok).toBe(true)
+    expect(globalSpy).not.toHaveBeenCalled()
   })
 
   it('非法代理直接拒绝（不发请求）', async () => {
@@ -237,26 +285,36 @@ describe('opencode.testProxy', () => {
     const stub = vi.fn()
     vi.stubGlobal('fetch', stub as never)
     expect((await call('opencode.testProxy', { proxy: 'ftp://x' })).ok).toBe(false)
-    vi.unstubAllGlobals()
     expect(stub).not.toHaveBeenCalled()
   })
 
   it('代理返回非 2xx 时给出可读失败', async () => {
     const { call } = harness()
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 502 })) as never)
+    undiciFetchSpy.mockImplementation((async () => new Response('nope', { status: 502 })) as never)
     const r = await call('opencode.testProxy', { proxy: '127.0.0.1:7897' })
-    vi.unstubAllGlobals()
     expect(r.ok).toBe(false)
     expect(r.error?.message).toContain('502')
   })
 
   it('连接抛错时给出可读失败（不把底层异常抛给 UI）', async () => {
     const { call } = harness()
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('ECONNREFUSED') }) as never)
-    const r = await call('opencode.testProxy', { proxy: '127.0.0.1:1' })
-    vi.unstubAllGlobals()
+    undiciFetchSpy.mockImplementation((async () => { throw new Error('ECONNREFUSED') }) as never)
+    const r = await call('opencode.testProxy', { proxy: '127.0.0.1:7897' })
     expect(r.ok).toBe(false)
     expect(r.error?.message).toContain('ECONNREFUSED')
+  })
+
+  it('⚠️ `fetch failed` 的根因在 cause 里，必须带出来（issue IKK4BY 第 2 点）', async () => {
+    // Node 的 fetch 在传输层失败时 message 恒为 `fetch failed`，真因只在 cause。
+    // 只取 message 会让所有故障退化成同一句无信息量的话。
+    const { call } = harness()
+    const cause = Object.assign(new Error('invalid onRequestStart method'), { code: 'UND_ERR_INVALID_ARG' })
+    const failure = Object.assign(new TypeError('fetch failed'), { cause })
+    undiciFetchSpy.mockImplementation((async () => { throw failure }) as never)
+    const r = await call('opencode.testProxy', { proxy: '127.0.0.1:7897' })
+    expect(r.ok).toBe(false)
+    expect(r.error?.message).toContain('invalid onRequestStart method')
+    expect(r.error?.message).toContain('UND_ERR_INVALID_ARG')
   })
 })
 

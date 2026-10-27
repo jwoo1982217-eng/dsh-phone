@@ -1653,3 +1653,23 @@
     transform: none !important;
   }
 }
+
+/* ==== V5 NIGHT · 深度打磨（usage 补丁） ==== */
+
+/* KPI 图标圆角清零（配合 app.css 切角） */
+[data-theme="dark"] .ov-metric-icon {
+  border-radius: 0 !important;
+}
+
+/* 趋势图柱条：圆角清零（五级切角已由 app.css 处理 clip-path） */
+[data-theme="dark"] .usage-day-bar,
+[data-theme="dark"] .ov-chart .dashboard-chart-bar {
+  border-radius: 0 !important;
+}
+
+/* 移动端 KPI 图标也清零 */
+@media (max-width: 700px) {
+  [data-theme="dark"] .ov-metric-icon { border-radius: 0 !important; }
+}
+
+/* ==== V5 NIGHT · usage 补丁 END ==== */

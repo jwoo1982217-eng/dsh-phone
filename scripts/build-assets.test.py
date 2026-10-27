@@ -17,12 +17,63 @@ class PlatformPackagingTests(unittest.TestCase):
                 target = Path(temporary) / label / 'dsh-phone-qq'
                 assets.copy_bundle('dsh-phone-qq', target, assets.ROOT / 'phone-qq')
                 plan = json.loads((target / 'private-sdk-patches.json').read_text())
-                self.assertEqual(len(plan['files']), 10)
+                self.assertEqual(plan['version'], 2)
+                self.assertEqual(plan['sdkVersion'], '0.2.1-rc.2')
+                self.assertGreaterEqual(len(plan['packages']), 182)
+                self.assertEqual(len(plan['preservations']), 41)
+                for helper in ('core-migration.js','core-transaction.js','private-sdk-v2.js','private-sdk-plan.js','compatibility-packages.js'):
+                    self.assertTrue((target / helper).is_file(), helper)
                 for row in plan['files']:
-                    for variant in row['variants']:
-                        if variant['source'].startswith('plugin:'):
-                            data = (target / variant['source'].removeprefix('plugin:')).read_bytes()
-                            self.assertEqual(hashlib.sha256(data).hexdigest(), variant['after'])
+                    if row['source'].startswith('plugin:'):
+                        data = (target / row['source'].removeprefix('plugin:')).read_bytes()
+                        self.assertEqual(hashlib.sha256(data).hexdigest(), row['sha256'])
+
+    def test_packaging_rejects_stale_plan_and_tampered_or_missing_v2_sources(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as temporary:
+            tree = Path(temporary)
+            core = tree/'node_modules/@deepseek-ai/dsh'; core.mkdir(parents=True)
+            (core/'package.json').write_text(json.dumps({'version':'0.2.1-rc.2'}))
+            plugin = tree/'node_modules/dsh-phone-qq'; plugin.mkdir()
+            receipt = plugin/'private-sdk-patches.json'
+            receipt.write_text(json.dumps({'version':1,'files':[]}))
+            with self.assertRaisesRegex(RuntimeError,'not reviewed'):
+                assets.validate_private_sdk_plan(tree)
+            item = core/'index.js'; item.write_bytes(b'new core')
+            row = {'relative':'@deepseek-ai/dsh/index.js','source':'tree:node_modules/@deepseek-ai/dsh/index.js','bytes':8,'sha256':hashlib.sha256(b'new core').hexdigest()}
+            plan = {'version':2,'sdkVersion':'0.2.1-rc.2','baselines':[{'id':'old'}],'files':[row]}
+            receipt.write_text(json.dumps(plan))
+            self.assertEqual(assets.validate_private_sdk_plan(tree)['files'],1)
+            item.write_bytes(b'tampered')
+            with self.assertRaisesRegex(RuntimeError,'differs'):
+                assets.validate_private_sdk_plan(tree)
+            item.unlink()
+            with self.assertRaisesRegex(RuntimeError,'missing'):
+                assets.validate_private_sdk_plan(tree)
+            row['source']='tree:../private/code'
+            receipt.write_text(json.dumps(plan))
+            with self.assertRaisesRegex(RuntimeError,'outside'):
+                assets.validate_private_sdk_plan(tree)
+
+    def test_preservation_receipts_must_bind_both_old_and_new_bytes(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as temporary:
+            tree=Path(temporary); core=tree/'node_modules/@deepseek-ai/dsh'; core.mkdir(parents=True)
+            (core/'package.json').write_text(json.dumps({'version':'0.2.1-rc.2'}))
+            plugin=tree/'node_modules/dsh-phone-qq'; plugin.mkdir()
+            item=core/'index.js'; item.write_bytes(b'new')
+            row={'relative':'@deepseek-ai/dsh/index.js','source':'tree:node_modules/@deepseek-ai/dsh/index.js','bytes':3,'sha256':hashlib.sha256(b'new').hexdigest()}
+            required={'relative':row['relative'],'sha256':hashlib.sha256(b'old').hexdigest()}
+            plan={'version':2,'sdkVersion':'0.2.1-rc.2','baselines':[{'id':'old','requiredPreservations':[required]}],'files':[row]}
+            receipt=plugin/'private-sdk-patches.json'; receipt.write_text(json.dumps(plan))
+            with self.assertRaisesRegex(RuntimeError,'preservation'):
+                assets.validate_private_sdk_plan(tree)
+            plan['preservations']=[{'relative':row['relative'],'beforeSha256':required['sha256'],'afterSha256':row['sha256'],'disposition':'merged','verification':'fixture'}]
+            receipt.write_text(json.dumps(plan)); self.assertEqual(assets.validate_private_sdk_plan(tree)['preservations'],1)
+            plan['preservations'][0]['beforeSha256']='0'*64
+            receipt.write_text(json.dumps(plan))
+            with self.assertRaisesRegex(RuntimeError,'preservation'):
+                assets.validate_private_sdk_plan(tree)
 
     def test_conversation_actions_survive_both_bundle_copies_and_missing_import_fails(self):
         with tempfile.TemporaryDirectory() as temporary:

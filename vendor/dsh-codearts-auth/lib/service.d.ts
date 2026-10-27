@@ -2,6 +2,7 @@ import { Service, type Context } from '@deepseek-ai/cordis';
 import { type CredentialRef } from '@deepseek-ai/dsh-credentials';
 import type { LoginFlowOptions } from './types.js';
 import { AccountPool } from './account-pool.js';
+import { type RemoteCatalogOutcome } from './models.js';
 /**
  * CodeArts 历史单凭据 ref 常量。
  *
@@ -229,6 +230,15 @@ export declare class CodeArtsAuth extends Service {
         id: string;
         name: string;
     }>>;
+    /**
+     * 最近一次 {@link refreshModels} 的各来源成败（issue IKJVTF，审计 I3）。
+     *
+     * ⚠️ 由 `src/index.ts` 在**构造时**注入一个空对象，此后 `refreshModels`
+     * 每轮原地写入 —— 适配器在 `fetchRemoteModels()` 返回后读它，即可判
+     * 「这次目录完不完整」。用「出参对象」而不是改 `refreshModels` 的返回类型：
+     * 该签名被既有调用方与单测按「返回数组」使用，改形状会波及它们。
+     */
+    lastCatalogOutcome: RemoteCatalogOutcome | undefined;
     /**
      * 取账号池里第一个**凭据可解析且含 AK/SK** 的账号凭据。
      *

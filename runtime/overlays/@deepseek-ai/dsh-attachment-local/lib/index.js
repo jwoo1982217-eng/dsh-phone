@@ -115,7 +115,7 @@ function isExhaustedEncoding(result) {
 //#region lib/types/sharp.js
 /** Process-realm lazy access to Sharp's CommonJS-compatible entry. */
 /** Load Sharp on the first raster operation and retain its callable export. */
-const requireSharp = createLazyRequire("sharp", import.meta.url);
+const requireSharp = createLazyRequire(process.platform === "android" ? "./android-sharp.cjs" : "sharp", import.meta.url);
 //#endregion
 //#region lib/types/image.js
 /** Raster inspection: full decode at admission, header-only probe on verified reads. */

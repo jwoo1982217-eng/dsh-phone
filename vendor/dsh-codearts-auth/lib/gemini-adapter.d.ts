@@ -15,7 +15,7 @@
  * 3. **图片两跳**：先 `projectRequestImage`（插件侧缩放，640,000 px），
  *    拿不到才 `readImage`（原图）。两者都拿不到**抛错**，绝不静默丢图。
  * 4. **`toolChoice` 恒 AUTO**：`@deepseek-ai/dsh-llm` 的 `GenerateOptions`
- *    **没有** `toolChoice` 字段（实测 `lib/types/types.d.ts:380-416`），
+ *    **没有** `toolChoice` 字段（实测 `lib/types/types.d.ts`），
  *    故不传；`translateGeminiRequest` 内部默认走 `AUTO`。
  */
 import { LlmAdapter, ReasoningEffortId } from '@deepseek-ai/dsh-llm';
@@ -68,7 +68,7 @@ export interface GeminiAdapterOptions {
     /**
      * 内联一张图片为**原始字节**（由调用方桥接 `ctx.attachments.readImage`）。
      *
-     * ⚠️ 契约与 `buddy-adapter.ts:195` 一致：**读不到必须抛错**，不得返回空。
+     * ⚠️ 契约与 `buddy-adapter.ts` 一致：**读不到必须抛错**，不得返回空。
      * 静默丢图会让用户以为图片被模型看到了（与 cline / lobsterai 同口径）。
      */
     readImage?: (attachment: unknown) => Promise<{
@@ -79,7 +79,7 @@ export interface GeminiAdapterOptions {
      * 取**请求版本**图片（附件服务按目标尺寸缩放）。
      *
      * ⚠️ 契约与 `readImage` **相反**：不可用时返回 `undefined`（不是抛错）——
-     * 缩放是优化，拿不到就发原图（见 `image-budget.ts:151`）。
+     * 缩放是优化，拿不到就发原图（见 `image-budget.ts`）。
      */
     readImageRequest?: (attachment: unknown, target: {
         width: number;
@@ -120,6 +120,51 @@ export interface GeminiAdapterOptions {
     /** 探测用的 fetch（测试注入；缺省全局 `fetch`）。 */
     projectFetcher?: typeof fetch;
     /**
+     * 推理请求用的 fetch（Gitee issue IKLTZ2）。
+     *
+     * ⚠️ **这一处此前连 seam 都没有**：`stream()` 里的 `streamGenerateContent`
+     * 直接写死裸 `fetch`，因此 issue 建议里「接上已有的 seam」若照字面实现，
+     * **推理主路径会漏掉**（而它恰恰是用户唯一会卡住的那条路）。
+     *
+     * ⚠️ 与 `projectFetcher` **分成两个字段**：项目探测与推理是两次独立请求，
+     * 测试替身通常只想拦其中一条；合成一个字段会让「只拦探测」的用例意外拦到推理。
+     */
+    fetchImpl?: typeof fetch;
+    /**
+     * 按**账号 id** 取 fetcher（代理支持，Gitee issue IKLTZ2）。
+     *
+     * ⚠️ 必须是**函数**而不是一份定好的 fetcher：本适配器在一轮请求内会**换号**
+     * （限流 / 401 时 `getAvailableAccount` 换人），出口必须跟着换。
+     */
+    fetchFor?: (accountId: string) => typeof fetch;
+    /**
+     * **显式**指定本适配器代表的账号池条目 id（Gitee issue IKLTZ2 审计 P1-1）。
+     *
+     * ## ⚠️ 为什么必须有它（真实缺陷，独立审计实测）
+     *
+     * 出口代理是**账号维度**的，而「本适配器正在替哪个账号发请求」有两个来源：
+     *
+     * - 主推理路径：有 `accountPool` ⇒ 按 `access_token` 反查（既有逻辑）；
+     * - **探测路径**（账号卡片上的「测试」/「重测」）：`account-probe.ts` **刻意
+     *   不传 `accountPool`**（见其 L213 的注释：探测只测这一个账号、且不写标记）
+     *   ⇒ 反查那一条路**根本不存在** ⇒ `currentAccountId` 恒为 `''`
+     *   ⇒ 解析器按「空 id = 直连」处理 ⇒ **该账号的代理被完全绕过**。
+     *
+     * 症状与 issue 原话同形：墙外环境下「测试 / 重测」**恒失败**，而这个失败
+     * 与「账号已失效」在 UI 上**完全同形** ⇒ 用户会去误删好号。
+     *
+     * ## ⚠️ 为什么是「显式传入」而不是「探测时也传 accountPool」
+     *
+     * 传池会把探测接进换号/写标记的整套编排，而探测的**既定语义**就是不写任何
+     * 东西、只测这一个账号。改 `account-probe.ts` 会破坏那套语义并波及十家适配器。
+     *
+     * ## ⚠️ 为什么**优先于**反查
+     *
+     * 探测时反查恰恰是拿不到的那条路；即便将来有人给探测也挂了池，显式值也是
+     * 更权威的（调用方明确说了「我代表这个账号」）。
+     */
+    accountIdOverride?: string;
+    /**
      * 把探测到的项目号回写凭据（跨启动缓存，best-effort）。
      *
      * ⚠️ 只回写**探测到的真值**，不回写兜底串 —— 理由见 `persistGeminiProject`。
@@ -136,6 +181,12 @@ export interface GeminiAdapterOptions {
 export declare class GeminiAdapter extends LlmAdapter {
     private readonly options;
     private readonly product;
+    /**
+     * ⚠️ **2026-10-08 Task 7b：三个方法收敛到共享骨架** `createModelCatalog`。
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架，
+     * 现在只剩 `toCatalogEntry`（本家私有形状 + 静态表判据）。
+     */
+    private readonly catalog;
     constructor(options: GeminiAdapterOptions);
     providerInfo(provider: string): LlmProviderInfo;
     /**
@@ -148,17 +199,27 @@ export declare class GeminiAdapter extends LlmAdapter {
     /**
      * 完整目录（**不套黑名单**），供 Jet Hub「显示列表」用。
      *
-     * ⚠️ **必须同步返回数组，不能是 `async`**（`minimax-adapter.ts:218-242`
-     * 记录的同类缺陷：写成 async 会让 `jet-hub-rpc.ts:2041 [...all]` 与
-     * `:2125 all.map` 抛 `TypeError: all is not iterable`）。
+     * ⚠️ **必须同步返回数组，不能是 `async`**（`minimax-adapter.ts`
+     * 记录的同类缺陷：写成 async 会让 `jet-hub-rpc.ts` 的两个消费者（`[...all]` 与
+     * `all.map`）都抛 `TypeError: all is not iterable`）。
+     *
+     * ⚠️ **2026-10-08 Task 7b**：该同步契约（连同上面这条缺陷史）已在
+     * `src/model-catalog.ts` 的 `syncCatalog` 上统一持有；此处只剩委托。
      */
     listAllModels(): readonly {
         id: string;
         name: string;
     }[];
-    private inputModalitiesFor;
+    /**
+     * 把本家私有条目转成共享骨架的中间结构。
+     *
+     * ⚠️ 本家目录是**静态表**（`geminiFallbackEntries()`，无远端拉取），
+     * 故 `loadCatalog` 与 `syncCatalog` 取同一份数据。
+     */
+    private toCatalogEntry;
+    private catalogEntries;
     listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
-    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
+    resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /** 兼容 0.1.1-rc.2 的 `prepareCall` shim（与其余适配器同款）。 */
     prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<{
         model: LlmResolvedModelInfo;
@@ -169,7 +230,7 @@ export declare class GeminiAdapter extends LlmAdapter {
     /**
      * 收集并内联本次请求涉及的全部图片。
      *
-     * ⚠️ 两跳都失败时**必须抛错**（`buddy-adapter.ts:1239-1285` 的权威写法）：
+     * ⚠️ 两跳都失败时**必须抛错**（`buddy-adapter.ts` 的权威写法）：
      * 静默丢弃会表现为「图片凭空消失、模型答非所问」，是最难排查的一类问题。
      */
     private collectInlineImages;

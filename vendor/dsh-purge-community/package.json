@@ -76,6 +76,18 @@
     },
     "communityAdaptation": {
       "revision": "strict-client-owners.1",
+      "runtimeCompatibility": {
+        "localRevision": "phone-rc2-runtime-hooks-native-guard.1",
+        "runtimeHooks": [
+          "0.2.1-alpha.1",
+          "0.2.1-rc.2"
+        ],
+        "legacyNativeRecipes": [
+          "0.2.1-alpha.1"
+        ],
+        "unreviewedNativeRecipes": "blocked before host writes; SDK-specific adaptation required",
+        "distribution": "Local content-hash identified compatibility adaptation; upstream/community package version and attribution retained"
+      },
       "target": "0.2.1-alpha.1",
       "publisher": "DeepSeek Stream community marketplace",
       "authorOriginal": "https://github.com/YuJunZhiXue/dsh-purge/releases/tag/v1.1.67",
@@ -151,10 +163,10 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-api-session-controller": "=0.2.1-alpha.1",
-    "@deepseek-ai/dsh-api-workspace-controller": "=0.2.1-alpha.1",
-    "@deepseek-ai/dsh-client-ui-conversation": "=0.2.1-alpha.1",
-    "@deepseek-ai/dsh-client-ui-workspace": "=0.2.1-alpha.1"
+    "@deepseek-ai/dsh-api-session-controller": "=0.2.1-alpha.1 || =0.2.1-rc.2",
+    "@deepseek-ai/dsh-api-workspace-controller": "=0.2.1-alpha.1 || =0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-conversation": "=0.2.1-alpha.1 || =0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-workspace": "=0.2.1-alpha.1 || =0.2.1-rc.2"
   },
   "engines": {
     "node": ">=18"

@@ -7,7 +7,7 @@ import { connectionLink, newPair, parsePair } from './protocol.mjs';
 const html = await readFile(new URL('./page.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
 const tick = () => new Promise(resolve => setImmediate(resolve));
-async function page({ role = 'phone', hash = '' } = {}) {
+async function page({ role = 'phone', hash = '', managed = false } = {}) {
   const pair = newPair('wss://fixture.invalid/relay'), link = connectionLink(pair);
   const elements = new Map(), calls = [];
   const element = () => ({ value: '', children: [], hidden: false, disabled: false, textContent: '', append(...items) { this.children.push(...items); }, replaceChildren() { this.children = []; } });
@@ -22,7 +22,7 @@ async function page({ role = 'phone', hash = '' } = {}) {
       const { payload } = JSON.parse(init.body); calls.push(payload);
       let value = state;
       if (payload.action === 'pair') { assert.deepEqual(parsePair(payload.code), pair); state.paired = true; }
-      if (payload.action === 'create' || payload.action === 'code') value = { link, code: 'legacy-fixture' };
+      if (['create','code','prepare'].includes(payload.action)) value = { link, ...(managed ? { shareLink: 'https://fixture.invalid/connect#' + link.split('#')[1] } : {}), code: 'legacy-fixture' };
       return { ok: true, json: async () => ({ result: { ok: true, value: { ...value } } }) };
     },
   };
@@ -49,4 +49,23 @@ test('desktop copy returns connection link; fragment prefill clears link history
   assert.equal(phone.byId('code-input').value, phone.link);
   assert.equal(phone.context.location.hash, '');
   assert.equal(phone.calls.filter(x => x.action === 'pair').length, 0);
+});
+
+
+test('primary desktop prepare needs no relay field and copies the HTTPS saved share link', async () => {
+  const p = await page({ role: 'computer', managed: true });
+  await p.byId('prepare').onclick();
+  assert.equal(p.context.copied, 'https://fixture.invalid/connect#' + p.link.split('#')[1]);
+  await p.byId('copy').onclick();
+  assert.equal(p.calls.filter(call => call.action === 'prepare').length, 1);
+  assert.equal(Object.hasOwn(p.calls.find(call => call.action === 'prepare'), 'relay'), false);
+  assert.equal(p.context.copied, 'https://fixture.invalid/connect#' + p.link.split('#')[1]);
+  assert.equal(html.includes('adminKey'), false);
+});
+
+test('phone reconnect uses the saved pairing action without resubmitting pair or sync operations', async () => {
+  const p = await page(); p.state.paired = true;
+  await p.byId('reconnect').onclick();
+  assert.equal(p.calls.filter(call => call.action === 'reconnect').length, 1);
+  assert.equal(p.calls.filter(call => ['pair', 'sync.commit', 'create'].includes(call.action)).length, 0);
 });

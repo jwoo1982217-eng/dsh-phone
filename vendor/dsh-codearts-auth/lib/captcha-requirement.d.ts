@@ -33,8 +33,8 @@ export declare const CAPTCHA_REQUIRED_TTL_MS: number;
  * ⚠ 口径：描述**维度**时一律写「账号 × 模型」，`|` 只出现在这个真实 key 里。
  *
  * ⚠ 空/缺失的账号 id 归一成 `-`。这不是「消除」混淆、只是把混淆对象换成一个
- * 本仓库拿不出来的值：账号 id 在 Jet Hub RPC 创建路径上是 `src/jet-hub-rpc.ts:839`
- * 的 `${provider}-${shortId()}`（`shortId()` 为 8 位小写 hex，见同文件 `:158`），
+ * 本仓库拿不出来的值：账号 id 在 Jet Hub RPC 创建路径上是 `src/jet-hub-rpc.ts`
+ * 的 `${provider}-${shortId()}`（`shortId()` 为 8 位小写 hex，见 `jet-hub-rpc.ts` 的该助手），
  * 形如 `zcode-1a2b3c4d`，不会是单个 `-`，故冲突概率远低于直接拼字面量 `undefined`
  * （那会和「一个真的叫 `undefined` 的账号」共用同一条记忆）。
  */
@@ -56,10 +56,20 @@ export declare function noteProbeFirst(): void;
  * 自己刚写下的记忆或本请求内被 `3007` 拒后的补产，不算「跨请求少探一次」。
  */
 export declare function noteKnownRequiredHit(): void;
+/**
+ * 记一次「**首发就主动带**」：上游配置（`skip_model_request: false`）明确说
+ * 模型请求要验证，故这一发不等 `3007` 就直接产 param 带上。
+ *
+ * ⚠ 与 {@link noteProbeFirst} / {@link noteKnownRequiredHit} **互斥**：
+ * 三者是「同一个开局那一发」的三种形态，同一次请求只能记其中一个。
+ * 由 `zcode-adapter.ts` 内层循环的 `attempt === 0` 门控保证。
+ */
+export declare function noteUpfrontCaptcha(): void;
 /** 观测出口。 */
 export declare function captchaRequirementObservability(): {
     probeFirstCount: number;
     knownRequiredCount: number;
+    upfrontCaptchaCount: number;
 };
 /** 清空全部状态（与本文件单测 `tests/unit/captcha-requirement.spec.ts` 的 `beforeEach` 复位配套）。 */
 export declare function resetCaptchaRequirementMemory(): void;

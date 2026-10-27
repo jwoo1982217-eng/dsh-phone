@@ -26,15 +26,17 @@
  */
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 
 import { supportsCreditBalance, supportsDailyCheckin, checkinProviders } from './credits-capabilities.js';
-import { AGGREGATE_PROVIDER_ID, resolveBadgeProvider } from './badge-model.js';
+import { AGGREGATE_PROVIDER_ID, AUTO_PROVIDER_ID, resolveBadgeProvider } from './badge-model.js';
 import {
   badgeView,
   creditSectionLabel,
   describeBadgeError,
   formatUpdatedAt,
   orderCreditRows,
+  autoBadgeName,
   BADGE_PREFERENCES,
   BADGE_PREFERENCE_LABELS,
 } from './badge-model.js';
@@ -47,10 +49,155 @@ import {
 } from './quota-format.js';
 import { formatUnits, formatQuotaLine, formatClaimGains, unitLabel, QUOTA_UNIT } from './credits-format.js';
 import {
+  expirySplitParts,
   formatExpirySplitLine,
   formatPoolSplitLine,
   splitCreditsByExpiry,
 } from './credit-expiry.js';
+import { ensureJetHubStyles } from './jet-hub-styles.js';
+
+/**
+ * 浮层的**定位声明走内联样式**，不依赖注入的样式表。
+ *
+ * ⚠️⚠️ 为什么必须内联：注入的 `<style>` 一旦缺失，组件仍在渲染 ——
+ * 此时若 `position: absolute` 只写在样式表里，浮层就退化成**输入框底栏里的
+ * 普通块**，把宿主的输入卡片撑高（实测本机 114px → 576px，issue IKKGYN）。
+ *
+ * 内联样式随 DOM 走、不会被卸载，所以「不生效就会撑坏宿主布局」的这几条必须内联；
+ * 颜色 / 圆角 / 字号 / 阴影等**纯外观**仍留在样式表里。
+ *
+ * ⚠️⚠️ **`width` / `max-width` 故意不内联**（本机 CDP 实测的反向发现）：
+ * 内联样式优先级高于任何非 `!important` 规则，会把窄屏
+ * `@media (max-width: 720px)` 的 220px **压成 275px**。宽窄属纯外观且有媒体查询，
+ * 必须留在样式表里；这里的判据是「不生效会不会破坏宿主布局」。
+ */
+const POPOVER_ANCHOR_STYLE = Object.freeze({
+  position: 'absolute',
+  right: 0,
+  bottom: 'calc(100% + 8px)',
+  maxHeight: '58vh',
+  overflowY: 'auto',
+  zIndex: 40,
+});
+
+/**
+ * 窄屏断点：**必须与样式表里的 `@media (max-width: 720px)` 逐字一致**。
+ *
+ * ⚠️⚠️ 这是**两处同义判据**（JS 常量 + CSS media），本仓库对这类重复有明令：
+ * 要么合并、要么写一条对拍用例锁住。这里**不能合并** —— CSS 的 media 查询
+ * 与 JS 的 `matchMedia` 是两个运行时的两个机制，无法共用一个字面量。
+ * ⇒ 由 `usage-badge-client.spec.ts` 的「窄屏断点两处一致」用例对拍锁死
+ * （从 `jet-hub-styles.js` 正则取出 720px，与本常量比对）。
+ *
+ * ⚠️ **为什么窄屏要走 portal**（Issue IKP38Q 审计，2026-10-20）：
+ * 宿主 composer 的工具行 `.uV2eYG_row` 带 `container-type: inline-size`
+ * （见 `dsh-client-ui-conversation` 的 `InputBar.module.css`），而徽标挂在
+ * `conversation.input.right` 槽位、正是它的后代。
+ *
+ * - **Chromium 154**：`inline-size` containment 只含 inline 轴，**不**创建
+ *   fixed 的 containing block ⇒ `position: fixed` 仍按视口锚定。
+ * - **Edge 122（以及同代国产内核 / 旧 Android WebView）**：实测把
+ *   `container-type: inline-size` 当成 layout containment ⇒ `position: fixed`
+ *   改为**相对该祖先**定位 ⇒ 窄屏那套 `left/right: 8px` + `bottom: …`
+ *   全部变成「相对 composer 行」的坐标，浮层跟着 composer 跑、宽度被压缩。
+ *   实测读数：`popLeft` 24→124、`width` 476→344（祖先平移 100px 时），
+ *   而 Chromium 154 上位移恒为 0。
+ *
+ * ⇒ **只靠 CSS 无法在旧内核上做视口锚定**，故窄屏改为 portal 到
+ * `document.body`：body 之上没有任何带 containment/transform 的祖先，
+ * 两种引擎下 `fixed` 都按视口锚定。
+ *
+ * ⚠️ **宽屏刻意不 portal**：宽屏浮层靠内联的 `right: 0` 锚在徽标上
+ * （`POPOVER_ANCHOR_STYLE`），一旦挂到 body，这个锚定就失效、必须改成
+ * JS 计算坐标 —— 那是把一个「已知工作正常」的路径换成需要持续跟随滚动/
+ * resize 的实现，风险大于收益。宽屏的祖先链上没有 fixed 依赖，保持原样。
+ */
+export const NARROW_BREAKPOINT_PX = 720;
+
+/** `@media (max-width: 720px)` 的 JS 镜像判据（供 portal 决策用）。 */
+function isNarrowViewport() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(`(max-width: ${NARROW_BREAKPOINT_PX}px)`).matches;
+}
+
+/**
+ * 窄屏浮层的**视口锚定内联样式**（portal 到 body 后使用）。
+ *
+ * ⚠️ 这里**不用 `!important`**：一旦 portal 到 body，浮层就不再是
+ * `.dim-jh-badgePop` 在徽标子树里的那个实例，而是 body 的直接子节点 ——
+ * 样式表里那些「窄屏覆盖」规则（`.dim-jh-badgePop { … !important }`）
+ * **照样命中**（类名没变、选择器是全局的），但内联样式优先级更高，
+ * 故此处必须把窄屏需要的每一条都内联齐全，不能依赖样式表。
+ *
+ * 与样式表窄屏块的**分工**（刻意重复一部分，理由如下）：
+ * - 定位与尺寸的**承重条**（position/left/right/top/bottom/width/maxWidth/
+ *   maxHeight/zIndex）**两处都写** —— 内联保证「样式表缺失时也不撑坏宿主」
+ *   （IKKGYN 老事故），样式表保证「内联被改坏时仍有兜底」。
+ * - 纯外观（圆角/背景/阴影/padding）仍只在样式表里。
+ *
+ * ⚠️ `bottom` 必须用宿主的 `--dsh-composer-height`（fallback 152px）：
+ * 宿主用 ResizeObserver 把 `seat.offsetHeight` 实时写进该变量
+ * （`dsh-client-ui-conversation` 的 `ConversationContent`）。硬编码任何数字
+ * 都会与真实 composer 高度脱节 —— 实测 composer=152px 时写死 88px 会让
+ * 浮层压住输入区 64px，并**盖住「用量」徽标按钮**（命中测试点到的不是按钮）。
+ *
+ * ⚠️⚠️ **portal 会让这个变量读不到**（实测，必须靠 {@link readComposerHeightPx} 补救）：
+ * 宿主把变量写在 `seat.parentElement` 的**内联 style** 上（见宿主的
+ * `seatResizeRef`），而 CSS 变量只沿 **DOM 祖先链**继承。浮层 portal 到
+ * `document.body` 后，那个 scroller 是它的**兄弟**而非祖先 ⇒ `var()`
+ * 取不到值、只能落 fallback 152px（实测：portal 后 computed 变量为空）。
+ * 故 portal 时把实测值写成浮层自己的内联 `--dsh-composer-height`。
+ */
+const NARROW_POPOVER_STYLE = Object.freeze({
+  position: 'fixed',
+  left: 8,
+  right: 8,
+  top: 'auto',
+  bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--dsh-composer-height, 152px))',
+  width: 'auto',
+  maxWidth: 'none',
+  maxHeight: 'max(120px, calc(100dvh - 160px))',
+  overflowY: 'auto',
+  zIndex: 1200,
+});
+
+/** 宿主变量缺失时的兜底高度（与宿主 CSS 的 fallback 逐字一致）。 */
+const COMPOSER_HEIGHT_FALLBACK_PX = 152;
+
+/**
+ * 从**祖先链**上读宿主的 composer 高度（px）。
+ *
+ * ⚠️ 为什么不能只靠 CSS `var()`：见 {@link NARROW_POPOVER_STYLE} 的注释 ——
+ * portal 到 body 后浮层不在宿主 scroller 的子树里，变量继承断链。
+ *
+ * ⚠️ 为什么从 `anchor` 往上找而不是读 `document.body`：宿主把变量写在
+ * `seat.parentElement`（一个普通 div）的**内联 style** 上，不是 `:root`。
+ * 故必须沿祖先链逐级 `getComputedStyle` 找第一个有值的元素。
+ *
+ * ⚠️ **必须用 `getComputedStyle` 而不是 `element.style.getPropertyValue`**：
+ * 宿主写的是内联 style，理论上两者都读得到；但上游（或别的插件）也可能
+ * 通过样式表设置它，`getComputedStyle` 是唯一能同时覆盖两种来源的读法。
+ *
+ * @param anchor 徽标根节点（宿主 scroller 在它的祖先链上）。
+ * @returns 高度（px）；读不到时返回 {@link COMPOSER_HEIGHT_FALLBACK_PX}。
+ */
+function readComposerHeightPx(anchor) {
+  if (typeof window === 'undefined' || typeof window.getComputedStyle !== 'function') {
+    return COMPOSER_HEIGHT_FALLBACK_PX;
+  }
+  let node = anchor;
+  while (node !== null && node !== undefined) {
+    const raw = window.getComputedStyle(node).getPropertyValue('--dsh-composer-height').trim();
+    if (raw !== '') {
+      const parsed = Number.parseFloat(raw);
+      // ⚠️ 只接受有限正数：宿主在首帧可能写入 '0px' 或空串，那会让浮层贴底
+      // （盖住输入框），比 fallback 更糟。
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    node = node.parentElement;
+  }
+  return COMPOSER_HEIGHT_FALLBACK_PX;
+}
 
 /**
  * 轮询间隔：60 秒。宿主侧还有 TTL 缓存（成功 120s / 全部失败 15s），故真实的
@@ -248,6 +395,14 @@ export function UsageBadge(props) {
   //    `typeof provider !== 'string' || provider.length === 0` 失配而变红（实测撞过）。
   let provider = state?.current?.provider;
   /**
+   * 当前选中的**模型 id**（聚合时 = 虚拟模型键，如 `glm-5-3`）。
+   *
+   * ⚠️ 用途**只有一个**：查 `aggregate.activeProvider` 时告诉宿主「问的是哪个模型」
+   *（不传就退回「任意模型的最近一次」⇒ 徽标显示别的模型走过的渠道，见下面的报障）。
+   * ⚠️ 其余 15 家的徽标不用它（它们只有一份余额，与模型无关）。
+   */
+  const modelId = state?.current?.model;
+  /**
    * 聚合 provider 的**重定向**（P3）：把 `aggregate` 解析成它上次**实际**转发成功的渠道。
    *
    * ## ⚠️⚠️ 为什么必须在门控**之前**
@@ -306,6 +461,23 @@ export function UsageBadge(props) {
    * 而**外层只有重新取数才会拿到新的 `provider`**；停了定时器，
    * 渠道就永远停在第一次那个值上（用户看到的会是「徽标不跟着变」）。
    * ⇒ 定时器**常驻**（与 `UsageBadgeActive` 自己的 60 秒轮询同节奏、同生命周期）。
+   *
+   * ## ⚠️⚠️ 2026-10-16：必须把**当前模型 id** 传给端点（真实缺陷，用户报障）
+   *
+   * 用户报障原话：「我们用 glm5.3 后徽标显示的 provider 是腾讯 codebuddy（图1）
+   * 不是排序的第一个（图2）OfficeAce」。
+   *
+   * 根因：本处原先调 `readActiveProvider()` **不传参数**，而宿主
+   * `aggregate.activeProvider` 在**无参**时回的是 `lastActiveProvider` ——
+   * 「**任意虚拟模型**最近一次成功」的渠道，**不是你当前选中的那个模型**。
+   * ⇒ 你用 GLM-5.3（手工序第一位 officeace）时，徽标显示的是**别的模型**
+   *（如 DeepSeek V4.1 Flash）上次走成功的 buddy（腾讯）。
+   *
+   * ⚠️ 宿主**本来就**按模型分开记录（`activeProviderByModel`，且
+   *  `activeProvider(canonicalId)` 一直支持这个用法、端点的 `canonicalId`
+   *  参数也一直存在）—— 只是客户端从来没传。
+   * ⚠️ `current.model` 对聚合来说就是**虚拟模型键**（`glm-5-3`），
+   *  与 `activeProviderByModel` 的键**同源**（都来自 `resolveModel` 的入参）。
    */
   React.useEffect(() => {
     if (!isAggregate || typeof readActiveProvider !== 'function') return undefined;
@@ -313,7 +485,10 @@ export function UsageBadge(props) {
     let timer = null;
     const refresh = () => {
       Promise.resolve()
-        .then(() => readActiveProvider())
+        // ⚠️ 传当前模型的 id：不传就拿不到「这个模型」的渠道（见上面的报障）。
+        //    ⚠️ `model` 缺失时传 `undefined` ⇒ 端点回 `{}` ⇒ 退回旧的全局语义
+        //   （客户端降级，不是崩溃）。
+        .then(() => readActiveProvider(modelId))
         .then((value) => {
           if (!alive) return;
           setActiveProvider(value?.provider ?? null);
@@ -331,7 +506,9 @@ export function UsageBadge(props) {
       if (timer !== null) clearInterval(timer);
     };
     // ⚠️ 依赖 `isAggregate`：非聚合时不该发这个请求（其余 15 家的行为逐字不变）。
-  }, [isAggregate, readActiveProvider]);
+    // ⚠️ **依赖必须含 `modelId`**：用户切换模型时徽标要立刻按**新模型**重查，
+    //    否则它会一直显示旧模型的渠道（与「定时器常驻」那条需求同因）。
+  }, [isAggregate, readActiveProvider, modelId]);
 
   // ⚠️ 重定向结果可能是 `null`（聚合且无历史）⇒ 下面**既有的**空 provider 门控
   //    天然拦掉它 —— 复用同一形态，不另造判据（规格 §6.6）。
@@ -339,14 +516,81 @@ export function UsageBadge(props) {
   if (isAggregate) {
     provider = resolveBadgeProvider(provider, activeProvider === null ? null : { provider: activeProvider });
   }
+  /**
+   * 聚合 provider **尚无转发历史** ⇒ 显示「待首次请求」占位胶囊，而不是整个消失。
+   *
+   * ## 为什么必须有个占位（用户报障 2026-10-08）
+   *
+   * 用户原话：「也没胶囊了？」—— 切到聚合后徽标**整个不见了**，而同屏的普通渠道
+   * 有徽标。上游原设计（规格 §6.3 的 P4）是「无历史 ⇒ 不渲染」，理由是
+   * 「显示一个错的渠道比不显示更误导」。那个理由对**渠道**成立，但对
+   * 「**有没有徽标**」不成立：徽标在本插件里的定位是**止损工具** ——
+   * 用户原话「必须要徽标，不然会导致不知道当前在用什么模型，就会出现之前
+   * 一小会儿花我大量积分，显示的话还来得及暂停」。整个消失恰好破坏了这一点：
+   * 用户分不清「聚合没在用」与「徽标坏了」。
+   *
+   * ⚠️ 所以这里**不预测渠道**（P4 的核心约束仍然遵守）：文案只说「待首次请求」，
+   * 不编造任何渠道名。预测仍被禁止（`pickCurrentAutoProvider` 不得出现在本文件，
+   * 有用例钉住）。
+   *
+   * ## 位置：必须在重定向**之后**、空 provider 门控**之前**
+   *
+   * 重定向之后才能区分「无历史」（`provider === null` 且是聚合）与
+   * 「非聚合的正常空值」（新会话尚未选模型）。后者**必须继续不渲染** ——
+   * 那是既有的正确行为，与聚合无关。
+   *
+   * ⚠️ 下面那两行门控**逐字未动**（`aggregate-badge.spec.ts` 与
+   * `usage-badge-client.spec.ts` 双重钉住）：本分支在它们之前就 return，
+   * 故那两行的语义对**非聚合**路径完全不变。
+   */
+  if (isAggregate && provider === null) {
+    return React.createElement('span', {
+      className: 'dim-jh-badgePending',
+      role: 'status',
+      title: '聚合（跨渠道）：尚未发出过请求，还不知道会走哪个渠道。发送一条消息后这里会显示实际使用的渠道与积分。',
+    }, [
+      React.createElement('span', { key: 'dot', className: 'dim-jh-badgeDot', 'data-tone': 'muted' }),
+      React.createElement('span', { key: 'text' }, '聚合 · 待首次请求'),
+    ]);
+  }
   // 没有选中模型（新会话尚未选择 / 已寻址的 subagent 会话）→ 不渲染。
   if (typeof provider !== 'string' || provider.length === 0) return null;
+  /**
+   * `jet-hub-auto` 走**专用分支**：它自己没有账号也没有余额，宿主端会把徽标请求
+   * 改写成「临期胜者」的余额再去查（见 `jet-hub-rpc.ts` 的 `usage.badge`），
+   * 所以这里放行并原样传递。
+   *
+   * ## ⚠️ 为什么不能靠能力表放行
+   *
+   * `supportsCreditBalance` 是「这个渠道**自己有没有**余额可查」的判据，而 auto
+   * **如实**属于「没有」⇒ 交给下面那道门控会 `return null`，徽标永不渲染。
+   * 这与 `aggregate` 的处境同型，但解法不同：聚合是**重定向**到真实渠道
+   *（`resolveBadgeProvider`），auto 是**宿主端改写**（客户端拿不到「临期胜者」，
+   * 那要打全池余额接口）。
+   *
+   * ⚠️ 上游 `ba10f4f` 重写 aggregate 时把本分支删掉了 ⇒ 旧 auto 的徽标彻底消失
+   *（用户报障 2026-10-08：「也没胶囊了？」）。这里补回来。
+   *
+   * ⚠️ 常量用 `AUTO_PROVIDER_ID` 而不是裸字面量：宿主 `auto-adapter.ts` 的
+   * `AUTO_PROVIDER` 是唯一权威，两处写死必然漂移（改一处忘另一处 ⇒ 徽标静默消失）。
+   */
+  if (provider === AUTO_PROVIDER_ID) {
+    return React.createElement(UsageBadgeActive, { ...props, provider });
+  }
   // 不是本插件的渠道 → 不渲染，且**不会**发任何请求。
   if (!supportsCreditBalance(provider)) return null;
   return React.createElement(UsageBadgeActive, { ...props, provider });
 }
 
-/** 展开态的完整实现（数据、轮询、弹窗）。 */
+/**
+ * 展开态的完整实现（数据、轮询、弹窗）。
+ *
+ * ⚠️ 折叠胶囊名的拼装（auto 三要素）已抽到 `badge-model.js` 的 `autoBadgeName`
+ *    —— 那是**纯函数**，可被单测直接 import 并做**行为断言**。本文件 import 了
+ *    `react`，单测环境无法 import 它，故原先内联在这里的逻辑只能用字符串断言，
+ *    而字符串断言对「短路禁用」（`if (false && …)` / `undefined && …`）天然免疫
+ *    —— 实测那是一条**恒真的假用例**（把功能改成永不执行，用例照样全绿）。
+ */
 function UsageBadgeActive(props) {
   const { provider, providerLabel, readBadge, writePreference, setAutoCheckin, dismissAutoCheckin, claimCredits } = props;
   const label = providerLabel(provider);
@@ -387,8 +631,42 @@ function UsageBadgeActive(props) {
    */
   const [creditsExpanded, setCreditsExpanded] = React.useState(false);
   const root = React.useRef(null);
+  /** 浮层根节点：只用于「样式表缺失时仍处于绝对定位」这道自检（见下面的 effect）。 */
+  const popRef = React.useRef(null);
   /** 供定时器与按钮调用的「读一次」入口（每次渲染替换，避免闭包过期）。 */
   const read = React.useRef(() => {});
+
+  /**
+   * 样式表自愈 + 定位自检（issue IKKGYN 的最后一道保险）。
+   *
+   * ⚠️ 为什么必须挂在**渲染路径**上：`installJetHubStyles` 只在 apply 阶段
+   * （`ctx.effect`）跑一次，宿主回收标签 / 热更新摘除之后**没有任何东西会补注** ——
+   * 症状是「Jet Hub 面板掉样式，且 F5 刷新前不会恢复」。
+   * 本机 CDP 实测：删掉签名样式表后，关掉再打开浮层、切 provider 重挂载，
+   * 样式表都是 0 份，只有整页重载才恢复。
+   *
+   * ⚠️ 定位自检**独立于样式表**：定位已内联（宽屏 {@link POPOVER_ANCHOR_STYLE}、
+   * 窄屏 {@link NARROW_POPOVER_STYLE}），这里断言的是「内联那几条确实生效」——
+   * 不成立就说明有人改坏了它们，早报一条 warn 比等用户截图便宜得多。
+   *
+   * ⚠️⚠️ **两种定位都是合法的**（Issue IKP38Q 审计修复）：窄屏浮层 portal 到
+   * `document.body` 并用 `position: fixed` 做视口锚定 ⇒ 旧判据
+   * （只认 `absolute`）会在**每一次**打开浮层时打一条「检查
+   * POPOVER_ANCHOR_STYLE 是否被改坏」的假 warn，把真正的改坏淹没掉。
+   * 判据改为「`absolute` 或 `fixed` 均可」—— 两者都脱离了普通文档流，
+   * 都不会撑高宿主输入区（IKKGYN 要防的正是「退化成普通块」）。
+   * 真正的危险形态是 `static` / `relative` / 空值，那些仍然会报。
+   */
+  React.useEffect(() => {
+    ensureJetHubStyles();
+    if (!open) return;
+    const element = popRef.current;
+    if (element === null) return;
+    const position = window.getComputedStyle(element).position;
+    if (position !== 'absolute' && position !== 'fixed') {
+      console.warn(`[jet-hub] 浮层定位异常（position=${position}）：会撑高输入区（检查 POPOVER_ANCHOR_STYLE / NARROW_POPOVER_STYLE 是否被改坏）`);
+    }
+  }, [open]);
 
   // 换渠道时先清空旧读数：否则会短暂把上一个渠道的余额画到新渠道的名字下。
   React.useEffect(() => {
@@ -463,8 +741,23 @@ function UsageBadgeActive(props) {
   // 点弹窗外面 / 按 Esc 关闭（仅在展开时挂监听）。
   React.useEffect(() => {
     if (!open) return undefined;
+    /**
+     * ⚠️⚠️ 「点里面」的判据**必须同时看浮层自己**（Issue IKP38Q 审计修复）。
+     *
+     * 窄屏浮层已 portal 到 `document.body`，它**不再是 `root`（`.dim-jh-badge`）
+     * 的 DOM 后代** ⇒ 只看 `root.current.contains(event.target)` 会把
+     * 「点浮层内部」误判成「点外面」⇒ 浮层里**任何一次点击都立刻关闭它**，
+     * 签到按钮 / 刷新按钮 / 偏好切换**全部点不动**。
+     *
+     * 故判据改为「既不在 root 内、也不在浮层内」才算点外面。
+     * 宽屏浮层仍在 root 子树内，`root.contains` 一条就够 —— 但两条并集对
+     * 两种形态都正确，故不按视口分叉（少一个同义判据）。
+     */
     const onDown = (event) => {
-      if (root.current !== null && event.target instanceof Node && !root.current.contains(event.target)) setOpen(false);
+      if (!(event.target instanceof Node)) return;
+      const insideRoot = root.current !== null && root.current.contains(event.target);
+      const insidePop = popRef.current !== null && popRef.current.contains(event.target);
+      if (!insideRoot && !insidePop) setOpen(false);
     };
     const onKey = (event) => { if (event.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDown);
@@ -498,8 +791,28 @@ function UsageBadgeActive(props) {
    *（用户报障，2026-10-02）。`snapshot === null` 才代表没有任何数据，
    * 有数据时刷新失败要保留旧数字（不降级成空态）。
    */
+  /**
+   * 折叠文案三要素（用户 2026-10-06 定）：**在用谁（provider + 模型）**、
+   * **倍率**、**临期倒计时**、积分（reading 由 `badgeView` 拼装）。
+   *
+   * ⚠️ 判定逻辑在 `badge-model.js` 的 `autoBadgeName`（**纯函数**）—— 本文件
+   *    import 了 `react`，单测环境无法 import，故这里只做取数。
+   *    上游 `ba10f4f` 把这段整块删掉了（`autoActual` / `autoExpiryAt` 在宿主端
+   *    也一并消失）⇒ 旧 auto 的胶囊既没有渠道也没有倒计时（用户报障 2026-10-08
+   *    「也没胶囊了？」）。这里按原实现补回来。
+   *
+   * auto 元数据缺席时（读数未到、或非 auto 渠道）退回普通渠道名 —— 那是
+   * 其余 15 家的既有行为，逐字不变。
+   */
+  const badgeName = autoBadgeName({
+    fallback: label,
+    autoActual: value?.autoActual,
+    price: value?.autoPrice,
+    expiryAt: value?.autoExpiryAt,
+    providerLabel,
+  });
   const view = badgeView({
-    providerLabel: label,
+    providerLabel: badgeName,
     preference: effectivePreference,
     subscription: value?.subscription,
     accounts: value?.accounts ?? [],
@@ -869,14 +1182,62 @@ function UsageBadgeActive(props) {
         : '正在读取用量…（首次要逐账号查询，可能要几秒）'));
       // 签到不依赖本渠道的读数，故首屏也放出来（用户可能就是想先签到）。
       children.push(renderClaim());
-      return React.createElement('div', { className: 'dim-jh-badgePop' }, children);
+      return wrapPopover(children);
     }
 
     children.push(renderSubscription());
     children.push(renderCredits());
     children.push(renderClaim());
     children.push(renderFoot());
-    return React.createElement('div', { className: 'dim-jh-badgePop' }, children);
+    return wrapPopover(children);
+  }
+
+  /**
+   * 把浮层内容包成 DOM，并按视口宽窄决定**挂在哪棵树上**。
+   *
+   * | 视口 | 锚定方式 | 挂载点 | 理由 |
+   * |---|---|---|---|
+   * | 宽屏 | 内联 `absolute; right:0`，锚在徽标上 | 徽标子树内（原样） | 已知工作正常，不引入坐标计算 |
+   * | 窄屏 | 内联 `fixed` + 视口四边 | **portal 到 `document.body`** | 见 {@link NARROW_BREAKPOINT_PX} 的长注释：旧内核会把祖先的 `container-type` 当 layout containment ⇒ 子树内的 `fixed` 会相对 composer 定位 |
+   *
+   * ⚠️ **portal 必须带 `key`**：React 的 portal 是一个合法的 child，但在
+   * 数组里与普通元素混排时要能稳定 reconcile，否则开关浮层会重建 DOM 树。
+   *
+   * ⚠️ **`document.body` 不存在时回退子树内渲染**：客户端模块在 SSR /
+   * 预渲染阶段可能拿到 `undefined`，直接 `createPortal(node, undefined)` 会抛。
+   * 回退是安全的 —— 那种环境没有真实布局，视口锚定无从谈起。
+   *
+   * ⚠️⚠️ **portal 后必须把 composer 高度显式补到浮层自己身上**
+   * （见 {@link readComposerHeightPx}）：宿主的 `--dsh-composer-height` 写在
+   * `seat.parentElement` 的内联 style 上，而浮层挂到 body 后**不再继承**它
+   * ⇒ `var()` 只能落 fallback 152px，真实 composer 更高时浮层会压住输入区。
+   * 故这里把实测值写成浮层的内联自定义属性（内联变量优先于继承值，
+   * 两种渲染路径都正确）。
+   */
+  function wrapPopover(children) {
+    const narrow = isNarrowViewport();
+    if (!narrow) {
+      return React.createElement('div', {
+        className: 'dim-jh-badgePop',
+        style: POPOVER_ANCHOR_STYLE,
+        ref: popRef,
+      }, children);
+    }
+    // 窄屏：先把宿主 composer 高度读到浮层自己身上，再 portal。
+    const composerHeight = readComposerHeightPx(root.current);
+    const style = {
+      ...NARROW_POPOVER_STYLE,
+      // ⚠️ React 的内联样式对自定义属性（`--x`）是原样下发的，故这里可以
+      // 直接用 CSS 变量名作 key。
+      '--dsh-composer-height': `${composerHeight}px`,
+    };
+    const node = React.createElement('div', {
+      className: 'dim-jh-badgePop',
+      style,
+      ref: popRef,
+    }, children);
+    if (typeof document === 'undefined' || document.body === null || document.body === undefined) return node;
+    return createPortal(node, document.body, 'jet-hub-badge-pop');
   }
 
   /**
@@ -1057,10 +1418,11 @@ function UsageBadgeActive(props) {
               title: row.error || undefined,
             }, row.balance === null ? (row.error || '查询失败') : balanceLine(row.balance)),
           ]),
-          // 分桶/资源包说明：灰色小字，存在时才占一行
+          // 分桶/资源包说明：小字**逐段带色**（永久绿 / 长期黄 / 临期红 + 倒计时），
+          // 存在时才占一行。用户 2026-10-12 明确要求三档分色。
           row.balance === null
             ? null
-            : renderNote(splitLine(row.balance, windowDays, provider)),
+            : renderSplitNote(splitParts(row.balance, windowDays, provider)),
         ]))),
       hidden === 0
         ? null
@@ -1078,6 +1440,32 @@ function UsageBadgeActive(props) {
   function renderNote(text) {
     if (typeof text !== 'string' || text.length === 0) return null;
     return React.createElement('div', { key: 'note', className: 'dim-jh-badgeRowNote' }, text);
+  }
+
+  /**
+   * 一行**逐段带色**的小字（分桶说明）；无内容返回 `null`（不占位）。
+   *
+   * ⚠️ 颜色语义（用户 2026-10-12 定）：
+   * - `permanent`（**服务端没给到期时间**，真·永久）→ `ok` 绿
+   * - `longTerm`（有到期时间但还早）→ `warn` 黄
+   * - `expiring`（窗口内，再不用就作废）→ `error` 红，且带**倒计时**
+   *
+   * 段间用 ` · ` 分隔（与全局其它分桶行的分隔符一致）。倒计时放在括号里
+   * （`临期 100（2 天 4 小时）`）—— 用户要的「临期 100（倒计时）」正是这个形状。
+   */
+  function renderSplitNote(parts) {
+    if (!Array.isArray(parts) || parts.length === 0) return null;
+    const children = [];
+    parts.forEach((part, index) => {
+      if (index > 0) children.push(React.createElement('span', { key: `sep-${part.key}`, className: 'dim-jh-badgeNoteSep' }, ' · '));
+      children.push(React.createElement('span', {
+        key: part.key,
+        className: 'dim-jh-badgeNotePart',
+        'data-tone': part.tone,
+        ...(part.countdown === undefined ? {} : { title: `最早作废：${part.countdown}后` }),
+      }, part.countdown === undefined ? part.text : `${part.text}（${part.countdown}）`));
+    });
+    return React.createElement('div', { key: 'note', className: 'dim-jh-badgeRowNote' }, children);
   }
 
   /**
@@ -1113,7 +1501,11 @@ function UsageBadgeActive(props) {
           type: 'button',
           className: 'dim-jh-badgeAction',
           disabled: claiming !== null,
-          title: `串行签到全部支持签到的渠道（9 个；WorkBuddy 国际版 / Cline / Raccoon 后端没有签到接口）${auto?.enabled === true ? '；自动签到已开启，每天首次启动 DSH 时会自动执行一次' : ''}`,
+          // ⚠️ 渠道数是**从能力表数出来的快照**（`registry.credits.dailyCheckin === true`
+          // 的家数）—— 加一个支持签到的渠道就必须改这里。
+          // 2026-10-16 合并审计发现：加 `minimaxintl` 后能力表已 9 → **10**，
+          // 而此处仍写 9（**零守卫**：全仓没有断言这个数字的用例）。
+          title: `串行签到全部支持签到的渠道（10 个；WorkBuddy 国际版 / Cline / Raccoon 后端没有签到接口）${auto?.enabled === true ? '；自动签到已开启，每天首次启动 DSH 时会自动执行一次' : ''}`,
           onClick: () => { void onClaimAll(); },
         }, allBusy
           ? (claimProgress === null ? '签到中…' : `签到中 ${claimProgress.done}/${claimProgress.total}…`)
@@ -1227,15 +1619,19 @@ function balanceLine(balance) {
 }
 
 /**
- * 分桶文案（当日池优先，其次按到期分桶）。
+ * 分桶**分段**（当日池优先，其次按到期分三档带色）。
  *
  * ⚠️ 与设置页账号卡片**同一套口径、同一批函数**（`credit-expiry.js`）：
- * 两处若各算各的，用户会看到「卡片说临时 55、徽标说长期 55」这种无法解释的偏差。
+ * 两处若各算各的，用户会看到「卡片说临期 55、徽标说长期 55」这种无法解释的偏差。
  * `now` 在渲染这一刻现取 —— 分桶是时间的函数，缓存它会让越线的包继续算长期。
+ *
+ * @returns `[{ key, text, tone, countdown? }]`。当日池（loomy / raccoon）走
+ *   `formatPoolSplitLine` 的单串口径（那两家的池没有到期维度），统一包成
+ *   **无色的 `muted` 段**；到期分桶走 `expirySplitParts` 的**三档带色**分段。
  */
-function splitLine(balance, windowDays, provider) {
-  if (balance.sourceQuota) return balance.sourceQuota.label;
-  if (balance.pendingNote) return balance.pendingNote;
+function splitParts(balance, windowDays, provider) {
+  if (balance.sourceQuota) return [{ key: 'source-quota', text: balance.sourceQuota.label, tone: 'muted' }];
+  if (balance.pendingNote) return [{ key: 'pending', text: balance.pendingNote, tone: 'muted' }];
   const packages = balance.packages || [];
   const unit = packages.find((pkg) => pkg && pkg.unit)?.unit;
   /**
@@ -1251,15 +1647,27 @@ function splitLine(balance, windowDays, provider) {
     for (const pkg of packages) {
       if (!pkg) continue;
       const left = quotaResetsIn(pkg.cycleEndTime);
-      if (left.length > 0) parts.push(`${pkg.name || '未命名'} ${left}`);
+      if (left.length > 0) parts.push({ key: pkg.name || 'unnamed', text: `${pkg.name || '未命名'} ${left}`, tone: 'muted' });
     }
-    return parts.join(' · ');
+    return parts;
   }
   const format = (value) => formatUnits(value, unit);
   const poolText = formatPoolSplitLine(packages, format, provider === 'loomy' ? '永久' : '长期');
-  if (poolText !== null) return poolText;
-  const expiryText = formatExpirySplitLine(splitCreditsByExpiry(packages, windowDays, Date.now()), format);
-  return expiryText ?? '';
+  // 当日池（loomy / raccoon）：池按名字分，没有到期维度 ⇒ 单段无色。
+  if (poolText !== null) return [{ key: 'pool', text: poolText, tone: 'muted' }];
+  // 其余渠道：按到期时间分**三档**，逐段带色（永久绿 / 长期黄 / 临期红 + 倒计时）。
+  return expirySplitParts(splitCreditsByExpiry(packages, windowDays, Date.now()), format, Date.now());
+}
+
+/**
+ * 分桶文案（纯字符串，供不支持分段的调用方/测试复用）。
+ *
+ * ⚠️ 与 `splitParts` **同源**：把分段重新拼成一行，避免两处各写一套判据。
+ */
+function splitLine(balance, windowDays, provider) {
+  return splitParts(balance, windowDays, provider)
+    .map((part) => (part.countdown === undefined ? part.text : `${part.text}（${part.countdown}）`))
+    .join(' · ');
 }
 
 /**

@@ -33,36 +33,20 @@ export interface OpencodeProduct {
     readonly anonymousKey: string;
     readonly defaultUserAgent: string;
     /**
-     * UA 复合串的固定后缀（`opencode/<版本号>` 之后的部分）。
-     *
-     * ⚠️ 1.19.0 真机抓包（2026-10-15）：官方 UA =
-     * `opencode/<ver> ai-sdk/provider-utils/4.0.23 runtime/bun/1.3.14`。
-     * 后两段来自 CLI 构建环境，`opencode --version` 探测不到；CLI 升级后
-     * 若上游再变，以重新抓包为准。
-     */
-    readonly userAgentSuffix: string;
-    /**
      * 模型能力元数据源（**远端**，能力的主来源）。
      *
      * ⚠️ 不是 `/zen/v1/models` —— 实测它只返回 `id`/`object`/`created`/
      * `owned_by` 四个字段，**不含任何能力信息**（85 条全如此）。
      * 能力在 **models.dev** 的 `opencode` 条目里，官方 CLI 自己就用它
      * （`packages/core/src/models-dev.ts`）。见 `opencode-capability.ts`。
+     *
+     * ⚠️ **本字段已不再被本模块使用**（用户 2026-10-17）：models.dev 的直连与
+     * 缓存收敛到 `src/models-dev-cache.ts` 全仓唯一直读点，此处保留字面量
+     * 只为「文档上说得清」—— 真要改地址**改那一个模块**，别改这里。
      */
     readonly modelsDevUrl: string;
     /** 能力表缓存 TTL（与官方 CLI 的 60 分钟同档）。 */
     readonly modelsDevTtlMs: number;
-    /**
-     * /inference lane 基址（免费模型的新匿名通道，2026-10-17 实测）。
-     *
-     * ⚠️ 与 `baseUrl`（旧 /zen）**并行存在**，不是替换：付费模型/账号槽仍走
-     * /zen；/inference 只承载 `OPENCODE_INFERENCE_MODELS` 里的免费模型。
-     * 原因见 `opencode-inference.ts` 顶部注释（旧 lane 的 TLS 指纹门禁）。
-     */
-    readonly inferenceBaseUrl: string;
-    readonly inferenceChatPath: string;
-    /** /inference 闸门要求的 CLI 2.x UA（裸串，不是 1.19 的复合 UA）。 */
-    readonly inferenceUserAgent: string;
 }
 export declare const OPENCODE: OpencodeProduct;
 export declare const OPENCODE_MODELS_DEV_URL: string;
@@ -77,7 +61,37 @@ export interface OpencodeFallbackModel {
     contextWindow: number;
 }
 /**
- * 兜底模型表（**以真机实测为准**，2026-10-01）。
+ * ⚠️ 本插件实现的**唯一**模型协议：OpenAI chat completions。
+ *
+ * models.dev 的 `provider.api` 正是**协议端点**的权威字段，而实测按它分组与
+ * 「我们实现了哪些协议」逐格吻合（2026-10-17 实测 85 条远端目录）：
+ *
+ * | `provider.api` | 条数 | 本插件 |
+ * |---|---|---|
+ * | `…/inference/openai/v1` | 56 | ✅ 已实现 |
+ * | `…/inference/anthropic/v1` | 17 | ❌ 未实现（实测 `/v1/messages` 恒 500） |
+ * | `…/inference/google/v1beta` | 8 | ❌ 未实现（Gemini 原生协议） |
+ * | （无该字段） | 4 | ⚠️ 不知道 ⇒ 交本地兜底表决定 |
+ *
+ * ⚠️ **比较必须逐字相等**：models.dev 给的是**带域名**的绝对 URL，而上面
+ * 表格里的短形态只是文档缩写。写成 `endsWith('/inference/openai/v1')` 也能过，
+ * 但那会让「未来新增一个同后缀的第三方端点」被误判成可达。
+ */
+export declare const OPENCODE_CHAT_PROTOCOL_API = "https://opencode.ai/inference/openai/v1";
+/**
+ * 兜底模型表（**以真机实测为准**，2026-10-01 / 2026-10-17 更新）。
+ *
+ * ## ⚠️⚠️ 它的职责已经收窄为**只在能力表不可用时**兜底（Issue IKM9LR）
+ *
+ * 改前这张表**同时**是「网络失败的兜底目录」与「协议可达性白名单」，而后者
+ * 意味着**每上一个新模型都要手工加一行** —— Zen 于 2026-10 上线
+ * `deepseek-v4.1-flash-free` / `glm-5.3-flash-free` 时，远端 `/v1/models`
+ * **明明下发了**，却因为不在表里被过滤掉，用户在选择器里完全看不到
+ * （症状与「上游没有这个模型」同形，极难自查）。
+ *
+ * ⇒ 现在「可达性」由 models.dev 的 `provider.api` 决定（见
+ * {@link isReachableOpencodeModel}），这张表退回它本来的职责：**兜底**。
+ * 表外模型在**能力表可用时**照常出现；只有能力表也拿不到时才回落到这里。
  *
  * ⚠️ 每条都对应 `docs/superpowers/specs/2026-10-02-opencode-zen-endpoint-matrix.md`
  * 里一次成功的真实请求。`isFree` 的含义是「**匿名通道**（`Bearer public`）
@@ -90,55 +104,79 @@ export interface OpencodeFallbackModel {
  */
 export declare const OPENCODE_FALLBACK_MODELS: readonly OpencodeFallbackModel[];
 /**
- * /inference lane 承载的免费模型（2026-10-17 逐个真实回话验证）。
+ * 注册「读能力表」的动作（由 `opencode-capability.ts` 在模块加载时调用）。
  *
- * 目录（`https://models.opencode.ai/api.json` 的 `opencode.models`）当前
- * 127 个模型、44 个零价；这里只收 **status=active 且实测回话** 的：
- * - `nemotron-3-ultra-free` 实测 200 但正文为空，未收；
- * - `status=deprecated` 的一批不再保证，未收。
- *
- * ⚠️ 与 `OPENCODE_FALLBACK_MODELS` 有重叠（big-pickle / space-bunny 等）——
- * 合并处按 id 去重，不要在这里删重复项：fallback 表还被旧 /zen lane 使用。
+ * ⚠️ **必须是模块加载期注册**，不能等到第一次归一 —— 否则冷启动首帧
+ * （能力表尚未被任何路径读过）钩子还没注册，判据会退回本地表。
  */
-export declare const OPENCODE_INFERENCE_MODELS: readonly OpencodeFallbackModel[];
+export declare function setOpencodeCapabilityHook(hook: () => void): void;
 /**
- * 该模型是否走 /inference lane。
+ * 注入远端可达性表（**唯一定义处**在 `opencode-capability.ts`）。
  *
- * ⚠️ 判据是**这张实测表**，不是 `isFreeOpencodeModel`：fallback 表里还有
- * 两个旧 /zen 时代的免费模型（mimo-v2.5-free / nemotron-3-ultra-free）
- * 没在新通道复测，不能直接甩过去。
+ * ⚠️ 传 `undefined` 表示「远端不可用」，调用方会退回本地表 —— 这是**刻意的**：
+ * 能力表来自 5 MB 的外部站点，读不到是高频状态而非理论边界，而退回本地表
+ * 得到的目录「少几个新模型但都能用」，严格优于「一个都不显示」。
  */
-export declare function usesInferenceLane(id: string): boolean;
-/**
- * 把 /inference 免费模型并进目录（按 id 去重，保持原顺序在前）。
- *
- * 只给适配器内部用：`loadOpencodeCatalog` 的对外语义（远端/回退）保持不变，
- * 否则现有单测与「目录来源」诊断都会被打乱。
- */
-export declare function mergeInferenceModels<T extends {
-    id: string;
-}>(entries: readonly T[]): readonly (T | OpencodeFallbackModel)[];
+export declare function setRemoteOpencodeReachability(table: ReadonlyMap<string, boolean> | undefined): void;
 /**
  * 该模型是否属免费（匿名槽只接受免费模型）。
  *
- * ⚠️ **未知模型返回 false**：远端目录可能含表外的新免费模型，
- * 但在未实测前把它们放给匿名槽只会换来 403/500；宁可要求用户加一个付费账号。
+ * ## ⚠️ 判据优先级：**远端 models.dev 的 cost > 本地表**（Issue IKM9LR）
+ *
+ * 改前只看本地表，于是 Zen 新上线的免费模型（issue 里的
+ * `deepseek-v4.1-flash-free` / `glm-5.3-flash-free`）在能力表里明明
+ * `cost: {input: 0, output: 0}`，却被判成「收费」⇒ 匿名用户看不到它们
+ * （判据的第二个 bug，与可达性那个同源但独立）。
+ *
+ * ⚠️ 仍保留**未知即 false**：表外且远端也没有判据时，不放给匿名槽 ——
+ * 那是保守方向，宁可要求用户加一个付费账号，也不能给一个必然 403 的模型。
  */
 export declare function isFreeOpencodeModel(id: string): boolean;
 /**
- * 该模型在我们**已实现并实测可达**的通道里是否存在。
+ * 该模型在我们**已实现**的通道里是否存在（协议可达）。
  *
- * ## 为什么远端目录必须过这道闸（真实报障 2026-10-01）
+ * ## ⚠️⚠️ 判据改成**远端优先、本地兜底**（Issue IKM9LR 的主缺陷）
  *
- * `GET /v1/models` 返回全部 84 个模型，且**不含任何协议信息**
- * （字段只有 id/object/created/owned_by）。若直接把它们交给 DSH，
- * 用户会在选择器里看到 `ling-3.0-flash-fin-free`、`claude-*`、
- * `gpt-*` 等模型 —— 点下去只会拿到 404/401/500。
+ * ### 改前：只有本地表
  *
- * ⇒ 目录**只暴露本表内的模型**；表外的新模型要等实测确认端点后再加进来。
- * （表本身也来自实测：见 `2026-10-02-opencode-zen-endpoint-matrix.md`。）
+ * `GET /v1/models` 返回全部 85 个模型，且**不含任何协议信息**（字段只有
+ * id/object/created/owned_by）。改前靠 `REACHABLE_IDS` 这张硬编码表来挡
+ * `claude-*` / `gemini-*` 等我们**未实现协议**的模型（否则用户点下去只会拿到
+ * 404/401/500）—— 但**同一张表也把新上线的免费模型挡掉了**。
+ *
+ * 真实报障（IKM9LR）：`deepseek-v4.1-flash-free` 与 `glm-5.3-flash-free`
+ * 已被 Zen 官方公告免费提供、远端 `/v1/models` **确实下发**，
+ * 本插件却因不在表里而在选择器里**完全消失** —— 与「上游没这个模型」同形。
+ *
+ * ### 改后：models.dev 的 `provider.api` 才是权威
+ *
+ * 实测（2026-10-17）按 `provider.api` 分组与「我们实现了哪些协议」逐格吻合：
+ * `openai/v1` 56 条 ✅ / `anthropic/v1` 17 条 ❌（实测 `/v1/messages` 恒 500）/
+ * `google/v1beta` 8 条 ❌（Gemini 原生协议）/ 无该字段 4 条 ⚠️不知道；
+ * 而改前那 14 条本地表条目**全部**落在 `openai/v1` 内、零反例。
+ *
+ * ### 三格语义（缺一不可）
+ *
+ * | 远端 `provider.api` | 结论 |
+ * |---|---|
+ * | `openai/v1` | **可达** |
+ * | 其它协议 | **不可达** |
+ * | **条目缺失** | ⚠️ 不知道 ⇒ **退回本地表**（不是「不可达」） |
+ *
+ * ⚠️ 第三格是刻意的：`jev-1.13-free` 无条目且实测回
+ * `400 ModelProtocolUnsupported`，但**那是一条属于那个模型的实测结论**，
+ * 推广成「无条目即不可达」会让未来所有新模型凭空消失。
+ *
+ * ### ⚠️ 这道闸**管不了**的三样（只能靠运行时错误分类兜）
+ *
+ * ① 地域封锁：`beam-free` 的 `provider.api` 就是 `openai/v1`，实测 403
+ * `RegionError`（按出口 IP 判，目录层无从预知）；
+ * ② 上游不稳定：`glm-5.3-flash-free` 实测约 2/5 概率 429；
+ * ③ 废弃：`mimo-v2.5-free` 回 410，只要远端还下发就挡不住。
  */
 export declare function isReachableOpencodeModel(id: string): boolean;
+/** 注入远端免费判定表（见 {@link setRemoteOpencodeReachability} 的口径）。 */
+export declare function setRemoteOpencodeFreeFlags(table: ReadonlyMap<string, boolean> | undefined): void;
 export type OpencodeErrorKind = 'free_usage_limit' | 'go_usage_limit' | 'rate_limit' | 'free_tier' | 'quota' | 'auth' | 'server' | 'transport';
 export interface OpencodeErrorInfo {
     kind: OpencodeErrorKind;

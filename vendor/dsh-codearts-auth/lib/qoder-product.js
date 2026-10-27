@@ -25,6 +25,7 @@
  * - `...\@qoder-ai\qoder-agent-sdk\dist\_worker\qoder-worker-runtime.obf.mjs`
  *   （字符串经 `_$d = base64 → XOR("tqrRVttEZQ4G")` 编码）
  */
+import { DEFAULT_BODY_LIMITED_IMAGE_MAX_BYTES } from './image-budget.js';
 /**
  * 模型目录（**实测数据**，2026-09-20）。
  *
@@ -174,6 +175,11 @@ export const QODER = {
     sashClientType: '10',
     userAgentPrefix: 'qoder',
     defaultCredentialRef: 'QODER_ACCESS_TOKEN',
+    // ⚠️ **必须显式赋值**：适配器把 `undefined` 一路传给 `requestImageTargetFor`，
+    // 而那个默认参数是 **2 MiB**（为腾讯系的图片 token 预算准备的）——
+    // qoder 撞的是**请求体体积**，2 MiB 会让 24 张达 64 MiB、**超过上游的 50 MiB 硬限**
+    // （`52428800 bytes`）。详见接口里 `imageMaxBytes` 的注释。
+    imageMaxBytes: DEFAULT_BODY_LIMITED_IMAGE_MAX_BYTES,
     fallbackModels: QODER_FALLBACK_MODELS,
 };
 /**
@@ -240,6 +246,9 @@ const QODER_CN_FALLBACK_MODELS = [
     // - `efforts` 取自目录 `thinking_config.enabled.efforts` 的**键**（目录原序）；
     // - `defaultEffort` 取该对象里 `is_default: true` 的键；
     // - `supportsDisable` = 目录存在 `thinking_config.disabled` 分支。
+    // ⚠️ **这些数组为什么不是升序**（`xhigh` 在 `low` 前等）—— 那是**上游原样**，
+    // 本仓库刻意如实镜像、不重排；完整理由与「排序责任在渲染方」见
+    // `QoderFallbackModel.efforts` 的注释（Issue IKLIDV）。**不要**把它当 bug 顺手排序。
     // ⚠️ **`qmodel` / `qmodel_latest` 只有「关闭思考」**：目录里它们的 `enabled`
     // **没有 `efforts` 键**，只有 `disabled` + `enabled.is_default` ——
     // 即官方就只提供「关」这一个选项（用户 2026-09-28 确认：
@@ -344,6 +353,9 @@ export const QODER_CN = {
     // E11：CN asar 的 sash 请求头 UA 恒为 `"Qoder"`，与国际版一致。
     userAgentPrefix: 'qoder',
     defaultCredentialRef: 'QODERCN_ACCESS_TOKEN',
+    // 与国际版同因（见国际版处注释）：两站**复用同一个 `QoderAdapter` 类**，
+    // 故字节目标必须一致 —— 只给国际版赋值会让两站在同一份适配器上分叉。
+    imageMaxBytes: DEFAULT_BODY_LIMITED_IMAGE_MAX_BYTES,
     fallbackModels: QODER_CN_FALLBACK_MODELS,
 };
 /**

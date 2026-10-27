@@ -47,32 +47,36 @@ function routeCaller(text, name, before, after) {
 export function planPhoneCompatibility(files) {
   const manifest = JSON.parse(files['package.json']);
   if (manifest.name !== 'dsh-our-free-model') throw Error('Not an OFM package');
+  if (!DATA.reviewedVersions.includes(manifest.version)) throw Error('Unreviewed OFM version: ' + manifest.version);
+  const RULES = DATA.versionRules?.[manifest.version] ?? DATA;
   const next = { ...files };
   let index = files['index.js'];
-  if (!index.includes('void mountHostChannels(scoped,')) {
-    const start = index.indexOf("  let channelPack = { state: 'pending', error: '' }");
-    const end = index.indexOf('\n  const logAdmissionRejection', start);
-    const old = index.slice(start, end);
-    if (start < 0 || end < start || !DATA.mount.accepted.includes(sha(old))) throw Error('Unreviewed OFM channel registration');
-    index = index.slice(0, start) + DATA.mount.replacement + index.slice(end);
+  const mountStart = index.indexOf("  let channelPack = { state: 'pending', error: '' }");
+  const mountEnd = index.indexOf('\n  const logAdmissionRejection', mountStart);
+  const oldMount = index.slice(mountStart, mountEnd);
+  const mountReplacement = RULES.mount.variants?.[sha(oldMount)] ?? (RULES.mount.accepted?.includes(sha(oldMount)) ? RULES.mount.replacement : undefined);
+  if (mountStart < 0 || mountEnd < mountStart || mountReplacement === undefined) throw Error('Unreviewed OFM channel registration');
+  index = index.slice(0, mountStart) + mountReplacement + index.slice(mountEnd);
+  if (!index.includes("import { mountHostChannels } from './src/host-channels.js'")) {
     index = replaceOnce(index, "import { createModelRuntime, createRuntimeStores } from './src/core/runtime.js'", "import { createModelRuntime, createRuntimeStores } from './src/core/runtime.js'\nimport { mountHostChannels } from './src/host-channels.js'", 'runtime import');
   }
-  if (files['src/host-channels.js'] !== undefined && files['src/host-channels.js'] !== DATA.hostChannels) throw Error('Existing host channel adapter differs');
-  next['src/host-channels.js'] = DATA.hostChannels;
+  if (files['src/host-channels.js'] !== undefined && files['src/host-channels.js'] !== RULES.hostChannels) throw Error('Existing host channel adapter differs');
+  next['src/host-channels.js'] = RULES.hostChannels;
   if (files['src/open-external.js'] !== undefined) {
     const external = files['src/open-external.js'];
-    if (!DATA.externalModule.accepted.includes(sha(external))) throw Error('Unreviewed OFM external launcher');
-    next['src/open-external.js'] = DATA.externalModule.replacement;
+    const replacement = RULES.externalModule.variants?.[sha(external)] ?? (RULES.externalModule.accepted?.includes(sha(external)) ? RULES.externalModule.replacement : undefined);
+    if (replacement === undefined) throw Error('Unreviewed OFM external launcher');
+    next['src/open-external.js'] = replacement;
     next['index.js'] = index;
-  } else next['index.js'] = replaceFunction(index, 'openExternal', DATA.external, '');
+  } else next['index.js'] = replaceFunction(index, 'openExternal', RULES.external, '');
 
   let vault = files['src/vault.js'];
-  vault = replaceFunction(vault, 'detectSealedHost', DATA.gate, '', true);
+  vault = replaceFunction(vault, 'detectSealedHost', RULES.gate, '', true);
   if (!vault.includes("export const FLAVOR_PHONE = 'phone'")) vault = replaceOnce(vault, "export const FLAVOR_WEB = 'web'", "export const FLAVOR_WEB = 'web'\nexport const FLAVOR_PHONE = 'phone'", 'phone flavor');
   next['src/vault.js'] = vault;
 
   let client = files['client.js'];
-  for (const name of ['useEacLogin', 'EacAuth', 'useChannelRpc']) client = replaceFunction(client, name, DATA.functions[name]);
+  for (const name of ['useEacLogin', 'EacAuth', 'useChannelRpc']) client = replaceFunction(client, name, RULES.functions[name]);
   client = routeCaller(client, 'ChannelsPage', 'useChannelRpc(ctx)', 'useChannelRpc(ctx, summary)');
   client = routeCaller(client, 'useLedger', 'useChannelRpc(props.ctx)', 'useChannelRpc(props.ctx, props.summary)');
   client = routeCaller(client, 'GatewayPage', 'useChannelRpc(ctx)', 'useChannelRpc(ctx, props.summary)');
@@ -85,13 +89,13 @@ export function planPhoneCompatibility(files) {
   if (!client.includes("['free', t('nav.tab.free'), freeCatalog(data.catalog).length]")) {
     client = routeCaller(client, 'Shell', "['free', t('nav.tab.free'), counts.available ?? 0]", "['free', t('nav.tab.free'), data.catalog.filter(m => !m.channel || m.channel === 'kilo').length]");
   }
-  for (const rule of DATA.freeCopy) {
+  for (const rule of RULES.freeCopy) {
     if (client.includes(rule.after)) continue;
     const before = rule.before.find(text => client.includes(text));
     if (before === undefined) throw Error('Unreviewed free model copy');
     client = replaceOnce(client, before, rule.after, 'free directory copy');
   }
-  if (!client.includes('    function EacStatusPill(')) client = replaceOnce(client, '    function EacAuth(props) {', DATA.statusPill + '\n\n    function EacAuth(props) {', 'EAC status pill');
+  if (!client.includes('    function EacStatusPill(')) client = replaceOnce(client, '    function EacAuth(props) {', RULES.statusPill + '\n\n    function EacAuth(props) {', 'EAC status pill');
   const oldPill = "              h(Pill, { strong: true, tone: eacAuth?.authorized === true ? 'ok' : 'warn' },\n                eacAuth?.authorized === true ? t('eac.pillOk') : t('eac.pillLocked')),";
   if (client.includes(oldPill)) client = replaceOnce(client, oldPill, '              h(EacStatusPill, { auth: eacAuth, t }),', 'EAC hero status');
   if (!client.includes("'eac.open':")) {
@@ -104,9 +108,18 @@ export function planPhoneCompatibility(files) {
   }
   client = client.replace("'eac.sub': '桌面端协付渠道：GitHub 登录并 star 本仓库后解锁，与免费车道互不影响。'", "'eac.sub': '本机独立连接 EAC：GitHub 登录并 star 本仓库后解锁，与免费车道互不影响。'")
     .replace("'eac.sub': 'The desktop co-paid lane: unlocked by a GitHub login plus a star, independent of the free lane.'", "'eac.sub': 'This device connects to EAC independently: sign in with GitHub and star the repository to unlock.'");
-  if (!client.includes('/* dsh-phone opaque settings surface */')) client = replaceOnce(client, '    const CSS = `', '    const CSS = `\n' + DATA.css, 'opaque mobile settings');
+  if (!client.includes('/* dsh-phone opaque settings surface */')) client = replaceOnce(client, '    const CSS = `', '    const CSS = `\n' + RULES.css, 'opaque mobile settings');
   if (!client.includes('EacAuth, EacStatusPill,')) client = replaceOnce(client, 'useEacLogin, EacAuth,', 'useEacLogin, EacAuth, EacStatusPill,', 'EAC test seam');
   if (!client.includes('useChannelRpc, sharedPushSource') && !client.includes('EacStatusPill, useChannelRpc,')) client = replaceOnce(client, 'EacAuth, EacStatusPill,', 'EacAuth, EacStatusPill, useChannelRpc,', 'channel test seam');
+  if (manifest.version === '2.5.7') {
+    if (client.includes('    function sharedPushSource(')) {
+      if (functionRange(client, 'sharedPushSource').value !== RULES.sharedPush) throw Error('Unreviewed OFM shared push source');
+    } else client = replaceOnce(client, '    function apply(ctx) {', RULES.sharedPush + '\n\n    function apply(ctx) {', 'shared SSE lease');
+    if (!client.includes('source = sharedPushSource(`${API}/events`)')) client = replaceOnce(client, 'source = new EventSource(`${API}/events`)', 'source = sharedPushSource(`${API}/events`)', 'shared SSE source');
+    if (!client.includes('CSS, EacStatusPill, sharedPushSource }')) {
+      if (!client.includes('sharedPushSource }')) client = replaceOnce(client, 'Shell, CSS }', 'Shell, CSS, sharedPushSource }', 'shared SSE test seam');
+    }
+  }
   next['client.js'] = client;
 
   let reload = files['src/reload.js'];
@@ -181,7 +194,18 @@ export function applyPhoneCompatibility(packageDir, { io = fs, checkSyntax = tru
   return { state: 'ready', version: plan.version, changed };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+function isEntryModule() {
+  if (!process.argv[1]) return false;
+  try {
+    // Node resolves the module URL through Android's /data/data alias while
+    // argv retains the caller's /data/user/0 spelling (or vice versa).
+    return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isEntryModule()) {
   try {
     const home = process.env.DSH_HOME;
     if (process.env.DSH_PHONE_ANDROID !== '1' || !home) throw Error('Android runtime required');

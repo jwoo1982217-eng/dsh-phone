@@ -17,108 +17,41 @@
  * 因此这里直接驱动 `registerJetHubRpc` 注册的 HTTP 处理器，断言真实分派行为。
  */
 
-import { describe, expect, it, vi } from 'vitest'
-import { registerJetHubRpc, JET_HUB_API_PATH } from '../../src/jet-hub-rpc.js'
+import { describe, expect, it } from 'vitest'
+import {
+  EXPECTED_REFRESH_PROVIDER_IDS,
+  REFRESH_PROVIDERS,
+  accountEntry,
+  refreshHarness,
+} from '../helpers/rpc-refresh.js'
 import type { ProviderAccountEntry } from '../../src/types.js'
 
-/** 采集到的「某服务被要求刷新的 credentialRef」。 */
-interface RefreshCall {
-  service: string
-  credentialRef: string
-}
-
 /**
- * 构造一个 fake `ctx`，捕获 `connection.fetch.register` 的处理器。
+ * 调用 `account.refresh` 并返回「被刷的 provider / ref」以及 RPC 结果载荷。
  *
- * ⚠️ **按 path 取处理器**：本模块注册的不止 RPC 的 POST 端点（还有载体页的 GET 路由），
- * 「谁最后注册就记谁」会让加一条路由变成「成片 RPC 用例莫名其妙地红」。
- */
-function makeCtx(accounts: ProviderAccountEntry[]) {
-  let handler: ((request: Request) => Promise<Response>) | undefined
-  const ctx = {
-    connection: {
-      fetch: {
-        register: (options: { path: string; fetch: (request: Request) => Promise<Response> }) => {
-          if (options.path === JET_HUB_API_PATH) handler = options.fetch
-        },
-      },
-    },
-    logger: { warn: () => {}, info: () => {}, error: () => {} },
-    credentials: {
-      resolve: async () => undefined,
-      describe: async () => ({ configured: false }),
-    },
-    get: () => undefined,
-    // `connection` 由生产代码用**惰性注入**（`ctx.inject`）挂载，而非插件级
-    // 静态 `inject`：它只存在于 Web bundle，静态声明会让 headless/CLI profile
-    // 永久 pending 而启动失败。替身必须复刻这一机制，否则 registerJetHubRpc
-    // 会以 `ctx.inject is not a function` 直接抛错。
-    //
-    // 语义对齐真实 cordis：回调以**同一 ctx** 立即调用（本替身里 connection
-    // 始终可用），使端点注册行为与 Web profile 下完全一致。
-    inject: (_deps: string[], callback: (ctx: unknown) => void) => { callback(ctx) },
-  }
-  return { ctx, getHandler: () => handler! }
-}
-
-/** 构造一个只记录调用、不做真实网络的服务替身。 */
-function makeServiceStub(name: string, calls: RefreshCall[]) {
-  return {
-    refreshAccountCredential: vi.fn(async (ref: string) => { calls.push({ service: name, credentialRef: ref }) }),
-    refresh: vi.fn(async () => { calls.push({ service: `${name}.refresh(default)`, credentialRef: '' }) }),
-  }
-}
-
-/** 构造账号池替身。 */
-function makePool(accounts: ProviderAccountEntry[]) {
-  return {
-    listAllAccounts: async () => accounts,
-    listAccounts: async (provider: string) => accounts.filter((a) => a.provider === provider),
-    updateAccount: async () => {},
-  }
-}
-
-/**
- * 调用 `account.refresh` 并返回 RPC 结果载荷。
+ * ⚠️ **2026-10-08 改（Task 2）**：本文件原先自带一套 `makeCtx` / `makePool` /
+ * `makeServiceStub` 夹具，把 13 个桩逐个摆进 `registerJetHubRpc` 的**命名对象**。
+ * Task 2 把这套夹具抽到 `tests/helpers/rpc-refresh.ts`（参数化、零全局状态），
+ * 使本文件与 `refresh-bootstrap-wiring.spec.ts` 共用同一份「13 个 provider 齐全」
+ * 的桩 —— **断言一条未改**，改的只是「怎么供给 auth 实例」。
  *
- * ⚠️ 返回**整个 `result`** 而不是 `result.value`：issue IKJOZA 修复后，失败走
- * `ok:false + error`，`value` 不存在 —— 此前只把 `value` 交出去，用例便永远
- * 看不到失败形态（`value.success === false`），这正是缺陷本身。
+ * ⚠️ 保留 `RefreshCall` 的 `service` / `credentialRef` 字段名（而不是换成夹具的
+ * `provider` / `ref`）：本文件的 32 条断言是**最强**的既有防线，逐字保留它们
+ * 才能证明「重构没有改变可观察行为」。
  */
 async function callRefresh(
   accounts: ProviderAccountEntry[],
   accountId: string,
 ): Promise<{
-  calls: RefreshCall[]
+  calls: { service: string; credentialRef: string }[]
   result: { ok: boolean; value?: { success: boolean }; error?: { code?: string; message?: string } }
 }> {
-  const calls: RefreshCall[] = []
-  const { ctx, getHandler } = makeCtx(accounts)
-  registerJetHubRpc(
-    ctx as never,
-    makePool(accounts) as never,
-    makeServiceStub('codearts', calls) as never,
-    makeServiceStub('buddy', calls) as never,
-    makeServiceStub('workbuddy', calls) as never,
-    makeServiceStub('lobsterai', calls) as never,
-    makeServiceStub('qoder', calls) as never,
-    makeServiceStub('qodercn', calls) as never,
-    makeServiceStub('trae', calls) as never,
-  )
-  const response = await getHandler()(new Request('http://127.0.0.1/api/jet-hub', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      type: 'client-request',
-      rpcId: 'r1',
-      method: 'jet-hub',
-      payload: { method: 'account.refresh', payload: { accountId } },
-    }),
-  }))
-  const body = await response.json() as {
-    result: { ok: boolean; value?: { success: boolean }; error?: { code?: string; message?: string } }
+  const harness = refreshHarness(accounts)
+  const result = await harness.call(accountId)
+  return {
+    calls: harness.calls.map((c) => ({ service: c.provider, credentialRef: c.ref })),
+    result,
   }
-  return { calls, result: body.result }
 }
 
 /** 取成功路径的 `value`（供既有用例断言 `success === true`）。 */
@@ -128,28 +61,86 @@ function okValue(result: { ok: boolean; value?: { success: boolean } }): { succe
 }
 
 function entry(provider: string, credentialRef: string): ProviderAccountEntry {
-  return {
-    id: `${provider}-1`,
-    provider,
-    nickname: '测试号',
-    enabled: true,
-    credentialRef,
-    createdAt: 1,
-    refreshable: true,
-  }
+  return accountEntry(provider, credentialRef)
 }
 
 describe('account.refresh 分派（T7 回归）', () => {
+  /**
+   * ★★ **`REFRESH_PROVIDERS` 与 `PROVIDER_REGISTRY` 同源**（Task 2 复审 Finding I-1）。
+   *
+   * ## 为什么这条不可省（静默漏算 = failure-class #1）
+   *
+   * `REFRESH_PROVIDERS`（`tests/helpers/rpc-refresh.ts`）是一份**手写**的 13 id 清单，
+   * 它驱动本文件与 `refresh-bootstrap-wiring.spec.ts` 的**全部**行为循环。
+   * 而本仓库另外两份 13-id 清单（`AUTH_SERVICE` / `AUTH_SERVICE_OF`）都各自有
+   * registry 派生的守卫，**只有它没有** —— 实测（复审者 grep 全仓）此前**零断言**
+   * 交叉核对它。
+   *
+   * ## 具体爆炸半径（实测确认）
+   *
+   * `loomy-rpc-dispatch.spec.ts` / `raccoon-rpc-dispatch.spec.ts` 里
+   * `account.refresh` 的断言在 Task 2 之后已退化为**纯结构**（扫源码文本找
+   * `authOf(auths, entry.provider)`、并断言 `case LOOMY.id:` 不存在）。
+   * ⇒ **loomy / raccoon 的 `account.refresh` 行为覆盖唯一来源就是本清单驱动的循环**。
+   * 有人加 provider 时忘了这份清单、或从中删掉 loomy，那家的行为覆盖
+   * **静默降到零而全部用例照样绿**。
+   *
+   * ## 方向性（与 `jet-hub-rpc-auth-wiring.spec.ts` 同款）
+   *
+   * **registry 是权威、`REFRESH_PROVIDERS` 是被测对象** ——
+   * `toEqual` 的差异会**点名**那个 id。若改成「清单自己派生自己」则恒真。
+   *
+   * ## ⚠️ 已做反向验证（两种方向各一次）
+   *
+   * ① 从 `REFRESH_PROVIDERS` 删掉 `loomy` ⇒ 本条**红**，差异点名 `"loomy"`，
+   *    而**其余 32 条照样绿** —— 这正证明它是该漏算的**唯一**探测器；
+   * ② 加一个 registry 里没有的 `kuku` ⇒ 本条**红**，差异点名 `"kuku"`。
+   */
+  it('★ REFRESH_PROVIDERS 与 registry 逐项相等（漏一个即红并点名）', () => {
+    expect(
+      [...REFRESH_PROVIDERS].sort(),
+      'REFRESH_PROVIDERS 必须等于「registry 的 channel 减去 opencode 豁免」；' +
+      '左侧多出的 id = 清单里多了 registry 没有的僵尸项（该 provider 会零行为覆盖），' +
+      '右侧多出的 id = registry 里有而清单漏登记（它的 account.refresh 行为覆盖为零）',
+    ).toEqual([...EXPECTED_REFRESH_PROVIDER_IDS].sort())
+    // ⚠️ 兜住「channel 集合变了」这个前提：豁免理由若因新 provider 而失效，
+    //    上面那条会以「莫名其妙的差异」失败，这条先把原因指出来。
+    //    （豁免的**理由**由 `jet-hub-rpc-auth-wiring.spec.ts` 逐条验证，本文件不重复。）
+    // ⚠️ 2026-10-13 合并：officeace 与 accio **同一次**并入，故 13 → 15。
+    // ⚠️ 2026-10-15 加 minimaxintl（MiniMax Code 国际版）：15 → 16。
+    // ⚠️ 2026-10-16 astudio 并入（goal 302 接线）：16 → 17。
+    // ⚠️ 2026-10-17 加 autoclaw（AutoClaw/智谱）：17 → 18；
+    //    同日 **本 fork** 并入 modelscope（魔搭）：18 → 19。
+    // ⚠️ 2026-10-20 加 autoclawintl（AutoClaw 国际版）：19 → 20。
+    expect(
+      EXPECTED_REFRESH_PROVIDER_IDS,
+      'channel 集合变了，请复核 opencode 豁免是否仍成立（见 AUTH_EXEMPT）',
+    ).toHaveLength(20)
+  })
+
   it('buddy 账号刷新**自己的** credentialRef，而不是默认单凭据 ref', async () => {
     // 缺陷 2 的回归：原实现调 buddy.refresh()（读 BUDDY_ACCESS_TOKEN），
     // 刷的是另一个凭据。
-    const { calls, result } = await callRefresh(
-      [entry('buddy', 'BUDDY_ACCOUNT_AAAA1111')], 'buddy-1',
-    )
+    const harness = refreshHarness([entry('buddy', 'BUDDY_ACCOUNT_AAAA1111')])
+    const result = await harness.call('buddy-1')
+    const calls = harness.calls.map((c) => ({ service: c.provider, credentialRef: c.ref }))
     expect(okValue(result).success).toBe(true)
     expect(calls).toEqual([{ service: 'buddy', credentialRef: 'BUDDY_ACCOUNT_AAAA1111' }])
-    // 绝不能退化成「刷默认凭据」。
-    expect(calls.some((c) => c.service.includes('refresh(default)'))).toBe(false)
+    // ⚠️ 2026-10-08 改（Task 2 复审 Finding 3）：这里原先是
+    //    `expect(calls.some((c) => c.service.includes('refresh(default)'))).toBe(false)`
+    //    —— 在**旧**夹具下有意义（旧桩同时有 `refresh()`，它会记一条
+    //    `<name>.refresh(default)`），但新夹具（`tests/helpers/rpc-refresh.ts`）
+    //    的桩**只有** `refreshAccountCredential` ⇒ 那条断言**恒真**、
+    //    证明力为零（「保险失效比变红更糟」）。
+    //    ⇒ 换成对**桩形状**的反向断言：桩确实**没有** `refresh` 方法，
+    //    故「退化成刷默认单凭据」这条历史缺陷路径在本夹具下**不可能被走到**
+    //    （这正是上面 `toEqual` 那条能独立守住的理由）。
+    //    ⚠️ 若将来有人给桩补上 `refresh`，本行会红 —— 那正是要的信号：
+    //    届时必须把上面那条「恒真」断言换成真正的行为断言。
+    expect(
+      typeof (harness.auths['buddy'] as { refresh?: unknown }).refresh,
+      '夹具的桩新增了 refresh()：上面那条「不得刷默认凭据」的行为断言必须重写',
+    ).toBe('undefined')
   })
 
   it('workbuddy 账号可刷新且不再抛 Unknown provider（缺陷 1 的回归）', async () => {
@@ -189,9 +180,13 @@ describe('account.refresh 分派（T7 回归）', () => {
   })
 
   it('qodercn 账号刷新分派到**中国版实例**，不串到国际版（同族注册表的核心风险）', async () => {
-    // 国际版与中国版共用一个 switch case（`case QODER.id: case QODER_CN.id:`），
-    // 靠 `requireQoderFamily(entry.provider)` 查注册表取实例。
-    // 若哪天有人把它写死成 `qoder.refreshAccountCredential(...)`，
+    // ⚠️ 2026-10-08 改（Task 2）：分派走 `authOf(auths, entry.provider)` 查表，
+    // `auths` 的键就是 provider id —— `qodercn` 这个键查到的是中国版实例
+    //（`src/index.ts` 的 `qodercn: qoderCn`）。
+    // 原先这里是「国际版与中国版共用一个 switch case（`case QODER.id:
+    // case QODER_CN.id:`），靠 `requireQoderFamily(entry.provider)` 查注册表取实例」
+    // —— 那个 switch 已被 Task 2 整体删除，该结构**不再存在**。
+    // 若哪天有人把 `auths` 的 `qodercn` 键接到国际版实例上，
     // 症状是「中国版账号点刷新，实际续期了国际版的凭据」—— 两站 token
     // 不通用，于是 CN 续期永远失败而国际版被无谓地刷了一次。
     // 这条用例用**行为**（哪个 stub 被调用）而非字符串锁住这件事。
@@ -254,6 +249,48 @@ describe('account.refresh 分派（T7 回归）', () => {
     expect(result.ok).toBe(false)
     expect(result.error?.message).toMatch(/not found/)
   })
+
+  /**
+   * ★ **「不支持续期」与「未知 provider」必须是两句不同的话**（Task 2 的 Step 6
+   * 明确要求，此前**零覆盖**）。
+   *
+   * ## 为什么这条不可省
+   *
+   * 分派改成查表后，`authOf(auths, entry.provider)` 对两种**性质完全不同**的
+   * 情况都返回 `undefined`：
+   * - `opencode` —— provider **存在**（registry 里有声明、池里有账号），
+   *   但它的凭据是**静态 API key**，根本没有续期概念；
+   * - `mystery` —— 压根**没有**这个 provider（拼错 / 旧客户端 / 数据损坏）。
+   *
+   * 若两者都报泛化的 `Unknown provider`，排查者会以为「provider 没注册」而去查
+   * 注册清单 —— 而真相是「该产品无此能力」。本仓库反复记录过这个缺陷形态
+   *（见 `provider-runtime.ts` 模块头的「能力域全部可选」一节）。
+   *
+   * ⚠️ 判据是**两句文案互不相同**，且各自**点名自己的原因** ——
+   *    只断言 `ok === false` 的话，把两句合并成一句照样绿（同义反复）。
+   */
+  it('★ opencode 账号报「不支持续期」，与「未知 provider」是两句不同的话', async () => {
+    // opencode 在 registry 里有声明（`channel: true`，它确实有账号池），
+    // 但**不在** `auths` 的 13 个键里（夹具的键由 REFRESH_PROVIDERS 派生）。
+    const unsupported = await callRefresh(
+      [entry('opencode', 'OPENCODE_ACCOUNT_1')], 'opencode-1',
+    )
+    expect(unsupported.result.ok).toBe(false)
+    const unsupportedMessage = unsupported.result.error?.message ?? ''
+    expect(unsupportedMessage, 'opencode 应报「不支持续期」而不是「未知 provider」')
+      .toMatch(/不支持续期/)
+    expect(unsupportedMessage).toContain('opencode')
+    expect(unsupportedMessage, 'opencode 是**已知** provider，不得说它 Unknown')
+      .not.toMatch(/Unknown provider/)
+
+    // 对照组：真正不存在的 id 仍报 Unknown provider（兜底没被吃掉）。
+    const unknown = await callRefresh([entry('mystery', 'MYSTERY_ACCOUNT_1')], 'mystery-1')
+    expect(unknown.result.ok).toBe(false)
+    expect(unknown.result.error?.message).toMatch(/Unknown provider/)
+
+    // ⚠️ 核心：两句必须**不同** —— 否则上面两条各自都能过，而区分能力为零。
+    expect(unsupportedMessage).not.toBe(unknown.result.error?.message)
+  })
 })
 
 /**
@@ -275,70 +312,17 @@ describe('account.refresh 失败语义（issue IKJOZA）', () => {
   /**
    * 让指定 provider 的续期**抛错**，其余照常。
    *
-   * ⚠ **必须覆盖 `registerJetHubRpc` 的全部 15 个 provider 形参**（位置传参，
-   * 少传即错位 —— 该函数历史上已因此错位复发 6 次）。缺一个形参时该 provider
-   * 拿到 `undefined`，一旦换成它**根本走不到它自己的失败分支**：
-   * 初版只造了 7 个桩，于是 issue 里真实出现过的 `raccoon` / `minimax` 两条失败
-   * 路径**零覆盖**，还把 raccoon 的报错挂到了 `trae` 上凑数。
+   * ⚠ **13 个 provider 键一个都不能少** —— 夹具（`tests/helpers/rpc-refresh.ts`）
+   * 从 `REFRESH_PROVIDERS` **派生**这 13 个桩，故新增 provider 时自动跟上。
+   *
+   * ⚠️ 2026-10-08 改（Task 2）：本函数原先自带一份 13 个键的 `stub()` 表并逐字
+   * 对齐 `JetHubAuths`（该注释当时自陈「本文件不在 typecheck:tests 编译范围内，
+   * 故键清单靠**人工对齐**」）。夹具派生后这条人工纪律**消失了** ——
+   * 新增 provider 忘加桩不再可能，因为桩集合就是那份清单本身。
    */
-  function makeThrowingStub(throwing: string, message: string) {
-    const stub = (name: string) => ({
-      refreshAccountCredential: async () => {
-        if (name === throwing) throw new Error(message)
-      },
-      refresh: async () => {},
-    })
-    return {
-      codearts: stub('codearts'),
-      buddy: stub('buddy'),
-      workbuddy: stub('workbuddy'),
-      lobsterai: stub('lobsterai'),
-      qoder: stub('qoder'),
-      qodercn: stub('qodercn'),
-      trae: stub('trae'),
-      cline: stub('cline'),
-      loomy: stub('loomy'),
-      raccoon: stub('raccoon'),
-      minimax: stub('minimax'),
-      zcode: stub('zcode'),
-      gemini: stub('gemini'),
-    }
-  }
-
   async function callRefreshFailing(accounts: ProviderAccountEntry[], accountId: string, throwing: string, message: string) {
-    const { ctx, getHandler } = makeCtx(accounts)
-    const services = makeThrowingStub(throwing, message)
-    registerJetHubRpc(
-      ctx as never,
-      makePool(accounts) as never,
-      services.codearts as never,
-      services.buddy as never,
-      services.workbuddy as never,
-      services.lobsterai as never,
-      services.qoder as never,
-      services.qodercn as never,
-      services.trae as never,
-      services.cline as never,
-      services.loomy as never,
-      services.raccoon as never,
-      services.minimax as never,
-      services.zcode as never,
-      services.gemini as never,
-    )
-    const response = await getHandler()(new Request('http://127.0.0.1/api/jet-hub', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        type: 'client-request',
-        rpcId: 'r1',
-        method: 'jet-hub',
-        payload: { method: 'account.refresh', payload: { accountId } },
-      }),
-    }))
-    const body = await response.json() as {
-      result: { ok: boolean; value?: { success: boolean }; error?: { code?: string; message?: string } }
-    }
-    return body.result
+    const harness = refreshHarness(accounts, { throwing: { [throwing]: message } })
+    return harness.call(accountId)
   }
 
   /**
@@ -376,11 +360,13 @@ describe('account.refresh 失败语义（issue IKJOZA）', () => {
   /**
    * 全部 13 个 provider 逐个覆盖。
    *
-   * ⚠ `switch` 新增 case 时这条会**静默失效**（新 provider 既不在本表里、
-   * 又仍被 `makeThrowingStub` 造了桩），故另有一条 case 数量断言兜底。
+   * ⚠️ 2026-10-08 改（Task 2）：本表原先**手抄** 13 个 id，并靠注释提醒
+   * 「`switch` 新增 case 时这条会静默失效」。查表分派后「新增 case」这个形态
+   * 不存在了，但「新增 provider 时本表忘了加」仍然可能 ——
+   * ⇒ 改为从 `REFRESH_PROVIDERS`（夹具的单一清单）**派生**，
+   *    与 `src/index.ts` 的注册清单、`JetHubAuths` 的 13 个键同源。
    */
-  for (const provider of ['codearts', 'buddy', 'workbuddy', 'lobsterai', 'qoder', 'qodercn',
-    'trae', 'cline', 'loomy', 'raccoon', 'minimax', 'zcode', 'gemini'] as const) {
+  for (const provider of REFRESH_PROVIDERS) {
     it(`${provider} 分支的失败也走同一条 ok:false 通道`, async () => {
       const accounts = [entry(provider, `${provider.toUpperCase()}_ACCOUNT_F`)]
       const result = await callRefreshFailing(accounts, `${provider}-1`, provider, `${provider} boom`)

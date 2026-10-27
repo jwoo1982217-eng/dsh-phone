@@ -313,3 +313,122 @@ describe('fetchMinimaxCreditBalance', () => {
     expect(await fetchMinimaxCreditBalance(CRED, fetcher as never)).toBeNull()
   })
 })
+
+/**
+ * ⚠️⚠️ **HTTP 非 2xx 必须判失败**（2026-10-17 修复的真实缺陷，Gitee issue IKMEVG）。
+ *
+ * ## 修前是什么样
+ *
+ * `requestEnvelope` 只解析 JSON 体、**从不看 HTTP 状态码**。于是
+ * `400 {"error":"invalid signature"}` 这种**没有 `base_resp`** 的响应体会走到
+ * `statusCode === undefined` ⇒ 被判 **`ok: true`**，然后：
+ *
+ * | 入口 | 拿到 `ok:true` 之后 | 面板文案 |
+ * |---|---|---|
+ * | `claim` | `claim_result` 缺失 | 「签到响应缺少有效的 claim_result」 |
+ * | `signin/status` | 形状不认 ⇒ `null` | 签到状态不可用 |
+ * | `credit/details` | `details`/`total_count` 缺失 ⇒ `null` | 「余额查询失败」 |
+ *
+ * ⇒ 一条「ALB 说没凭据」被翻译成三句**与真因无关**的话。
+ *
+ * ## ⚠️ 为什么此前零覆盖（本段的由来）
+ *
+ * 反向验证实测：注入 `if (!response.ok) return {ok:false…}` 后跑 62 条
+ * minimax 用例**全绿** —— 既有用例构造的响应全是 200 + 合法业务码，
+ * **结构上抓不到**这个分支。故这里把三种真实错误体逐条锁死。
+ *
+ * ## 判据要点
+ *
+ * - 必须**如实透出响应体原文**：`invalid signature`（网关/重定向）与
+ *   `invalid access token`（凭据）指向**完全不同**的处置动作，压成
+ *   「失败」会让用户照着错的指引去重登；
+ * - **不得**把 HTTP 200 + 业务码的既有习惯改坏（上面那一整个 describe 锁着它）。
+ */
+describe('★★ HTTP 非 2xx 不得被当成成功（issue IKMEVG 的第二道缺陷）', () => {
+  /** 真实的国际站错误体（本机实测原文）。 */
+  const INVALID_SIGNATURE = { error: 'invalid signature' }
+  const INVALID_TOKEN = { error: 'invalid access token' }
+
+  it('★★★ 400 + `invalid signature` ⇒ claim **必须**给出 HTTP 级原因，不是「缺少 claim_result」', async () => {
+    const fetcher = vi.fn().mockResolvedValue(json(INVALID_SIGNATURE, 400))
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+
+    expect(outcome.kind).toBe('failed')
+    // ★★ 这一条是缺陷的**症状**：修前这里恒为「签到响应缺少有效的 claim_result」
+    expect(outcome.message).not.toBe('签到响应缺少有效的 claim_result')
+    // 必须能看出是 HTTP 400 且带上网关原话
+    expect(outcome.message).toContain('400')
+    expect(outcome.message).toContain('invalid signature')
+  })
+
+  it('★★★ 400 + `invalid signature` ⇒ 余额与签到状态都必须判失败（不是「余额为 0」）', async () => {
+    const fetcher = vi.fn().mockResolvedValue(json(INVALID_SIGNATURE, 400))
+    expect(await fetchMinimaxCreditBalance(CRED, fetcher as never)).toBeNull()
+    expect(await fetchMinimaxSigninStatus(CRED, fetcher as never)).toBeNull()
+  })
+
+  it('★★ 401 + `invalid access token` ⇒ 文案指明「凭据已失效」并带原话', async () => {
+    const fetcher = vi.fn().mockResolvedValue(json(INVALID_TOKEN, 401))
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+    expect(outcome.kind).toBe('failed')
+    expect(outcome.message).toContain('凭据已失效')
+    expect(outcome.message).toContain('invalid access token')
+  })
+
+  it('403 同样归「凭据已失效」', async () => {
+    const fetcher = vi.fn().mockResolvedValue(json({ error: 'forbidden' }, 403))
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+    expect(outcome.kind).toBe('failed')
+    expect(outcome.message).toContain('凭据已失效')
+  })
+
+  it('★★ 5xx 也判失败（网关故障不得被读成「0 积分」）', async () => {
+    // ⚠️ 必须每次新建 Response：`Response` 的 body 只能读一次，复用同一个对象
+    // 会让第二次读抛「Body is unusable」（本用例初版就这么假红过一次）。
+    const fetcher = vi.fn(async () => json({ error: 'internal error' }, 502))
+    expect(await fetchMinimaxCreditBalance(CRED, fetcher as never)).toBeNull()
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+    expect(outcome.kind).toBe('failed')
+    expect(outcome.message).toContain('502')
+  })
+
+  it('★ 错误体是嵌套 `{error:{message}}` 时也要取出原因', async () => {
+    const fetcher = vi.fn().mockResolvedValue(json({ error: { message: 'balance not enough' } }, 400))
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+    expect(outcome.kind).toBe('failed')
+    expect(outcome.message).toContain('balance not enough')
+  })
+
+  it('⚠️ 错误体里没有任何可读字段时，文案仍要带 HTTP 状态码（不编造原因）', async () => {
+    const fetcher = vi.fn().mockResolvedValue(json({}, 500))
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+    expect(outcome.kind).toBe('failed')
+    expect(outcome.message).toContain('500')
+  })
+
+  it('⚠️ 超长错误体被截断（它要进 UI 文案，不能整段堆上去）', async () => {
+    const long = 'x'.repeat(1000)
+    const fetcher = vi.fn().mockResolvedValue(json({ error: long }, 400))
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+    expect(outcome.kind).toBe('failed')
+    expect(outcome.message.length).toBeLessThan(400)
+    expect(outcome.message).toContain('…')
+  })
+
+  it('★★ 反向：HTTP 200 + 业务码 0 的正常响应**不得**被新判据误杀', async () => {
+    // 这是既有的「HTTP 200 + 业务码」习惯，新判据绝不能把它判失败。
+    const fetcher = vi.fn().mockResolvedValue(json(makePanel()))
+    const status = await fetchMinimaxSigninStatus(CRED, fetcher as never)
+    expect(status).not.toBeNull()
+    expect(status?.active).toBe(true)
+  })
+
+  it('★★ 反向：HTTP 200 但业务码非 0 时，文案必须以**业务码**为准（不被 HTTP 判据抢走）', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      json({ base_resp: { status_code: 1406010011, status_msg: 'invalid timezone_id' } }, 200),
+    )
+    const outcome = await claimMinimaxDailyCheckin(CRED, fetcher as never)
+    expect(outcome.kind).toBe('failed')
+    expect(outcome.message).toBe('invalid timezone_id')
+  })
+})

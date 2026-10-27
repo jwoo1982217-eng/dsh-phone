@@ -78,8 +78,12 @@ export declare const RACCOON_EFFORT_OFF = "off";
 /**
  * 档位展示名（DSH 直接渲染 `efforts[].name`，不本地化）。
  *
- * ⚠️ 用「开启 / 关闭」而非「深度思考 / 关闭思考」（用户 2026-09-28 要求：
+ * ⚠️ **用词**取「开启」「关闭」两个词，而不是「深度思考」「关闭思考」（用户 2026-09-28 要求：
  * 「现在开启档位显示的深度思考，就显示开启就行了」）。
+ * （⚠️ 这里说的是**用哪两个词**，不是顺序 —— 顺序见上一段的强度序说明。）
+ *
+ * ⚠️ 本表是**名称映射**、与顺序无关（键是 id）。**声明顺序**在
+ * {@link RACCOON_REASONING_EFFORTS}，那才是「关闭 → 开启」的强度序。
  *
  * 理由是**如实**：我们能表达的只有「思考开 / 关」这一个布尔维度，
  * 没有任何强度档位（`reasoning_effort` 实测无效）。叫「深度思考」会让用户
@@ -87,11 +91,23 @@ export declare const RACCOON_EFFORT_OFF = "off";
  */
 export declare const RACCOON_EFFORT_NAMES: Readonly<Record<string, string>>;
 /**
- * 该模型可选的思考档位（按展示顺序）。
+ * 该模型可选的思考档位（**顺序 = 强度序：弱 → 强**，Issue IKLIDV）。
  *
  * ⚠️ **所有 6 个可见模型都返回这两档** —— 实测 `extra_body.thinking` 是
  * **provider 级方言**，与模型无关（`thinking.type` 的枚举在服务端全局一致）。
  * 故不做 per-model 分派（那会是凭空猜测）。
+ *
+ * ⚠️ **顺序是「关闭 → 开启」，不是「默认档排第一」**：DSH 的契约把该数组当
+ * **展示顺序**（`dsh-llm/lib/types/types.d.ts`：`adapter-preferred display order`），
+ * 客户端**直接 `map` 不排序**（`dsh-client-ui-model-selection/lib/client.js`）
+ * ⇒ 把默认档 `on` 排在最前，会让「开启」落在横向档位轴的最左（左强右弱）。
+ * 强度序的权威是本仓库 `REASONING_EFFORT_RANK`（`off: 0` / `on: 5`）。
+ * ⚠️ `defaultEffort` 与数组位置是**两件事**（见 {@link RACCOON_DEFAULT_EFFORT}）。
+ *
+ * ⚠️ **有代码依赖本数组的顺序吗**：见 `raccoon-adapter.ts` 的
+ * `raccoonReasoningInfo()` —— 它的兜底分支原先读 `[0]`（=「第一项即默认档」），
+ * 调整顺序后**必须**改成读 {@link RACCOON_EFFORT_ON} 字面量，否则该分支会
+ * 静默回退成「关闭思考」。那是一处**方向取反**，比顺序本身严重得多。
  */
 export declare const RACCOON_REASONING_EFFORTS: readonly string[];
 /**

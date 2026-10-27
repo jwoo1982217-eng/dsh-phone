@@ -34,6 +34,44 @@
  *    而 `qodercontext_new` / `prepareInferRequest` 为 `ptr/errIdx/isErr`。
  *    混用会得到 `null pointer passed to rust`。
  * 3. **`requestresult_url(栈指针, ptr)` 参数顺序与直觉相反**（栈指针在前）。
+ * 4. **wasm 对象必须配对释放**（否则进程级共享的 wasm 堆只增不减，见下）。
+ *
+ * ## ⚠️ wasm 堆泄漏：`unreachable` 会话暴毙的根因
+ *
+ * `gluePromise` 是**进程级单例**（所有账号、所有会话共用一个 wasm 实例），
+ * 而 wasm32 的线性内存上限是 4 GB。`qodercontext_new`（`QoderContext`）与
+ * `qodercontext_prepareInferRequest`（`RequestResult`）产出的对象**都是
+ * wasm 堆上的 Rust 对象**，早期实现从不释放 ⇒ 堆只增不减 ⇒ 长上下文会话
+ * 最先撞上 4 GB 天花板，当场 trap：
+ *
+ * ```
+ * RuntimeError: unreachable        ← 报文里没有任何 host / provider 信息
+ * ```
+ *
+ * 它发生在**发出任何网络请求之前**（实测 ~25 ms），UI 只显示
+ * 「本轮运行失败 unreachable」，极难定位。故：
+ *
+ * - `prepareInfer()` 读完 url / headers / body 后释放 `result`，
+ *   并释放 `requestresult_url` / `requestresult_body` 返回的**字符串**
+ *  （第三处，见 {@link Glue.freeString}）；
+ * - `QoderEncryptedInfer.dispose()` 释放 `context`，由
+ *   `src/qoder-adapter.ts` 的 `buildRequest()` 在请求构造完成后调用。
+ *
+ * 🔴 **只释放「对象」与「返回值字符串」，绝不碰输入字符串**。
+ * `qodercontext_new` 的 4 个**输入字符串**由 Rust 侧持有（走
+ * `writeString` → `__wbindgen_export2`），若手工去释放它们会**当场 trap
+ * `unreachable`**（实测）。
+ *
+ * ⚠️ **「残余另有来源、尚未定位」这个旧结论已被证伪（2026-10-12 审计实测）**：
+ * 当初补了 `result` + `context` 两处后仍见约 118 KB/次，就断言「另有来源」，
+ * 并猜测「出自 `prepareInferRequest` 内部」—— **两个结论都是错的**。
+ * 实际就是漏掉的**第三处**（返回值字符串）。证据：泄漏量与 `url + body` 长度
+ * **近似 1:1**（tiny 0.000 / small 0.793 / medium 0.990 / large 0.960），
+ * 而只加长 `host`（url 120→20121 B）时泄漏随之增长；`create + dispose`
+ * 100 次实测 **0.0 B/次**（与 result/context 无关）。
+ * 补上 {@link Glue.freeString} 后同口径扫描**归零**。
+ * ⇒ 本文件**不再声称**「泄漏未根治」；若将来又见到增长，那是**新的**成因，
+ *   请照本次的方法（尺寸扫描 + 比值）先定位再下结论。
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -143,6 +181,42 @@ export function buildQoderInferPayload(ask, requestId = crypto.randomUUID()) {
 }
 /** 已实例化的 glue（每个进程一份，WASM 实例无状态可复用）。 */
 let gluePromise = null;
+/**
+ * wasm 对象释放开关（**回归闸的反向控制拉杆**，默认开启）。
+ *
+ * `tests/unit/qoder-wasm-leak.spec.ts` 会把它置 `false` 跑一遍同载荷，
+ * 用来证明「闸确实能抓到不释放的版本」（否则闸可能是恒真的同义反复）。
+ * 生产路径上没有任何代码会写它 —— 恒为 `true`。
+ */
+let freesEnabled = true;
+/**
+ * 把 V8 对 wasm `unreachable` trap 的**裸报文**改写成可自解释的中文。
+ *
+ * ## 为什么必须改写
+ *
+ * V8 抛出的 `RuntimeError` 报文只有一个词：`unreachable`。它**不含**
+ * host / provider / 账号 / 阶段，DSH 侧再经 `normalizeLlmFailure()` 归一成
+ * `{message:'unreachable', code:'UNKNOWN'}`，UI 上就剩「本轮运行失败
+ * unreachable」。真实成因（Rust panic 或 wasm32 堆耗尽，见文件头「wasm 堆
+ * 泄漏」一节）因此**不可见**，历史上 8 次命中全部无法定位。
+ *
+ * ## 判据
+ *
+ * 只认 `RuntimeError` 且报文**恰好**是 `unreachable`：这是 V8 对 wasm
+ * `unreachable` 指令的固定措辞（实测：`name=RuntimeError message="unreachable"
+ * instanceof Error=true`）。其它 `RuntimeError`（如 `memory access out of
+ * bounds`）原样放行 —— 它们自带成因，改写反而丢信息。
+ *
+ * 其余值原样返回：非本机 wasm 的错误不该被这里贴标签。
+ */
+export function describeWasmFailure(error) {
+    if (!(error instanceof Error) || error.name !== 'RuntimeError')
+        return error;
+    if (error.message.trim() !== 'unreachable')
+        return error;
+    return new Error('Qoder WASM 堆耗尽（或 Rust 侧 panic），Qoder 路由已不可用 —— 需重启 DSH 才能清空该 WASM 堆。'
+        + '（原始报文：RuntimeError: unreachable）', { cause: error });
+}
 /** 建立（或复用）WASM glue。 */
 async function getGlue() {
     gluePromise ??= createGlue();
@@ -214,6 +288,10 @@ async function createGlue() {
                 throw takeObject(v.getInt32(stack + 8, true));
             return readString(ptr, len);
         }
+        catch (error) {
+            // 同 `callPointer`：裸 `unreachable` 必须被改写（见该处注释）。
+            throw describeWasmFailure(error);
+        }
         finally {
             exports.__wbindgen_add_to_stack_pointer(16);
             if (ptr)
@@ -231,8 +309,75 @@ async function createGlue() {
                 throw takeObject(v.getInt32(stack + 4, true));
             return ptr;
         }
+        catch (error) {
+            // ⚠️ wasm 线性内存（wasm32 上限 4 GB）耗尽时，Rust 侧 trap 出的报文
+            // 就是裸的 `unreachable` —— 它**不含任何 host / provider / 账号信息**，
+            // 冒到 UI 上只会显示「本轮运行失败 unreachable」，与真实成因（WASM 堆
+            // 只增不减）完全脱节。这里在**唯一**能确定来源的地方把它改写清楚。
+            throw describeWasmFailure(error);
+        }
         finally {
             exports.__wbindgen_add_to_stack_pointer(16);
+        }
+    };
+    /**
+     * 释放 wasm 堆上的 Rust 对象。
+     *
+     * ⚠️ 第二参恒为 `0`：那是 `<T as IntoWasmAbi>` 的额外 ABI 槽位，
+     * 实测导出的 arity 为 2（不是只传 ptr 的「一元」函数）。
+     * 指针为 0 时直接跳过 —— 哨兵 0 代表「无对象」，释放它是非法的。
+     */
+    const freePointer = (name, ptr) => {
+        // 🔴 这是回归闸的**反向控制拉杆**（见 `tests/unit/qoder-wasm-leak.spec.ts`）：
+        // 置 false 后 `tests` 必须变红。除测试外**没有任何代码**会去动它，
+        // 生产路径上它恒为 `true`。
+        if (!freesEnabled)
+            return;
+        if (ptr === 0)
+            return;
+        try {
+            exports[name](ptr, 0);
+        }
+        catch (error) {
+            // 释放本身几乎不会失败；但堆耗尽时它同样会 trap，报业务必同样可读
+            //（否则会话里又会冒出一句裸 `unreachable`）。
+            throw describeWasmFailure(error);
+        }
+    };
+    /**
+     * 释放 wasm-bindgen 的**返回值字符串**（`__wbindgen_export4(ptr, len, 1)`）。
+     *
+     * ⚠️ 与 `freePointer` 是**两套 ABI**，别混用：`__wbg_*_free` 的 arity 是 2
+     * `(ptr, 0)`；`__wbindgen_export4` 的 arity 是 3 `(ptr, len, 1)` ——
+     * 末位 `1` 是 wasm-bindgen 约定的「这是字符串」标记。
+     *
+     * ## 🔴 为什么需要它（真实缺陷，2026-10-12 审计实测）
+     *
+     * `requestresult_url` / `requestresult_body` 返回的是 Rust 侧**新分配的
+     * `String`**，其所有权随返回值交给 JS，**必须**由 JS 释放。早期实现只读了
+     * `ptr`/`len` 就丢弃 ⇒ 每次推理泄漏 ≈ **返回字符串长度**（实测与 `url + body`
+     * 长度近似 **1:1**：tiny 0.000 / small 0.793 / medium 0.990 / large 0.960）。
+     *
+     * 这正是文件头一度写「残余另有来源、尚未定位」的那份泄漏 —— 它**不是**
+     * 未知来源，就是漏掉的这一处。同文件 `callString` 早就这么做了
+     *（它读的也是 wasm-bindgen 返回串），本处当初漏了。
+     *
+     * ⚠️ **绝不可**拿它对 `qodercontext_new` 的**输入字符串**调用：那些由 Rust
+     * 侧持有（走 `writeString` → `__wbindgen_export2`），手工释放会当场 trap
+     * `unreachable`（实测）。故输入侧不在此处释放。
+     */
+    const freeString = (ptr, len) => {
+        // ⚠️ 与 `freePointer` 共用**同一根反向控制拉杆**：否则关掉 freePointer 后
+        // 这一处仍在释放，泄漏量掉到阈值以下，反向控制用例会以「闸坏了」的形式假红。
+        if (!freesEnabled)
+            return;
+        if (ptr === 0)
+            return;
+        try {
+            exports.__wbindgen_export4(ptr, len, 1);
+        }
+        catch (error) {
+            throw describeWasmFailure(error);
         }
     };
     /** wasm-bindgen 的「调用 JS 函数并捕获异常」包装。 */
@@ -311,6 +456,8 @@ async function createGlue() {
         takeObject,
         callString,
         callPointer,
+        freePointer,
+        freeString,
     };
 }
 /**
@@ -345,8 +492,9 @@ export async function generateRuntimeAuthFields(user) {
  * 这个报错看起来像「密文损坏」，实际是缺参数。
  * 该值由本插件生成并随凭据持久化（`QoderCredential.machine_id`）。
  *
- * 仅用于离线读取本机缓存做核对/排查；线上模型列表仍走兜底表
- * （目录端点需 WASM 签名，见 `qoder-adapter.ts` 的 `listModels`）。
+ * 仅用于离线读取本机缓存做核对/排查。**线上模型列表不走它** —— 走
+ * `src/qoder-catalog.ts` 的签名请求（`/api/v2/model/list?Encode=1`），
+ * 响应解密用下面那个 {@link decryptServerResponse}（两把锁不同，见其注释）。
  */
 export async function decryptModelCatalog(encrypted, machineId) {
     const g = await getGlue();
@@ -360,6 +508,52 @@ export async function decryptModelCatalog(encrypted, machineId) {
     return JSON.parse(raw);
 }
 /**
+ * 解密**服务端响应体**（带 `Encode=1` 的端点，如 `/api/v2/model/list?Encode=1`）。
+ *
+ * ## 为什么需要它
+ *
+ * 官方客户端解响应只有一行（`qoder-worker-runtime` 的 `rb`）：
+ *
+ * ```js
+ * function rb(A) { try { return AE().decrypt_server_response(A) } catch { return A } }
+ * async function $x(A) { let e = await A.text(); return JSON.parse(rb(e)) }
+ * ```
+ *
+ * 即：**先试着解密，失败就当成明文** —— 这个「失败即明文」不是容错洁癖，
+ * 而是协议的一部分：同一个端点在未加密场景（如未登录/降级）会直接回明文 JSON。
+ * 故 {@link decryptServerResponseOrRaw} 保留了这条回退，而不是把失败抛给上层。
+ *
+ * ⚠️ **与 `decryptModelCatalog` 是两把不同的锁**：那个解的是本地
+ * `catalog-v6` 缓存（第二参是 **uid**），这个解的是**线上响应**（无第二参）。
+ * 混用会得到 `AES-GCM decrypt failed: aead::Error`（看着像密文损坏，实为用错函数）。
+ *
+ * @param encrypted - 服务端原始响应文本。
+ * @returns 解密后的明文；**解密失败时调用方应回退原文**（见
+ *   {@link decryptServerResponseOrRaw}）。
+ */
+export async function decryptServerResponse(encrypted) {
+    const g = await getGlue();
+    return g.callString((stack) => {
+        const a = g.writeString(encrypted);
+        g.exports.decrypt_server_response(stack, a, g.lastLength());
+    });
+}
+/**
+ * `decryptServerResponse` + 「失败即明文」回退（复刻官方 `rb()` 的语义）。
+ *
+ * 抽成独立函数的理由：**回退是协议要求，不是可选优化**（见
+ * {@link decryptServerResponse} 的注释）。把它内联到调用点会让每个新端点
+ * 各自决定「失败怎么办」—— 而官方只有一个答案。
+ */
+export async function decryptServerResponseOrRaw(text) {
+    try {
+        return await decryptServerResponse(text);
+    }
+    catch {
+        return text;
+    }
+}
+/**
  * Qoder 加密推理客户端。
  *
  * 持有 WASM 上下文（`QoderContext`）与运行时鉴权字段，用于反复生成
@@ -370,6 +564,8 @@ export class QoderEncryptedInfer {
     context;
     metadata;
     host;
+    /** `dispose()` 是否已跑过（保证幂等，且让重复释放不会二次 free 悬垂指针）。 */
+    disposed = false;
     constructor(g, context, metadata, 
     /** 加密端点所在 host（`agent_chat_generation`）。 */
     host) {
@@ -415,6 +611,10 @@ export class QoderEncryptedInfer {
     prepareInfer(ask) {
         const g = this.g;
         const payload = buildQoderInferPayload(ask);
+        if (this.disposed) {
+            // 显式报错好过拿到悬垂指针后 trap 出一句裸 `unreachable`。
+            throw new Error('qoder: QoderEncryptedInfer 已 dispose，不能再次 prepareInfer');
+        }
         const result = g.callPointer((stack) => {
             const host = g.writeString(this.host);
             const hostLen = g.lastLength();
@@ -426,39 +626,210 @@ export class QoderEncryptedInfer {
             const sourceLen = g.lastLength();
             g.exports.qodercontext_prepareInferRequest(stack, this.context, host, hostLen, body, bodyLen, key, keyLen, source, sourceLen);
         });
-        const headerMap = g.takeObject(g.exports.requestresult_headers(result));
-        const headers = {};
-        if (headerMap instanceof Map) {
-            for (const [k, v] of headerMap)
-                headers[String(k)] = String(v);
+        // url / headers / body 都在下面被拷进 JS 字符串（`headers` 已 `takeObject`
+        // 出 Map，`readResultString` 读的是 wasm 内存里的字符串），故读完即可
+        // **立即释放** `result` —— 不释放的话每次推理都在进程级 wasm 堆上留一份，
+        // 长上下文会话最终 trap `unreachable`（见文件头）。
+        //
+        // 🔴 用 `try/finally` 而不是在 return 之后释放：`requestresult_*` 抛错时
+        // 同样必须释放，否则异常路径反倒成了泄漏最多的那条路。
+        try {
+            const headerMap = g.takeObject(g.exports.requestresult_headers(result));
+            const headers = {};
+            if (headerMap instanceof Map) {
+                for (const [k, v] of headerMap)
+                    headers[String(k)] = String(v);
+            }
+            const readResultString = (invoke) => {
+                let out = '';
+                let outPtr = 0;
+                let outLen = 0;
+                const v = g.view();
+                const stack = g.exports.__wbindgen_add_to_stack_pointer(-16);
+                try {
+                    invoke(stack, result);
+                    outPtr = v.getInt32(stack + 0, true);
+                    outLen = v.getInt32(stack + 4, true);
+                    out = outPtr ? g.readString(outPtr, outLen) : '';
+                }
+                finally {
+                    g.exports.__wbindgen_add_to_stack_pointer(16);
+                    // 🔴 **第三处 free（2026-10-12 审计实测补上）**：`requestresult_url` /
+                    // `requestresult_body` 返回的是 Rust 侧**新分配**的 `String`，所有权已
+                    // 交给 JS ⇒ 不释放就每次推理泄漏 ≈ 返回字符串长度（实测与 url+body
+                    // 长度近似 1:1）。与同文件 `callString` 同款。
+                    g.freeString(outPtr, outLen);
+                }
+                return out;
+            };
+            return {
+                // ⚠️ 参数顺序：(栈指针, ptr) —— 与直觉相反
+                url: readResultString((stack, ptr) => g.exports.requestresult_url(stack, ptr)),
+                headers,
+                body: readResultString((stack, ptr) => g.exports.requestresult_body(stack, ptr)),
+            };
         }
-        const readResultString = (invoke) => {
-            let out = '';
-            const v = g.view();
-            const stack = g.exports.__wbindgen_add_to_stack_pointer(-16);
-            try {
-                invoke(stack, result);
-                const ptr = v.getInt32(stack + 0, true);
-                const len = v.getInt32(stack + 4, true);
-                out = ptr ? g.readString(ptr, len) : '';
+        finally {
+            // 🔴 **只释放 `result`**：`qodercontext_new` 的 4 个输入字符串由 Rust
+            // 侧持有，手工释放会当场 trap `unreachable`（实测边界，见文件头）。
+            g.freePointer('__wbg_requestresult_free', result);
+        }
+    }
+    /**
+     * 构造并签名**任意端点**的请求（不只推理）。
+     *
+     * ## 为什么需要它
+     *
+     * WASM 同时导出了两个请求构造函数：
+     *
+     * | 导出 | 用途 | 本插件此前用了吗 |
+     * |---|---|---|
+     * | `qodercontext_prepareInferRequest` | 推理端点（`agent_chat_generation`） | ✅ `prepareInfer` |
+     * | `qodercontext_prepareRequest` | **通用**：任意 endpoint / path / method | ❌ 本方法才接上 |
+     *
+     * 官方客户端的**搜索**走后者 —— 见 `qoder-worker-runtime` 的 `tPl`：
+     * ```js
+     * let n = i.prepareRequest(A, e, "POST", "auth", t, void 0)
+     * return { url: n.url, path: e, headers: kc(n.headers), body: n.body ?? t, free: () => n.free() }
+     * ```
+     * 即 `prepareRequest(endpoint, path, method, mode, bodyJson, headersJson)`。
+     *
+     * ## 参数语义（照 wasm-bindgen glue 逐位对齐）
+     *
+     * ```js
+     * prepareRequest(A, e, t, i, n, r) {
+     *   // A=endpoint  e=path  t=method  i=签名模式  n=body(可选)  r=headers(可选)
+     *   qodercontext_prepareRequest(sp, ctx,
+     *     A, lenA, e, lenE, t, lenT, i, lenI,
+     *     MX(n) ? 0 : n, lenN,      // ⚠️ 可选参数：缺席时**传 0**，不是空串
+     *     MX(r) ? 0 : r, lenR)
+     * }
+     * ```
+     * 故本方法对 `body` / `headers` 的**缺席**（`undefined`）传 `0` —— 传空串
+     * 会让 Rust 侧当成「有值但为空」，与官方行为不一致。
+     *
+     * ## ⚠️ 与 `prepareInfer` 的三点差异
+     *
+     * 1. **不写 `host`**：`prepareInfer` 用实例上的 `this.host`；本方法把
+     *    endpoint（host）**作为参数传入** —— 因为搜索与推理的 host 不同
+     *    （搜索挂 center 的 host，见 `qoder-product.ts`）。
+     * 2. **参数个数不同**：glue 里 `prepareRequest` 是 6 个 JS 参（含可选），
+     *    `prepareInferRequest` 是 4 个（host / body / modelKey / source）。
+     * 3. **返回值同形**：都是 `RequestResult`，用同一组 `requestresult_*`
+     *    读取器 + 同一个 `__wbg_requestresult_free` 释放。
+     *
+     * @param endpoint - 目标 host（含 scheme，如 `https://gateway.qoder.com.cn`）。
+     * @param path - 请求路径（如 `/api/v1/webSearch/oneSearch`）。
+     * @param method - HTTP 方法（官方对搜索与推理都用 `POST`）。
+     * @param mode - 签名模式：`'auth'`（登录态）或 `'sign'`（匿名）。
+     * @param body - 请求体字符串；`undefined` 表示不带 body。
+     * @param headers - 额外请求头的 JSON 字符串；`undefined` 表示不带。
+     * @returns `{ url, headers, body }` —— headers 含 `Authorization: Bearer COSY.<载荷>.<签名>`。
+     * @throws {Error} 实例已 `dispose`，或 wasm 侧返回错误时。
+     */
+    prepareRequest(endpoint, path, method, mode, body, headers) {
+        const g = this.g;
+        if (this.disposed) {
+            // 与 `prepareInfer` 同款：显式报错好过拿到悬垂指针后 trap 一句裸 `unreachable`。
+            throw new Error('qoder: QoderEncryptedInfer 已 dispose，不能再次 prepareRequest');
+        }
+        const result = g.callPointer((stack) => {
+            const ep = g.writeString(endpoint);
+            const epLen = g.lastLength();
+            const pt = g.writeString(path);
+            const ptLen = g.lastLength();
+            const md = g.writeString(method);
+            const mdLen = g.lastLength();
+            const mo = g.writeString(mode);
+            const moLen = g.lastLength();
+            // ⚠️ 可选参数缺席传 0（glue 的 `MX(n) ? 0 : ...` 语义），不能传空串指针。
+            const bd = body === undefined ? 0 : g.writeString(body);
+            const bdLen = body === undefined ? 0 : g.lastLength();
+            const hd = headers === undefined ? 0 : g.writeString(headers);
+            const hdLen = headers === undefined ? 0 : g.lastLength();
+            g.exports.qodercontext_prepareRequest(stack, this.context, ep, epLen, pt, ptLen, md, mdLen, mo, moLen, bd, bdLen, hd, hdLen);
+        });
+        // 与 `prepareInfer` 完全同款的读取 + 释放（理由见那处的长注释：
+        // 读进 JS 字符串后即可释放 `result`，且必须用 try/finally 覆盖异常路径）。
+        try {
+            const headerMap = g.takeObject(g.exports.requestresult_headers(result));
+            const outHeaders = {};
+            if (headerMap instanceof Map) {
+                for (const [k, v] of headerMap)
+                    outHeaders[String(k)] = String(v);
             }
-            finally {
-                g.exports.__wbindgen_add_to_stack_pointer(16);
-            }
-            return out;
-        };
-        return {
-            // ⚠️ 参数顺序：(栈指针, ptr) —— 与直觉相反
-            url: readResultString((stack, ptr) => g.exports.requestresult_url(stack, ptr)),
-            headers,
-            body: readResultString((stack, ptr) => g.exports.requestresult_body(stack, ptr)),
-        };
+            const readResultString = (invoke) => {
+                let out = '';
+                let outPtr = 0;
+                let outLen = 0;
+                const v = g.view();
+                const stack = g.exports.__wbindgen_add_to_stack_pointer(-16);
+                try {
+                    invoke(stack, result);
+                    outPtr = v.getInt32(stack + 0, true);
+                    outLen = v.getInt32(stack + 4, true);
+                    out = outPtr ? g.readString(outPtr, outLen) : '';
+                }
+                finally {
+                    g.exports.__wbindgen_add_to_stack_pointer(16);
+                    g.freeString(outPtr, outLen);
+                }
+                return out;
+            };
+            return {
+                url: readResultString((stack, ptr) => g.exports.requestresult_url(stack, ptr)),
+                headers: outHeaders,
+                body: readResultString((stack, ptr) => g.exports.requestresult_body(stack, ptr)),
+            };
+        }
+        finally {
+            g.freePointer('__wbg_requestresult_free', result);
+        }
+    }
+    /**
+     * 释放本实例持有的 wasm `QoderContext`。
+     *
+     * 🔴 **每次用完必须调用**（调用方见 `src/qoder-adapter.ts` 的
+     * `buildRequest()`）：不释放的话，进程级共享的那个 wasm 堆只增不减，
+     * 长上下文会话最终会以 `RuntimeError: unreachable` 暴毙 ——
+     * 完整因果见文件头「wasm 堆泄漏」一节。
+     *
+     * 幂等：重复调用是 no-op（指针置 0）。释放后本实例**不可再使用**
+     * （`prepareInfer` 会拿到已释放的指针）。
+     */
+    dispose() {
+        if (this.disposed)
+            return;
+        this.disposed = true;
+        this.g.freePointer('__wbg_qodercontext_free', this.context);
     }
 }
 /** 供测试注入/复位（导出以便单测隔离）。 */
 export const __testing = {
     resetGlue() {
         gluePromise = null;
+    },
+    /**
+     * 当前 WASM 线性内存的字节数（回归闸的**唯一**判据）。
+     *
+     * ⚠️ 判据必须是**页数差**而不是进程 RSS：RSS 受 GC / 分配器 / 其它
+     * 测试文件干扰，噪声可达几十 MB，量不出这里几 KB~几十 KB 的差。
+     * wasm 线性内存只被本模块的分配驱动，且 `memory.grow` 是单调的 ——
+     * 页数差就是「泄漏了多少」的干净读数。
+     */
+    async wasmHeapBytes() {
+        const g = await getGlue();
+        return g.exports.memory.buffer.byteLength;
+    },
+    /**
+     * **回归闸的反向控制拉杆**：关掉后所有 `freePointer` 调用变成 no-op，
+     * 等价于「把 free 调用注掉」。用例据此断言「同一载荷下增长显著变大」——
+     * 若关掉后仍然通过，说明这条闸是恒真的同义反复。
+     *
+     * ⚠️ 只有测试会调用它；生产路径恒为 `true`。
+     */
+    setFreesEnabled(enabled) {
+        freesEnabled = enabled;
     },
     wasmPath: WASM_PATH,
 };

@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { CREDITS_CAPABILITIES } from '../../plugin-src/client/credits-capabilities.js'
+import { CREDITS_CAPABILITIES, RATE_LIMIT_CAPABILITIES, supportsRateLimit } from '../../plugin-src/client/credits-capabilities.js'
+import { descriptorOf } from '../../src/provider-registry.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const hubSource = readFileSync(resolve(here, '../../plugin-src/client/jet-hub.js'), 'utf8')
@@ -15,7 +16,9 @@ const hubSource = readFileSync(resolve(here, '../../plugin-src/client/jet-hub.js
  */
 describe('Loomy 客户端接线', () => {
   it('PROVIDERS 里登记了 loomy', () => {
-    expect(hubSource).toMatch(/\{ id: 'loomy', label: 'Loomy \(讯飞\)'/)
+    // ⚠️ 2026-10-08 改：`PROVIDERS` 由 `src/provider-registry.ts` 派生，
+    // 故改为读 registry 的**行为断言**，不再扫 `jet-hub.js` 的源码文本。
+    expect(descriptorOf('loomy')?.label).toBe('Loomy (讯飞)')
   })
 
   it('Loomy 走统一的「弹窗 + 轮询」路径（与其他 provider 一致）', () => {
@@ -24,7 +27,7 @@ describe('Loomy 客户端接线', () => {
     expect(hubSource).not.toContain('SmsLoginForm')
     // 走既有的 window.open + login.poll
     expect(hubSource).toContain("'login.poll'")
-    expect(hubSource).toContain('window.open(loginUrl')
+    expect(hubSource).toContain('openAccountLoginWindow({ provider, loginUrl')
   })
 
   /**
@@ -102,14 +105,14 @@ describe('Loomy 客户端接线', () => {
   })
 
   it('能力矩阵里 loomy 显式登记为「无限流」，且默认视为有限流', () => {
-    const caps = readFileSync(
-      resolve(here, '../../plugin-src/client/credits-capabilities.js'), 'utf8',
-    )
-    expect(caps).toContain('RATE_LIMIT_CAPABILITIES')
+    // ⚠️ 2026-10-08 改：限流表由 registry 派生，故改为**行为断言**
+    //（原先正则扫 `credits-capabilities.js` 的 `loomy: Object.freeze({ rateLimit: false })`）。
     // Loomy 显式 false
-    expect(caps).toMatch(/loomy:\s*Object\.freeze\(\{\s*rateLimit:\s*false\s*\}\)/)
+    expect(supportsRateLimit('loomy')).toBe(false)
+    expect(RATE_LIMIT_CAPABILITIES.loomy).toEqual({ rateLimit: false })
     // ⚠️ 默认必须是 true（未登记视为有限流），否则新增 provider 会凭空失去按钮
-    expect(caps).toMatch(/rateLimit !== false/)
+    expect(supportsRateLimit('codearts')).toBe(true)
+    expect(supportsRateLimit('未登记的 provider')).toBe(true)
   })
 
   /**

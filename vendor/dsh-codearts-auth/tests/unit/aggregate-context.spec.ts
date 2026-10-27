@@ -35,6 +35,7 @@ function fixture() {
     },
   }
   const adapter = new AggregateAdapter(ctx as never, {
+    contextWindowPolicy: 'preferred',
     accountPool: { disabledModelsFor: () => new Set() } as never,
     now: () => now, expiryProbe: async provider => expiry[provider]!, rejections: () => rejected,
   })
@@ -47,7 +48,7 @@ async function drain(stream: AsyncIterable<StreamChunk>) { const chunks = []; fo
 
 describe('聚合上下文容量跟随实际候选元数据', () => {
   it('按首选渠道读取容量，与 prepareCall 共用能力查询，原输出预算保持', async () => {
-    const f = fixture()
+    const f = fixture(); await f.adapter.refreshCatalog()
     const info = await f.adapter.resolveModel('aggregate', request.model)
     expect(info.context?.contextWindow).toBe(1_000_000)
     expect(info.defaultMaxTokens).toBeUndefined()
@@ -57,11 +58,11 @@ describe('聚合上下文容量跟随实际候选元数据', () => {
     await drain(call.stream(request)); expect(f.calls).toEqual(['buddy'])
   })
   it('auto 也使用选中的上游容量', async () => {
-    const f = fixture()
+    const f = fixture(); await f.adapter.refreshCatalog()
     expect((await f.adapter.resolveModel('aggregate', 'auto')).context?.contextWindow).toBe(1_000_000)
   })
   it('选型缓存到期后重新识别首选渠道及其变化后的容量', async () => {
-    const f = fixture()
+    const f = fixture(); await f.adapter.refreshCatalog()
     await f.adapter.resolveModel('aggregate', request.model)
     f.expiry.workbuddy = 1; f.metadata.workbuddy!.context!.contextWindow = 524_288; f.advance()
     const call = await f.adapter.prepareCall('aggregate', request.model)
@@ -70,20 +71,20 @@ describe('聚合上下文容量跟随实际候选元数据', () => {
     await drain(call.stream(request)); expect(f.calls).toEqual(['workbuddy'])
   })
   it('关闭某候选后，容量随新的首选渠道立即变化', async () => {
-    const f = fixture()
+    const f = fixture(); await f.adapter.refreshCatalog()
     await f.adapter.resolveModel('aggregate', request.model); f.rejectBuddy()
     expect((await f.adapter.resolveModel('aggregate', request.model)).context?.contextWindow).toBe(131_072)
   })
   it('首选渠道未上报容量时保留兼容预算，不能借用别的渠道容量', async () => {
-    const f = fixture(); delete f.metadata.buddy!.context
+    const f = fixture(); await f.adapter.refreshCatalog(); delete f.metadata.buddy!.context
     expect((await f.adapter.resolveModel('aggregate', request.model)).context?.contextWindow).toBe(200_000)
   })
   it.each([0, -1, NaN, 1.5])('不采用非法上下文元数据 %s', async value => {
-    const f = fixture(); f.metadata.buddy!.context!.contextWindow = value
+    const f = fixture(); await f.adapter.refreshCatalog(); f.metadata.buddy!.context!.contextWindow = value
     expect((await f.adapter.resolveModel('aggregate', request.model)).context?.contextWindow).toBe(200_000)
   })
   it('备用渠道超限后交给压缩，短期容量按该渠道收敛，恢复后仍能完成请求', async () => {
-    const f = fixture(); f.failover()
+    const f = fixture(); await f.adapter.refreshCatalog(); f.failover()
     const call = await f.adapter.prepareCall('aggregate', request.model)
     await expect(drain(call.stream(request))).rejects.toMatchObject({ code: CONTEXT_WINDOW_EXCEEDED_CODE })
     expect(f.calls).toEqual(['buddy', 'workbuddy'])
@@ -96,7 +97,7 @@ describe('聚合上下文容量跟随实际候选元数据', () => {
     expect((await f.adapter.resolveModel('aggregate', request.model)).context?.contextWindow).toBe(1_000_000)
   })
   it('清缓存也清超限恢复预算，不影响原候选优先级', async () => {
-    const f = fixture(); f.failover()
+    const f = fixture(); await f.adapter.refreshCatalog(); f.failover()
     await expect(drain((await f.adapter.prepareCall('aggregate', request.model)).stream(request))).rejects.toBeDefined()
     f.adapter.clearChoiceCache()
     expect((await f.adapter.resolveModel('aggregate', request.model)).context?.contextWindow).toBe(1_000_000)

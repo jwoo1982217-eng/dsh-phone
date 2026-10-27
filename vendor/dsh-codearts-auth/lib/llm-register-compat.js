@@ -94,7 +94,7 @@ function isDuplicateRegistrationError(error) {
         return false;
     return /already declared|already registered|is already (?:a|an) adapter/.test(message);
 }
-import { recordTokenUsage, peekLedgerAccount } from './token-ledger.js';
+import { createTokenLedgerAccountContext, recordTokenUsage, runWithTokenLedgerAccountContext, withTokenLedgerAccountContext, } from './token-ledger.js';
 import { channelOfOptions } from './openai-gateway/channel.js';
 /**
  * 把适配器包上 **Token 记账**（issue「本地 Token 计数」第 1 期的单点接入）。
@@ -138,10 +138,10 @@ export function wrapAdapterWithTokenLedger(providers, adapter) {
      * 把一次流式调用包上记账（顶层 `stream` 与 `prepareCall` 返回的 `call.stream`
      * 共用同一实现，口径才不会分叉）。
      */
-    const accountingStream = (options, open) => {
+    const accountingStream = (options, open, accountContext = createTokenLedgerAccountContext()) => {
         const channel = channelOfOptions(options);
         const model = String(options?.model ?? '').slice(0, 160);
-        return recordThroughStream(open, { channel, provider, model, startedAt: Date.now() });
+        return recordThroughStream(open, { channel, provider, model, startedAt: Date.now() }, accountContext);
     };
     return new Proxy(adapter, {
         get(target, prop) {
@@ -174,7 +174,8 @@ export function wrapAdapterWithTokenLedger(providers, adapter) {
                 if (typeof original !== 'function')
                     return original;
                 return async (...args) => {
-                    const call = await original.apply(target, args);
+                    const accountContext = createTokenLedgerAccountContext();
+                    const call = await runWithTokenLedgerAccountContext(accountContext, () => original.apply(target, args));
                     if (call === null || typeof call !== 'object')
                         return call;
                     const inner = call.stream;
@@ -183,7 +184,7 @@ export function wrapAdapterWithTokenLedger(providers, adapter) {
                     return {
                         ...call,
                         // ⚠️ 只包 `stream` 这一个字段，其余（modelInfo 等）原样透传。
-                        stream: (options) => accountingStream(options, () => inner.call(target, options)),
+                        stream: (options) => accountingStream(options, () => inner.call(target, options), accountContext),
                     };
                 };
             }
@@ -202,7 +203,7 @@ export function wrapAdapterWithTokenLedger(providers, adapter) {
  * - 抛错 ⇒ 记失败行后**原样再抛**（记账不吞错）；
  * - `finally` 兜底记 `durationMs`（cancel/提前 return 也算一笔）。
  */
-export async function* recordThroughStream(openStream, meta) {
+export async function* recordThroughStream(openStream, meta, accountContext = createTokenLedgerAccountContext()) {
     let usageReported = false;
     let inputTokens = 0;
     let outputTokens = 0;
@@ -210,43 +211,59 @@ export async function* recordThroughStream(openStream, meta) {
     let cacheWriteTokens;
     let reasoningTokens;
     /**
-     * **首个内容块耗时**（第 3 期）：收到任何一块（含思考增量）的时刻 − 发起。
-     * 0 = 还没有任何块。口径与 `cline-request-log.ttftMs` 一致 —— 用户口中的
-     * 「首字用时」。**必须在收块时测量**：包装层是唯一同时知道「发起时刻」与
-     * 「每块到达时刻」的位置（各适配器内部没有统一的测量点）。
+     * **首个内容块耗时**（第 3 期）：收到**内容帧**的时刻 − 发起（判据见
+     * {@link isContentChunk}）。0 = 还没有任何内容帧，展示层按「不可测」显示 `—`。
+     *
+     * ⚠️ **不再等价于「收到任何 chunk」**：结构帧（`block-start` / `block-end`）与
+     * `usage` / `finish` 只携带元数据，把它们算进来会把首字用时记成「适配器建流的
+     * 时刻」（真实缺陷，由 `b0b56a8` 修复并引入 {@link isContentChunk} —— **不是**本次
+     * 改动；本次只补注释与分叉说明）。**必须在收块时测量**：包装层是唯一同时知道
+     * 「发起时刻」与「每块到达时刻」的位置（各适配器内部没有统一的测量点）。
+     *
+     * ⚠️ **与 `cline-request-log.ttftMs` 存在已知分叉**（Cline 那份仍是「任何 chunk」
+     * 口径），详见 `src/token-ledger.ts` 的 `ttftMs` 字段注释 —— 不要照抄「口径一致」。
      */
     let ttftMs = 0;
     /**
-     * 账号归属（第 2 期）：**usage 帧到达时**从回报表读取（彼时凭据必然已
-     * 解析 —— `resolveCredential` / 池查询先于任何 SSE 帧）。流开始前读取
-     * 会拿到「上一笔请求的账号」（生成器懒执行的时序陷阱），在 usage 帧
-     * 时读才是「本笔请求已解析出凭据」的时刻。精度边界见
-     * `token-ledger.ts` 的 `reportedAccounts` 注释。
+     * 账号归属存于本次流独立上下文。流开始前读取 provider 全局值可能拿到
+     * 并发请求的账号，因此只接受适配器推进当前流时回报的账号。
      */
     let accountId = '';
     let failure;
     try {
-        for await (const chunk of openStream()) {
-            // 首块计时：任何 chunk（思考/正文/工具调用都算「模型开始说话」）。
-            // ⚠️ 必须在具体类型判断**之前**：漏块会让「只有思考增量的慢启动」被记成 0。
-            if (ttftMs === 0)
+        for await (const chunk of withTokenLedgerAccountContext(openStream(), accountContext)) {
+            // 结构帧和 usage 只携带元数据，不代表模型已开始输出内容。
+            if (ttftMs === 0 && isContentChunk(chunk))
                 ttftMs = Date.now() - meta.startedAt;
             if (typeof chunk === 'object' && chunk !== null
                 && chunk.type === 'usage') {
                 // dsh-llm 契约：usage chunk 的形状 { type:'usage', usage: TokenUsage }。
                 const usage = chunk.usage;
                 if (typeof usage === 'object' && usage !== null) {
+                    // usage 帧是整笔请求的累计快照；后到帧覆盖前帧。坏值/缺字段不覆盖
+                    // 已收到的有效快照，避免上游不完整帧把已有 token 统计清零或变成 NaN。
                     usageReported = true;
-                    inputTokens = Number(usage.inputTokens);
-                    outputTokens = Number(usage.outputTokens);
-                    if (Number(usage.cacheReadTokens) > 0)
-                        cacheReadTokens = Number(usage.cacheReadTokens);
-                    if (Number(usage.cacheWriteTokens) > 0)
-                        cacheWriteTokens = Number(usage.cacheWriteTokens);
-                    if (Number(usage.reasoningTokens) > 0)
-                        reasoningTokens = Number(usage.reasoningTokens);
+                    const readCount = (value) => {
+                        const count = Number(value);
+                        return Number.isFinite(count) && count >= 0 ? Math.trunc(count) : undefined;
+                    };
+                    const input = readCount(usage.inputTokens);
+                    const output = readCount(usage.outputTokens);
+                    const cacheRead = readCount(usage.cacheReadTokens);
+                    const cacheWrite = readCount(usage.cacheWriteTokens);
+                    const reasoning = readCount(usage.reasoningTokens);
+                    if (input !== undefined)
+                        inputTokens = input;
+                    if (output !== undefined)
+                        outputTokens = output;
+                    if (cacheRead !== undefined)
+                        cacheReadTokens = cacheRead > 0 ? cacheRead : undefined;
+                    if (cacheWrite !== undefined)
+                        cacheWriteTokens = cacheWrite > 0 ? cacheWrite : undefined;
+                    if (reasoning !== undefined)
+                        reasoningTokens = reasoning > 0 ? reasoning : undefined;
                     if (accountId === '')
-                        accountId = peekLedgerAccount(meta.provider);
+                        accountId = accountContext.accountId;
                 }
             }
             yield chunk;
@@ -259,10 +276,10 @@ export async function* recordThroughStream(openStream, meta) {
     finally {
         // ⚠️ finally 里记账（而不是成功分支）：cancel / 提前 return / 抛错都必须落账。
         // durationMs 用「现在 − 发起」：成功与失败同口径，就是请求全程耗时。
-        // 账号兜底：失败请求可能没等到 usage 帧（彼时才读账号）——失败行的
-        // 归属退回「最后一次解析出的账号」，比留空有用（排查「哪个号挂了」）。
+        // 失败请求使用本流已回报的账号；若凭据解析前就失败则保持未归属，
+        // 不借用其他并发请求的账号。
         if (accountId === '')
-            accountId = peekLedgerAccount(meta.provider);
+            accountId = accountContext.accountId;
         recordTokenUsage({
             channel: meta.channel,
             provider: meta.provider,
@@ -280,6 +297,22 @@ export async function* recordThroughStream(openStream, meta) {
             ...(failure !== undefined ? { error: failure } : {}),
         });
     }
+}
+/** 判断是否为首字计时应采纳的真实内容帧。 */
+function isContentChunk(chunk) {
+    if (typeof chunk !== 'object' || chunk === null)
+        return false;
+    const type = chunk.type;
+    return typeof type === 'string' && (type === 'text'
+        || type === 'reasoning'
+        || type === 'image'
+        || type === 'tool-call'
+        || type === 'tool-result'
+        || type === 'text-delta'
+        || type === 'reasoning-delta'
+        || type === 'image-delta'
+        || type === 'tool-call-delta'
+        || type === 'tool-result-delta');
 }
 /**
  * 幂等版的 `ctx.llm.registerAdapter`。

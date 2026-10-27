@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { CircleAlert, Check, LoaderCircle, RotateCcw, Save, Settings2, RefreshCw } from 'lucide-react'
 import { Badge, Button, Card, Input } from './components/ui'
 import { settingsDraft, settingsChanged, syncSettings, validateSettingsDraft } from './settings-data.mjs'
+import { visibilityCopy } from './visibility-data.mjs'
 import type { Host, Summary } from './types'
 import './settings.css'
 
@@ -14,6 +15,7 @@ const connectionError = (reason: unknown) => reason instanceof Error
     : reason.message : '保存失败，修改已保留，请重试。'
 
 export function Settings({ summary, host, active }: { summary: Summary; host: Host; active: boolean }) {
+  const visibility = visibilityCopy(document.documentElement.lang)
   const [state, setState] = useState(() => ({ saved: summary.settings, draft: settingsDraft(summary.settings) }))
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<NumberField, string>>>({})
@@ -63,7 +65,7 @@ export function Settings({ summary, host, active }: { summary: Summary; host: Ho
       if (mounted.current) setSaving(false)
     }
   }
-  const toggle = (name: 'enabled' | 'exposeRegionModels' | 'streamRecovery' | 'standaloneProbe', label: string, help: string) =>
+  const toggle = (name: 'enabled' | 'exposeRegionModels' | 'streamRecovery' | 'standaloneProbe' | 'hideFreeModels' | 'hideEacModels', label: string, help: string) =>
     <label className="settings-field" key={name}>
       <span><strong>{label}</strong><small>{help}</small></span>
       <input type="checkbox" role="switch" name={name} className="settings-toggle"
@@ -91,6 +93,8 @@ export function Settings({ summary, host, active }: { summary: Summary; host: Ho
         <Card className="settings-card"><div className="settings-card-heading"><Settings2 size={16} /><div><h2>推理与模型</h2><p>控制客户端调用与模型展示。</p></div></div>
           {toggle('enabled', '启用推理服务', '关闭后暂停 API 推理，管理页面仍可访问。')}
           {toggle('exposeRegionModels', '显示地区受限模型', '保留受当前出口地区限制的模型供客户端选择。')}
+          {toggle('hideFreeModels', visibility.hideFree, '仅从选择器和 API 模型清单隐藏，保留历史模型调用。')}
+          {toggle('hideEacModels', visibility.hideEac, '保留授权和历史模型调用，可随时恢复显示。')}
           {toggle('streamRecovery', '自动恢复断流', '允许从已生成的检查点继续回答。')}
           {numeric('defaultMaxTokens', '单次最大输出 Token', '512–131072，实际输出还受模型能力限制。', 512, 131072)}
         </Card>

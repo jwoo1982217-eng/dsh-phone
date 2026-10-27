@@ -54,10 +54,26 @@
  *    绝不能让一次目录抖动把**所有**模型的图片能力打回原形。
  */
 import type { ClineModel } from './cline-models.js';
-/** 社区模型目录（公开、无需认证）。与参考实现的 `MODELS_DEV_URL` 同源。 */
+/**
+ * 社区模型目录（公开、无需认证）。与参考实现的 `MODELS_DEV_URL` 同源。
+ *
+ * ⚠️ **保留字面量只为文档可读性**（用户 2026-10-17）：真正的直连点已收敛到
+ * `src/models-dev-cache.ts`，本模块不再发起请求。要改地址**改那一个模块**。
+ */
 export declare const CLINE_MODELS_DEV_URL = "https://models.dev/api.json";
-/** 单次目录请求超时（毫秒）。 */
-export declare const CLINE_MODELS_DEV_TIMEOUT_MS = 20000;
+/** 单次目录请求超时（毫秒）。同 `models-dev-cache.ts` 的口径（那里才是真源）。 */
+export declare const CLINE_MODELS_DEV_TIMEOUT_MS = 60000;
+/**
+ * ⚠️ 20s → 60s（issue IKKZUG，2026-10-12）。
+ *
+ * 实测（本机 Windows 直连 models.dev 三次）：`20010ms 超时` / `20010ms 超时` /
+ * `1908ms 成功`。**成功只用 1.9 秒，失败的都是整段卡死** —— 说明这不是「慢」，
+ * 而是「要么很快、要么整段挂住」，20 秒在 5.39 MB 的目标上偏紧。
+ *
+ * 方向是安全的：本模块**失败只记日志、返回空表**（见 `ensureModelsDev`），
+ * 超时放宽只影响「多等一会儿」，不会让任何一次失败变成阻塞 —— 而收益是慢链路
+ * 从「必然失败」变成「大概率成功」。
+ */
 /**
  * 缓存有效期。
  *
@@ -108,17 +124,44 @@ export declare function applyModelsDevCatalog(models: readonly ClineModel[], dev
 export interface ClineModelsDevLoaderOptions {
     /** 覆盖 fetch（测试用）。 */
     fetcher?: typeof fetch;
-    /** 覆盖 TTL。 */
+    /** 覆盖 TTL（**已随共享缓存改造失效**，见下方注释）。 */
     ttlMs?: number;
     /** 覆盖时钟（测试用）。 */
     now?: () => number;
+    /**
+     * 覆盖刷新重试的退避 sleep（测试用）。
+     *
+     * ⚠️ 加它是因为共享缓存的重试是**指数退避**（2s → 4s）⇒ 失败路径的用例
+     * 会真等 6 秒并撞上 vitest 的 5s 单测超时。注入立即 resolve 的替身后，
+     * 用例可以在毫秒级验证「抛了 + 没有缓存被固化」。
+     */
+    sleep?: (ms: number) => Promise<void>;
 }
 /**
- * 造一个「取 models.dev 目录」的加载器：**带 TTL 与在飞去重**，失败**向上抛**。
+ * 造一个「取 models.dev 目录」的加载器：**读共享本地缓存**，失败**向上抛**。
  *
- * ⚠️ 失败必须抛（而不是返回空表）：`TtlCache` 只在成功时写入缓存，
- * 抛错才能让下一次调用**重试**，也才能让调用方区分「没读到」与
- * 「读到了且不支持」—— 把失败记成空表会把所有模型的图片能力永久打回纯文本。
+ * ## ⚠️⚠️ 改前本模块**自己直连** models.dev（用户 2026-10-17）
+ *
+ * 改前它持有一套完整的直连实现（`TtlCache` + ETag 条件请求 + 独立超时），
+ * 而 `opencode-capability.ts` 另有一套 —— **两处各连同一个 5 MB 的外部站点**，
+ * 既是本仓库明令禁止的「一文件两套同义判据」，也让「拉 models.dev」这件事
+ * 在插件里发生两次。
+ *
+ * ⇒ 现在直连收敛到 `src/models-dev-cache.ts`（全仓唯一直读点）：本加载器
+ * 只做两件事 —— ① **同步**读共享缓存；② 缓存为空时**触发一次刷新并等它**。
+ *
+ * ## 为什么仍要「等一次刷新」而不是纯同步读（issue IKKZUG 的自愈闸门）
+ *
+ * `cline-pass/*` 的模型条目与图片能力**只有 models.dev 提供**，而
+ * `ClineAdapter.remoteComplete` 用「本次是否读到」来判目录完整性与是否重试。
+ * 纯同步读会让「首次运行」永远读到空表 ⇒ 该闸门**永久**认为残缺 ⇒ 每轮都重试，
+ * 而重试本身又成了等待网络 —— 正好回到 2026-10-02「模型选择一直卡着」那条事故。
+ *
+ * ⇒ 折中：**先同步读**（有缓存就立刻返回，不付任何代价），**只在读不到时**
+ * 才 await 一次刷新。冷启动命中缓存的用户与完全不受影响。
+ *
+ * ⚠️ 失败必须抛（而不是返回空表）：调用方据此区分「没读到」与「读到了且
+ * 不支持」—— 把失败记成空表会把所有模型的图片能力永久打回纯文本。
  */
 export declare function makeClineModelsDevLoader(options?: ClineModelsDevLoaderOptions): () => Promise<Map<string, ClineModelsDevEntry>>;
 //# sourceMappingURL=cline-models-dev.d.ts.map

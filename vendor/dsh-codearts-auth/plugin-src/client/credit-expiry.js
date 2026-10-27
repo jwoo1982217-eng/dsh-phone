@@ -62,7 +62,29 @@ export function daysUntilExpiry(pkg, now) {
 }
 
 /**
- * 分成 `{ expiring, permanent }` 两桶（本计费周期口径）。
+ * 分成 `{ expiring, longTerm, permanent, earliestExpiringAt, earliestExpiringAmount }`
+ * **三桶**（本计费周期口径）。
+ *
+ * ## 三档语义（用户 2026-10-12 明确要求）
+ *
+ * | 桶 | 判据 | 颜色 |
+ * |---|---|---|
+ * | `permanent` | **服务端没给到期时间**（真·永久，如订阅套餐包） | 绿（`ok`） |
+ * | `longTerm` | 有到期时间，但**超出**窗口（还早，不急） | 黄（`warn`） |
+ * | `expiring` | 有到期时间且在**窗口内**（再不用就作废） | 红（`error`）+ 倒计时 |
+ *
+ * ⚠️ **`permanent` 与 `longTerm` 必须分开**：首版把「到期时间未知」与「到期还远」
+ * 合成一个 `permanent` 桶 —— 那会让「真永久」的积分和「30 天后到期」的积分
+ * 显示成同一个颜色，用户无法分辨哪些是永远不会作废的。两桶的**选号行为相同**
+ *（都不算临时），但**展示语义不同**。
+ *
+ * ⚠️ **返回里 `expiring` 与 `earliestExpiringAmount` 是两个不同的量**（2026-10-20）：
+ *   - `expiring` = 窗口内**所有**临期批次之和（「共多少会作废」）；
+ *   - `earliestExpiringAmount` = **最早那批**的量（与倒计时 `earliestExpiringAt` 配对）。
+ *
+ *   并排显示时必须用后者，否则「临期 20856（4 天 20 小时）」会被读成
+ *   「这 20856 会在 4 天 20 小时后一起掉」，而实际只有最早那批 19656 会掉
+ *   （用户 2026-10-20 原话：「怎么可能全都同一天到期」）。
  *
  * @param packages - `credits.balances` 带回来的 `balance.packages`。
  * @param windowDays - 后端回传的窗口天数。
@@ -75,7 +97,25 @@ export function splitCreditsByExpiry(packages, windowDays, now) {
   const windowMs = days * DAY_MS;
   const at = typeof now === 'number' && Number.isFinite(now) ? now : Date.now();
   let expiring = 0;
+  let longTerm = 0;
   let permanent = 0;
+  /** 临期桶里**最早**的作废时刻（倒计时用）；无临期包时 `null`。 */
+  let earliestExpiringAt = null;
+  /**
+   * **最早那批到期时刻对应的量**。
+   *
+   * ⚠️ 为什么需要它（2026-10-20 用户报障「怎么可能全都同一天到期」）：
+   *    原实现把**窗口内所有批次**累加成 `expiring`，而倒计时
+   *    `earliestExpiringAt` 只指向**最早**那一批 ⇒ 显示成
+   *    「临期 20856（4 天 20 小时）」会让用户以为**这 20856 会在 4 天 20 小时后
+   *    一起掉**，实际最早那批只有 19656，其余 1200 分别在 6 天 / 7 天后。
+   *
+   *    ⇒ 临期段的数字必须与倒计时**指向同一批**才自洽：
+   *      「临期 19656（4 天 20 小时）」= 这笔会在 4 天 20 小时后作废。
+   *      其余更晚的临期批次仍计入 `expiring`（总量，供 tooltip 用），
+   *      但**不**与倒计时并排显示 —— 那正是误导的来源。
+   */
+  let earliestExpiringAmount = 0;
   for (const pkg of packages) {
     // 失效包跳过：服务端仍会返回它的余额，但那部分扣不到。
     if (!pkg || pkg.active !== true) continue;
@@ -83,11 +123,35 @@ export function splitCreditsByExpiry(packages, windowDays, now) {
     if (!Number.isFinite(remaining) || remaining <= 0) continue;
     const end = Number(pkg.deductionEndTime);
     const known = Number.isFinite(end) && end > 0;
-    // 到期时间未知归永久（保守方向：宁可少用，不可误烧长期积分）。
-    if (known && end - at < windowMs) expiring += remaining;
-    else permanent += remaining;
+    if (!known) {
+      // 服务端没给到期时间 ⇒ 真·永久（保守方向：宁可少用，不可误烧长期积分）。
+      permanent += remaining;
+      continue;
+    }
+    if (end - at < windowMs) {
+      expiring += remaining;
+      // ⚠️⚠️ **必须排除已过期的包**（2026-10-13 审计修正）：这里取的是临期桶里
+      //    **最早**的作废时刻用于倒计时，而 `end` 若不约束 `> at`，那么
+      //    「一个已过期但 `active` 仍为 true 的包」会**恒定当选**（它比任何
+      //    未来时刻都早）⇒ `expiryCountdown` 拿到过去时刻、返回空串 ⇒
+      //    **整段倒计时消失**，尽管桶里还有一笔钱几天后作废。
+      //    ⚠️ 可达性不是假设：TRAE 的 `active` 是**硬编码 true**
+      //    （`trae-credits.ts`），压根不反映是否过期。
+      //    `trae-credits.ts`），压根不反映是否过期。
+      //    方向：宁可少显示倒计时，不可显示一个错的。
+      if (end > at && (earliestExpiringAt === null || end < earliestExpiringAt)) {
+        // ⚠️ 出现**更早**的批次 ⇒ 该量取代之前的（两批不是同一批，不能相加）。
+        earliestExpiringAt = end;
+        earliestExpiringAmount = remaining;
+      } else if (end > at && end === earliestExpiringAt) {
+        // 同一批次（同刻并列）⇒ 累加。
+        earliestExpiringAmount += remaining;
+      }
+    } else {
+      longTerm += remaining;
+    }
   }
-  return { expiring, permanent };
+  return { expiring, longTerm, permanent, earliestExpiringAt, earliestExpiringAmount };
 }
 
 /** 这个包属于哪一桶的中文标签（tooltip 前缀用）。 */
@@ -114,19 +178,107 @@ export function formatExpiryHint(pkg, windowDays, now) {
 }
 
 /**
- * 账号卡片上那行「长期 Y · 临时 X」的文案；无有效分类时返回 null。
+ * 账号卡片上那行「永久 Y · 长期 Z · 临期 X」的文案；无有效分类时返回 null。
  *
- * ⚠️ **长期在前、临时在后**（用户 2026-09-29 定）：与 Loomy 那行的
- * 「永久 … · 每日 …」同一顺序，两个 provider 的卡片读起来才对齐。
- * ⚠️ 用词是「长期」不是「永久」（用户 2026-09-29 定）：buddy / TRAE 的积分
- * 都有到期日，只是距现在较远 —— 说「永久」是错的（用户明确纠正过）。
+ * ⚠️ **三档顺序固定：永久 → 长期 → 临期**（用户 2026-10-12 定）：
+ * 与「余额由远及近」的直觉一致，且临期放最后便于一眼扫到。
+ *
+ * ⚠️ 用词「长期」不是「永久」（用户 2026-09-29 定）：有到期日的积分即使很远
+ * 也不能叫永久 —— 说「永久」是错的（用户明确纠正过）。只有**服务端没给
+ * 到期时间**的才是真·永久。
+ *
+ * @param split - `splitCreditsByExpiry` 的返回值。
+ * @param format - 数值格式化函数（按单位）。
+ * @returns 单行文本；全为 0 或不可分类时返回 `null`。
  */
 export function formatExpirySplitLine(split, format) {
   if (!split) return null;
-  const expiring = format(split.expiring);
-  const permanent = format(split.permanent);
-  if (expiring === null || permanent === null) return null;
-  return `长期 ${permanent} · 临时 ${expiring}`;
+  const parts = [];
+  // 只显示**非零**桶：0 值进文案只会让一行变长而无信息（用户看不到「永久 0」的价值）。
+  const permanent = split.permanent > 0 ? format(split.permanent) : null;
+  const longTerm = split.longTerm > 0 ? format(split.longTerm) : null;
+  const expiring = split.expiring > 0 ? format(split.expiring) : null;
+  if (permanent !== null) parts.push(`永久 ${permanent}`);
+  if (longTerm !== null) parts.push(`长期 ${longTerm}`);
+  // ⚠️ 与 `expirySplitParts` 同口径：临期显示**最早那批**的量
+  //    （这条字符串版本不带倒计时，故仍用窗口内总额更合适 —— 它表达的是
+  //     「窗口内共有多少会作废」，不含「何时」）。
+  //    ⇒ 两者语义刻意不同：字符串版是「总量」（无时间承诺），
+  //      分段版是「最早那批」（与倒计时配对）。见 `expirySplitParts` 的注释。
+  if (expiring !== null) parts.push(`临期 ${expiring}`);
+  return parts.length === 0 ? null : parts.join(' · ');
+}
+
+/**
+ * 三档分桶的**带色分段**（供胶囊/卡片逐段渲染，各带各的 tone）。
+ *
+ * ## 为什么需要它（而不是复用 `formatExpirySplitLine` 的字符串）
+ *
+ * 字符串版本把三档拼成一句、只能整体一个颜色 —— 而用户要的正是
+ * 「永久绿 / 长期黄 / 临期红」（2026-10-12 明确要求）。React 侧要逐段渲染
+ * 才能各带 `data-tone`，故这里返回**结构化分段**。
+ *
+ * 临期段额外带**倒计时**（`倒计时` 字段），因为「临期 100」只说了有多少会作废，
+ * 没说**还有多久** —— 而那正是要补的决策信息。
+ *
+ * @returns `[{ key, text, tone, countdown? }]`；无内容时 `[]`。
+ *   `tone` 取值限定在 CSS 里已有的 `ok` / `warn` / `error`。
+ */
+export function expirySplitParts(split, format, now) {
+  if (!split) return [];
+  const parts = [];
+  const permanent = split.permanent > 0 ? format(split.permanent) : null;
+  const longTerm = split.longTerm > 0 ? format(split.longTerm) : null;
+  const expiring = split.expiring > 0 ? format(split.expiring) : null;
+  if (permanent !== null) parts.push({ key: 'permanent', text: `永久 ${permanent}`, tone: 'ok' });
+  if (longTerm !== null) parts.push({ key: 'longTerm', text: `长期 ${longTerm}`, tone: 'warn' });
+  if (expiring !== null) {
+    const at = split.earliestExpiringAt;
+    const countdown = typeof at === 'number' && Number.isFinite(at) && at > 0
+      ? expiryCountdown(at, now)
+      : '';
+    // ⚠️ **数字与倒计时必须指向同一批**（2026-10-20 用户报障修正）：
+    //    `split.expiring` 是窗口内**所有**临期批次之和，而倒计时指向最早那批
+    //    ⇒ 并排显示会误导成「这 X 会在倒计时后一起掉」。
+    //    故这里取 `earliestExpiringAmount`（最早那批的量）与倒计时配对。
+    // ⚠️ 回退方向：拿不到该量（老后端没回传）时退回 `expiring`（总额），
+    //    宁可数字偏大，不可不显示临期。
+    const shown = Number.isFinite(split.earliestExpiringAmount) && split.earliestExpiringAmount > 0
+      ? split.earliestExpiringAmount
+      : expiring;
+    parts.push({
+      key: 'expiring',
+      text: `临期 ${format(shown)}`,
+      tone: 'error',
+      ...(countdown.length > 0 ? { countdown } : {}),
+    });
+  }
+  return parts;
+}
+
+/**
+ * 临期积分的**粗粒度**倒计时（「3 天 4 小时」/「5 小时 20 分钟」/「9 分钟」）。
+ *
+ * ⚠️ 粗粒度是刻意的：这是一眼扫过的信息，秒级精度只会让面板无谓重渲染。
+ * ⚠️ 已过期 / 不可解析返回**空串**（调用方不渲染倒计时，而不是显示「已过期」）。
+ */
+export function expiryCountdown(expiresAtMs, now) {
+  const at = Number(expiresAtMs);
+  if (!Number.isFinite(at) || at <= 0) return '';
+  const ref = typeof now === 'number' && Number.isFinite(now) ? now : Date.now();
+  // ⚠️ 已过期与「还没过期」必须分道：前者返回空串（调用方不渲染）。
+  if (at <= ref) return '';
+  // ⚠️⚠️ **用向上取整而不是 `Math.round`**（2026-10-13 审计修正）：
+  //    round 会把「剩余 0~30 秒」也归到 0，于是用户看到倒计时一路数到
+  //    「1 分钟」后**整段突然消失** —— 而「马上就作废」恰恰是最该看到的信号。
+  //    向上取整让「还没过期」恒定至少显示 1 分钟。
+  const minutes = Math.ceil((at - ref) / 60_000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+  if (days > 0) return `${days} 天 ${hours} 小时`;
+  if (hours > 0) return `${hours} 小时 ${mins} 分钟`;
+  return `${mins} 分钟`;
 }
 
 /**
@@ -189,6 +341,57 @@ export function formatPoolSplitLine(packages, format, longTermLabel = '长期') 
   const restValue = format(restSum);
   if (dailyValue === null || restValue === null) return null;
   return `${longTermLabel} ${restValue} · 每日 ${dailyValue}`;
+}
+
+/**
+ * **逐命名池全列** —— 供 Accio 的三类桶使用（用户 2026-10-13 要求与 Loomy 同形）。
+ *
+ * ## 与 {@link formatPoolSplitLine} 的区别（为什么不能复用它）
+ *
+ * `formatPoolSplitLine` 是**两桶**形状：它把「当日池之外的**全部**池」求和成一个
+ * `longTermLabel`（`'长期 2100 · 每日 500'`）。那对两家的形态成立：
+ *
+ * | provider | 池 |
+ * |---|---|
+ * | Loomy | `永久积分` + `每日赠送` |
+ * | Raccoon | `奖励积分` / `会员积分` / `充值积分` + `每日积分` |
+ *
+ * 而 Accio 的桶是**三类语义并列**（`每日积分` / `每月积分` / `推荐积分`）：
+ * 「每月」与「推荐」**都不该被笼统求和成「长期」** —— 它们的到期规则不同
+ * （每月有 `nextBillingDate`、推荐是活动赠送），求和会让用户以为是一份东西。
+ *
+ * ## 为什么按**服务端下发的顺序**列出，不排序
+ *
+ * 池的顺序由宿主 `flattenAccioCredits` 决定（`daily` → `monthly` → `referral`，
+ * 即「最先作废的在前」）。前端再排一次就是「同一语义两处判据」——排序规则
+ * 一变就会与宿主的意图分叉。
+ *
+ * ⚠️ **不改 `formatPoolSplitLine`**：它的输出是既有契约（见 `credit-expiry.spec.ts`
+ * 那组逐字断言），而 loomy / raccoon 走的正是它。
+ *
+ * @param packages - `balance.packages`。⚠️ 按**池名**识别，不用下标
+ *   （Raccoon / Accio 的池都可能缺项）。
+ * @param format - 数字格式化（与卡片总额同一个）。
+ * @returns 形如 `'每日 199 · 每月 0 · 推荐 0'` 的文案；无可列池或格式化失败时
+ *   返回 `null`（调用方据此不渲染该行，退回别的分桶）。
+ */
+export function formatNamedPoolLine(packages, format) {
+  if (!Array.isArray(packages)) return null;
+  const parts = [];
+  for (const pkg of packages) {
+    // 失效包不列出：扣不到的额度显示出来会让用户以为还有。
+    if (!pkg || pkg.active !== true) continue;
+    const name = typeof pkg.name === 'string' ? pkg.name.trim() : '';
+    if (name === '') continue;
+    const value = format(Number(pkg.remaining) || 0);
+    // ⚠️ 任一格式化失败 ⇒ 整个函数返回 null（不产出半截文案）。
+    if (value === null) return null;
+    // 「每日积分 199」在版面上重复且长 ⇒ 去掉「积分」后缀做短标签。
+    // ⚠️ 只在**后缀**时去掉（`'积分商城'` 这类名字不受影响）。
+    const short = name.endsWith('积分') ? name.slice(0, -2) : name;
+    parts.push(`${short} ${value}`);
+  }
+  return parts.length === 0 ? null : parts.join(' · ');
 }
 
 /**

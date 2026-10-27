@@ -504,6 +504,7 @@ function serializeMessages(
         .map((block) => String(block.text))
         .join('')
       const text = contentToText(content)
+      if (text.trim().length === 0 && toolCalls.length === 0) continue
       // 挂起的工具结果图片必须在 assistant 之前发出，否则会漂到这条
       // assistant 之后，与产生它们的工具调用脱节。
       flushToolImages()
@@ -533,7 +534,7 @@ function serializeMessages(
     if (parts !== undefined) {
       flushToolImages()
       wire.push({ role: 'user', content: parts })
-    } else if (text.length > 0 || toolResults.length === 0) {
+    } else if (text.trim().length > 0) {
       flushToolImages()
       wire.push({ role: 'user', content: text })
     }
@@ -1260,6 +1261,7 @@ export class LobsteraiAdapter extends LlmAdapter {
      * 就不发任何 chunk（与「空名字 tool_call」同型修法）。
      */
     const suppressor = createBlankReasoningSuppressor()
+    const proseSuppressor = createBlankReasoningSuppressor()
     const toolCalls = new Map<number, {
       index: number
       text: string
@@ -1376,11 +1378,12 @@ export class LobsteraiAdapter extends LlmAdapter {
           // 会让 `.length` 在 null 上崩溃，表现为「每轮对话第一帧就报
           // Cannot read properties of null」。
           const deltaContent = delta?.content
-          const textDelta = typeof deltaContent === 'string' && deltaContent.length > 0
+          const rawTextDelta = typeof deltaContent === 'string' && deltaContent.length > 0
             ? deltaContent
             : (!gotAnyContent && typeof choice?.message?.content === 'string' ? choice.message.content : undefined)
+          if (typeof deltaContent === 'string' && deltaContent.length > 0) gotAnyContent = true
+          const textDelta = rawTextDelta === undefined ? undefined : proseSuppressor.feed(rawTextDelta)
           if (textDelta !== undefined && textDelta.length > 0) {
-            if (typeof deltaContent === 'string' && deltaContent.length > 0) gotAnyContent = true
             let block = blocks.find(candidate => candidate.kind === 'text')
             if (block === undefined) {
               block = { index: nextIndex++, kind: 'text', text: '' }
@@ -1600,10 +1603,12 @@ export class LobsteraiAdapter extends LlmAdapter {
       const cleaned = stripCourseLeakIfEnabled(truncated)
       // ⚠️ 归位后正文可能为空串 —— 空块会污染会话，且 DSH 的
       // `EMPTY_RESPONSE` 契约禁止产出空内容块。思考段已归位，故仍有产出。
-      if (cleaned !== '') {
+      if (cleaned.trim() !== '') {
         blockCount += 1
         emittedProse = cleaned
         yield { type: 'block-end', index: textBlock.index, block: { type: 'text', text: cleaned } }
+      } else {
+        yield { type: 'block-end', index: textBlock.index, block: { type: 'text', text: '' } }
       }
     }
     const reasoningBlock = blocks.find(block => block.kind === 'reasoning')

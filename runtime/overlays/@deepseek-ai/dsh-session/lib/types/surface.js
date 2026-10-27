@@ -396,7 +396,7 @@ function planSurfaceEvent(state, event, expectedSeq, events, baseSeq, projection
         throw new Error(`session event seq ${event.seq} is not contiguous; expected ${expectedSeq}`);
     }
     const surfaceOp = validateSurfaceMetadata(event);
-	if (event.type === "conversation/edit") return conversationEditPlan(state, event, events, baseSeq, projections, createFoldState, applySurfaceEvent);
+    if (event.type === "conversation/edit") return conversationEditPlan(state, event, events, baseSeq, projections, createFoldState, applySurfaceEvent);
     assertDeveloperHeader(event, events, baseSeq);
     const projection = projections.find(item => item.type === event.type);
     if (projection !== undefined) {
@@ -440,6 +440,7 @@ function applySurfacePlan(state, plan) {
         state.contentGeneration += 1;
         return;
     }
+
     if (plan?.kind === 'append') {
         state.nodes.push(plan.seq);
     }

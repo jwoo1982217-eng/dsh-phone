@@ -35,7 +35,7 @@ const schema={getPath:(value,keys)=>keys.reduce((v,k)=>v&&v[k],value),hasPath:(v
 const snapshot={status:'ready',writable:true,rows:[{entry:{provider:'fixture-provider',displayName:'Fixture Provider',settingsNs:'llm-deepseek',settingsPath:[],models:[{id:'fixture-model'}]},configured:true,credential:{configured:true,writable:true},apiKeyEnv:'FIXTURE_API_KEY',removable:false}],namespaces:new Map([['llm-deepseek',namespace]])};
 const operations={describeCredential:async()=>({configured:true,writable:true}),writeSettings:async()=>{writes++;throw Error('fixture must not save');},storeCredential:async()=>{writes++;throw Error('fixture must not store credentials');}};
 const app=createRoot(document.getElementById('app'));
-app.render(React.createElement(sdk.ModelsSection,{controller:{load:async()=>{}},useSnapshot:()=>snapshot,operations,schema,t:key=>key,renderSlot:()=>null}));
+app.render(React.createElement(sdk.ModelsSection,{controller:{load:async()=>{},store:{getSnapshot:()=>snapshot}},useSnapshot:()=>snapshot,operations,schema,t:key=>key,renderSlot:()=>null}));
 window.applyOwnedFallback=()=>{${native}};
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const wait=async test=>{for(let i=0;i<100;i++){if(test())return;await pause(20);}throw Error('fixture UI timed out');};

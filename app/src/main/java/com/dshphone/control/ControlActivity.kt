@@ -19,19 +19,72 @@ class ControlActivity : Activity() {
     private lateinit var body: LinearLayout
     private var previous = ""
     private var countdown: TextView? = null
+    private var setupActive = false
+    private var repairing = false
+    private var setupMessage = ""
+    private val attempted = mutableSetOf<ControlSetup.Step>()
     private val refresh = object : Runnable {
-        override fun run() { render(); handler.postDelayed(this, 1000) }
+        override fun run() { render(); if (setupActive && !repairing) advanceSetup(false); handler.postDelayed(this, 1000) }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         if (android.os.Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true)
         ControlRuntime.attach(this)
+        setupActive = savedInstanceState?.getBoolean("setupActive") ?: false
+        savedInstanceState?.getStringArrayList("attempted")?.forEach { name -> runCatching { attempted.add(ControlSetup.Step.valueOf(name)) } }
         body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(28, 24, 28, 24); filterTouchesWhenObscured = true }
         setContentView(ScrollView(this).apply { addView(body) })
     }
     override fun onResume() { super.onResume(); previous = ""; refresh.run() }
     override fun onPause() { handler.removeCallbacks(refresh); super.onPause() }
+    override fun onSaveInstanceState(out: Bundle) {
+        out.putBoolean("setupActive", setupActive && !repairing)
+        out.putStringArrayList("attempted", ArrayList(attempted.map { it.name }))
+        super.onSaveInstanceState(out)
+    }
+    private fun advanceSetup(manual: Boolean) {
+        if (repairing) return
+        if (manual) { ControlRepair.enableAutomatic(this); setupActive = true; attempted.clear(); setupMessage = "正在检查已有授权…" }
+        if (!setupActive) return
+        val state = ControlRuntime.status()
+        val step = ControlSetup.next(state, ControlSetup.installed(this), ControlSetup.restricted(this))
+        if (!attempted.add(step)) return
+        when (step) {
+            ControlSetup.Step.DONE -> { setupActive = false; setupMessage = "检查完成。已有授权会直接复用，回聊天即可使用；未安装的可选工具不影响已就绪功能。" }
+            ControlSetup.Step.REPAIR_ACCESSIBILITY -> {
+                repairing = true; setupMessage = "正在使用已授予的 Shizuku 权限恢复 DSH 无障碍，不更改其他应用开关…"
+                try {
+                    ControlRepair.run(applicationContext).whenComplete { _, error -> handler.post {
+                        repairing = false
+                        if (isFinishing || isDestroyed) return@post
+                        if (error != null) {
+                            setupActive = false
+                            setupMessage = "系统未能自动恢复。请打开应用信息，右上角菜单→允许受限设置，再打开系统无障碍设置→DSH 手机操作。返回此页会显示实际连接状态。"
+                        } else setupMessage = "系统已接受 DSH 无障碍设置，正在等待连接；已授权的日志和命令通道继续可用。"
+                        previous = ""; render()
+                    } }
+                } catch (_: Throwable) {
+                    repairing = false; setupActive = false; setupMessage = "Shizuku 连接已变化，请检查下方日志通道后重试。"
+                }
+            }
+            ControlSetup.Step.APP_INFO -> {
+                setupMessage = "系统限制了 DSH：在应用信息右上角菜单选择“允许受限设置”，然后返回，继续开启 DSH 手机操作。"
+                startActivity(ControlSetup.appInfo(this))
+            }
+            ControlSetup.Step.ACCESSIBILITY -> {
+                setupMessage = "在系统无障碍页面开启“DSH 手机操作”。如果该项为灰色或显示“由受限设置控制”，先打开应用信息→右上角菜单→允许受限设置。"
+                startActivity(ControlSetup.accessibility())
+            }
+            ControlSetup.Step.START_SHIZUKU -> {
+                setupMessage = "先在 Shizuku 启动服务；已有配对可直接启动，首次按其配对引导操作。返回后会自动复查，已就绪的界面控制和 Termux 不受影响。"
+                AppLogs.openSetup(this)
+            }
+            ControlSetup.Step.SHIZUKU_PERMISSION -> { setupMessage = "只需允许这次 Android Shizuku 授权，之后自动复用。"; AppLogs.requestPermission(this) }
+            ControlSetup.Step.TERMUX_PERMISSION -> { setupMessage = "只需允许这次 Android Termux 命令权限，之后自动复用。"; requestPermissions(arrayOf(TermuxCommands.PERMISSION), 9913) }
+        }
+        previous = ""; render()
+    }
     private fun text(value: String, size: Float = 16f) { body.addView(TextView(this).apply { text = value; textSize = size; setPadding(0, 10, 0, 10) }) }
     private fun button(label: String, action: () -> Unit) {
         body.addView(android.widget.Button(this).apply { text = label; filterTouchesWhenObscured = true; setOnClickListener {
@@ -45,25 +98,29 @@ class ControlActivity : Activity() {
         val remaining = grant?.optLong("remainingSeconds") ?: 0
         countdown?.text = "剩余 $remaining 秒"
         val comparison = org.json.JSONObject(state.toString())
+        comparison.put("setupMessage", setupMessage).put("repairing", repairing)
         comparison.optJSONObject("grant")?.remove("remainingSeconds")
         val serialized = comparison.toString()
         if (serialized == previous) return
         previous = serialized; body.removeAllViews(); countdown = null
-        text("手机操作", 24f)
-        text("手机工具直接使用聊天已有的三种权限：仅可查看、工作区内修改、完全权限，无需额外批准开关。完全权限可操作本机 App 和已授权的 Termux；仅可查看和工作区模式可读当前界面、截图和日志，工作区文件修改使用现有文件工具。截图、日志和命令结果会进入所选模型会话。")
-        text(if (state.getBoolean("accessibilityConnected")) "系统无障碍已连接" else "系统无障碍未开启：需要本人在系统设置允许 DSH 完全访问")
+        text("手机控制", 24f)
+        text("沿用聊天已有的权限。“完全权限”下直接操作应用和执行已接入的命令，无需逐项批准。开启并检查会复用已有授权，缺哪一项就处理哪一项。截图、日志和命令结果会进入所选模型会话。")
+        button("开启并检查") { advanceSetup(true) }
+        if (setupMessage.isNotBlank()) text(setupMessage)
+        text("界面控制", 20f)
+        text(if (state.getBoolean("accessibilityConnected")) "已就绪：可以查看、点击、输入和切换应用。" else if (ControlSetup.restricted(this) == true) "系统限制了 DSH 无障碍。点击上方按钮可用已授权的 Shizuku 尝试恢复；没有该授权时引导到应用信息允许受限设置。" else "未连接：点击上方按钮检查并恢复。系统显示“由受限设置控制”时，先在 DSH 应用信息右上角允许受限设置。")
         button("打开系统无障碍设置") { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-        text("权限在聊天现有选择器切换，本页只处理 Android 必要权限。屏幕停止按钮会暂停操作，直到你发送新的指令或切换权限；已发送或已交给 Termux 的操作不会自动撤销。")
+        button("打开应用信息（允许受限设置）") { startActivity(ControlSetup.appInfo(this)) }
         text("App 运行日志", 20f)
         val logs = state.getJSONObject("logs")
         text(if (logs.getBoolean("available")) "日志读取已授权：可让 DSH 按 App 查看最近日志。" else logs.getString("hint"))
         button("打开 Shizuku") { AppLogs.openSetup(this) }
         if (logs.getBoolean("running") && !logs.getBoolean("permissionGranted")) button("授权日志读取") { AppLogs.requestPermission(this) }
-        text("Termux / MT / Reqable", 20f)
+        text("Termux 命令", 20f)
         val termux = state.getJSONObject("termux"); text(termux.getString("hint"))
         if (termux.getBoolean("installed") && !termux.getBoolean("permissionGranted")) button("授权 Termux 命令") { requestPermissions(arrayOf(TermuxCommands.PERMISSION), 9913) }
         button("Termux 首次接入设置") { TermuxCommands.openSetup(this) }
-        text("MT 管理器和 Reqable 可让 DSH 从 App 列表选择后操作界面、截图和长按。Termux 命令通过官方接口取回输出与退出码；首次需要开启外部调用。停止后，已交给 Termux 的命令可能仍在运行，必要时在 Termux 终止。")
+        text("三个通道分别工作，日志或命令未就绪不会挡住已连接的界面控制。停止按钮会暂停后续操作，新指令可继续；已提交的命令不会自动撤销。")
         if (grant != null) {
             val mode = grant.optString("policyMode")
             if (mode in setOf("read-only", "workspace-write", "danger-full-access")) text("当前手机会话权限：" + when (mode) { "read-only" -> "仅可查看"; "workspace-write" -> "工作区内修改"; else -> "完全权限" })

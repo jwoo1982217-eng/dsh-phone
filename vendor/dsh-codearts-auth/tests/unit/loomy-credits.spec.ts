@@ -69,6 +69,48 @@ describe('fetchLoomyCreditDetail', () => {
     expect(await fetchLoomyCreditDetail(CRED, LOOMY, fetcher as unknown as typeof fetch)).toBeNull()
   })
 
+  /**
+   * ★★ **只有两个池都读不到才判失败**（issue IKMCOO 缺陷 4，2026-10-16）。
+   *
+   * 原判据是 `if (permanent === undefined) return null`（只看 `balance`），
+   * 而同一函数内 `daily` 缺失却按 0 宽容处理 —— 两种口径自相矛盾。
+   *
+   * ## 为什么是真缺陷而不是风格问题
+   *
+   * 选号口径（`loomy-balance-rank.ts`）在**锁定永久积分时只看 `daily`**：
+   * 上游省略 `balance` 时，一个**今日额度可用**的号会被判成「查询失败」
+   * → 落入 `none` 档 → 锁定时被踢出候选 ⇒ 症状与「用户明明有今日额度
+   * 却不可用」完全同型（正是本 issue 的核心症状）。
+   *
+   * ⚠️ 本机 2026-10-16 实测 4 个账号两字段都在 ⇒ 该缺陷**当时未触发**，
+   *   但它结构上可达。**如实登记：这是「修好口径」，不是「修好实测故障」。**
+   */
+  it('★★ 缺 `balance` 但有 `dailyBalance` ⇒ 仍算查到了（不判整体失败）', async () => {
+    const fetcher = vi.fn().mockResolvedValue(envelope({ dailyBalance: 4992, pageNo: 1 }))
+    const detail = await fetchLoomyCreditDetail(CRED, LOOMY, fetcher as unknown as typeof fetch)
+
+    expect(detail, '★★ 有今日额度就不该判查询失败').not.toBeNull()
+    expect(detail!.daily).toBe(4992)
+    // ⚠️ `permanent` 必须是 `undefined`（**不是 0**）：「上游没给」与
+    //   「真的是 0」是不同事实，折叠成 0 会让面板显示「永久积分 0」。
+    expect(detail!.permanent, '★ 缺失不得编造成 0').toBeUndefined()
+  })
+
+  it('★ 缺 `balance` 时 total 仍按「已知的那一池」算（不得整笔丢失）', async () => {
+    const fetcher = vi.fn().mockResolvedValue(envelope({ dailyBalance: 4992 }))
+    const detail = await fetchLoomyCreditDetail(CRED, LOOMY, fetcher as unknown as typeof fetch)
+    // 无 availableBalance ⇒ 用 (permanent ?? 0) + daily
+    expect(detail!.total).toBe(4992)
+  })
+
+  it('★ 两池都有值时行为与旧版逐字节一致（本次只修「缺字段」这一格）', async () => {
+    const fetcher = vi.fn().mockResolvedValue(envelope(RECORDS))
+    const detail = await fetchLoomyCreditDetail(CRED, LOOMY, fetcher as unknown as typeof fetch)
+    expect(detail!.permanent).toBe(15000)
+    expect(detail!.daily).toBe(4992)
+    expect(detail!.total).toBe(19992)
+  })
+
   it('100002 时返回 null（卡片显示原因而非 0）', async () => {
     const fetcher = vi.fn().mockResolvedValue(bizError('100002', '登录已失效，请重新登录'))
     expect(await fetchLoomyCreditDetail(CRED, LOOMY, fetcher as unknown as typeof fetch)).toBeNull()
@@ -91,6 +133,19 @@ describe('fetchLoomyCreditBalance', () => {
     // 两池都算有效，没有失效额度
     expect(balance!.expiredTotal).toBe(0)
     expect(balance!.packages.every((p) => p.active)).toBe(true)
+  })
+
+  /**
+   * ★ 缺 `balance` 时**不得**造一个「永久积分 0」的包（issue IKMCOO 缺陷 4）。
+   *
+   * ⚠️ 造出来会让面板显示「永久积分 0」，而事实是「**上游没报这个池**」——
+   *    用户会以为永久积分被烧光了。
+   */
+  it('★ 缺 `balance` 时不造「永久积分 0」的包', async () => {
+    const fetcher = vi.fn().mockResolvedValue(envelope({ dailyBalance: 4992 }))
+    const balance = await fetchLoomyCreditBalance(CRED, LOOMY, fetcher as unknown as typeof fetch)
+    expect(balance!.packages.map((p) => p.name), '★ 只有上游真给了才渲染那个池')
+      .toEqual(['每日赠送'])
   })
 })
 

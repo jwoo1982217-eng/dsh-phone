@@ -56,6 +56,7 @@ import {
   traeOAuthHeaders,
   traeSOLOHeaders,
   traeUgHeaders,
+  traeUsageFromTokenUsage,
   transformToSOLOBody,
   withTraePhone,
 } from '../../src/trae.js'
@@ -1137,7 +1138,6 @@ describe('SOLO SSE 事件解析', () => {
   it('解析 done 事件的 finish_reason', () => {
     expect(parseTraeSSELine('done', JSON.stringify({ finish_reason: 'stop' }))?.finishReason).toBe('stop')
   })
-
   it('解析 error 事件的 code 与 message', () => {
     const ev = parseTraeSSELine('error', JSON.stringify({ code: 4008, message: '配额超限' }))
     expect(ev).toMatchObject({ errorCode: 4008, errorMessage: '配额超限' })
@@ -1149,6 +1149,88 @@ describe('SOLO SSE 事件解析', () => {
 
   it('data 为空时只保留事件名', () => {
     expect(parseTraeSSELine('metadata', '')).toEqual({ event: 'metadata' })
+  })
+})
+
+/**
+ * `token_usage` → DSH `TokenUsage` 的口径转换（**真实缺陷回归**）。
+ *
+ * 缺陷：早期实现只读 `prompt_tokens` / `completion_tokens` / `reasoning_tokens`，
+ * 把上游**确实下发**的 `cache_read_input_tokens` 丢弃 ⇒ DSH 投影层
+ * `cacheReadTokens ?? 0` 归一成 0 ⇒ 界面恒显「缓存命中 0%」。
+ *
+ * ⚠️ 本段用**真实报文**（2026-10-12 实机直发 dump，`glm-5.2` 同前缀两次），
+ * 不是自造数字 —— 自造 fixture 会把「prompt_tokens 是否含缓存」这个关键
+ * 判断编成实现的样子，从而恒真。
+ */
+describe('TRAE token_usage → TokenUsage 口径', () => {
+  /** 第 1 次（冷）：实测原始报文，`cache_read_input_tokens` 为 0。 */
+  const COLD = {
+    name: '', prompt_tokens: 4894, completion_tokens: 118, total_tokens: 5012,
+    cache_creation_input_tokens: 0, cache_read_input_tokens: 0, reasoning_tokens: 116,
+    prompt_tokens_total: 0, completion_tokens_total: 0, total_tokens_total: 0,
+    cache_creation_input_tokens_total: 0, cache_read_input_tokens_total: 0,
+    reasoning_tokens_total: 0, cluster: 'normal_context',
+  }
+  /** 第 2 次（同前缀复用）：实测原始报文，命中 4864。 */
+  const REUSED = { ...COLD, completion_tokens: 2, total_tokens: 4896, cache_read_input_tokens: 4864, reasoning_tokens: 0 }
+
+  it('★ 命中时上报 cacheReadTokens（缺陷的直接回归）', () => {
+    const usage = traeUsageFromTokenUsage(REUSED)
+    expect(usage.cacheReadTokens).toBe(4864)
+  })
+
+  it('★ 未命中（0）时省略字段，不写成 0', () => {
+    // 省略与写 0 的区别在 DSH 侧会被 `?? 0` 抹平，但**契约上**省略才是
+    // 「没有缓存命中」的诚实表示（与 recordTokenUsage 的约定一致）。
+    expect(traeUsageFromTokenUsage(COLD)).not.toHaveProperty('cacheReadTokens')
+  })
+
+  it('★ prompt_tokens 含缓存 ⇒ 必须做减法（否则命中率偏小）', () => {
+    // 判据来自同前缀两次真实请求：prompt_tokens 恒 4894 而命中从 0 变 4864。
+    // 若不做减法，未命中会一直是 4894，命中率被算成 4864/(4894+4864)=49.8%
+    // 而不是正确的 4864/4894=99.4%。
+    const usage = traeUsageFromTokenUsage(REUSED)
+    expect(usage.inputTokens).toBe(4894 - 4864)
+    expect(usage.inputTokens + (usage.cacheReadTokens ?? 0)).toBe(4894)
+  })
+
+  it('★ 冷启动两次的 prompt 总量一致（证明总量字段不随命中变化）', () => {
+    const cold = traeUsageFromTokenUsage(COLD)
+    const reused = traeUsageFromTokenUsage(REUSED)
+    expect(cold.inputTokens + (cold.cacheReadTokens ?? 0)).toBe(4894)
+    expect(reused.inputTokens + (reused.cacheReadTokens ?? 0)).toBe(4894)
+  })
+
+  it('缓存写入单列且从总输入里扣除（不算命中）', () => {
+    const usage = traeUsageFromTokenUsage({
+      prompt_tokens: 1000, completion_tokens: 10, cache_read_input_tokens: 200, cache_creation_input_tokens: 300,
+    })
+    expect(usage.cacheReadTokens).toBe(200)
+    expect(usage.cacheWriteTokens).toBe(300)
+    expect(usage.inputTokens).toBe(1000 - 200 - 300)
+  })
+
+  it('上游字段矛盾（命中 + 写入 > 总量）时钳到 0，不下发负数', () => {
+    const usage = traeUsageFromTokenUsage({
+      prompt_tokens: 100, completion_tokens: 5, cache_read_input_tokens: 400,
+    })
+    expect(usage.inputTokens).toBe(0)
+  })
+
+  it('字段缺失/非法时按 0 兜底且不抛错', () => {
+    expect(traeUsageFromTokenUsage({})).toEqual({ inputTokens: 0, outputTokens: 0 })
+    const usage = traeUsageFromTokenUsage({
+      prompt_tokens: 'x', completion_tokens: null, cache_read_input_tokens: Number.NaN, reasoning_tokens: -5,
+    })
+    expect(usage).toEqual({ inputTokens: 0, outputTokens: 0 })
+    expect(usage).not.toHaveProperty('reasoningTokens')
+  })
+
+  it('reasoning_tokens 为 0 时省略（不作为 0 下发）', () => {
+    expect(traeUsageFromTokenUsage({ prompt_tokens: 1, completion_tokens: 1, reasoning_tokens: 0 }))
+      .not.toHaveProperty('reasoningTokens')
+    expect(traeUsageFromTokenUsage({ prompt_tokens: 1, completion_tokens: 1, reasoning_tokens: 7 }).reasoningTokens).toBe(7)
   })
 })
 

@@ -1,5 +1,5 @@
 /**
- * MiniMax Code（**中国版**）产品配置。
+ * MiniMax Code（**中国版 + 国际版**）产品配置。
  *
  * ## 为什么新建 `MinimaxProduct` 而不复用既有类型
  *
@@ -10,13 +10,82 @@
  * 故定义**平行**接口 —— 共用的是架构**模式**（产品差异收敛到单一真相源），
  * 不是那个类型。
  *
- * ## 数据来源（全部实测或 asar 源码直读，见 docs/minimax-protocol-notes.md）
+ * ## ⚠️ 双站点（两个 provider id）—— 2026-10-15 新增国际版
  *
- * - 主机：asar `@mavis/config/dist/config.js` 的 `PRESET_BASE_URLS['cn-prod']`
- * - OAuth 端点：asar `@mavis/oauth-core/dist/endpoint-config.js`
- * - `clientId` / `scope` / `audience`：`~/.minimax/auth/prod/cn/mcode-public/auth.json`
- *   与 asar `contracts.js`
- * - 兜底模型表：2026-09-28 实测 `GET /mavis/api/v1/models?region=cn&buildEnv=prod`
+ * 两个站点**账号不互通**（国内平台与国际平台是两套账号），故它们是**两个
+ * provider**（`minimax` / `minimaxintl`），与 `qoder`/`qodercn` 同型；
+ * **不是**「一个 provider 加一个区域参数」——后者要把站点存进凭据并让每个
+ * 请求点都按凭据解析主机，而模型目录是按 provider 缓存一份的（`loadModels`
+ * 的 `this.remoteModels`）⇒ 两站目录会互相覆盖。
+ *
+ * ⚠️ **两站只差 6 个字段**，其余逐字段相同（OAuth 常量、全部端点路径、兜底表）：
+ *
+ * | 字段 | `minimax`（中国版） | `minimaxintl`（国际版） |
+ * |---|---|---|
+ * | `id` | `minimax` | `minimaxintl` |
+ * | `displayName` | `MiniMax Code (中国版)` | `MiniMax Code (国际版)` |
+ * | `accountHost` | `account.minimax.cn` | `account.minimax.io` |
+ * | `apiHost` | `agent.minimax.cn` | `agent.minimax.io` |
+ * | `region` | `cn` | `en` |
+ * | `defaultCredentialRef` | `MINIMAX_ACCESS_TOKEN` | `MINIMAXINTL_ACCESS_TOKEN` |
+ *
+ * ⇒ 因此**不复制任何** `src/minimax*.ts` 实现文件：适配器 / 认证服务 / OAuth /
+ * 积分 / 消息序列化全部共用，差异只在本文件的配置常量里。
+ *
+ * ## ✅ 国际站真机验证结论（2026-10-15，**两站同形、认证方式相同**）
+ *
+ * 用真实国际站账号（`MINIMAXINTL_ACCOUNT_*`，经本插件登录）逐端点实测，并与官方
+ * 开源实现 `MiniMax-AI/minimax-code`（v0.6.11 打包产物 + 源码）逐字对拍：
+ *
+ * | 项 | 本文件取值 | 依据 |
+ * |---|---|---|
+ * | OAuth 主机 | `account.minimax.io` | 官方 `oauth-core/src/endpoint-config.ts` 的 `ACCOUNT_ORIGINS.en.prod`；且官方 `mcode login --region global` 打开的**就是**该主机 |
+ * | 推理基址 | `agent.minimax.io/mavis/api/v1/llm/v1` | 官方 `config/src/config.ts` 的 `PRESET_BASE_URLS['en-prod']` |
+ * | 推理路径 | `/mavis/api/v1/llm/v1/messages` | 同上（基址 + `/messages`） |
+ * | 推理认证 | **`Authorization: Bearer <access_token>`** | 官方 `local-model-resolver.ts:789`；**探针实测官方请求头也只有它**（另有 `x-api-key: sk-xxx` 占位与 `x-mavis-*`，但缺之亦通） |
+ * | OAuth 常量 | `mcode-public` / `agent.default` / `agent-backend` | 官方 `oauth-core/src/contracts.ts` 三个常量逐字一致 |
+ * | 目录 / 签到 / 积分 | `GET /mavis/api/v1/models?region=en&buildEnv=prod`、`/minimax-cloud/api/v1/{signin,credit}/*` | **实测全部 200**（见下） |
+ *
+ * **实测结果**（本插件自己的代码路径，e2e 探针 4/4 通过）：
+ *
+ * ```
+ * [minimaxintl] 模型目录 4 条：M3.1-Flash-Preview(1000K) / M3(1000K) / M2.7-highspeed(200K) / M2.7(200K)
+ * [minimaxintl] 签到状态：今日已领=true 连续=1 今日额度=400
+ * [minimaxintl] 积分余额：394.8
+ * 推理：200 + 真实 SSE（Bearer 即可，与国内站一致）
+ * ```
+ *
+ * ⇒ **国际站与国内站协议同形**，本文件的「两站只差 6 个字段」成立，共用实现正确。
+ *
+ * ## ⚠️⚠️ 一段**已被证伪**的中间结论（留作教训，勿再采信）
+ *
+ * 2026-10-15 中途我曾据一次**上游故障窗口**内的探测，写下「国际站要求阿里云 ALB
+ * 网关签名、推理与签到/积分不可用」的结论，并据此在文档里断言
+ * `400 invalid signature` / `401 token is required` 是国际站的设计而非故障。
+ * **该结论是错的。** 故障恢复后同样的请求全部 200。当时的错因有三：
+ *
+ * 1. **把瞬时故障当成设计**：`invalid signature` / `token is required` 是上游网关在
+ *    故障期返回的通用错误，恢复后即消失；
+ * 2. **对照组选错**：我当时用「国内站通、国际站不通」推断「两站不同形」，但**没有
+ *    先让官方客户端复现** —— 后来跑 `mcode` 才发现**官方自己也连不上**（截图
+ *    `Code: 50112` = 官方枚举 `LLM_AUTH_ERROR`），那才是决定性证据；
+ * 3. **烧掉了用户凭据**：为判断凭据归属，我对两个真实账号调了 `refresh_token`
+ *    却**没有写回**，服务端轮换后旧 token 作废 —— **诊断脚本绝不该对真实凭据
+ *    发起 refresh，无论是否写回**。
+ *
+ * 教训（可推广）：**区分「客户端 bug」与「服务端故障」时，先让官方/参考实现复现**，
+ * 成本最低、结论最硬；不要拿一个失败面的组合去反推协议差异。
+ *
+ * ## 数据来源
+ *
+ * - 国际站主机 / OAuth 端点 / 推理基址 / OAuth 常量：**官方开源仓库**
+ *   `MiniMax-AI/minimax-code`（2026-10-15 逐文件核对，见上表）；
+ * - 国际站端点行为（上表的 ❌ 部分）：2026-10-15 **真实国际站账号**逐端点实测；
+ * - 国内站主机与端点：asar `@mavis/config/dist/config.js` 的
+ *   `PRESET_BASE_URLS['cn-prod']` + `@mavis/oauth-core/dist/endpoint-config.js`；
+ * - 国内站 `clientId` / `scope` / `audience`：`~/.minimax/auth/prod/cn/mcode-public/auth.json`
+ *   与 asar `contracts.js`；
+ * - 兜底模型表：2026-09-28 实测 `GET /mavis/api/v1/models?region=cn&buildEnv=prod`。
  */
 
 /**
@@ -120,8 +189,14 @@ const MINIMAX_FALLBACK_MODELS: readonly MinimaxFallbackModel[] = [
 
 /** MiniMax Code 产品配置。 */
 export interface MinimaxProduct {
-  /** provider 标识：注册到 `ctx.llm` 的路由名，也是账号列表的 provider 字段值。 */
-  id: 'minimax'
+  /**
+   * provider 标识：注册到 `ctx.llm` 的路由名，也是账号列表的 provider 字段值。
+   *
+   * ⚠️ **两个站点各有一个 id**（`minimax` 中国版 / `minimaxintl` 国际版）——
+   * 它们账号不互通、凭据 ref 前缀与主机都不同，故是两个 provider 而不是
+   * 一个 provider 的两个区域（理由见本文件头「双站点」一节）。
+   */
+  id: 'minimax' | 'minimaxintl'
   /** 设置页 / 模型选择器展示名。 */
   displayName: string
   /** 账号与 OAuth 主机（`account.minimax.cn`）。 */
@@ -148,10 +223,12 @@ export interface MinimaxProduct {
   maxRequestBodyBytes: number
 }
 
-/** MiniMax Code 中国版 provider 配置。 */
+/** MiniMax Code **中国版** provider 配置。 */
 export const MINIMAX: MinimaxProduct = {
   id: 'minimax',
-  displayName: 'MiniMax Code',
+  // ⚠️ 与国际版并列后必须带括注，否则用户分不清哪个是国内站
+  //（与 `Qoder (中国版)` / `WorkBuddy (国际版)` 的既有命名风格一致）。
+  displayName: 'MiniMax Code (中国版)',
   accountHost: 'https://account.minimax.cn',
   apiHost: 'https://agent.minimax.cn',
   region: 'cn',
@@ -165,10 +242,44 @@ export const MINIMAX: MinimaxProduct = {
   maxRequestBodyBytes: 64 * 1024 * 1024,
 }
 
-/** 产品注册表（供 `productById` 风格查找；本轮只有一个）。 */
-export const ALL_MINIMAX_PRODUCTS: readonly MinimaxProduct[] = [MINIMAX]
+/**
+ * MiniMax Code **国际版** provider 配置。
+ *
+ * ⚠️ 与 {@link MINIMAX} **只差 6 个字段**（见本文件头的对照表），其余逐字段
+ * 相同 —— 这正是「不复制实现文件」的前提。
+ *
+ * ⚠️ 兜底表与国内站**共用同一份**：国际站远端目录未真机采集，而远端目录
+ * 永远是首选（`MinimaxAuth.fetchRawModels`），兜底表只在远端失败时兜住
+ * 「一个模型都看不到」这种最坏情况。
+ */
+export const MINIMAX_INTL: MinimaxProduct = {
+  id: 'minimaxintl',
+  displayName: 'MiniMax Code (国际版)',
+  accountHost: 'https://account.minimax.io',
+  apiHost: 'https://agent.minimax.io',
+  // ⚠️ 目录查询参数按站点不同：国内 `cn` / 国际 `en`（上游实现实测）。
+  region: 'en',
+  buildEnv: 'prod',
+  clientId: 'mcode-public',
+  audience: 'agent-backend',
+  scope: 'agent.default',
+  defaultCredentialRef: 'MINIMAXINTL_ACCESS_TOKEN',
+  fallbackModels: MINIMAX_FALLBACK_MODELS,
+  maxImageBytesInline: 10 * 1024 * 1024,
+  maxRequestBodyBytes: 64 * 1024 * 1024,
+}
 
-/** 按 id 查产品配置。 */
+/** 产品注册表（两个站点；顺序即 `minimaxProductById` 的查找顺序）。 */
+export const ALL_MINIMAX_PRODUCTS: readonly MinimaxProduct[] = [MINIMAX, MINIMAX_INTL]
+
+/**
+ * 按 id 查产品配置；未知 id 返回 undefined。
+ *
+ * ⚠️ **不要用它做「站点分派」**：它按 provider id 查，而站点分派在双 id 方案下
+ * 就是「按 provider id 查」本身 —— 调用方（`index.ts` / `jet-hub-rpc.ts`）
+ * 各自持有自己那个实例，不需要在这里再查一次表。
+ * 保留它只为「按 id 反查配置」这类诊断用途。
+ */
 export function minimaxProductById(id: string): MinimaxProduct | undefined {
   return ALL_MINIMAX_PRODUCTS.find((product) => product.id === id)
 }

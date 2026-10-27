@@ -1,4 +1,4 @@
-// Composer picker for the pinned 0.2.1-alpha.1 client. Host directory and
+// Composer picker for reviewed 0.2.1-alpha.1 and 0.2.1-rc.2 clients. Host directory and
 // selection remain authoritative; preferences contain only exact model pairs.
 const DSH_PICKER_KEY = 'dsh:model-picker:v1';
 const MEASURE_STYLE = {visibility:'hidden', left:0, top:0};
@@ -45,7 +45,7 @@ function pickerRows(groups, query, provider, view, preferences, current) {
   return rows;
 }
 
-function ModelSelect({locked, available, directory, load, select, t}) {
+function ModelSelect({locked, available, directory, load, select, t, renderSlot = (_seat,_props,options) => options.fallback}) {
   const state = react.useSyncExternalStore(fn => directory.subscribe(fn), () => directory.getSnapshot());
   const [open, setOpen] = react.useState(false);
   const [pane, setPane] = react.useState('model');
@@ -63,7 +63,8 @@ function ModelSelect({locked, available, directory, load, select, t}) {
   const P = _deepseek_ai_dsh_client_ui_primitives;
   const english = t('menu.model') === 'Model';
   const words = english ? {title:'Choose model', search:'Search model or API…', source:'API source', allSources:'All APIs', all:'All', favorites:'Favorites', recent:'Recent', current:'Current', close:'Close model picker', add:'Favorite', remove:'Unfavorite', empty:'No matching models', reset:'Clear filters', noFavorites:'Use ☆ beside a model to save it here.', noRecent:'Models you choose appear here.', count:'models', effort:'Reasoning effort', back:'Back to models'} : {title:'选择模型', search:'搜索模型或 API 来源…', source:'API 来源', allSources:'全部 API', all:'全部', favorites:'收藏', recent:'最近', current:'当前', close:'关闭模型选择', add:'收藏', remove:'取消收藏', empty:'没有找到匹配的模型', reset:'清除筛选', noFavorites:'点模型旁的 ☆，下次在这里快速找到。', noRecent:'切换过的模型会出现在这里。', count:'个模型', effort:'推理等级', back:'返回模型列表'};
-  const groups = react.useMemo(() => orderModelProviders(state.groups), [state.groups]);
+  const accountProviderName=t("provider.account");
+  const groups = react.useMemo(() => orderModelProviders(state.groups).map(group=>({...group,name:group.id==="deepseek-account"?accountProviderName:group.name})), [state.groups,accountProviderName]);
   const currentGroup = groups.find(group => group.id === state.current?.provider);
   const currentModel = currentGroup?.models.find(model => model.id === state.current?.model);
   const reasoning = currentModel?.reasoning;
@@ -74,6 +75,7 @@ function ModelSelect({locked, available, directory, load, select, t}) {
   const activeIndex = Math.min(active, rows.length - 1);
   const busy = state.pending !== null || submitting;
   const modelLabel = currentModel?.name ?? (state.current ? `${state.current.provider}/${state.current.model}` : t('trigger.fallback'));
+  const renderModelLabel=(providerId,modelId,placement,selected)=>{const group=groups.find(g=>g.id===providerId),model=group?.models.find(m=>m.id===modelId);if(!group||!model)return modelId;return <span data-provider-id={providerId} data-model-id={modelId}>{renderSlot('conversation.input.model.label',{provider:{id:group.id,name:group.name},model,placement,selected},{fallback:model.name})}</span>;};
   const close = (focus = true) => {setOpen(false); if (focus) triggerRef.current?.focus();};
   const reset = () => {setQuery(''); setProvider(''); setView('all'); setActive(0);};
   const remember = value => {
@@ -157,7 +159,7 @@ function ModelSelect({locked, available, directory, load, select, t}) {
       if (open) {close(); return;}
       setPreferences(pickerPreferences()); reset(); setPane('model'); setOpen(true); load();
     }}>
-      <span className={ModelSelect_module_css_default.triggerLabel}>{modelLabel}</span>
+      <span className={ModelSelect_module_css_default.triggerLabel}>{currentGroup && currentModel ? renderModelLabel(currentGroup.id,currentModel.id,"trigger",true) : modelLabel}</span>
       {effortLabel && <span className={ModelSelect_module_css_default.triggerEffort}> · {effortLabel}</span>}
       {busy ? <P.StateDot state="ongoing"/> : <P.IconChevronDownOutlineRegular/>}
     </button>
@@ -167,16 +169,16 @@ function ModelSelect({locked, available, directory, load, select, t}) {
         <button type="button" aria-label={words.close} onClick={() => close()}>×</button>
       </div></div>
       {pane === 'model' ? <>
-        {state.current && <div className="dsh-picker-current"><span>{words.current}</span><span title={modelLabel}>{modelLabel}<small>{currentGroup?.name ?? state.current.provider}</small></span></div>}
+        {state.current && <div className="dsh-picker-current"><span>{words.current}</span><span title={modelLabel}>{currentGroup && currentModel ? renderModelLabel(currentGroup.id,currentModel.id,"menu",true) : modelLabel}<small>{currentGroup?.name ?? state.current.provider}</small></span></div>}
         <div className="dsh-picker-search"><P.Input ref={inputRef} icon={<P.IconSearchOutlineRegular/>} type="search" role="searchbox" aria-label={words.search} aria-controls={`${id}-models`} aria-activedescendant={activeIndex >= 0 ? `${id}-model-${activeIndex}` : undefined} placeholder={words.search} value={query} readOnly={busy} autoComplete="off" onChange={event => {setQuery(event.target.value); setActive(0);}}/>{query && <button type="button" aria-label={t('search.clear')} onClick={() => {setQuery(''); setActive(0); inputRef.current?.focus();}}>×</button>}</div>
         <div className="dsh-picker-filters"><div role="group" aria-label={english ? 'Model filters' : '模型筛选'}>{['all','favorites','recent'].map(value => <button key={value} type="button" disabled={busy} aria-pressed={view === value} onClick={() => {setView(value); setActive(0);}}>{words[value]}</button>)}</div><select aria-label={words.source} value={provider} disabled={busy} onChange={event => {setProvider(event.target.value); setActive(0);}}><option value="">{words.allSources}</option>{groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}</select></div>
         <div className="dsh-picker-list scrollable" id={`${id}-models`} role="menu" aria-label={t('menu.model')}>
           {state.status === 'loading' && <div className="dsh-picker-status" role="status">{t('status.loading')}</div>}
           {state.error && !toast && <div className="dsh-picker-error" role="alert">{t('error.action', {message:state.error})} <button type="button" disabled={busy} onClick={load}>{t('action.reload')}</button></div>}
-          {state.failures.map(failure => <div className="dsh-picker-error" key={failure.id}>{t('warning.groupLoad', {name:failure.name, message:failure.message})} <button type="button" disabled={busy} onClick={load}>{t('action.reload')}</button></div>)}
+          {state.failures.map(failure => <div className="dsh-picker-error" key={failure.id}>{t('warning.groupLoad', {name:failure.id==='deepseek-account'?accountProviderName:failure.name, message:failure.message})} <button type="button" disabled={busy} onClick={load}>{t('action.reload')}</button></div>)}
           {rows.map((row, index) => <div className="dsh-picker-row" key={pickerPair(row)}>
             <button ref={node => {itemRefs.current[index] = node;}} data-picker-model="" data-provider={row.provider} data-model={row.model} type="button" role="menuitemradio" aria-checked={!!row.selected} id={`${id}-model-${index}`} disabled={busy || locked} data-highlighted={index === activeIndex ? '' : undefined} className="dsh-picker-choice" onFocus={() => setActive(index)} onClick={() => choose(row)} title={`${row.name}\n${row.providerName} · ${row.model}`}>
-              <span className="dsh-picker-copy"><span>{row.name}</span><small>{row.providerName}{row.model !== row.name ? ` · ${row.model}` : ''}</small></span><span className="dsh-picker-check">{state.pending?.provider === row.provider && state.pending.model === row.model ? <P.StateDot state="ongoing"/> : row.selected ? '✓' : ''}</span>
+              <span className="dsh-picker-copy"><span>{renderModelLabel(row.provider,row.model,"option",!!row.selected)}</span><small>{row.providerName}{row.model !== row.name ? ` · ${row.model}` : ''}</small></span><span className="dsh-picker-check">{state.pending?.provider === row.provider && state.pending.model === row.model ? <P.StateDot state="ongoing"/> : row.selected ? '✓' : ''}</span>
             </button><button type="button" className="dsh-picker-star" aria-label={`${row.favorite ? words.remove : words.add} ${row.name} · ${row.providerName}`} aria-pressed={row.favorite} disabled={busy} onClick={() => favorite(row)}>{row.favorite ? '★' : '☆'}</button>
           </div>)}
           {rows.length === 0 && state.status !== 'loading' && <div className="dsh-picker-empty" role="status"><strong>{words.empty}</strong><span>{view === 'favorites' ? words.noFavorites : view === 'recent' ? words.noRecent : ''}</span>{(query || provider || view !== 'all') && <button type="button" onClick={reset}>{words.reset}</button>}</div>}

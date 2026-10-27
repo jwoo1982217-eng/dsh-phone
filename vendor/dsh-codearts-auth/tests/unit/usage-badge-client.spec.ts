@@ -34,6 +34,71 @@ const codeOf = (text: string) => text
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .replace(/^[ \t]*\/\/.*$/gm, '')
 
+/**
+ * 取**用量浮层的窄屏适配段**（2026-10-17 手机端修复那一段）。
+ *
+ * ⚠️ 为什么要切片而不是对全文断言：`.dim-jh-badgePop` 在样式表里出现多次
+ * （基础规则 + 旧窄屏规则 + 本次新增的视口锚定段），对全文匹配 `left: 8px`
+ * 这类判据可能命中**别的段**而假绿；反向断言（「不得出现 X」）更会被宽屏那份
+ * 干扰成恒假红。
+ *
+ * ⚠️ 锚点用**注释标题**而非规则本身：规则文本在不同段里高度相似，
+ * 而注释标题是这一段唯一的。
+ *
+ * ## ⚠️⚠️ 2026-10-20 审计整改：本 helper 原版有 4 处假绿，已全部修掉
+ *
+ * 变异测试实测（变异后 154 条用例**全绿**）暴露的问题与对应修法：
+ *
+ * 1. **整段被 `/* *\/` 注释掉 ⇒ 全绿**。注释掉的 CSS 等于不存在，但文本断言
+ *    照样命中。⇒ 修法：返回**已剥注释**的文本（复用 {@link codeOf}），
+ *    并在断言前额外校验「剥之前确实有 @media 块、剥之后规则仍在」。
+ * 2. **media 条件改成 `max-width: 1px`（永不命中）/ `min-width: 720px`
+ *    （min/max 笔误）⇒ 全绿**。⇒ 修法：显式断言块内**必须**出现
+ *    `@media (max-width: 720px)`，且**不得**出现 `min-width`。
+ * 3. **结束锚点用模板闭合反引号 ⇒ 吞掉段后内容**，导致「段后追加
+ *    `position: static`」误报为段内（假红），而「段后追加
+ *    `z-index: 5000`」又因只 exec 第一个匹配而漏掉（假绿）。
+ *    ⇒ 修法：结束锚点改成**下一个独立段落**的注释标题，并在找不到时显式报错。
+ * 4. **空块时反向断言恒绿**。⇒ 修法：锚点守卫（下方两条 expect）保留，
+ *    且正向断言先跑（空块会先红）。
+ *
+ * @returns 从该段注释标题起、到下一段注释标题前的**已剥注释**规则文本。
+ */
+function narrowPopBlock(styles: string): string {
+  const start = styles.indexOf('── 窄屏：用量浮层')
+  expect(start, '找不到浮层窄屏段的注释标题（可能被改名或删除）').toBeGreaterThan(-1)
+  // ⚠️ 结束锚点必须是一个**独立段落**的标题，不能用模板闭合反引号 ——
+  // 后者会把「本段之后、模板结束之前」的一切都算进本段（见上面第 3 条）。
+  // 当前本段是全文件最后一段，故结束锚点取模板闭合处；但**同时**要求
+  // 两者之间不含另一个段落标题（否则说明有人在本段之后插了新段，
+  // 那时必须改这个锚点，而不是让断言静默地跨段匹配）。
+  const end = styles.indexOf('\n`', start)
+  expect(end, '找不到 STYLES 模板的闭合位置').toBeGreaterThan(start)
+  const raw = styles.slice(start, end)
+  const strayHeader = raw.indexOf('── ', raw.indexOf('\n'))
+  expect(
+    strayHeader,
+    '本段之后出现了另一个段落标题：请把 narrowPopBlock 的结束锚点改成它（否则断言会跨段匹配）',
+  ).toBe(-1)
+  // ⚠️ 剥注释后再返回：注释掉的 CSS 不生效，文本断言不得把它当证据。
+  return codeOf(raw)
+}
+
+/**
+ * 取**主布局窄屏段**（与 provider-toggle.spec.ts 的同名 helper 同构）。
+ *
+ * ⚠️ 这里刻意**不复用** provider-toggle 那份：两个 spec 各自独立读文件，
+ * 跨文件 import helper 会让「一个 spec 的改动影响另一个」变得隐晦。
+ * 但两者的判据必须同构 —— 由 `narrow-block-parity` 用例对拍两处的断点常量。
+ */
+function narrowLayoutBlock(styles: string): string {
+  const start = styles.indexOf('── 窄屏（手机')
+  expect(start, '找不到窄屏主布局的注释标题（可能被改名或删除）').toBeGreaterThan(-1)
+  const end = styles.indexOf('── 窄屏：用量浮层', start)
+  expect(end, '找不到浮层窄屏段的注释标题（用于界定上一段的结束）').toBeGreaterThan(start)
+  return codeOf(styles.slice(start, end))
+}
+
 describe('用量徽标：槽位接线', () => {
   const index = read('plugin-src/client/index.js')
 
@@ -348,7 +413,21 @@ describe('用量徽标：渲染门控与轮询', () => {
     // 首屏只给一句说明 + 签到按钮，然后 return（不 push 订阅/积分区）
     expect(badge).toContain("key: 'placeholder'")
     expect(badge).toContain('正在读取用量…')
-    expect(badge).toMatch(/children\.push\(renderClaim\(\)\);\s*\n\s*return React\.createElement\('div', \{ className: 'dim-jh-badgePop' \}, children\);/)
+    // ⚠️ props 用 `[^{}]*` 容忍新增属性：浮层已带上内联定位（issue IKKGYN），
+    // 写死整个对象会让这类无关改动假失败（IKK4BY 的同款教训）。
+    //
+    // ⚠️ 2026-10-20 审计整改：浮层渲染已抽成 `wrapPopover(children)`
+    // （窄屏要 portal 到 body，见 usage-badge.js 的 NARROW_BREAKPOINT_PX）。
+    // 判据因此改成「首屏那条 return 必须**紧跟在** renderClaim 之后、且走
+    // wrapPopover」—— 仍锚定「首屏到此为止」这个语义，而不是锚定某种渲染写法。
+    expect(badge).toMatch(/children\.push\(renderClaim\(\)\);\s*\n\s*return wrapPopover\(children\);/)
+    // 反向对照：明细区那三行必须**不在**首屏分支里（否则「还没读到」会被
+    // 说成「该渠道还没有账号」）。它们出现在首屏 return 之后。
+    const firstScreenEnd = badge.indexOf('return wrapPopover(children);')
+    expect(firstScreenEnd).toBeGreaterThan(-1)
+    const afterFirstScreen = badge.slice(firstScreenEnd)
+    expect(afterFirstScreen).toContain('children.push(renderSubscription());')
+    expect(afterFirstScreen).toContain('children.push(renderCredits());')
   })
 
   it('客户端**不**直接调 credits.balances（那是逐账号打上游的端点）', () => {
@@ -605,6 +684,340 @@ describe('用量徽标：弹窗的紧凑布局（信息一项不少）', () => {
     expect(styles).toMatch(/\.dim-jh-badgePop \{[^}]*width: 280px/)
     // 双层柔和阴影
     expect(styles).toMatch(/\.dim-jh-badgePop \{[^}]*box-shadow: 0 1px 2px[^}]*0 8px 24px/)
+  })
+
+  /**
+   * 浮层的**定位**必须内联，且与样式表一致（issue IKKGYN）。
+   *
+   * 真机事故：注入的 `<style>` 一旦缺失（热更新 / 别的插件清理），组件仍在渲染，
+   * `position: absolute` 只写在样式表里就会失效 —— 浮层退化成普通块，
+   * 把宿主输入卡片从 114px 撑到 576px（本机 CDP 实测）。
+   *
+   * ⚠️ 这是「一文件两套同义判据」：定位既写在内联样式、又写在 `.dim-jh-badgePop`
+   * 规则里，故必须逐条对拍锁住；只测一处挡不住另一处被改坏。
+   */
+  it('浮层定位走内联样式（样式表缺失时不得撑高宿主输入区）', () => {
+    const anchor = badge.match(/const POPOVER_ANCHOR_STYLE = Object\.freeze\(\{([\s\S]*?)\}\)/)
+    expect(anchor, '必须有一份冻结的内联定位声明').not.toBeNull()
+    const inline = anchor![1]
+    for (const decl of [
+      "position: 'absolute'",
+      'right: 0',
+      "bottom: 'calc(100% + 8px)'",
+      "maxHeight: '58vh'",
+      "overflowY: 'auto'",
+      'zIndex: 40',
+    ]) {
+      expect(inline, `内联定位缺 ${decl}`).toContain(decl)
+    }
+  })
+
+  it('浮层的宽窄两条渲染路径都必须带内联定位（漏一条就还有一条撑高路径）', () => {
+    // ⚠️ 2026-10-20 审计整改：原用例数「两处 return 各自带 style: POPOVER_ANCHOR_STYLE」。
+    // 浮层渲染现已收口到 `wrapPopover(children)`，其内部按宽窄**分两条**构造
+    // （宽屏在徽标子树内、窄屏 portal 到 body），故判据改为守新的不变量：
+    //   ① 两条路径都必须在 `wrapPopover` **内部**构造（外部不得再直接建浮层 DOM）；
+    //   ② 宽屏用 POPOVER_ANCHOR_STYLE、窄屏用 NARROW_POPOVER_STYLE，都是内联
+    //      （不依赖样式表 —— IKKGYN 老事故：样式表缺失时不能撑高宿主）。
+    expect(badge).toMatch(/function wrapPopover\(children\)/)
+    // 两个常量本身都必须存在且都被 Object.freeze（内联样式表，防运行期改写）。
+    expect(badge).toMatch(/const POPOVER_ANCHOR_STYLE = Object\.freeze\(\{/)
+    expect(badge).toMatch(/const NARROW_POPOVER_STYLE = Object\.freeze\(\{/)
+    // ② 两条路径各自带上自己的内联定位。
+    expect(badge, '宽屏路径必须用 POPOVER_ANCHOR_STYLE').toMatch(
+      /style: POPOVER_ANCHOR_STYLE/,
+    )
+    expect(badge, '窄屏路径必须用 NARROW_POPOVER_STYLE').toMatch(
+      /\.\.\.NARROW_POPOVER_STYLE/,
+    )
+    // ① 外部不得再直接建浮层 DOM：`className: 'dim-jh-badgePop'` 只应出现在
+    // wrapPopover 内部（两处：宽屏 + 窄屏），且 wrapPopover 之外零命中。
+    const wrapStart = badge.indexOf('function wrapPopover(children)')
+    expect(wrapStart).toBeGreaterThan(-1)
+    const beforeWrap = badge.slice(0, wrapStart)
+    expect(
+      beforeWrap,
+      'wrapPopover 之外不得直接构造浮层 DOM（否则又出现「漏改一处」的路径）',
+    ).not.toMatch(/className: 'dim-jh-badgePop'/)
+    // 反向对照：不得再出现旧的「直接在 return 里 createElement 浮层」写法。
+    expect(badge).not.toMatch(/return React\.createElement\('div', \{ className: 'dim-jh-badgePop'/)
+  })
+
+  it('内联定位与样式表规则逐条一致（两处同义判据，改一处必须改另一处）', () => {
+    // 样式表侧（CSS 长写法 → 内联 camelCase 写法）
+    const css = styles.match(/\.dim-jh-badgePop \{([^}]*)\}/)![1]
+    expect(css).toMatch(/position: absolute/)
+    expect(css).toMatch(/bottom: calc\(100% \+ 8px\)/)
+    expect(css).toMatch(/right: 0/)
+    expect(css).toMatch(/width: 280px/)
+    expect(css).toMatch(/max-width: min\(280px, 86vw\)/)
+    expect(css).toMatch(/max-height: 58vh/)
+    expect(css).toMatch(/overflow-y: auto/)
+    expect(css).toMatch(/z-index: 40/)
+  })
+
+  /**
+   * 窄屏 media query 仍归样式表所有，内联**不得**覆盖 `width` / `max-width`。
+   *
+   * 真机实测（issue IKKGYN 补丁的反向发现）：把 `width: 280px` 也内联后，
+   * 600px 视口下浮层仍 275px，而设计值是样式表 media query 的 220px ——
+   * 内联样式优先级高于任何非 `!important` 规则，媒体查询改不动它。
+   *
+   * ⇒ 内联**只**保留「不生效就会破坏宿主布局」的定位项；宽窄仍由样式表决定。
+   */
+  it('窄屏宽度（width/max-width）不得内联，否则压不掉 media query', () => {
+    const inline = badge.match(/const POPOVER_ANCHOR_STYLE = Object\.freeze\(\{([\s\S]*?)\}\)/)![1]
+    expect(inline).not.toMatch(/(^|[^\w])width: 280/)
+    expect(inline).not.toMatch(/(^|[^\w])maxWidth:/)
+    // 窄屏规则必须还留在样式表里
+    expect(styles).toMatch(/@media \(max-width: 720px\) \{ \.dim-jh-badgePop \{[^}]*width: 220px/)
+  })
+
+  /**
+   * ⚠️⚠️ 窄屏下浮层必须改**视口锚定**，否则浮层会跟着 composer 跑（报障 2026-10-17）。
+   *
+   * ## ⚠️ 2026-10-20 审计整改：本条用例的**根因描述与 z-index 区间都已被推翻**
+   *
+   * 原描述说「左边缘飞出 89px」（VW=492 badge=134~151 pop=-89~151）。按宿主
+   * **真实** composer 布局复刻 PRE-PR 形态实测：徽标在 `.uV2eYG_trailing` 里
+   * （该行有 `margin-left: auto`）⇒ 徽标靠**右**（L=334 R=468），向左展开
+   * 220px 得 popL=248 ⇒ **没有越界**。原描述那个 badge 位置在宿主布局中不成立。
+   *
+   * 真正需要 CSS + portal 兜底的是**旧内核的 containing block 偏差**：
+   * 宿主 `.uV2eYG_row` 带 `container-type: inline-size`，徽标是它后代 ——
+   * Chromium 154 按规范只做 inline-size containment（fixed 仍按视口锚定），
+   * 但 **Edge 122 把它当 layout containment** ⇒ fixed 相对该祖先定位
+   * （实测 popLeft 24→124、width 476→344）。故窄屏改由 JS **portal 到
+   * document.body**，样式表这块留作兜底。
+   *
+   * ## 为什么**必须** !important
+   *
+   * 内联样式的优先级高于任何非 `!important` 规则。宽屏那条内联
+   * `POPOVER_ANCHOR_STYLE`（`absolute; right:0`）必须被窄屏覆盖。
+   *
+   * ## ⚠️⚠️ z-index 区间是 (1101, 3000)，**不是**原来的 (250, 1000)
+   *
+   * 原论证只看了**外部外壳**（dsh-mobile 的 65/70/80/90 与 235/240/241/250），
+   * 漏了**宿主自己**（实测统计，宿主 79 处 z-index）：
+   *
+   * - **6 处 1100**：chat 的 `bRhRbq_panel`、conversation 的 `JObwrW_panel`
+   *   （**composer 里的 ContextMeter，与徽标同一行**）、model-selection 的
+   *   `_7KE1Ra_menu`（**与徽标同一行的模型选择菜单**）、plugin-manager、
+   *   schedule ×2；
+   * - **3 处全屏 overlay**：attachment 1000、settings-general 1000、
+   *   settings-account 1001（另有 onboarding 900）。
+   *
+   * 原下限 250 远不足以压住宿主自己。原上限 1000 的锚点
+   * `.dim-jh-loginOverlay` 更是**死规则**：全仓 `className` 用法 0 命中、
+   * git 历史从未渲染过，且它与浮层**不在同一 stacking context**
+   * （settings 页树 vs composer 树，中间层全无 z-index）⇒ 数值本就不可比。
+   *
+   * ⇒ 下限按宿主最高 overlay(1001) 与 ContextMeter(1100) 定，上限按**真正
+   * 同族**的 `.dim-jh-modalOverlay`(3000) 定 ⇒ 取 1200。
+   * 另：dsh-mobile 的 `[data-shell-overlay]` 恰好是 `z-index:300 !important`，
+   * 原取值与它**完全相等**（同层级时后出现的 DOM 胜出，不可预测），1200 也消除这点。
+   *
+   * ## ⚠️ 纵向必须用宿主的 composer 高度变量
+   *
+   * 原实现硬编码 88px。宿主用 ResizeObserver 把真实高度写进
+   * `--dsh-composer-height`（fallback 152px）⇒ 实测 composer=152px 时
+   * 浮层压住输入区 64px 并**盖住「用量」徽标按钮**（命中测试点到的不是按钮）。
+   * ⇒ 必须用 `var(--dsh-composer-height, 152px)`。
+   */
+  it('⚠️ 窄屏浮层改视口锚定 + 用宿主 composer 高度 + z-index 区间（2026-10-20 整改）', () => {
+    const block = narrowPopBlock(styles)
+
+    // ⓪ 媒体条件必须真的生效 —— 这是审计实测的假绿之一：把条件改成
+    //    `max-width: 1px`（永不命中）或 `min-width: 720px`（笔误）时，
+    //    原用例**全绿**。故先钉住条件本身。
+    expect(block, '窄屏浮层块必须用 max-width 断点').toMatch(/@media \(max-width: 720px\)/)
+    expect(block, '不得出现 min-width（那是 min/max 笔误，窄屏永远不命中）').not.toMatch(/min-width/)
+
+    // ① 横向贴视口两侧。
+    expect(block, '必须 position: fixed 才能脱离徽标锚点').toMatch(/position: fixed !important/)
+    expect(block).toMatch(/left: 8px !important/)
+    expect(block).toMatch(/right: 8px !important/)
+
+    // ② 纵向必须用**宿主变量**，不得硬编码数字（88px 会压住输入区并盖住徽标按钮）。
+    expect(
+      block,
+      'bottom 必须用 var(--dsh-composer-height, 152px)：硬编码任何数字都会与真实 composer 高度脱节',
+    ).toMatch(/bottom: calc\(env\(safe-area-inset-bottom, 0px\) \+ var\(--dsh-composer-height, 152px\)\) !important/)
+    expect(block, '不得再硬编码 88px（那是被推翻的旧实现）').not.toMatch(/\+ 88px/)
+
+    // ③ 宽度放开：与 left/right 同时生效才能撑满可用宽度（否则两者打架）。
+    expect(block).toMatch(/width: auto !important/)
+    expect(block).toMatch(/max-width: none !important/)
+
+    // ④ 高度上限：必须是 100dvh（不是 100vh）且带下限，否则矮视口会被压成 0。
+    expect(block, '100vh 在移动端与真实可视高度脱节，必须用 100dvh').toMatch(/100dvh/)
+    expect(block, '不得回退到 100vh').not.toMatch(/calc\(100vh/)
+    expect(
+      block,
+      '必须有 max(...) 下限：实测 vh=120 时 max-height 被算成 0px（浮层完全不可见却仍占位）',
+    ).toMatch(/max\(120px,/)
+
+    // ⑤ 层级：区间是 (1101, 3000)。**遍历块内全部 z-index**，不能只取第一个 ——
+    //    审计实测：段后追加 `z-index: 5000 !important`（后写者胜）时，
+    //    原 `/exec()` 只看到第一个匹配 ⇒ 全绿。
+    const allZ = [...block.matchAll(/z-index: (\d+)/g)].map((m) => Number(m[1]))
+    expect(allZ.length, '窄屏浮层必须显式声明 z-index').toBeGreaterThan(0)
+    for (const zValue of allZ) {
+      expect(
+        zValue,
+        `z-index=${zValue} 必须 > 1101：宿主 composer 的 ContextMeter 与模型菜单是 1100、'
+        + '全屏 overlay 是 1000/1001，低于它们会被整块盖住`,
+      ).toBeGreaterThan(1101)
+      expect(
+        zValue,
+        `z-index=${zValue} 必须 < 3000（.dim-jh-modalOverlay）：否则浮层会盖住本插件自己的设置弹窗`,
+      ).toBeLessThan(3000)
+    }
+    // 反向断言：不得退回贴屏幕底（那会盖住输入框）。
+    expect(block).not.toMatch(/bottom: 0 !important/)
+  })
+
+  /**
+   * ⚠️⚠️ **portal 是视口锚定在旧内核上成立的唯一手段**（2026-10-20 审计新增）。
+   *
+   * 判据分三层，缺一不可：
+   * ① `usage-badge.js` 必须 import `createPortal`（且来自 `react-dom` ——
+   *    宿主 seed 表里有它，实测 `staticModules` 含 `react-dom` / `react-dom/client`）；
+   * ② 窄屏分支必须真的调 `createPortal(node, document.body)`；
+   * ③ **宽屏分支不得 portal** —— 宽屏靠内联 `right: 0` 锚在徽标上，
+   *    挂到 body 会让那个锚定失效（把一个已知正常的路径换成需要坐标计算的实现）。
+   */
+  it('⚠️ 窄屏浮层必须 portal 到 document.body（旧内核 container-type 会让 fixed 相对祖先定位）', () => {
+    expect(badge, '必须从 react-dom 引入 createPortal').toMatch(
+      /import \{ createPortal \} from 'react-dom';/,
+    )
+    expect(badge, '窄屏必须真的调 createPortal 且挂到 document.body').toMatch(
+      /return createPortal\(node, document\.body/,
+    )
+    // ③ 宽屏不得 portal：wrapPopover 里窄屏判定必须先短路（宽屏直接返回子树内节点）。
+    expect(badge, '宽屏必须保持子树内渲染（否则 right:0 锚定失效）').toMatch(
+      /if \(!narrow\) \{[\s\S]{0,200}style: POPOVER_ANCHOR_STYLE/,
+    )
+    // 反向对照：窄屏判据必须真的按断点算，不能恒 true / 恒 false。
+    expect(badge).toMatch(/export const NARROW_BREAKPOINT_PX = 720;/)
+    expect(badge).toMatch(/window\.matchMedia\(`\(max-width: \$\{NARROW_BREAKPOINT_PX\}px\)`\)\.matches/)
+  })
+
+  /**
+   * ⚠️⚠️ **portal 之后「点里面」的判据必须同时看浮层自己**（2026-10-20 审计新增）。
+   *
+   * 这是 portal 带来的**直接副作用**：浮层不再是 `.dim-jh-badge`（`root`）的
+   * DOM 后代 ⇒ 只看 `root.contains(event.target)` 会把「点浮层内部」判成
+   * 「点外面」⇒ 浮层里**任何一次点击都立刻关闭它**，签到 / 刷新 / 偏好切换
+   * 全部点不动。这是一条**会把功能整体打死**的回归，必须有专条守卫。
+   */
+  it('⚠️ 点外面关闭必须同时排除浮层自身（portal 后 root.contains 不再覆盖浮层）', () => {
+    expect(badge, '必须同时判 root 与 popRef').toMatch(
+      /const insideRoot = root\.current !== null && root\.current\.contains\(event\.target\);/,
+    )
+    expect(badge).toMatch(
+      /const insidePop = popRef\.current !== null && popRef\.current\.contains\(event\.target\);/,
+    )
+    expect(badge, '两者都不在才算点外面').toMatch(/if \(!insideRoot && !insidePop\) setOpen\(false\);/)
+  })
+
+  /**
+   * ⚠️ **窄屏断点两处必须一致**（JS 常量 vs CSS media）。
+   *
+   * 这是本仓库明令要防的「一文件两套同义判据」：`usage-badge.js` 的
+   * `NARROW_BREAKPOINT_PX` 决定「要不要 portal」，`jet-hub-styles.js` 的
+   * `@media (max-width: 720px)` 决定「窄屏规则生不生效」。
+   * 两者一旦漂移（例如 CSS 改 700、JS 仍 720），会出现
+   * **「portal 了但样式没跟上」**（浮层挂在 body 上却用宽屏的 absolute 定位）
+   * 或反过来 —— 两种都是静默错位，没有任何报错。
+   */
+  it('⚠️ 窄屏断点在 JS 常量与 CSS media 两处必须一致', () => {
+    const constant = /export const NARROW_BREAKPOINT_PX = (\d+);/.exec(badge)
+    expect(constant, '找不到 NARROW_BREAKPOINT_PX 常量').not.toBeNull()
+    const jsBreakpoint = Number(constant![1])
+    // 样式表里与**浮层**相关的窄屏断点（本段那个 @media）。
+    const block = narrowPopBlock(styles)
+    const cssBreakpoint = /@media \(max-width: (\d+)px\)/.exec(block)
+    expect(cssBreakpoint, '窄屏浮层块里找不到 @media 断点').not.toBeNull()
+    expect(
+      Number(cssBreakpoint![1]),
+      'JS 的 NARROW_BREAKPOINT_PX 与 CSS 的 @media 断点必须逐字相同（漂移会导致 portal 与样式错配）',
+    ).toBe(jsBreakpoint)
+    // 主布局那块也必须用同一个断点（否则两块的生效区间不同，窄屏下形态割裂）。
+    const layoutBlock = narrowLayoutBlock(styles)
+    const layoutBreakpoint = /@media \(max-width: (\d+)px\)/.exec(layoutBlock)
+    expect(layoutBreakpoint, '窄屏主布局块里找不到 @media 断点').not.toBeNull()
+    expect(
+      Number(layoutBreakpoint![1]),
+      '主布局与浮层两块必须用同一个断点',
+    ).toBe(jsBreakpoint)
+  })
+
+  /**
+   * ⚠️ 浮层窄屏块**不得**把内联那几条定位也一起 `!important` 掉 `position: static`
+   * 之类的相反写法 —— 那会让它退化成普通块并撑高宿主输入区（IKKGYN 的老事故）。
+   *
+   * 这条是**反向断言**，理由：本段是全文件唯一用 !important 的地方，
+   * 后来者很容易「顺手」把 overflow/position 一起覆盖掉而看不出问题。
+   */
+  it('窄屏浮层不得把内联定位改回非绝对/非固定（IKKGYN 会复发）', () => {
+    const block = narrowPopBlock(styles)
+    expect(block).not.toMatch(/position: (static|relative)/)
+    // overflow 与最大高度仍要留给「内容超高时自己滚」——不得写 overflow: visible。
+    expect(block).not.toMatch(/overflow[^:]*: visible/)
+  })
+
+  /**
+   * ⚠️⚠️ **portal 会让宿主的 `--dsh-composer-height` 读不到**（2026-10-20 实测）。
+   *
+   * 宿主把该变量写在 `seat.parentElement` 的**内联 style** 上，而 CSS 变量只沿
+   * **DOM 祖先链**继承。浮层 portal 到 `document.body` 后，那个 scroller 是它的
+   * **兄弟**而非祖先 ⇒ `var()` 取不到值、只能落 fallback 152px。
+   *
+   * 实测证据（无头 Chromium，构造 portal 后的 DOM）：
+   * `portalChild_var = (空)`、`bottom = 999px`（fallback 生效），
+   * 而同为 body 子节点但自带变量的兄弟元素读得到 `152px`。
+   *
+   * ⇒ 修法：portal 前把实测值写成**浮层自己的内联**自定义属性
+   * （内联变量优先于继承值）。本用例守这条 —— 它守的是「portal 的副作用已被补偿」，
+   * 少了它，窄屏浮层在真实 composer 高于 152px 时会压住输入区。
+   */
+  it('⚠️ portal 后必须把 composer 高度补到浮层自身（变量继承会断链）', () => {
+    expect(badge, '必须有沿祖先链读宿主变量的实现').toMatch(
+      /function readComposerHeightPx\(anchor\)/,
+    )
+    expect(badge, '必须用 getComputedStyle 读（内联与样式表两种来源都要覆盖）').toMatch(
+      /window\.getComputedStyle\(node\)\.getPropertyValue\('--dsh-composer-height'\)/,
+    )
+    // 只接受有限正数：'0px' / 空串会让浮层贴底（盖住输入框），比 fallback 更糟。
+    expect(badge, '必须拒绝 0 / 非数（否则首帧会贴底盖住输入框）').toMatch(
+      /Number\.isFinite\(parsed\) && parsed > 0/,
+    )
+    // 关键：窄屏分支必须把读到的值写成浮层自己的内联变量。
+    expect(badge, '窄屏必须把实测高度写成浮层内联变量').toMatch(
+      /'--dsh-composer-height': `\$\{composerHeight\}px`/,
+    )
+    // 兜底必须与宿主 CSS 的 fallback 逐字一致（152）。
+    expect(badge).toMatch(/const COMPOSER_HEIGHT_FALLBACK_PX = 152;/)
+  })
+
+  /**
+   * 徽标必须在**渲染路径**上补一次样式表，否则删了只能 F5。
+   *
+   * 真机实测（IKKGYN）：删掉签名样式表后，关掉/打开浮层、切 provider 重挂载，
+   * 样式表都是 0 份 —— 因为 `installJetHubStyles` 只挂在 `ctx.effect`（apply 阶段），
+   * 渲染路径上不会重跑，用户只能整页刷新。
+   */
+  it('渲染路径必须调 ensureJetHubStyles（apply 之外也要能补注）', () => {
+    expect(badge, '必须从 jet-hub-styles 引入自愈入口').toMatch(
+      /import \{ ensureJetHubStyles \} from '\.\/jet-hub-styles\.js'/,
+    )
+    expect(badge, '组件 effect 里必须真的调它（少这一行就退回 F5 才恢复）').toContain('ensureJetHubStyles();')
+  })
+
+  it('定位自检独立于样式表（内联生效才不撑坏宿主）', () => {
+    expect(badge).toContain('window.getComputedStyle(element).position')
+    expect(badge, '自检必须在浮层打开时才做').toMatch(/if \(!open\) return;[\s\S]{0,200}getComputedStyle/)
   })
 
   it('信息不缺失：时间戳/缓存标记、停用与失败计数、套餐到期都仍在渲染里', () => {

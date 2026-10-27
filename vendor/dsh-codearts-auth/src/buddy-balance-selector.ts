@@ -85,7 +85,7 @@ export interface BuddyCandidateAccount {
 /**
  * 锁定状态下「无可用账号」的原因。
  *
- * ⚠️ 两者**必须分开报**（与 Loomy 那份同一修复）：混成一句「额度都已用尽」
+ * ⚠️ 四者**必须分开报**（与 Loomy 那份同一修复）：混成一句「额度都已用尽」
  * 会让一次网络抖动伪装成"钱花完了"，用户于是去解锁、或白等到明天 ——
  * 而号其实有钱。
  */
@@ -94,6 +94,36 @@ export type BuddyNoAccountReason =
   | { kind: 'exhausted' }
   /** 至少一个候选**查询失败**，无法判定它是否真的没额度。 */
   | { kind: 'unknown'; errors: string[] }
+  /**
+   * **一个候选都没有** ⇒ 压根没走到余额查询，也就无从断言「积分用尽」。
+   *
+   * ⚠️ 这一档是**必须**的（真实报障 2026-10-13，CodeBuddy）：候选由
+   * `candidatesOf` 按 `enabled` + 模型限流筛出，**全部账号都被目标模型限流**
+   * 时它就是个空集 —— 循环一次都不执行，`reason` 保持 `undefined`，调用方的
+   * `?? { kind: 'exhausted' }` 兜底于是把「限流」谎报成「积分都已用尽」，
+   * 用户据此去解锁永久积分，方向完全错（解禁时刻其实就写在 `modelRateLimits` 里）。
+   */
+  | { kind: 'no-candidates' }
+  /**
+   * **候选非空、余额也真的查了、分档每次都选出了「可用档」的号** —— 只是那些号
+   * 的**凭据**解析不出来（`readCredential` 返回 `undefined`）。
+   *
+   * ⚠️ 这一档同样是**必须**的，而且它比 `no-candidates` 更隐蔽（2026-10-14 审计
+   * 实测打穿）：分档返回 `ok: true` 这一事实**本身就证明**该号有可用的临期积分
+   * （锁定时 `buddyTierUsable` 只对 `expiring` 为真），所以此时**恰恰不能**说
+   * 「积分都已用尽」—— 我们刚刚查到它有钱，矛盾出在**凭据**上。
+   *
+   * 可达时序（三条都是真实路径，不是理论构造）：
+   * 1. 余额缓存（60s TTL）在上一轮请求里命中并写入了「该号有临期积分」，
+   *    凭据在这 60 秒内失效（续期失败 / 被并发烧掉 / 用户删除）；
+   * 2. 多候选时同理：`select()` 逐个把「档位最优但凭据坏」的号排除，耗尽后
+   *    `reason` 从未被赋值（它是 `undefined` 而非 `exhausted`）；
+   * 3. 单候选最直接：一次 `select()` 就选出了那个有临期积分的号。
+   *
+   * ⇒ 报「积分都已用尽」会再一次把用户推向「解锁永久积分」（**不可撤回地烧钱**），
+   *   而真正该做的是**修凭据 / 重新登录那个账号**。
+   */
+  | { kind: 'credential-only' }
 
 /** 选号结果：选中，或「为什么没选中」。 */
 export type BuddySelectionResult
@@ -321,7 +351,9 @@ export class BuddyBalanceSelector<
     options: BuddyTierOptions & { preferOrder?: boolean } = {},
   ): Promise<BuddySelectionResult> {
     if (candidates.length === 0) {
-      return { ok: false, reason: { kind: 'exhausted' } }
+      // ⚠️ 空候选 = **压根没查过余额**，不能报 `exhausted`（那是在替服务端
+      //    断言「积分是 0」）。见 `no-candidates` 的说明。
+      return { ok: false, reason: { kind: 'no-candidates' } }
     }
 
     // 并发查余额：账号数通常个位数，并发比串行快得多。
@@ -367,7 +399,27 @@ function failedEntry(id: string, error: string): BuddyAccountBalanceEntry {
 }
 
 /**
- * 选号 + 取凭据的完整编排（供 `src/index.ts` 的两个 buddy provider 调用）。
+ * `select` 的**结构化**形状（`BuddyBalanceSelector` 满足它，无需继承）。
+ *
+ * ## 为什么不是直接收 `BuddyBalanceSelector`
+ *
+ * `BuddyBalanceSelector` 带 `private` 成员 ⇒ 它是**名义类型**：任何结构等价的
+ * 替身都**不能**赋给它。而 `credential-resolver.ts` 必须能在单测里注入替身
+ *（否则选号编排的每一格都得起一台真适配器）。
+ *
+ * ⚠️ 这是**纯放宽**：`select` 的签名本就不提及 `TProduct` / `TCredential`
+ *（它只吃 `BuddyCandidateAccount[]` 与 `BuddyTierOptions`），故真实例天然满足
+ * 本接口 —— 既有调用点一个都不用改。
+ */
+export interface BuddySelectorLike {
+  select(
+    candidates: readonly BuddyCandidateAccount[],
+    options?: BuddyTierOptions & { preferOrder?: boolean },
+  ): Promise<BuddySelectionResult>
+}
+
+/**
+ * 选号 + 取凭据的完整编排（供 `src/index.ts` 的 buddy 系 provider 调用）。
  *
  * ## 为什么需要这一层
  *
@@ -383,14 +435,14 @@ function failedEntry(id: string, error: string): BuddyAccountBalanceEntry {
  *   从而**继续尝试池里的其余账号**（既有行为）。
  *
  * @param selector - 该 provider 专属的选号器（缓存不能跨站共用）。
+ *   ⚠️ 只要求 {@link BuddySelectorLike} 这个**结构**形状，不要求具体类 ——
+ *   具体类带 `private` 成员（名义类型），会让 `credential-resolver.ts` 的
+ *   测试替身无法传入。真实例天然满足该接口，既有调用点不受影响。
  * @param candidates - 已按 `enabled` + 模型限流过滤的候选。
  * @param options - 锁定标志与凭据解析器。
  */
-export async function pickBuddyAccount<
-  TCredential = BuddyCredential,
-  TProduct = BuddyProduct,
->(
-  selector: BuddyBalanceSelector<TProduct, TCredential>,
+export async function pickBuddyAccount<TCredential = BuddyCredential>(
+  selector: BuddySelectorLike,
   candidates: readonly BuddyCandidateAccount[],
   options: {
     /** 是否允许消耗永久积分（= 未锁定）。 */
@@ -414,15 +466,25 @@ export async function pickBuddyAccount<
     kind: 'locked' | 'exhausted'
     tried: ReadonlySet<string>
     /**
-     * 锁定判「无可用账号」的具体原因（`exhausted` 时没有这个信息可言）。
-     * ⚠️ 调用方必须据它区分「真的用尽」与「查不到」再报错。
+     * 判「无可用账号」的具体原因。
+     * ⚠️ **总是非空**（四种成因各有名字）：调用方必须据它区分
+     * 「真的用尽」/「查不到」/「凭据全坏」再报错 —— 混报会把用户引向
+     * 「解锁永久积分」这个不可撤回的错动作。
      */
-    reason?: BuddyNoAccountReason
+    reason: BuddyNoAccountReason
   }
 > {
   const tried = new Set<string>()
   const allowPermanent = options.allowPermanent !== false
+  /**
+   * ⚠️ **候选为空必须当场定因**（真实报障 2026-10-13，CodeBuddy）：
+   * 下面的循环上界是候选数，空候选时**一次都不执行**，`reason` 会保持
+   * `undefined`；调用方的 `?? { kind: 'exhausted' }` 于是把「候选被模型限流
+   * 筛空」**凭空**断言成「积分都已用尽」，用户据此去解锁永久积分 ——
+   * 而解禁时刻其实就写在 `modelRateLimits` 里。
+   */
   let reason: BuddyNoAccountReason | undefined
+    = candidates.length === 0 ? { kind: 'no-candidates' } : undefined
   // 循环上界取候选数：每次迭代至少排除一个账号，故必然终止。
   for (let remaining = candidates; remaining.length > 0;) {
     const picked = await selector.select(
@@ -442,5 +504,16 @@ export async function pickBuddyAccount<
   }
   // 锁定时的「无可用账号」是**用户要的确定性结果**，与凭据无关；
   // 未锁定时的失败只可能是凭据问题，交给调用方继续走池的兜底。
-  return { kind: allowPermanent ? 'exhausted' : 'locked', tried, ...reason ? { reason } : {} }
+  //
+  // ⚠️ `reason` 仍缺席 ⇒ **是「凭据全坏」而不是「积分用尽」**（2026-10-14 审计
+  //    实测打穿的漏网路径）。走到这里只有两种情形：
+  //    ① 候选为空 —— 开头已预置 `no-candidates`，故此时 `reason` 非空；
+  //    ② 候选非空、每次 `select()` 都返回 `ok:true`，但那些号的凭据都解析不出来
+  //       ⇒ 循环耗尽候选，`reason` 一次都没被赋值。
+  //    而 `ok:true` **本身就证明**该号落在「可用档」（锁定时只有 `expiring` 可用）
+  //    ⇒ 明知它有钱却报「积分都已用尽」是**自相矛盾**，且会把用户推向
+  //    「解锁永久积分」（不可撤回地烧钱）。故必须如实归到 `credential-only`。
+  //    ⚠️ 不能省着不填让调用方的 `?? { kind: 'exhausted' }` 兜底 —— 那正是缺陷本体。
+  if (reason === undefined) reason = { kind: 'credential-only' }
+  return { kind: allowPermanent ? 'exhausted' : 'locked', tried, reason }
 }

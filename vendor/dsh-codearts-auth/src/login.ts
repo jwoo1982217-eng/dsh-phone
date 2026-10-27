@@ -1,6 +1,9 @@
 import { createServer } from 'node:http'
-import { spawn } from 'node:child_process'
+import { spawn, execFileSync } from 'node:child_process'
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { getRandomValues, randomUUID, randomBytes } from 'node:crypto'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { CodeArtsCredential, CodeArtsCredentialResponse, LoginFlowOptions, LoginFlowResult } from './types.js'
 import {
   CLIENT_ID, REDIRECT_PATH, credentialFromTokenResponse, exchangeAuthorizationCode,
@@ -164,6 +167,265 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
   'Access-Control-Max-Age': '86400',
+}
+
+/**
+ * 从 Windows 注册表取默认浏览器的可执行文件路径与参数模板。
+ *
+ * ## 为什么需要它（而不是直接用 `openBrowser`）
+ *
+ * `cmd /c start` 只能把 URL 交给系统默认打开器，**无法附加 `--incognito`**；
+ * 而 `window.open` 在客户端也无法请求无痕模式（该标志是进程级启动参数、
+ * 不是 JS 能控制的窗口特性）。
+ *
+ * 故要走无痕只能在宿主侧**直接拉起浏览器可执行文件**，而它的路径只有注册表
+ * 这个真相源（用户装的可能是 Chrome / Edge / 360 / Firefox，路径各不相同，
+ * 不能硬编码）。读 `UrlAssociations\https\UserChoice` 拿 ProgId，再读该
+ * ProgId 的 `shell\open\command`。
+ *
+ * @returns 可执行文件路径；读不到时 `undefined`（调用方回退到 `openBrowser`）。
+ */
+export function defaultBrowserExecutable(): string | undefined {
+  if (process.platform !== 'win32') return undefined
+  // ⚠️ 只用 `reg.exe` 而不引第三方依赖：注册表读取是本功能唯一的平台相关调用，
+  //    为它加一个 native 依赖不划算（且本插件的 peer 约束不允许）。
+  const query = (key: string, value: string): string | undefined => {
+    try {
+      const out = execFileSync('reg', ['query', key, '/v', value], {
+        encoding: 'utf8', timeout: 5000, windowsHide: true,
+      })
+      // 形如：`    ProgId    REG_SZ    360ChromeXURL`
+      const m = /REG_SZ\s+(.+?)\s*$/m.exec(out)
+      return m?.[1]?.trim()
+    } catch {
+      return undefined
+    }
+  }
+  const progId = query(
+    'HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\https\\UserChoice',
+    'ProgId',
+  )
+  if (progId === undefined || progId.length === 0) return undefined
+  // ⚠️ 三个位置都要试：`UserChoice` 的 ProgId 可能只注册在 HKCR（合并视图）
+  //    或 HKCU\Software\Classes（用户级安装，本机 360 就是这种）。
+  for (const root of [
+    `HKCR\\${progId}\\shell\\open\\command`,
+    `HKCU\\SOFTWARE\\Classes\\${progId}\\shell\\open\\command`,
+    `HKLM\\SOFTWARE\\Classes\\${progId}\\shell\\open\\command`,
+  ]) {
+    try {
+      const out = execFileSync('reg', ['query', root, '/ve'], {
+        encoding: 'utf8', timeout: 5000, windowsHide: true,
+      })
+      // 形如：`    (Default)    REG_SZ    "C:\...\360ChromeX.exe" -- "%1"`
+      const m = /REG_SZ\s+(.+?)\s*$/m.exec(out)
+      const raw = m?.[1]
+      if (raw === undefined) continue
+      // 取命令行里的**第一个**被引号包裹的路径；没有引号则取到第一个空格前。
+      const quoted = /^"([^"]+)"/.exec(raw)
+      const exe = quoted?.[1] ?? raw.split(' ')[0]
+      if (exe !== undefined && exe.length > 0 && existsSync(exe)) return exe
+    } catch { /* 试下一个位置 */ }
+  }
+  return undefined
+}
+
+/**
+ * 为一次「换账号登录」准备**独立的浏览器 profile 目录**
+ * （Gitee issue IKM741 修法，2026-10-16 真机三次对照实测）。
+ *
+ * ## 为什么必须按窗口独立（而不是复用默认 profile）
+ *
+ * 见 {@link openIncognitoWindow} 里那张三格对照表：`--incognito` 的 cookie jar
+ * 是**按浏览器进程**共享的，故**只有**「独立 `--user-data-dir`」能让第二个窗口
+ * 真正拿到自己的会话。默认 profile 下两个窗口共享 jar ⇒ 第二个号登不进去。
+ *
+ * ## 生命周期与清理（⚠️ 这里有一条**刻意保守**的取舍）
+ *
+ * - 目录名带**随机后缀** ⇒ 两次开窗必然不同（同名会被浏览器复用同一个 jar，
+ *   那就等于没修）。
+ * - ⚠️⚠️ **只清理「够旧」的遗留目录**（超过 {@link STALE_PROFILE_MAX_AGE_MS}），
+ *   **不是**「所有其他同前缀目录」。理由：上一轮我第一版写的是后者，那会在
+ *   **第一个窗口仍开着**时去删它正在使用的 profile —— Windows 上被占用的文件
+ *   删不掉（会被 catch 吞掉），但**部分未占用的文件可能被删成功** ⇒ 那个
+ *   正在登录的窗口的 profile 被撕裂。那是我自己引入的、比原缺陷更糟的风险。
+ * - 用 6 小时这个阈值是**启发式而非证明**（如实登记）：一次换账号登录在几分钟内
+ *   结束，6 小时前的目录不可能还有窗口在用它。**代价**：若用户在同一天内连续
+ *   登很多账号，这些目录会保留到 6 小时后才被下次开窗顺手清掉
+ *（每个 Chromium profile 目录几 MB 级，不清理会缓慢增长，故需要这个闸门）。
+ * - ⚠️ **绝不删本次刚建的那个**：浏览器此刻正在用它。
+ */
+function prepareIncognitoProfileDir(nowMs = Date.now()): string {
+  const prefix = INCOGNITO_PROFILE_PREFIX
+  const dir = join(tmpdir(), `${prefix}${randomBytes(8).toString('hex')}`)
+  // 清「够旧」的遗留：同前缀、不是本次这个、且 mtime 超过阈值。
+  // ⚠️ 清理是**尽力而为**（失败一律忽略），绝不该阻断登录。
+  try {
+    for (const entry of readdirSync(tmpdir())) {
+      if (!entry.startsWith(prefix)) continue
+      const stale = join(tmpdir(), entry)
+      if (stale === dir) continue
+      try {
+        const age = nowMs - statSync(stale).mtimeMs
+        if (age <= STALE_PROFILE_MAX_AGE_MS) continue
+        rmSync(stale, { recursive: true, force: true })
+      } catch { /* 正被某个窗口使用 ⇒ 留给下次（这正是阈值要保护的情形） */ }
+    }
+  } catch { /* 读不到 tmp 目录 ⇒ 跳过清理 */ }
+  try {
+    mkdirSync(dir, { recursive: true })
+  } catch { /* 建不出来也照常传参：浏览器会自己尝试创建 */ }
+  return dir
+}
+
+/** 独立 profile 目录的前缀（清理时按它筛；同前缀才可能是我们留下的）。 */
+const INCOGNITO_PROFILE_PREFIX = 'dsh-officeace-login-'
+
+/**
+ * 遗留 profile 目录的保留时长（6 小时）。
+ *
+ * ⚠️ 这是**启发式**：它的作用是「保证不删可能正在被窗口使用的目录」，
+ * 而不是「精确判断谁在用」。取值远大于任何一次登录交互（分钟级）。
+ */
+const STALE_PROFILE_MAX_AGE_MS = 6 * 60 * 60 * 1000
+
+/**
+ * 构造**无痕窗口**的浏览器命令行参数 —— 抽成**纯函数**以便确定性地单测
+ * （Gitee issue IKM741 修法）。
+ *
+ * ⚠️ 抽出来的理由与 `officeacePendingTtlMs` 同源：`openIncognitoWindow` **会真的
+ * `spawn` 浏览器**，故它本身在单测里被 `NODE_ENV === 'test'` 断路器挡住 ⇒
+ * 「参数到底传对了没有」这一格**在单测里不可达**。把参数构造抽成纯函数后，
+ * 这一格可以在零副作用下被逐项断言（本仓库既有范式：`raccoonDefaultEffort`）。
+ *
+ * @param exe - 浏览器可执行文件（只看是否 Firefox 决定分支）。
+ * @param url - 授权页 URL。
+ * @param profileDir - **本次专用的**独立 profile 目录（须每次不同）。
+ */
+export function incognitoWindowArgs(exe: string, url: string, profileDir: string): string[] {
+  // ⚠️ Firefox 用 `-private-window` 且**不认** `--user-data-dir`（它用 `-profile`），
+  //    故**刻意不给它加**该参数（加了会被当成未知参数）。
+  //
+  // ⚠️⚠️ **如实登记一处未修的缺口**：Firefox 的 `-private-window` 之间同样会
+  //    **共享**私有浏览会话 ⇒ Firefox 上「连续新建两个账号」仍会复用同一个号。
+  //    本机**没有 Firefox**，无法实测 `-profile <新目录>` 能否真正隔离 ——
+  //    按仓库铁律「拿不到阈值就不定值」，故**不凭猜测**改它。
+  if (/firefox\.exe$/i.test(exe)) return ['-private-window', url]
+  return [`--user-data-dir=${profileDir}`, '--incognito', '--new-window', url]
+}
+
+/**
+ * 用**无痕窗口**打开 URL（华为云 OAuth 换账号登录用）。
+ *
+ * ## 为什么必须无痕（实测依据，2026-10-13）
+ *
+ * 华为 `authui` 会**静默复用**浏览器已有的登录会话：带着已登录 cookie 打开
+ * 授权页会直接放行，**看不到登录框**，于是「新建账号」永远只能建出同一个号。
+ * 实测三条：
+ *
+ * | 试验 | 结果 |
+ * |---|---|
+ * | `authui/login.html?service=<authorize>` | 200 直接返回页面（复用会话）|
+ * | authorize 追加 `&prompt=login` | **仍 200，无重定向** ⇒ authui 忽略该参数 |
+ * | `authui/logout?service=<authorize>` | 302 先清会话再跳 authorize |
+ *
+ * ⇒ 只有两条路：先 logout，或换一个 cookie jar。**选后者**：
+ * `logout` 的作用域是整个 `auth.huaweicloud.com` 域（实测 `Set-Cookie` 含
+ * `cloud_verify_ticket` 清除与 `IAMIdentity` 重写），会**连带登出用户日常浏览器
+ * 里的华为云控制台**；无痕窗口则是全新 cookie jar，天然无会话，
+ * **既不碰用户既有会话、也不需要 logout**。
+ *
+ * ⚠️ 官方客户端（果办）也没有解决这点：它的 `LoginPage` 用
+ * `window.open(url, 'officeclaw-login', 'popup,…')` 开共享 cookie 的小窗，
+ * 「重新登录」则走 `authui/logout`（`LoginCallbackPage`）。即官方同样无法
+ * 换账号登录 —— 别把它当参考实现。
+ *
+ * @returns 是否成功以无痕方式拉起（`false` 时调用方应回退到普通打开）。
+ */
+export function openIncognitoWindow(url: string): boolean {
+  // ⚠️⚠️ **测试环境断路器**（2026-10-13，我自己踩出来的真实污染）。
+  //
+  // 本函数**会真的 spawn 浏览器**。而 `officeace-rpc-multi-account.spec.ts`
+  // 之类的用例会走**真实的 `account.create` RPC**，其桩数据里带着
+  // `authorizeUrl: 'https://auth.huaweicloud.com/stub'` ⇒ 每跑一次 `pnpm test`
+  // 就在用户桌面上弹一个 `auth.huaweicloud.com/stub` 窗口。
+  //
+  // ⇒ 判据用 `NODE_ENV === 'test'`（Vitest 会设）。**返回 `false` 而不是抛错**：
+  // 调用方据此走正常的「回退到 window.open」分支，断言形态与生产一致，
+  // 唯一的差别是不真开窗 —— 这正是单测想要的。
+  //
+  // ⚠️ 不要改成「检测到 stub URL 就跳过」：那是**按数据打补丁**，
+  // 下一个用例换个 URL 就会复发。必须按**运行环境**一刀切断。
+  if (process.env.NODE_ENV === 'test') return false
+  const exe = defaultBrowserExecutable()
+  if (exe === undefined) return false
+  // ⚠️⚠️ **不要用「app 模式」开关**（2026-10-13 真机实测证伪，阻断级）。
+  //
+  // 初版传了「app 模式」+ URL，想让窗口去掉地址栏、视觉上更像个授权小窗。
+  // 在 360 极速浏览器 X（本机默认浏览器）上实测：窗口开了，但页面显示
+  //   「域名解析错误 —— 请检查域名拼写，可用"360断网急救箱"检查网络」
+  // 即它把该开关后面的值当成**域名/搜索词**去解析了，而不是当成 URL。
+  //
+  // 隔离探针（本地 HTTP 服务器 + 独立 `--user-data-dir`）显示该开关本身
+  // 能被 Chromium 正确解析并发出请求 ⇒ 这是**该浏览器对它的改写/拦截**，
+  // 不是我们的 URL 编码问题（实测 28 个 `%` 序列逐字送达服务器）。
+  //
+  // ⇒ 结论：**换取账号这个核心目的不依赖「app 模式」**，而它带来的失败是
+  // 阻断级（用户看到的是一个错误页，根本无法登录）。故只用无痕开关，
+  // 窗口形态交给浏览器（有地址栏，但功能完全正确）。
+  //
+  // ⚠️ 无痕开关是 Chromium 家族的通用参数（Chrome / Edge / 360 / Brave /
+  //    Vivaldi 等）。Firefox 用 `-private-window` 且不认它 —— **分支判定在
+  //    `incognitoWindowArgs` 里**（那是纯函数，可被单测逐项断言；
+  //    本函数因会真开窗而在单测里被断路器挡住）。
+  //
+  // ⚠️⚠️ **每次开窗都必须给一个独立的 `--user-data-dir`**（Gitee issue IKM741
+  //    真机实测，2026-10-16）。
+  //
+  // 为什么单靠 `--incognito` **不够**（本轮实证）：原实现只传 `--incognito`，
+  // 注释里写「无痕窗口 = 全新 cookie jar」。那句话对**第一个**窗口成立，对
+  // **第二个**不成立 —— Chromium 的 `--incognito` 是**按浏览器进程**共享一个
+  // 临时 cookie jar，**不是每窗口一个**。第一个窗口还开着时，第二个
+  // `--incognito` 只是**加入同一个 jar**。
+  //
+  // 真机三次测量的对照（本地 HTTP 服务器按「是否已带 `jar` cookie」决定要不要
+  // 重种，故回报里的 cookie 值直接暴露 jar 是否共享）：
+  //   场景 A：`--incognito` ×2（同一 profile）      ⇒ A43993 / **A43993** ❌ 共享
+  //   场景 B：独立 profile ×2（**无** incognito）    ⇒ C85845 / D85845    ✅ 隔离
+  //   场景 C：**独立 profile + `--incognito`** ×2    ⇒ E88407 / F88407    ✅ 隔离
+  // ⚠️ B 与 C 都测是**刻意的**（本仓库纪律：对照矩阵必须检查每个变量是否真的
+  //    独立）—— 只测 B 会让 `--incognito` 这个变量没被验证，而修法恰恰要带上它。
+  //
+  // 端到端后果（真实账号登录，同一次 e2e 运行）：
+  //   第一个号耗时 83 秒 → 登录框出现了，用户真的操作了
+  //   第二个号耗时  4 秒 → 人类不可能这么快 ⇒ 授权页**直接放行**
+  //   两者云侧 `accountId` **完全相同** ⇒ 两次登的是**同一个华为号**
+  //
+  //    ⇒ 「华为 authui 静默复用会话」这条**根因判断是对的**，但初版修法
+  //    **只挡住了一半**：它防住了「复用用户**日常浏览器**的会话」，没防住
+  //    「复用**我们上一个无痕窗口**的会话」。用户报障「新建账号那个链接就自动
+  //    用之前登录的账号授权了」的**后半句**（连续新建两个号）正是这一格。
+  //
+  // 目录的生命周期：用**独立的临时目录**而不是复用浏览器默认 profile
+  //（复用默认 profile 就等于**没有**隔离，那正是缺陷）；目录名带随机后缀
+  // ⇒ 两次开窗必然不同；启动时只清**够旧**的遗留目录（见
+  // `prepareIncognitoProfileDir` 的保留时长取舍）。
+  const profileDir = prepareIncognitoProfileDir()
+  const args = incognitoWindowArgs(exe, url, profileDir)
+  try {
+    const child = spawn(exe, args, { detached: true, stdio: 'ignore' })
+    // ⚠️ 必须挂 'error' 监听器 + unref：理由见 `openBrowser` 的长注释
+    //    （spawn 的失败是异步 'error' 事件，外层 try/catch 接不住，
+    //    无监听器时会变成未捕获异常把宿主带走）。
+    child.on('error', (error) => {
+      console.error('[codearts-auth] failed to open incognito window:', error)
+    })
+    child.unref()
+    return true
+  } catch (error) {
+    console.error('[codearts-auth] failed to open incognito window:', error)
+    return false
+  }
 }
 
 function pickToken(params: URLSearchParams): string {

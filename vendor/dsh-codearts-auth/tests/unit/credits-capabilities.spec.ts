@@ -19,11 +19,14 @@ import {
   supportsSubscriptionQuota,
 } from '../../plugin-src/client/credits-capabilities.js'
 import { PERMANENT_LOCK_PROVIDERS } from '../../src/jet-hub-rpc.js'
+import { createProviderCredits } from '../../src/provider-credits.js'
+import { PROVIDER_REGISTRY } from '../../src/provider-registry.js'
 import { BUDDY_EXPIRING_WINDOW_DAYS } from '../../src/buddy-balance-rank.js'
 import { CODEBUDDY, WORKBUDDY } from '../../src/product.js'
 import { LOOMY } from '../../src/loomy-product.js'
 import { TRAE } from '../../src/trae-product.js'
 import { LOBSTERAI } from '../../src/lobsterai-product.js'
+import { OFFICEACE } from '../../src/officeace-product.js'
 
 /**
  * 积分能力矩阵的回归测试。
@@ -59,6 +62,12 @@ describe('积分能力矩阵', () => {
     expect(supportsDailyCheckin('buddy')).toBe(true)
   })
 
+  it('AStudio 余额与签到都支持（微信扫码登录与每日奖励弹窗签到）', () => {
+    expect(CREDITS_CAPABILITIES.astudio).toEqual({ balance: true, dailyCheckin: true })
+    expect(supportsCreditBalance('astudio')).toBe(true)
+    expect(supportsDailyCheckin('astudio')).toBe(true)
+  })
+
   it('WorkBuddy 国际版支持余额但不支持签到（余额与签到是彼此独立的能力）', () => {
     // 这条断言专治「因为国际版没有签到，就推断也查不到余额」的错误推断。
     expect(supportsCreditBalance('workbuddy')).toBe(true)
@@ -77,25 +86,44 @@ describe('积分能力矩阵', () => {
    * **刻意不维护第二份能力名单**，只按 `claimAll` 返回的信封判「跳过」，所以
    * 宿主漏一个守卫，它就会真去发一轮必然失败的请求。⇒ 两处必须成对存在。
    *
-   * ⚠️ 为什么用源码扫描：`registerJetHubRpc` 是 12 个**位置参数**，在测试里逐个
-   * 填替身既脆弱又与 `jet-hub-rpc.spec.ts` 的桩重复 —— 与本仓库
-   * `raccoon-rpc-dispatch.spec.ts` 对同类守卫的做法一致。
+   * ⚠️ 为什么用源码扫描：`registerJetHubRpc` 的 auths 是**命名对象**（13 个键，
+   * 键是 provider id），在测试里要逐个填替身既脆弱又与 `jet-hub-rpc.spec.ts`
+   * 的桩重复 —— 与本仓库 `raccoon-rpc-dispatch.spec.ts` 对同类守卫的做法一致。
+   * （2026-10-08 改措辞：此处原写「是 12 个**位置参数**」，那是 Task 9 之前的形态。）
    */
   it('宿主端 credits.claimAll 对 workbuddy 有显式守卫（与能力表成对）', () => {
-    // ⚠️ 本文件里的 `here` 是**块内局部**变量（另有几处各写各的），这里自解析一次。
-    const specDir = dirname(fileURLToPath(import.meta.url))
-    const rpcSource = readFileSync(resolve(specDir, '../../src/jet-hub-rpc.ts'), 'utf8')
-    expect(rpcSource).toContain("if (req.provider === 'workbuddy') {")
-    expect(rpcSource).toContain('WorkBuddy 国际版不支持每日签到')
-    // 守卫必须**早于** `productById` 兜底：否则会走到 buddy 产品分支真发请求
-    const guardAt = rpcSource.indexOf("if (req.provider === 'workbuddy') {")
-    const claimAllAt = rpcSource.indexOf("case 'credits.claimAll'")
-    expect(claimAllAt).toBeGreaterThan(-1)
-    expect(guardAt).toBeGreaterThan(claimAllAt)
-    // 该守卫的返回块里不能出现真实调用（只能是 ok:false 的信封）
-    const guardBlock = rpcSource.slice(guardAt, guardAt + 700)
-    expect(guardBlock).toContain('ok: false')
-    expect(guardBlock).not.toMatch(/collectClaimResults|await /)
+    // ⚠️ 2026-10-08 改（Task 4）：原先这条扫 `src/jet-hub-rpc.ts` 的源码文本，
+    //    断言里面含 `if (req.provider === 'workbuddy') {` 与那句文案，并检查
+    //    守卫**早于** `productById` 兜底。Task 4 把守卫搬进
+    //    `src/provider-credits.ts` 的 `claimUnavailableReason` ⇒ 那两串文本
+    //    **搬了家**，而它守的意图（workbuddy 调 claimAll **不发上游请求**、
+    //    拿到的是**指明能力**的拒绝）**与文本位置无关**。
+    //
+    //    ⇒ 改为**行为**断言：直接断言表里的声明值 + 真跑端点核对响应。
+    //    这比原文本断言强 —— 文本断言只能证明源码里有那串字符，它能证明
+    //    端到端真的返回了那条原因（且 `ok:false`，即**没有**发上游请求）。
+    const workbuddy = createProviderCredits().workbuddy
+    expect(workbuddy?.claim, 'workbuddy 不该有 claim（国际版后端没有签到接口）').toBeUndefined()
+    expect(
+      workbuddy?.claimUnavailableReason,
+      'workbuddy 缺少「不支持每日签到」的可读原因 —— 它会落到通用分支，'
+      + '用国际版凭据去发国内版的签到请求（必然失败的真实上游请求）',
+    ).toContain('WorkBuddy 国际版不支持每日签到')
+    // 反向：确认这条**不是**泛化的 `unsupported provider`（那会让排查者以为
+    // 「provider 没注册」，而真相是「该产品没有这个接口」）。
+    expect(workbuddy?.claimUnavailableReason).not.toContain('unsupported provider')
+    // ⚠️ 「端点真的读了这条声明、且**零上游请求**」由**行为**用例守，
+    //    且**只在唯一一处**（避免同一套 RPC 夹具在两个文件里各写一份）：
+    //    `tests/unit/claim-runtime-parity.spec.ts` 的
+    //    「cline / workbuddy / raccoon 各回**逐字保留**的可读原因」——
+    //    它真跑 `credits.claimAll` 并逐字核对文案。
+    //    ⚠️ **2026-10-08 更正（Task 4 复审 Finding Minor 1）**：本注释原先写
+    //    「把 `fetch` 桩成会抛错（任何真实请求都会让那条用例失败）」，那是**错的**
+    //    —— 那条用例用 `makeRpc()`（无 `fetch` 桩），**没有**任何会抛错的桩。
+    //    它的「零上游请求」由**代码位置**保证，不是由桩保证：端点在**任何上游
+    //    调用之前**读该声明并直接返回（见 `src/jet-hub-rpc.ts` 的
+    //    `impl?.claimUnavailableReason !== undefined` 分支，位于
+    //    `collectClaimResults` 之前）。故断言依然成立，只是理由换了。
   })
 
   it('Qoder 两项能力都有（余额 + 每日领取）', () => {
@@ -207,11 +235,13 @@ describe('积分能力矩阵', () => {
     expect(supportsSubscriptionQuota('loomy')).toBe(false)
   })
 
-  it('能力矩阵覆盖 PROVIDERS 中的每一个 provider', () => {
-    // 客户端 PROVIDERS 列表与能力表必须同步：漏登记的 provider 会静默失去
-    // 积分能力（默认关闭），而多登记的条目则是死配置。
-    const source = readClientSource()
-    const providerIds = [...source.matchAll(/\{\s*id:\s*'([a-z]+)',\s*label:/g)].map((m) => m[1]!)
+  it('能力矩阵覆盖 PROVIDER_REGISTRY 中的每一个 provider', () => {
+    // ⚠️ 2026-10-08 改：原先从**客户端源码文本**用正则
+    // `/\{\s*id:\s*'([a-z]+)',\s*label:/g` 派生 id —— 那个字符类
+    // **不匹配连字符**，新 provider id 带 `-` 时会**静默漏算一个 id
+    // 而守卫照样全绿**（本仓库原注释：「保险失效比变红更糟」）。
+    // 现在两侧同出一源：客户端 PROVIDERS 由 registry 派生，这里直接读 registry。
+    const providerIds = PROVIDER_REGISTRY.map((d) => d.id)
     expect(providerIds.length).toBeGreaterThan(0)
     for (const id of providerIds) {
       expect(CREDITS_CAPABILITIES, `缺少 ${id} 的能力登记`).toHaveProperty(id)
@@ -231,8 +261,34 @@ describe('积分能力矩阵', () => {
  * 「重测」只会白烧本就紧张的窗口配额，「重置」只会把受限账号放回池里再撞 429。
  * 故与 Loomy 同处登记 `false`（**理由不同**，见
  * {@link RATE_LIMIT_CAPABILITIES} 的注释）。
+ *
+ * ⚠️ 2026-10-12 追加 **Accio**（第三种理由：**根本没有作用对象** ——
+ * 不写 `modelRateLimits`、也不在 `probeById` 里 ⇒ 两个按钮恒为惰性）。
  */
 describe('模型限流按钮门控（重测 / 重置）', () => {
+  /**
+   * ⚠️⚠️ **「产品取舍」型 `rateLimit: false` 的名单**（2026-10-17 新增）。
+   *
+   * `rateLimit: false` 实际有**两种**不同源，混在一起会让「为什么关」的**理由**失真：
+   *
+   * | 类型 | 含义 | 后果 |
+   * |---|---|---|
+   * | **① 语义管辖不到** | 按钮点了也没用（无探测材料 / 配额在服务端 / 根本不返回限流） | 恒惰性 |
+   * | **② 产品取舍（本表）** | 能力齐全，**用户要求关掉入口** | 标记仍写进池，但**无法用按钮清除** |
+   *
+   * ⚠️ 两者**代价完全不同** ⇒ 排障方向也不同（① 是「按钮坏了」的报障、
+   *    ② 是「我明明加了限流却不给按钮」的产品反馈），故必须分开记。
+   *
+   * ⚠️ 下方两条用例会**双向**校验本表：既不许有家「登记了 false 却没登记理由」
+   *（会被算成①），也不许有家「在本表里却没登记 false」（僵尸条目）。
+   */
+  const RATE_LIMIT_OFF_BY_CHOICE: ReadonlyMap<string, string> = new Map([
+    [
+      'modelscope',
+      '会写 modelRateLimits 且注入了 markLimited（能力齐全）；用户 2026-10-17 要求关掉入口 '
+      + '⇒ 冷却标记仍写进池但无法用按钮清除，只能等自然过期或删号重加',
+    ],
+  ])
   it('gemini 显式登记为「限流不由这组按钮管辖」', () => {
     expect(RATE_LIMIT_CAPABILITIES.gemini?.rateLimit).toBe(false)
     expect(supportsRateLimit('gemini')).toBe(false)
@@ -246,13 +302,59 @@ describe('模型限流按钮门控（重测 / 重置）', () => {
     expect(supportsRateLimit('不存在的 provider')).toBe(true)
   })
 
-  it('登记 false 的都是「按钮语义管辖不到」的渠道（当前恰好两个）', () => {
+  it('登记 false 的都是「按钮语义管辖不到」的渠道（accio 2026-10-18 退出、astudio 加入）', () => {
     const disabled = Object.entries(RATE_LIMIT_CAPABILITIES)
       .filter(([, caps]) => caps.rateLimit === false)
+      // ⚠️⚠️ **必须减去「产品取舍」那一类**（2026-10-17）：`rateLimit: false` 有
+      //    **两种**不同源，混在一起数会把不变式变成「五个」这个必然腐坏的快照：
+      //      ① 「按钮语义管辖不到」（本条断言的对象）—— 点了也没用；
+      //      ② 「用户刻意不要这个按钮」（能力齐全、入口关闭，见下）。
+    //    ⚠️ 魔搭属第 ② 类：它**确实会写** `modelRateLimits`、也**确实**注入了
+    //    `markLimited`，但用户要求关掉入口。把它算进① 会让本条的**理由**失真。
+      .filter(([id]) => !RATE_LIMIT_OFF_BY_CHOICE.has(id))
       .map(([id]) => id)
       .sort()
-    // loomy：根本不返回限流错误；gemini：限流是服务端配额窗口制。
-    expect(disabled).toEqual(['gemini', 'loomy'])
+    // 五家 rationale 各不相同（registry 里各有字段注释）：
+    // - astudio（**本 fork**）：**不写 modelRateLimits 且不在 probeById 里**
+    //   ⇒ 两个按钮恒为惰性（点了零请求、零清除，用户会以为按钮坏了）。
+    //   `astudio-adapter.ts` 同款：刻意不进 src/index.ts 的 probeById ——
+    //   那张表被守卫锁成「恰好是会写标记的家」，硬塞进去会让守卫红 ⇒ 恒惰性。
+    //   ⚠️ 将来接上请求级换号 + 冷却时，必须**同时**改回 true 并进
+    //   probeById + WRITES_RATE_LIMIT_PROVIDERS（三处同改，由
+    //   provider-runtime-wiring.spec.ts 双向比对锁死）；
+    // - autoclaw：与 astudio **同族**（刻意不做请求级换号 + 冷却，
+    //   同样不进 `probeById`）⇒ 同样恒为惰性；
+    // - autoclawintl（2026-10-20）：与 autoclaw **同一个适配器类、同一份 registry
+    //   字段语义** ⇒ 必然一起为 false（漏登记会让本条理由失真）。
+    // - gemini / officeace：限流由服务端配额管理，本地标记清掉 / 重测通过
+    //   都恢复不了配额；
+    // - loomy：根本不返回限流错误。
+    //
+    // ⚠️⚠️ **accio 曾在这条断言里，2026-10-18 因 issue IKM3ZV 退出**：
+    //   它当时的归类是「不写 modelRateLimits 且不在 probeById 里 ⇒ 按钮恒为惰性」
+    //   —— 即第 ① 类「管辖不到」。接上请求级换号 + 冷却（真的会写标记）且
+    //   `probeById` 已登记后，那条理由**不再成立**，故它整体移出
+    //   `rateLimit: false`（既不在①、也不在② 的「产品取舍」表里 ——
+    //   它是**真的可用**，不是「不要这个按钮」）。
+    expect(disabled).toEqual(['astudio', 'autoclaw', 'autoclawintl', 'gemini', 'loomy', 'officeace'])
+  })
+
+  it('★ 「产品取舍」那一类也必须被点名（不得悄悄混进「管辖不到」里）', () => {
+    // ⚠️ 这条断言的是**取舍表本身**存在且内容正确：若有人给某家登记
+    //    `rateLimit: false` 却没登记它的取舍理由，上一条会把它算成「管辖不到」
+    //    ⇒ 理由失真（而两者的**代价完全不同**，排查方向也不同）。
+    //
+    //    ⚠️ 代价必须逐个写清：取舍类的「按钮没了，但限流标记**仍会写进池**」，
+    //    用户只能等它自然过期或删号重加。
+    expect([...RATE_LIMIT_OFF_BY_CHOICE.entries()].sort()).toEqual([
+      ['modelscope', '会写 modelRateLimits 且注入了 markLimited（能力齐全）；用户 2026-10-17 要求关掉入口 ⇒ 冷却标记仍写进池但无法用按钮清除，只能等自然过期或删号重加'],
+    ])
+    // 反向：取舍表里的家**必须真的**登记了 false，否则这条表会变成僵尸条目。
+    for (const [id] of RATE_LIMIT_OFF_BY_CHOICE) {
+      expect(RATE_LIMIT_CAPABILITIES[id]?.rateLimit,
+        `${id} 在「产品取舍」表里，但 registry 没有 rateLimit:false ⇒ 两者表漂移`)
+        .toBe(false)
+    }
   })
 
   it('客户端源码里按钮仍走 supportsRateLimit 门控（不是在本文件另写白名单）', () => {
@@ -337,7 +439,12 @@ describe('客户端积分请求门控（源码级回归）', () => {
   it('loadCredits 在发起 credits.balances 之前先判能力', () => {
     const start = source.indexOf('const loadCredits = React.useCallback')
     expect(start).toBeGreaterThan(-1)
-    const body = source.slice(start, start + 1200)
+    // ⚠️⚠️ **窗口跟随函数体，不写死字符数**（2026-10-16 审计暴露）：
+    //   原为 `slice(start, start + 1200)`；`loadCredits` 补了 `force` 的说明后
+    //   `rpcCall('credits.balances'` 被挤出窗口 ⇒ `callIndex` 变 -1 ⇒ **假红**。
+    //   固定长度窗口 = 注释一变就假失败，正是本仓库记录的「源码文本断言」弱点。
+    const next = source.indexOf('\n  const ', start + 10)
+    const body = source.slice(start, next === -1 ? start + 20000 : next)
     const guardIndex = body.indexOf('if (!canLoadCredits) return;')
     const callIndex = body.indexOf("rpcCall('credits.balances'")
     expect(guardIndex, 'loadCredits 缺少能力守卫').toBeGreaterThan(-1)
@@ -370,6 +477,157 @@ describe('客户端积分请求门控（源码级回归）', () => {
     expect(guardIndex, 'claimCredits 缺少能力守卫').toBeGreaterThan(-1)
     expect(callIndex).toBeGreaterThan(-1)
     expect(guardIndex).toBeLessThan(callIndex)
+  })
+
+  /**
+   * ★ **自愈后的账号重读**（issue IKKHL5 的客户端残留，报告者复验时实测到）。
+   *
+   * ## 缺陷
+   *
+   * 宿主侧的 `credits.balances` 会**对已过期账号先续期再查余额**，续期成功后把
+   * 新的 `expiresAt` 回写账号池。但**卡片红字读的是 `account.list` 的快照**
+   *（`AccountCard` 里 `account.expiresAt <= Date.now()`），而 `loadCredits`
+   * 不重读账号列表 ⇒ 「积分已经能读了，卡片却还红着『已过期 · 自动续期』」，
+   * 点别的卡片再切回来才恢复正常。
+   *
+   * ## 为什么必须有这条用例
+   *
+   * 这是**跨端点**的时序契约（`credits.balances` 的副作用要反映到
+   * `account.list` 的消费者上），两个端点各自的单测都覆盖不到它 ——
+   * 服务端 22 条 + 客户端能力门控若干条，全都测不出这个残留。
+   */
+  /**
+   * ★ **自愈后的账号重读**（issue IKKHL5 的客户端残留，报告者复验时实测到）。
+   *
+   * ## 缺陷
+   *
+   * 宿主侧的 `credits.balances` 会**对已过期账号先续期再查余额**，续期成功后把
+   * 新的 `expiresAt` 回写账号池。但**卡片红字读的是 `account.list` 的快照**
+   *（`AccountCard` 里 `account.expiresAt <= Date.now()`），而 `loadCredits`
+   * 不重读账号列表 ⇒ 「积分已经能读了，卡片却还红着『已过期 · 自动续期』」。
+   *
+   * ## ⚠️⚠️ 初版修复对**主场景无效**（对抗审计实测证伪，本组用例因而重写）
+   *
+   * 初版用「调用前快照里有没有已过期账号」（`hadExpired`）作条件。但挂载
+   * effect 里 `void loadAccounts(); … void loadCredits();` 是**同步先后**
+   * 发起的，而 `loadAccounts` 要到它的首个 `await rpcCall('account.list')`
+   * **之后**才写 `accountsRef.current` ⇒ 挂载 / 切 provider 时读到的必然是
+   * **初始空数组**（`useRef([])`），`hadExpired` 恒 false、**永不补读**。
+   * 而「睡眠恢复后打开面板」**正是本 issue 的主场景** ⇒ 初版只对「点刷新积分」
+   * 等列表已加载的路径有效，主路径完全没修。
+   *
+   * ## 现行修法：成功后**无条件**静默补读
+   *
+   * 不再依赖任何「调用前快照」（那个判据在主场景下不可能为真）。代价是每次
+   * 余额查询多一次 `account.list` —— 这是**刻意的取舍**：它读的是账号池的
+   * 内存副本（不是上游请求），而卡片状态错误的代价更高。
+   * 且必须走 `quiet` 变体，否则普通 `loadAccounts` 的 `setPhase('loading')`
+   * 会让列表在自愈成功那一刻闪一下。
+   */
+  it('★ loadCredits 成功后**无条件**补读账号列表（不得再用「调用前快照」作条件）', () => {
+    const start = source.indexOf('const loadCredits = React.useCallback')
+    expect(start).toBeGreaterThan(-1)
+    const body = source.slice(start, start + 3000)
+    const rpcIndex = body.indexOf("rpcCall('credits.balances'")
+    expect(rpcIndex).toBeGreaterThan(-1)
+
+    // ① 必须调静默补读，且在余额请求**之后**（拿到新余额后才同步有效期）。
+    const reReadIndex = body.indexOf('await reloadAccountsQuietly()')
+    expect(reReadIndex, 'loadCredits 成功后必须补读账号列表').toBeGreaterThan(-1)
+    expect(reReadIndex, '补读必须在余额请求之后').toBeGreaterThan(rpcIndex)
+
+    // ② ⚠️ **不得**再用「调用前快照」作条件 —— 那正是初版对主场景失效的原因
+    //    （挂载时 accountsRef.current 必为初始空数组）。这条是**防复辟**断言。
+    // ⚠️ 只在**代码行**上查（剔除注释）：本函数的注释里保留了叙述该缺陷的
+    //    文字（含那个旧标识符），那是刻意的历史记录，不该让断言自伤
+    //    —— 与本仓库「不要在注释里写出会被验收 grep 的字符串」是同一条教训。
+    const codeOnly = body
+      .split('\n')
+      .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+      .join('\n')
+    expect(codeOnly, '挂载首轮 accountsRef 为空 ⇒ 该判据恒假，不得复辟')
+      .not.toContain('hadExpired')
+    expect(codeOnly).not.toContain('snapshotBefore')
+  })
+
+  it('★ 补读走 quiet 变体（不得让列表在自愈成功那一刻闪「正在读取」）', () => {
+    // 普通 `loadAccounts` 首行是 `setPhase('loading')`，用它会让整块列表
+    // 在余额回来那一刻闪一下 —— 本函数只是顺带同步有效期，不该改变加载态。
+    const start = source.indexOf('const reloadAccountsQuietly = React.useCallback')
+    expect(start, '未找到 reloadAccountsQuietly（补读的静默变体）').toBeGreaterThan(-1)
+    const body = source.slice(start, start + 1200)
+    expect(body).toContain("rpcCall('account.list'")
+    expect(body, 'quiet 变体不得 setPhase').not.toContain("setPhase('loading')")
+    // 失败必须静默（余额已经拿到了，不该把面板推进错误态）
+    expect(body, 'quiet 变体不得 setError').not.toContain('setError(')
+  })
+
+  it('★ 挂载 effect 仍是「并行发起」也不影响正确性（现行修法不依赖时序）', () => {
+    // 这条锁住「新修法对挂载路径有效」这个**关键性质**：既然补读是无条件的，
+    // 就与 loadAccounts/loadCredits 的先后无关 —— 初版正是因为依赖了时序
+    // （快照必须在账号加载完之后）才对主场景失效。
+    //
+    // ⚠️ 锚点用**该调用本身**（`void loadAccounts();`）而不是
+    // `React.useEffect(() => {`：后者会命中文件里**更早**的其它 effect
+    //（本组件有多个），取到的片段里当然没有这两个调用 —— 初版就是这么假失败的。
+    const mountCall = source.indexOf('void loadAccounts();')
+    expect(mountCall, '未找到挂载 effect 里的 void loadAccounts()').toBeGreaterThan(-1)
+    const effectBody = source.slice(mountCall, mountCall + 300)
+    expect(effectBody).toContain('if (canLoadCredits) void loadCredits();')
+    // 无需把挂载改成串行：补读是无条件的（见上一条）
+    expect(source).toMatch(/await reloadAccountsQuietly\(\)/)
+  })
+
+  it('★★ 「刷新积分」按钮必须传 force（2026-10-16 审计 P1-1）', () => {
+    // ⚠️⚠️ 这条是**客户端侧**的端到端接线守卫。宿主侧后端已修（P1-1 的
+    //   行为级用例在 `balance-cache-wiring.spec.ts`），但若客户端仍恒不传
+    //   `force`，按钮照样失效 —— 而两处都绿（各自只测自己那半）。
+    //   ⚠️ **三个调用点语义不同**，不能一刀切：
+    //   - 「刷新积分」按钮、签到后补读、新手任务补读 ⇒ **必须 force**；
+    //   - 面板挂载时那一次 ⇒ **必须不 force**（否则每次打开都强刷，缓存白做）。
+    const start = source.indexOf('const loadCredits = React.useCallback')
+    const next = source.indexOf('\n  const ', start + 10)
+    const body = source.slice(start, next === -1 ? start + 20000 : next)
+
+    // ① loadCredits 必须按参数决定传不传，而不是恒传或恒不传
+    expect(
+      body,
+      '★★ loadCredits 必须把 force 透传给 credits.balances（否则「刷新」是假的）',
+    ).toMatch(/rpcCall\('credits\.balances',\s*force\s*\?[^)]*:\s*\{[^}]*\}\)/)
+
+    // ② 「刷新积分」按钮
+    const button = /onClick: \(\) => void loadCredits\(([^)]*)\)/.exec(source)
+    expect(button, '★ 找不到「刷新积分」按钮的 onClick').not.toBeNull()
+    expect(button![1], '★★ 「刷新积分」必须传 force=true').toContain('true')
+
+    // ③ 签到 / 新手任务领取后补读（余额刚变，必须绕过缓存）
+    expect(source, '★★ 领取积分后补读必须 force').toContain('await loadCredits(true);')
+
+    // ④ 挂载那一次**不得** force（否则每次打开面板都强刷，缓存形同虚设）
+    const effect = /if \(canLoadCredits\) void loadCredits\(([^)]*)\);/.exec(source)
+    expect(effect, '★ 找不到挂载时的 loadCredits 调用').not.toBeNull()
+    expect(effect![1], '★ 挂载时不得 force（要吃缓存）').toBe('')
+  })
+
+  it('loadCredits 的 useCallback deps 含补读函数（避免陈旧闭包）', () => {
+    // 补读是**本函数新增的调用**：deps 不带它会让 React 持有旧闭包
+    //（陈旧 provider / rpcCall），补读打到错误的面板上。
+    //
+    // ⚠️ **不写死整串 deps**（本仓 AGENTS.md 明令「接线断言一律容忍重构与
+    // 签名扩展」；初版写死了 `[provider, rpcCall, canLoadCredits, loadAccounts]`
+    // 整串，加一个依赖就假失败）。这里只断言「补读函数出现在 deps 数组里」。
+    // ⚠️⚠️ **窗口必须跟随函数体，不能写死字符数**（2026-10-16 审计暴露）：
+    //   原为 `source.slice(start, start + 3200)`。`loadCredits` 的注释一加长
+    //   （本次给它补了 `force` 的说明，约 +300 字符），deps 数组就被挤出窗口
+    //   ⇒ `depsMatch` 变 `null` ⇒ 本条**假红**。
+    //   ⇒ 改为「切到下一个 `\n  const ` 顶层声明为止」，与注释长度无关。
+    const start = source.indexOf('const loadCredits = React.useCallback')
+    const next = source.indexOf('\n  const ', start + 10)
+    const body = source.slice(start, next === -1 ? start + 20000 : next)
+    const depsMatch = /\}, \[([^\]]*)\]\)/.exec(body)
+    expect(depsMatch, '未解析到 loadCredits 的 deps 数组').not.toBeNull()
+    expect(depsMatch![1], 'deps 必须含 reloadAccountsQuietly').toContain('reloadAccountsQuietly')
+    expect(depsMatch![1], 'deps 必须含 provider').toContain('provider')
   })
 
   it('「刷新积分」按钮与账号卡片的「积分」行都按能力渲染', () => {
@@ -428,8 +686,10 @@ describe('永久积分锁定能力', () => {
    * ⚠️ 2026-10-06 新增 TRAE（字节）与 LobsterAI（有道）：它们的余额响应带逐包
    * 到期时间（TRAE 的条目级 `expire_time`、LobsterAI 的 `expiresAt`），
    * 归一化到 `deductionEndTime` 后即可用同一个 `splitBuddyCreditsByExpiry` 分桶。
+   * ⚠️ 2026-10-12 新增 OfficeAce（华为 MaaS）：creditGroups 自带 expiresAt
+   *（订阅套餐包无固定到期 = 永久桶，签到 / 活动包有明确到期），同款判据可分桶。
    */
-  const SUPPORTED = [LOOMY.id, CODEBUDDY.id, WORKBUDDY.id, TRAE.id, LOBSTERAI.id]
+  const SUPPORTED = [LOOMY.id, CODEBUDDY.id, WORKBUDDY.id, TRAE.id, LOBSTERAI.id, OFFICEACE.id]
   const UNSUPPORTED = [
     'codearts', 'qoder', 'qodercn', 'cline', 'raccoon',
   ]

@@ -85,7 +85,7 @@ export function detectSealedHost({ env = process.env, execPath = process.execPat
     && env?.DSH_HOME === `${files}/dsh-home`
     && /^\/data\/app\/(?:[^/]+\/)?com\.dshphone-[^/]+\/lib\/arm64\/libnode\.so$/.test(String(execPath ?? ''))) return FLAVOR_PHONE
   if (profileName === 'web' || profileName === 'web-desktop') return FLAVOR_WEB
-  if (profileName === 'desktop') return FLAVOR_HARNESS
+  if (profileName === 'desktop' || profileName === 'tauri') return FLAVOR_HARNESS
   return null
 }
 

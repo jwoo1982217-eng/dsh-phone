@@ -81,22 +81,26 @@ function setup (zcodeStub: unknown = {}, warns: string[] = []) {
   registerJetHubRpc(
     ctx as never,
     {} as never, // pool：这两条方法不读账号池
-    // ⚠️ **位置参数陷阱**（本仓库已复发 6 次）：auth 实例按顺序传，
-    // `codearts … minimax` 共 **11** 个占位之后才是 `zcode`。少一个占位，本文件的
-    // zcode 桩就落到 `minimax` 形参上，载体页于是永远拿不到远端配置 ——
-    // 表现是「配置那条用例假绿/假红」，判据仍是先数占位。
-    {} as never, // codearts
-    {} as never, // buddy
-    {} as never, // workbuddy
-    {} as never, // lobsterai
-    {} as never, // qoder
-    {} as never, // qoderCn
-    {} as never, // trae
-    {} as never, // cline
-    {} as never, // loomy
-    {} as never, // raccoon
-    {} as never, // minimax
-    zcodeStub as never, // zcode
+    // ⚠️ **命名对象**（2026-10-08 改，原为 11 个位置参数）：键是 **provider id**，
+    // 故 zcode 桩落在 `zcode` 这个键上 —— 位置参数时代它靠「数到第 12 个槽位」
+    // 定位，少一个占位就落到 `minimax` 上，载体页于是永远拿不到远端配置
+    //（表现是「配置那条用例假绿/假红」，判据是「先数占位」）。
+    {
+      codearts: {} as never,
+      buddy: {} as never,
+      workbuddy: {} as never,
+      lobsterai: {} as never,
+      qoder: {} as never,
+      qodercn: {} as never,
+      trae: {} as never,
+      cline: {} as never,
+      loomy: {} as never,
+      raccoon: {} as never,
+      minimax: {} as never,
+      zcode: zcodeStub as never,
+      gemini: {} as never,
+      officeace: {} as never,
+    } as never,
   )
 
   const rpc = routes.get('/api/jet-hub')

@@ -92,12 +92,36 @@ suite('Loomy 只读探针（不发模型请求、不领取任务、不签到）'
       console.log(`    ${model.id.padEnd(24)} ${model.name.padEnd(36)} ctx=${model.contextWindow}`)
     }
 
-    expect(all).toHaveLength(8)
+    // ⚠️ **不写死条数**（原为 `toHaveLength(8)`，2026-10-08 实测已是 9 —— 远端
+    // 新增了 `DeepSeek-V4.1-Flash`，把「当时的快照」当契约会在这里假红）。
+    // 真正在意的是「曾经那 8 条一条都没少」（远端下架才是产品缺陷），
+    // 新增则只需满足下面那组性质即可。
+    expect(all.length).toBeGreaterThanOrEqual(8)
+    const ids = new Set(all.map((m) => m.id))
+    for (const known of [
+      'deepseek-v4-flash-0731', 'MiniMax-M3', 'Kimi-k2.6', 'qwen-3.8-max',
+      'GLM-5.3-Flash', 'qwen3.8-flash', 'spark-x', 'mimo-v2.5',
+    ]) {
+      expect(ids, `模型 ${known} 从远端目录消失了`).toContain(known)
+    }
     // 倍率必须已规范化（` · x{n}` 形态），不能残留全角括号
     for (const model of all) {
       expect(model.name, `${model.id} 的倍率未规范化`).not.toMatch(/[（(]x[\d.]+[)）]/)
     }
     expect(all.some((m) => m.name.includes(' · x'))).toBe(true)
+
+    /**
+     * ★ issue IKJW31 的**现场证据**：远端确实对 `spark-x` 声明 1048576，
+     * 而本插件解析后必须是 262144（真实墙）。
+     *
+     * ⚠️ 这条只有在**真实远端**上才能证明「虚报」这件事本身 —— 单测里的
+     * fixture 是我们自己写的，它无法证明远端真的那么说。
+     */
+    const spark = all.find((m) => m.id === 'spark-x')
+    if (spark !== undefined) {
+      console.log(`  spark-x 覆盖：远端声明 1048576 → 本插件解析 ${spark.contextWindow}`)
+      expect(spark.contextWindow).toBe(262_144)
+    }
   })
 
   it('新手任务状态可读，总分 10000（**只读，不领取**）', async () => {

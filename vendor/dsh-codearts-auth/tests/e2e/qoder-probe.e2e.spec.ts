@@ -15,6 +15,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { QODER } from '../../src/qoder-product.js'
+import { fetchQoderRemoteModels } from '../../src/qoder-catalog.js'
 import { QODER_USERINFO_PATH, isQoderRefreshable, qoderBearerToken } from '../../src/qoder.js'
 import { readQoderCredentialsFromDshStore } from './qoder-credential.js'
 
@@ -71,12 +72,37 @@ describeGate('Qoder 认证探针（不消耗模型积分）', () => {
     }
   })
 
-  it('静态兜底模型表可用于 resolveModel', () => {
-    // 本插件不发远端模型列表请求（需 WASM 签名），故这里校验表本身可用。
+  it('静态兜底模型表可用于 resolveModel（回退路径）', () => {
+    // ⚠️ 2026-10-20 起它**不再是唯一来源**：线上优先走远端目录（下一条用例），
+    // 本表只在「未登录 / 目录接口故障」时兜底。
     expect(QODER.fallbackModels.length).toBeGreaterThan(0)
     for (const model of QODER.fallbackModels) {
       expect(model.id, '模型 id 不能为空').toBeTruthy()
       expect(model.contextWindow, `${model.id} 的 contextWindow 必须为正`).toBeGreaterThan(0)
     }
+  })
+
+  /**
+   * 远端模型目录（2026-10-20 接入）。
+   *
+   * ⚠️ **只读、不计费**：`/api/v2/model/list?Encode=1` 是目录端点，不带任何
+   * 模型调用。判据取**结构不变式**而不是具体倍率 —— 上游随时改价/改免费额度，
+   * 把 `dfmodel.priceFactor === 0` 写死会让这条探针在下一次调价时假红。
+   */
+  it('远端模型目录可拉取（WASM 签名，结构完整、无重复 id）', async () => {
+    const models = await fetchQoderRemoteModels(credentials[0]!.credential, QODER)
+    expect(models.length, '远端目录为空 —— 检查该账号是否已开通').toBeGreaterThan(0)
+    const ids = new Set<string>()
+    for (const model of models) {
+      expect(model.id, '模型 id 不能为空').toBeTruthy()
+      // DSH 的 listModels 校验要求 name 非空（否则整个 provider 被判 INVALID_CATALOG）。
+      expect(model.name, `${model.id} 的展示名不能为空`).toBeTruthy()
+      expect(ids.has(model.id), `远端目录出现重复 id ${model.id}`).toBe(false)
+      ids.add(model.id)
+    }
+    // 用户报障的那一条必须在（模型下架/改名时这条会红，正是我们要的提示）。
+    expect(models.some((m) => m.id === 'dfmodel'), '目录里没有 dfmodel').toBe(true)
+    console.log(`[qoder] 远端目录 ${models.length} 条：`
+      + models.map((m) => `${m.id}=${m.name}`).join(', '))
   })
 })

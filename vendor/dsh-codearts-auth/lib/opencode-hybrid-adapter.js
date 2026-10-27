@@ -18,10 +18,9 @@
  * 目录取两边并集；本地服务没起来时，快通道模型仍可见可用。
  */
 import { LlmAdapter } from '@deepseek-ai/dsh-llm';
-import { getOpencodeCapabilitiesSync } from './opencode-capability.js';
-import { OpencodeAdapter as ZenAdapter } from './opencode-adapter.js';
+import { OpencodeAdapter as ZenAdapter } from './opencode-inference-adapter.js';
 import { deriveProjectId } from './opencode.js';
-import { OPENCODE, OPENCODE_INFERENCE_MODELS, usesInferenceLane } from './opencode-product.js';
+import { OPENCODE, OPENCODE_INFERENCE_MODELS, usesInferenceLane } from './opencode-inference-product.js';
 /** 快通道的匿名槽（`Bearer public`，直连出口 IP 记账）。 */
 export function opencodeInferenceSlot() {
     return {
@@ -34,9 +33,9 @@ export function opencodeInferenceSlot() {
     };
 }
 /** 构造一个只走匿名快通道的 Zen 适配器实例。 */
-export function createOpencodeInferenceAdapter(options = {}) {
+export function createOpencodeInferenceAdapter() {
     const slot = opencodeInferenceSlot();
-    return new ZenAdapter({ ...options, identitySlots: async () => [slot] });
+    return new ZenAdapter({ identitySlots: async () => [slot] });
 }
 /**
  * 混合适配器：快通道优先按模型分流，其余委托本地服务。
@@ -54,14 +53,6 @@ export class OpencodeHybridAdapter extends LlmAdapter {
         this.fast = fast;
         this.options = options;
     }
-    /** 已有视觉型号整体保留原生通道；不能用 /zen 的视觉声明冒充快通道已验证。 */
-    useFast(model) {
-        if (!usesInferenceLane(model))
-            return false;
-        const local = this.local.service?.cachedModels().find(entry => entry.id === model);
-        const capability = getOpencodeCapabilitiesSync().find(entry => entry.id === model);
-        return local?.inputModalities.includes('image') !== true && capability?.modalities.includes('image') !== true;
-    }
     providerInfo(provider) {
         return { id: provider, name: OPENCODE.displayName };
     }
@@ -71,7 +62,7 @@ export class OpencodeHybridAdapter extends LlmAdapter {
         const seen = new Set(local.map((m) => m.id));
         // 快通道模型全部为免费档；与本地目录重名时以本地为准（本地优先，行为不变）。
         const extra = OPENCODE_INFERENCE_MODELS
-            .filter((m) => this.useFast(m.id) && !seen.has(m.id) && !disabled.has(m.id))
+            .filter((m) => !seen.has(m.id) && !disabled.has(m.id))
             .map((m) => ({ id: m.id, name: m.name, isFree: true }));
         return [...local, ...extra];
     }
@@ -82,25 +73,20 @@ export class OpencodeHybridAdapter extends LlmAdapter {
         // 只取快通道实测表内的条目：fast.listModels 的目录还含旧 /zen 免费模型，
         // 那些在本 provider 下没有可用通道，不能露给用户。
         const fast = (await this.fast.listModels(provider))
-            .filter((m) => this.useFast(m.id) && !seen.has(m.id) && !disabled.has(m.id));
+            .filter((m) => usesInferenceLane(m.id) && !seen.has(m.id) && !disabled.has(m.id));
         return [...local, ...fast];
     }
     async resolveModel(provider, model, signal) {
-        if (this.useFast(model))
+        if (usesInferenceLane(model))
             return this.fast.resolveModel(provider, model, signal);
         // OpencodeLocalAdapter.resolveModel 只有 (provider, id) 两个参数。
         return this.local.resolveModel(provider, model);
-    }
-    async prepareCall(provider, model, signal) {
-        // 后台能力刷新不能让同一次请求的元信息与发送切到两个不同通道。
-        const adapter = this.useFast(model) ? this.fast : this.local;
-        return adapter.prepareCall(provider, model, signal);
     }
     handleRpc(method, payload) {
         return this.local.handleRpc(method, payload);
     }
     async *stream(options) {
-        if (this.useFast(options.model)) {
+        if (usesInferenceLane(options.model)) {
             yield* this.fast.stream(options);
             return;
         }

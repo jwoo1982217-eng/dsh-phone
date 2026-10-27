@@ -2,16 +2,15 @@ packages:
   - .
 nodeLinker: hoisted
 # 手机部署树：全 hoisted 实体目录（无符号链接，assets 解压即用）。
-# ① SDK 精确锁定 alpha.1，适配器使用新的 ToolCallId。
-# ② koffi/node-pty/sharp 用万能桩（Android/Bionic 无原生变体）。
+# ① SDK 精确锁定 rc.2，适配器使用新的 ToolCallId。
+# ② 旧插件的 koffi/node-pty 仅保留显式不可用适配；sharp 保持官方版本，Android 由附件模块按平台调用内置图像 IPC。
 overrides:
   http-cache-semantics: 4.2.0
-  '@deepseek-ai/dsh-llm': 0.2.1-alpha.1
-  '@deepseek-ai/dsh-credentials': 0.2.1-alpha.1
-  '@deepseek-ai/dsh-commands': 0.2.1-alpha.1
+  '@deepseek-ai/dsh-llm': 0.2.1-rc.2
+  '@deepseek-ai/dsh-credentials': 0.2.1-rc.2
+  '@deepseek-ai/dsh-commands': 0.2.1-rc.2
   'koffi': file:./stubs/koffi
   'node-pty': file:./stubs/node-pty
-  'sharp': file:./stubs/sharp
 allowBuilds:
   '@deepseek-ai/dsh-subprocess-local': true
   '@google/genai': true

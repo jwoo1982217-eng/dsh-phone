@@ -28,6 +28,7 @@ import {
   noteCaptchaRequired,
   noteKnownRequiredHit,
   noteProbeFirst,
+  noteUpfrontCaptcha,
   resetCaptchaRequirementMemory,
 } from '../../src/captcha-requirement.js'
 
@@ -88,9 +89,17 @@ describe('captcha 需求记忆', () => {
     noteProbeFirst()
     noteProbeFirst()
     noteKnownRequiredHit()
+    noteUpfrontCaptcha()
+    /**
+     * ⚠ 三个计数**互斥**（同一个开局那一发只记其中一个），由适配器内层循环的
+     * `attempt === 0` 门控保证 —— 故这里能同时看到它们各自的值。
+     * `upfrontCaptchaCount` 是 2026-10-12 新增的第三种开局形态
+     * （上游 `skip_model_request: false` ⇒ 首发直接带），见该模块的注释。
+     */
     expect(captchaRequirementObservability()).toEqual({
       probeFirstCount: 2,
       knownRequiredCount: 1,
+      upfrontCaptchaCount: 1,
     })
   })
 })

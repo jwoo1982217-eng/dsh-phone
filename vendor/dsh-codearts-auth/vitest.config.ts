@@ -32,9 +32,15 @@ const noSuchRuntimeInfo = join(fallbackStateDir, 'no-such-runtime-info')
 export default defineConfig({
   test: {
     include: ['tests/unit/**/*.spec.ts'],
-    // （PR #64 审查 3 已撤 exclude）：cline-icon / loomy-docs 两个 spec 自带
-    // skipIf/existsSync 优雅降级，依赖缺失时「通过 + 跳过」而非失败 ⇒
-    // 无需在配置里排除——排除反而把回归价值藏掉了。
+    // （PR #64 审查 3 已撤 exclude）：`cline-icon` spec 自带 skipIf/existsSync
+    // 优雅降级，依赖缺失时「通过 + 跳过」而非失败 ⇒ 无需在配置里排除——
+    // 排除反而把回归价值藏掉了。
+    //
+    // ⚠️ **`loomy-docs.spec.ts` 已删除**（2026-10-08，用户要求）：它是纯
+    // 「文档内容断言」（检查 README / AGENTS.md / agent-notes 里有没有某些词句），
+    // 而这类测试**改文档就要改测试**、且极易因「文档搬家」而假失败 ——
+    // 实测它在干净克隆里 7 条稳定变红（断言依赖不入库的 `docs/implementation-notes.md`）。
+    // 文档的正确性由人工评审与 `docs/agent-notes/` 自身承担，不由单测守。
     environment: 'node',
     // ⚠️ 必须排在 env 之前生效：它按测试文件重设状态目录（见文件头）。
     setupFiles: ['./tests/setup-isolation.ts'],

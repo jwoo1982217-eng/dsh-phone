@@ -220,6 +220,45 @@ export declare function looksLikeZcodeHtmlPage(body: string): boolean;
  */
 export declare function formatZcodeEdgePageHint(body: string, status: number): string;
 /**
+ * 从响应里取上游的 **`logid`**（排障凭据）—— 双来源，体优先、头兜底。
+ *
+ * ## 为什么这个函数必须存在（issue IKJI0Y 的原始记录）
+ *
+ * 笔记原话：「响应体还带 **`logid`** —— 向用户索取现场时**优先要它**
+ * （上游侧排障凭据）」。但**此前它从未被解析过**（全仓 grep `logid` 零命中），
+ * 于是用户报障时我们只能给出「账号#1 · 身份块 2898 字符 · HTTP 405」——
+ * **没有一样是上游能据以查日志的东西**，排障只能来回猜。
+ *
+ * ## 本机一手实测（`scripts/probe-zcode-logid-shape.mjs`，只发 GET、零额度）
+ *
+ * 四个端点（`client/configs` / `billing/preview` / `billing/balance` /
+ * `event/report`）全部**同时**带这两个，且值**逐字相同**：
+ *
+ * ```
+ * [header] x-request-id = 20261012145652694e8f48d3614ae49634
+ * [body]   logid        = 20261012145652694e8f48d3614ae49634
+ * ```
+ *
+ * ## 两个来源各自覆盖哪一类故障（**都不能省**）
+ *
+ * | 来源 | 覆盖 | 为什么另一条盖不住 |
+ * |---|---|---|
+ * | 响应体顶层 `logid` | **业务层错误**（`{"code":3012,…}`） | 主路，值是上游业务日志的 id |
+ * | HTTP 头 `x-request-id` | **边缘 / 网关的 HTML 页**（502 / 504 / 阿里云 ESA） | 那种响应**体里没有 `logid`**，而它正是另一类高频故障 |
+ *
+ * ⚠ **体优先于头**：两者同时存在时取体的值 —— 那是业务侧记账的 id。
+ *   （实测二者相同，故这条只在将来分叉时才有可观测差异；写成显式优先级
+ *   是为了「分叉时行为确定」，而不是依赖「它们恰好相等」。）
+ *
+ * ⚠ **取不到一律 `undefined`**，绝不编造、也不返回空壳：
+ *   空白值（`""` / `"   "`）与非字符串（数字 / 对象）**都不算现场** ——
+ *   后者若被 `String()` 化会渲染出 `logid [object Object]`，
+ *   比没有更糟（会让人以为拿到了凭据）。
+ */
+export declare function extractZcodeLogId(body: string, headers?: Record<string, string> | {
+    get?: (name: string) => string | null;
+}): string | undefined;
+/**
  * 上游 `3012` 的**判据**之二：正文里以**独立词**出现 `3012`。
  *
  * ⚠⚠ **必须是词边界匹配，不能是 `body.includes('3012')`**（真实缺陷，
@@ -336,6 +375,14 @@ export interface ZcodeDiagnosticInput {
      * 为了缺一个 shape 就把整行丢掉是错的取舍。
      */
     shape?: ZcodeRequestShape;
+    /**
+     * 上游的 `logid`（排障凭据，见 {@link extractZcodeLogId}）。
+     *
+     * ⚠ **可选**：取不到时整项**省略**（不留 `logid ` 空壳）。
+     * ⚠ 与 `shape` 同一条纪律：**不编造**。它由 `extractZcodeLogId` 从
+     * 真实响应（体或头）里读，读不到就是没有。
+     */
+    logId?: string;
     /** 取当前时刻（可注入，便于单测）。 */
     now: number;
 }

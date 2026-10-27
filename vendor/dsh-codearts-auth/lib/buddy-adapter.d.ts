@@ -15,6 +15,7 @@ import type { GenerateOptions, LlmModelInfo, LlmProviderInfo, LlmResolvedModelIn
 import type { BuddyCredential, BuddyRemoteModel } from './buddy.js';
 import { type BuddyProduct } from './product.js';
 import { type ImageRequestTarget } from './image-budget.js';
+import { type NativeSource } from './native-search-contract.js';
 /**
  * CodeBuddy（中国版）的 chat completions 基址。
  *
@@ -42,6 +43,19 @@ export interface BuddyAdapterOptions {
     refresh: () => Promise<void>;
     /** 动态拉取远端模型列表（含上下文窗口与能力，若远端下发）；失败时调用方回退到静态列表。 */
     fetchRemoteModels?: () => Promise<BuddyRemoteModel[]>;
+    /**
+     * 最近一次目录拉取的**各来源成败**（issue IKJVTF，审计 I3）。
+     *
+     * buddy 的目录来自**两个**端点（`/console/enterprises/{scope}/models` +
+     * `/v3/config`），两者 id 集合不同、必须取并集 ⇒「一个成功、一个失败」是常态。
+     * 失败路径**静默**返回空 ⇒ 旧判据 `models.length > 0` 会把它当成完整并永久缓存
+     * ⇒ 只在另一个端点下发的变体（如 `hy4-preview-f`）及其促销倍率再也回不来。
+     *
+     * ⚠️ 用**回调**而非直接读 `BuddyAuth` 的内部状态：适配器不该依赖 auth 服务的
+     * 字段形状（它由 `index.ts` 接线，单测用替身）。返回 `undefined` 时按
+     * 「无法判定」处理（`complete = got`，与 `normalizeLoadResult` 同口径）。
+     */
+    catalogComplete?: () => boolean | undefined;
     /**
      * 读取一张图片的原始字节（图片输入必需）。
      *
@@ -96,6 +110,17 @@ export interface BuddyAdapterOptions {
     now?: () => number;
     /** 目录闸门的失败冷却时长，默认 {@link REMOTE_CATALOG_COOLDOWN_MS}。 */
     catalogCooldownMs?: number;
+    /**
+     * 远端目录**落地后**的通知回调（issue IKJVTF）。
+     *
+     * 由 `registerBuddyLlm` 注入为 `broadcastCatalogChanged(ctx)`。适配器本身
+     * 拿不到 `ctx`，故必须由接线层桥接（与 `readImage` 等回调同一模式）。
+     *
+     * ⚠️ 必要性：客户端 `ModelCatalogDirectory` 在 `status === 'ready'` 时**短路
+     * 返回缓存**，只在宿主事件上 `refresh()`。没有本回调时，冷启动首拉失败
+     * 缓存的**兜底表**会永久留在对话框里，远端目录真的落地也不重读。
+     */
+    onCatalogLoaded?: () => void;
 }
 /**
  * 纯函数：由「现在」算出策略拦截冷却的到期时刻。
@@ -118,10 +143,33 @@ export declare class BuddyAdapter extends LlmAdapter {
     /** 动态模型缓存（首次 listModels 成功后填充）。 */
     private remoteModels;
     /**
+     * 已落缓存的目录是否**所有来源都取全**（issue IKJVTF，审计 I3）。
+     *
+     * ⚠️ **这是短路判据的第二半**：buddy 有两个目录端点，残缺目录也落
+     * `remoteModels`，故只判「已定义」会让残缺永久固化（见 `ensureRemoteModels`）。
+     */
+    private remoteComplete;
+    /**
+     * ⚠️ 上次**成功**读到远端目录的时刻（0 = 从未成功过 / 被 `refreshCatalog` 强制清零）。
+     *
+     * ⚠️ 与 `remoteModels` **并存**、不是替代：`remoteModels` 存「有哪些模型」，
+     *    本字段存「何时读到的」。只有 `remoteModels` 时目录**永不刷新**（原行为）。
+     *
+     * ⚠️⚠️ **`refreshCatalog()` 会把它置 0** —— 那不是「作废数据」，而是
+     *    **强制下一次 `ensureRemoteModels` 重新拉取**的手段（见该方法）。
+     */
+    private catalogAt;
+    /**
      * 目录加载闸门：并发去重 + 失败/空结果冷却。
      * 依据见 `src/remote-catalog-gate.ts`（首屏「加载模型巨长」的实测归因）。
      */
     private readonly catalogGate;
+    /**
+     * ⚠️ **2026-10-08 Task 7c：三个方法收敛到共享骨架** `createModelCatalog`。
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架，
+     * 现在只剩 `toCatalogEntry`（本家私有形状 + 三级 context 查找 + 同名消歧）。
+     */
+    private readonly catalog;
     /** 远端下发的模型元数据（id → 能力），listModels/resolveModel/stream 共用。 */
     private remoteMeta;
     /** 远端下发的模型上下文窗口（/v3/config data.models[].maxInputTokens）。 */
@@ -135,11 +183,59 @@ export declare class BuddyAdapter extends LlmAdapter {
     private readonly productFallbackContextWindows;
     constructor(options: BuddyAdapterOptions);
     /**
+     * 复用本适配器**同一套**选号编排解析凭据（供插件内部的原生搜索使用）。
+     *
+     * ## 为什么需要这个转发方法
+     *
+     * `options` 是构造器的 `private readonly`，插件其余模块（`web-native.ts`）
+     * 从外部读 `adapter.options.resolveCredential` 会**编译失败**（`strict: true`）。
+     * 而原生搜索**必须**与聊天链路用同一个 `resolveCredential` 实例 ——
+     * 另建一份会让「enabled 过滤 / 模型级限流 / 免费判定 / 余额分档 / 池兜底 /
+     * 账本回报」这六步在两条链路上漂移（见 `credential-resolver.ts` 的模块头）。
+     *
+     * 故这里只开一个**窄接口**：转发到同一个函数，不放松 `options` 的封装。
+     *
+     * ⚠️ `modelId` **必须透传**：它同时决定模型级限流过滤与免费判定，
+     * 吞掉会让搜索选到聊天链路不会选的号（例如正在限流期的号）。
+     *
+     * @param modelId - 本次请求的模型 id（取自当前会话路由）。
+     * @returns 选中账号的凭据；无可用账号时为 `undefined`。
+     */
+    resolveCredentialFor(modelId: string | undefined): Promise<BuddyCredential | undefined>;
+    /**
+     * 原生搜索：执行**一次单 query**，返回投影成官方 `sources[]` 形态的结果。
+     *
+     * ## 这份实现是从 `web-native.ts` 搬过来的（2026-10-14 架构改造）
+     *
+     * 原先 `web-native.ts` 里写死了腾讯的取数逻辑（`Bearer` + `/agenttool/v1/search`
+     * + `results[]` 投影），Qoder 渠道接不进来（它的鉴权是 WASM 签名、字段名是
+     * `pageItems[].link`）。现把「取数」下沉到各适配器，`web-native.ts` 只保留
+     * 「官方语义」（入参校验 / 并发中止 / rank 轮转合并 / cap）。
+     *
+     * ## 契约（对齐 `NativeSearchAdapter.searchOnce`）
+     *
+     * - **自己校验凭据**：腾讯的判据是 `access_token` 为非空字符串。凭据是
+     *   `JSON.parse` 出来的外部数据，形状不可信（缺字段 / 类型错都可能）——
+     *   只判 `credential === undefined` 会让坏凭据抛
+     *   `TypeError: Cannot read properties of undefined (reading 'length')`，
+     *   模型看到的是无意义的 JS 报错，而不是「去登录」的指引。
+     * - **投影在这一层做掉**：`results[].{title,url,snippet}` → `NativeSource[]`，
+     *   并且**丢弃无 url 的条目**（`url` 是官方 schema 必填项，
+     *   `additionalProperties: false` —— 整条调用会因一个坏条目失败）。
+     * - **不做多 query 合并**：那是 `web-native.ts` 的职责。
+     *
+     * @param query - 单个查询串（已由调用方 trim + 去重）。
+     * @param credential - `resolveCredentialFor` 的返回值（本方法自己收窄）。
+     * @param signal - 取消信号（调用方传多 query 的 batch signal）。
+     */
+    searchOnce(query: string, credential: unknown, signal: AbortSignal): Promise<NativeSource[]>;
+    /**
      * 该模型此刻是否**免费**（消耗 0 积分）。
      *
      * ## 为什么需要它
      *
-     * `pickBuddyCredential`（`src/index.ts`）只问「锁没锁 + 有没有临期积分」，
+     * 余额分档编排（`src/credential-resolver.ts` 的 buddy 分支 + 共享的
+     * `pickBuddyAccount`）只问「锁没锁 + 有没有临期积分」，
      * 从不问「这个模型要不要钱」。于是免费模型也会被「锁定永久积分 + 无临期积分」
      * 这道门拦下，报出「没有可用账号……已锁定永久积分，而所有账号的『N 天内到期』
      * 积分都已用尽」，而它**一分积分都不需要** —— 用户看到的是
@@ -223,6 +319,13 @@ export declare class BuddyAdapter extends LlmAdapter {
      *
      * ⚠️ **只放宽冷却、不清 `remoteModels`**：目录已成功时 `ensureRemoteModels`
      * 本就直接返回，无需也不能重拉（重拉会把成功结果丢掉）。
+     *
+     * ⚠️⚠️ **2026-10-18：上一条已改** —— 目录 TTL（`isCatalogFresh`）上线后，
+     *    本方法**不再复用「已定义就不重拉」那条判据**，而是**无视 TTL 强制重拉**。
+     *    理由：这里的语义是「用户/贴图门禁主动**重测图片能力**」，与
+     *    `ensureRemoteModels` 的「日常保鲜」是两条不同的路。实现是「置
+     *    `catalogAt = 0` + 复用既有取数路径」，**不是**另写一份拉取逻辑。
+     *    上面那条「只放宽冷却」的旧约束**仅对冷却期本身**仍然成立。
      *
      * ⚠️ 冷却期整体仍以 `cooldownMs`（30s）为准 —— 放宽的是**图片门禁这一次**
      * 的评估，不是把闸门的冷却期改短，故其他调用方仍受 30 秒保护。
@@ -352,23 +455,71 @@ export declare class BuddyAdapter extends LlmAdapter {
      * key（裸 id）补回 —— 那条路径拿不到展示名，只能退化成裸 id，**倍率随之丢失**
      * （用户报障：「关闭的就没有显示倍率」）。
      *
-     * ⚠️ 同名消歧必须基于**未过滤**的全量集合：`displayNameFor(model, source)`
-     * 而非 `listed`。用过滤后的集合会让「关掉其中一个同名模型」改变另一个的
-     * 变体标记，名字随开关跳变。
+     * ⚠️ **2026-10-08 Task 7c**：骨架（含上面这条理由）已上移到共享实现
+     * `src/model-catalog.ts`，此处只剩委托。
      */
+    /**
+     * ★ **后台目录刷新器入口**（`src/index.ts` 的 `refreshOf` 调 `adapter.refresh?.()`）。
+     *
+     * ⚠️⚠️ 必须由适配器**显式转发** `catalog.refresh`：`ModelCatalog`（`model-catalog.ts`）
+     *    上的这个成员**不会**自动变成适配器的成员 —— `pruned()` 的 Proxy 只透传
+     *    **适配器自己的**成员（`dead-model-store.ts:748-749`）。
+     *    漏转发 ⇒ 刷新器「已武装」却对这家**空转**，且**零日志**（`refreshOf` 返回
+     *    `undefined` 时静默跳过 —— `index.ts` 的装配注释写着这件事）。
+     *    ⚠️ 与 `options.refresh`（HTTP 401 后的**凭据**重取）**不是同一件事**，
+     *    两者同名纯属巧合，**不得合并**。
+     */
+    refresh(): Promise<void>;
     listAllModels(): readonly {
         id: string;
         name: string;
     }[];
+    /**
+     * 把本家条目转成共享骨架的中间结构。
+     *
+     * ⚠️ **`all` 是「用于同名消歧的集合」，必须传未过滤的全量集合** ——
+     * 见 `displayNameFor` 的说明（用过滤后的集合会让「关掉其中一个同名模型」
+     * 改变另一个的变体标记，名字随开关跳变）。
+     *
+     * ⚠️ 本家三处**真实差异**（不要「顺手统一」）：
+     * 1. `contextWindow` 三级查找：远端 `maxInputTokens` → 产品兜底表 → 通用静态表
+     *    （对齐 Rust `context_limit_for_model` 的两级查找，多一层产品级）；
+     * 2. `maxOutputTokens` 二级查找（远端 → 产品兜底），**必须声明**：
+     *    不声明等于把这个值永久交给网关默认（实测网关默认仅 32000），
+     *    大文件写入/长回答会在 32000 处被截断成 `finish_reason:'length'`；
+     * 3. `reasoning` 的 `efforts` 取自 `effortsFor`（按模型/产品判据），
+     *    且 `defaultEffort` **必须落在 `efforts` 内**。
+     *
+     * ⚠️ `inputModalities` **缺席即「未知」**（本家是全仓唯一真正使用该语义的家）：
+     * `inputModalitiesFor` 用 `imageCapabilityKnown` 区分「远端明确 false」与
+     * 「全都没查到」，后者返回 `undefined` ⇒ 这里**省略该字段**交给宿主判断。
+     */
+    private toCatalogEntry;
+    /**
+     * 本家全部条目（**含 VL 等可见性判据**）—— 远端缓存 ?? 静态兜底表。
+     *
+     * ⚠️ 两条路径（`listModels` / `listAllModels`）都用**同一份未过滤集合**做
+     * 同名消歧：`listModels` 侧原先误用「已过滤」集合，与 `displayNameFor` 的
+     * 注释矛盾（用户 2026-10-08 裁定修正为未过滤 —— 一次**行为变更**：
+     * 关闭同名模型之一时，另一个的变体标记不再跳变）。
+     */
+    private catalogEntries;
+    private loadCatalogEntries;
+    /**
+     * 同步视图（`listAllModels` 用）。
+     *
+     * ⚠️ **不能** `await ensureRemoteModels()`（同步契约）—— 读 `remoteModels`
+     * 缓存，未落地时回退静态兜底表（这正是原实现的语义）。
+     */
+    private syncCatalogEntries;
     listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
     /**
-     * 把 {@link inputModalitiesFor} 的结果摊成 `LlmModelInfo` 的可选字段。
+     * 解析模型元信息。
      *
-     * ⚠️ 必须**省略**而不是报 `['text']`：宿主契约明写
-     * 「absent means unknown」（dsh-llm `types.d.ts`），而 DSH 见到
-     * 「不含 image」的声明会按「确认是纯文本模型」把图片静默投影成占位文本。
+     * ⚠️ 原实现里的三处判据（context 三级查找 / maxOutputTokens / reasoning）
+     * 现已收敛到 `toCatalogEntry` —— 骨架的 `resolveModel` 只做回填与「不声明未知」。
      */
-    private imageModalitiesField;
+    resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /**
      * 静态兜底模型目录：优先用产品自带的 `fallbackModels`，否则用通用默认表。
      *
@@ -377,7 +528,6 @@ export declare class BuddyAdapter extends LlmAdapter {
      * 13 个别名，拿不到 GPT 系列）。产品兜底表提供该产品权威的完整清单。
      */
     private staticFallbackModels;
-    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /**
      * 兼容 0.1.1-rc.2：新版 LlmRuntime.prepareCall() 会调用
      * `registration.adapter.prepareCall(...)`，而本仓库链接的 dsh-llm 副本
@@ -412,4 +562,18 @@ export declare class BuddyAdapter extends LlmAdapter {
  * 在该页留下无人使用的行。原因、依据与恢复方式见 `llm-register-compat.ts` 模块头。
  */
 export declare function registerBuddyLlm(ctx: Context, options: BuddyAdapterOptions): BuddyAdapter;
+/**
+ * 执行一次腾讯原生搜索（**模块级导出**，供单测直接驱动）。
+ *
+ * ⚠️ 之所以抽成独立函数而不是全塞在 `BuddyAdapter.searchOnce` 里：单测要用
+ * 真 `product` 配置（端点前缀随产品变）驱动它，而构造一个完整 `BuddyAdapter`
+ * 需要 `AccountPool` 等重依赖。抽出来后测试可以直接传 `CODEBUDDY` / `WORKBUDDY`。
+ *
+ * @param query - 单个查询串。
+ * @param credential - 凭据（本函数自己收窄成 `BuddyCredential`）。
+ * @param signal - 取消信号。
+ * @param product - 产品配置（决定 `{endpoint}/agenttool/v1/search` 的前缀与错误文案里的 id）。
+ * @throws {WebNativeError} 无可用账号 / 上游非 2xx / 响应无法解析 / 超时。
+ */
+export declare function performBuddySearch(query: string, credential: unknown, signal: AbortSignal, product: BuddyProduct): Promise<NativeSource[]>;
 //# sourceMappingURL=buddy-adapter.d.ts.map

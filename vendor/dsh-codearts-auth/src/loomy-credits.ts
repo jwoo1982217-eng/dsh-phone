@@ -51,9 +51,14 @@ export const LOOMY_DAILY_QUOTA_DESCRIPTION = '每日赠送额度（消耗后不�
 
 /** 两个积分池的明细。 */
 export interface LoomyCreditDetail {
-  /** 永久积分（`balance`）。 */
-  permanent: number
-  /** 每日赠送池余额（`dailyBalance`）。 */
+  /**
+   * 永久积分（`balance`）；`undefined` = **上游未给该字段**。
+   *
+   * ⚠️ **不等于 0**（issue IKMCOO 缺陷 4）：「没给」与「真的是 0」是不同事实，
+   *   折叠成 0 会让一个只有今日额度的账号看起来「永久池已耗尽」。
+   */
+  permanent: number | undefined
+  /** 每日赠送池余额（`dailyBalance`）；缺省按 0 处理（与既有行为一致）。 */
   daily: number
   /** 永久 + 每日（`availableBalance`）。 */
   total: number
@@ -135,10 +140,32 @@ export async function fetchLoomyCreditDetail(
   const permanent = readNumber(result.data?.balance)
   const daily = readNumber(result.data?.dailyBalance)
   const available = readNumber(result.data?.availableBalance)
-  // `balance` 是核心字段：没有它就说明响应形状不对，不编造数字。
-  if (permanent === undefined) return null
+  /**
+   * ⚠️⚠️ **两个池都读不到才判查询失败**（issue IKMCOO 缺陷 4，2026-10-16 修正）。
+   *
+   * 原实现：`if (permanent === undefined) return null` —— 只看 `balance`。
+   * 而**同一个函数**里 `daily` 缺失是按 0 宽容处理的，两种口径自相矛盾。
+   *
+   * ## 为什么这不只是「风格不一致」，而是真缺陷
+   *
+   * 选号口径（`loomy-balance-rank.ts`）在锁定永久积分时**只看 `daily`**：
+   * ```
+   * if (daily > 0) return daily 档   ← 锁定期间也只看 daily
+   * if (allowPermanent === false) return none
+   * ```
+   * ⇒ 上游对某账号省略 `balance` 时，一个**今日额度可用**的号会被判成
+   * 「余额查询失败」→ 落入 `none` 档 → 锁定时被踢出候选 ——
+   *   症状与「用户明明有今日额度却不可用」**完全同型**。
+   *
+   * ⚠️ 实测（2026-10-16，本机 4 个账号）两个字段都在，故该缺陷**当时未触发**；
+   *   但它是**结构上可达**的，且代价（静默踢掉可用账号）远大于收益。
+   *
+   * ⚠️ **仍不得编造**：`permanent` 缺失时返回 `undefined`（不是 0），
+   *   让调用方能区分「上游没给永久池」与「永久池真的是 0」。
+   */
+  if (permanent === undefined && daily === undefined) return null
 
-  const total = available ?? (permanent + (daily ?? 0))
+  const total = available ?? ((permanent ?? 0) + (daily ?? 0))
   return {
     permanent,
     daily: daily ?? 0,
@@ -184,7 +211,12 @@ export async function fetchLoomyCreditBalance(
   return {
     total: detail.total,
     packages: [
-      makePackage('永久积分', detail.permanent),
+      // ⚠️ `permanent` 可能是 `undefined`（上游没给）；此时**不造一个 0 的包**
+      // —— 造出来会让面板显示「永久积分 0」，而事实是「上游没报这个池」。
+      // 「每日赠送」恒在（缺省按 0），故至少有一个包可渲染。
+      ...detail.permanent === undefined
+        ? []
+        : [makePackage('永久积分', detail.permanent)],
       makePackage('每日赠送', detail.daily),
     ],
     // 两池都视为有效额度，没有「已失效」概念。

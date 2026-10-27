@@ -2,6 +2,7 @@ import { LlmAdapter, LlmError } from '@deepseek-ai/dsh-llm';
 import type { GenerateOptions, StreamChunk, LlmModelInfo, LlmResolvedModelInfo } from '@deepseek-ai/dsh-llm';
 import { OpencodeLocalService } from './opencode-local-native.js';
 interface AdapterOptions {
+    providerClosed?: () => boolean;
     readImage?: (ref: unknown) => Promise<{
         data: Uint8Array;
         mediaType: string;

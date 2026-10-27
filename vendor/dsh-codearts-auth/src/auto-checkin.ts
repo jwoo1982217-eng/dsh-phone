@@ -67,7 +67,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { QODER_BILLING_UTC_OFFSET_MS } from './model-queue.js'
 import { resolveJetHubHome } from './jet-hub-store.js'
 import { formatClaimGains } from './credits.js'
-import { ZCODE } from './zcode-product.js'
+import { descriptorOf } from './provider-registry.js'
 import type { BadgeRpcResult } from './usage-badge.js'
 import type { RpcCreditsClaimAllResponse, RpcUsageAutoCheckinState } from './types.js'
 
@@ -346,7 +346,11 @@ export function isUnsupportedCheckin(message: string): boolean {
  *   浏览器弹出来是用户自己能理解的交互。
  */
 export function isAutoCheckinExcluded(provider: string): boolean {
-  return provider === ZCODE.id
+  // ⚠️ 2026-10-08 改：判据从**硬编码** `provider === ZCODE.id` 改为查
+  //    `PROVIDER_REGISTRY` 的 `autoCheckinExcluded` —— 原先改 registry 的该字段
+  //    **行为完全不变**（宿主侧另有一份副本），是「唯一真相源」名不副实的一处。
+  //    ⚠️ 用 `=== true` 而不是 truthy：该字段可选，省略 = 不排除。
+  return descriptorOf(provider)?.autoCheckinExcluded === true
 }
 
 /** 把一轮结果拼成一句中文摘要（给状态灯提示与日志用）。 */
@@ -397,7 +401,9 @@ export function shouldMarkToday(totals: RunTotals): boolean {
  * 单个渠道的短状态（面板上那行常驻文字用它逐渠道列出，用户要求「这样才能够知道
  * **各个渠道**的签到状态」）。
  *
- * ⚠️ 必须**短**：9 个渠道要挤在 280px 的面板里一行一个片段，长文案会撑成好几屏。
+ * ⚠️ 必须**短**：十余个渠道要挤在 280px 的面板里一行一个片段，长文案会撑成好几屏。
+ * （⚠️ 这里**刻意不写死渠道数** —— 2026-10-16 合并审计实测：原文写「9 个」，
+ * 加 `minimaxintl` 后已是 10 个。写死数字必然腐坏。）
  * 故只给「几个账号 + 什么结果」，不带渠道名（渠道名由展示层补）。
  */
 export function describeChannel(summary: {

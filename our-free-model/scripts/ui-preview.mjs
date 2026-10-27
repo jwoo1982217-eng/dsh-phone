@@ -56,7 +56,7 @@ const BIG_DIFF = [
   '',
 ].join('\n')
 
-const TABS = ['free', 'eac', 'channels', 'aggregate', 'saver', 'routing', 'ledger', 'logs', 'gateway']
+const TABS = ['free', 'eac', 'channels', 'aggregate', 'saver', 'routing', 'ledger', 'logs', 'gateway', 'upgrade', 'picks']
 
 // ── module resolution ────────────────────────────────────────────────────────
 /**
@@ -268,6 +268,23 @@ fs.writeFileSync(path.join(dataDir, 'settings.json'), JSON.stringify({
     },
   ],
 }, null, 2))
+
+// The recommendation page asks GitHub for star counts. Point that at a local
+// stub, for the same reason the feed is pointed at one: a screenshot run reads
+// nothing from the internet, and the page still gets numbers to render.
+const pickStub = http.createServer((req, res) => {
+  const repo = String(req.url ?? '').replace(/^\/repos\//, '')
+  const counts = {
+    'Ebony-Vinyl/EAC-Desktop': { stargazers_count: 2036, forks_count: 74, pushed_at: new Date(Date.now() - 2 * 86_400_000).toISOString() },
+    'Ebony-Vinyl/EAC-Pack': { stargazers_count: 47, forks_count: 1, pushed_at: new Date(Date.now() - 7 * 86_400_000).toISOString() },
+  }
+  res.writeHead(counts[repo] === undefined ? 404 : 200, { 'content-type': 'application/json' })
+  res.end(JSON.stringify(counts[repo] ?? { message: 'Not Found' }))
+})
+await new Promise(resolve => pickStub.listen(0, '127.0.0.1', resolve))
+pickStub.unref()
+process.env.OFM_PICKS_API_BASE = `http://127.0.0.1:${pickStub.address().port}`
+say(`pick-stats stub at ${process.env.OFM_PICKS_API_BASE}`)
 
 const { apply, inject } = await import(pathToFileURL(path.join(ROOT, 'index.js')).href)
 const routes = []
@@ -677,7 +694,7 @@ function printLine(line) {  const parts = [
   if (line.crashed) say(`        crash: ${line.crashText}`)
 }
 
-// The nine tabs, in tab order, at a desktop width.
+// The eleven tabs, in tab order, at a desktop width.
 const numbered = TABS.map((tab, index) => ({ tab, file: `${String(index + 1).padStart(2, '0')}-${tab}.png` }))
 const labels = await shoot({ variant: 'wide', width: 1280, height: 900, scale: 1, shots: numbered })
 say(`tab strip: ${labels.join(' | ')}`)
@@ -738,6 +755,7 @@ await shoot({
     { tab: 'aggregate', file: 'aggregate-dark.png' },
     { tab: 'saver', file: 'saver-dark.png' },
     { tab: 'routing', file: 'routing-dark.png' },
+    { tab: 'picks', file: 'picks-dark.png' },
   ],
 })
 
@@ -749,6 +767,7 @@ await shoot({
     { tab: 'aggregate', file: 'en-aggregate-narrow.png' },
     { tab: 'saver', file: 'en-saver-narrow.png' },
     { tab: 'routing', file: 'en-routing-narrow.png' },
+    { tab: 'picks', file: 'en-picks-narrow.png' },
   ],
 })
 

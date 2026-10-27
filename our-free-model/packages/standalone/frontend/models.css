@@ -173,7 +173,7 @@
 /* ---- 表头 ---- */
 .model-table-header, .model-table-row {
   display: grid;
-  grid-template-columns: minmax(160px, 2.3fr) minmax(115px, 1.25fr) minmax(105px, 1fr) minmax(100px, 1fr) 116px;
+  grid-template-columns: minmax(160px, 2.3fr) minmax(115px, 1.25fr) minmax(105px, 1fr) minmax(100px, 1fr) 158px;
   gap: 18px; padding: 16px; align-items: center;
 }
 .model-table-header {
@@ -356,7 +356,7 @@
 @media (max-width: 1050px) {
   .model-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .model-search { grid-column: 1 / -1; }
-  .model-table-header, .model-table-row { grid-template-columns: minmax(150px, 2fr) minmax(110px, 1fr) 100px 116px; gap: 14px; }
+  .model-table-header, .model-table-row { grid-template-columns: minmax(150px, 2fr) minmax(110px, 1fr) 100px 158px; gap: 14px; }
   .model-table-header > span:nth-child(3) { display: none; }
   .model-table-row .model-limits { grid-column: 1 / 3; grid-row: 2; flex-direction: row; gap: 15px; }
   .model-table-row .model-state { grid-column: 3; grid-row: 1 / 3; }

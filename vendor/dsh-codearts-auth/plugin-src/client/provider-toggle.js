@@ -80,6 +80,19 @@ export function providerSwitchState(status) {
     return { checked: true, disabled: true, reason: '状态尚未读取' };
   }
   const total = typeof status.models?.total === 'number' ? status.models.total : 0;
+  // ⚠️⚠️ **「已关闭」优先于「没有模型可关」**（Gitee issue IKP8OF，真实死锁）。
+  //
+  // 顺序不能反。`closed === true` 的供应商**必须永远可点开**，即使 `total === 0`：
+  // 那种形态真实可达 —— 用户关闭了某供应商，随后它的账号被全部删除 / 目录被清空
+  // ⇒ `total` 变成 0。若这里先判 `total <= 0` 而返回 `disabled: true`，
+  // 开关就变成**点不动的「已关闭」**：用户既关不掉也打不开，且没有任何出路
+  //（只能手工编辑 `state.json`）。
+  //
+  // 「`total <= 0` ⇒ 禁用」这条判据的**本意**是「没有模型可关 ⇒ 关闭动作会被
+  // 服务端拒绝，别让用户白点」（见上面的方法头），它约束的是**关闭**方向；
+  // 已关闭时用户要做的恰恰是**打开**，那个方向永远合法（`provider.setEnabled(true)`
+  // 不读目录、纯本地清黑名单 + 清意图）。
+  if (status.closed === true) return { checked: false, disabled: false, reason: null };
   if (total <= 0) {
     return {
       checked: true,
@@ -87,7 +100,7 @@ export function providerSwitchState(status) {
       reason: '该供应商没有可关闭的模型',
     };
   }
-  return { checked: status.closed !== true, disabled: false, reason: null };
+  return { checked: true, disabled: false, reason: null };
 }
 
 /**
@@ -135,7 +148,7 @@ export function summarizeProviderToggle(enabled, res) {
  * @param {string[] | null | undefined} order 宿主持久化的自定义顺序
  * @returns {Array<object>} 排序后的新数组（不修改入参）
  */
-export function sortOpenProvidersByOrder(openProviders, order) {
+export function sortOpenProvidersByOrder(openProviders, order, declaredOrder) {
   const list = Array.isArray(openProviders) ? openProviders : [];
   const seq = Array.isArray(order) ? order : [];
   if (seq.length === 0) return list;
@@ -145,6 +158,85 @@ export function sortOpenProvidersByOrder(openProviders, order) {
     if (typeof id === 'string' && id.length > 0 && !rank.has(id)) rank.set(id, index);
   }
   if (rank.size === 0) return list;
+
+  /**
+   * ⚠️⚠️ **顺序表里缺失的 provider 要按「声明位置」补位，不能一律缀尾**
+   * （真实缺陷，2026-10-17 用户报障「minimax 国际版的顺序应该在中国版下面」）。
+   *
+   * ## 症状
+   *
+   * `providerOrder` 是**用户拖拽时快照下来的全量 id 数组**。插件后来新增
+   * provider 时，老用户的数组里**没有新 id** —— 于是新 provider 一直排在
+   * **所有已自定义项之后**（末位），而它在注册表里的声明位置可能紧挨着某个
+   * 相关项（`minimaxintl` 声明在 `minimax` 之后，却显示在最后）。
+   * 老用户**不重新拖一次就永远好不了**，而且他根本不知道要拖。
+   *
+   * 实测本机 `state.json`：那份顺序表缺 **6 个**新增 provider
+   * （`minimaxintl` / `officeace` / `accio` / `autoclaw` / `modelscope` /
+   * `aggregate`），它们全部被缀到末尾。
+   *
+   * ## 修法
+   *
+   * 用 `declaredOrder`（注册表声明顺序）给**缺失的 id** 计算「应该排在哪」：
+   * 取它在声明序里**前面最近的一个已定位 id** 作锚点，排到锚点之后；
+   * 若前面没有任何已定位 id（声明在最前），排到最前。
+   *
+   * ⇒ `[… minimax, zcode …]` + 声明序里 `minimaxintl` 紧跟 `minimax`
+   *   ⇒ `minimaxintl` 落回 `minimax` 后面，正是用户期望的位置。
+   *
+   * ⚠️ **`declaredOrder` 缺省时退化为旧行为**（缺失项缀尾）：不是所有调用点
+   * 都拿得到声明序，旧行为本身不算错（只是不够好）⇒ 保持向后兼容。
+   *
+   * ⚠️ 排序必须**稳定**：同一锚点后插入多个缺失项时，按它们在声明序里的
+   * 下标做次级键，保持声明相对顺序。
+   *
+   * @param {Array<{ id: string }>} openProviders 已打开组的供应商（传入顺序即声明顺序）
+   * @param {string[] | null | undefined} order 宿主持久化的自定义顺序
+   * @param {string[] | null | undefined} [declaredOrder] 注册表的**声明顺序**
+   *   （即全部 provider id，按声明排列）。传入才能把缺失项补到正确位置。
+   */
+  const declared = Array.isArray(declaredOrder) ? declaredOrder : [];
+  if (declared.length > 0) {
+    /** 缺失 id → 它的锚点（声明序里前面最近的已定位 id；null = 排最前）。 */
+    const anchorOf = new Map();
+    for (let index = 0; index < declared.length; index++) {
+      const id = declared[index];
+      if (typeof id !== 'string' || id.length === 0) continue;
+      if (rank.has(id)) continue;  // 已定位的不动
+      let anchor = null;
+      for (let back = index - 1; back >= 0; back--) {
+        const prev = declared[back];
+        // ⚠️ 锚点可以是另一个**缺失**项 —— 这时要看它自己有没有锚点（链式）。
+        if (rank.has(prev) || anchorOf.has(prev)) { anchor = prev; break; }
+      }
+      anchorOf.set(id, anchor);
+    }
+    if (anchorOf.size > 0) {
+      /**
+       * 把「锚点链」折算成可比较的键。
+       *
+       * ⚠️ 用「锚点的键 + 声明下标的小数偏移」而不是「真的插进数组」：
+       * 后者会让后续 rank 全部重排，容易与既有 `orderAfterDrop` 的语义打架；
+       * 这里只需要一个**单调可比较的键**。
+       * ⚠️ 按声明序**先后**处理，保证链式锚点（A 缺、B 也缺且锚点=A）能算对。
+       */
+      const effective = new Map(rank);
+      for (const [id, anchor] of anchorOf) {
+        const declaredIndex = declared.indexOf(id);
+        const anchorKey = anchor === null ? -1 : (effective.get(anchor) ?? -1);
+        effective.set(id, anchorKey + declaredIndex / (declared.length + 1));
+      }
+      return [...list].sort((a, b) => {
+        const ra = effective.get(a?.id);
+        const rb = effective.get(b?.id);
+        if (ra !== undefined && rb !== undefined) return ra - rb;
+        if (ra !== undefined) return -1;
+        if (rb !== undefined) return 1;
+        return 0;
+      });
+    }
+  }
+
   return [...list].sort((a, b) => {
     const ra = rank.get(a?.id);
     const rb = rank.get(b?.id);

@@ -71,10 +71,40 @@ export interface LoomyAdapterOptions {
      *
      * ⚠️ Loomy **没有 refresh 端点**，故实现只做**有效性探测**并在失效时抛错，
      * 不会（也无法）续期。
+     *
+     * ## ⚠️⚠️ `forCredential` 是**可选**但强烈建议实现（2026-10-20 审计 E-2）
+     *
+     * 不带参数时，接线层的实现探测的是**池当前默认账号**
+     * （`pool.getAvailableAccount(LOOMY.id, '')`），而热路径拿它来裁决
+     * 「**本轮要用的那份**凭据还能不能用」—— **二者可能不是同一个号**。
+     *
+     * 实测（基线 `b5dab83` 同样）：本轮要用的号完全可用，仅因**另一个号**报终态
+     * ⇒ 整轮失败、业务请求 0 次。这与 `401` 分支注释里自己写过的
+     * 「二者可能不是同一个号」是同一个坑，只是那处讨论的是**标记记错号**，
+     * 这处是**裁决打死错的人**。
+     *
+     * ⇒ 实现方收到 `forCredential` 时应只探测**那一份凭据**（按 access_token 反查
+     *   其 ref 后调 `refreshAccountCredential`）；无法反查时退回原行为
+     *   （探测默认号）—— 「宁可退化成旧行为，也不要凭空跳过探测」。
      */
-    refresh: () => Promise<void>;
+    refresh: (forCredential?: LoomyCredential) => Promise<void>;
+    /**
+     * 非终态告警出口（可选）。
+     *
+     * ⚠️ 目前只有一处消费：请求热路径上「凭据探测失败但按非终态处理」时留痕。
+     * 缺省静默 —— 但接线层**必须**注入，否则本渠道会退化成本仓库反复记录的
+     * 「静默失败」（用户看到整轮成功、实际探测一直在失败）。
+     */
+    warn?: (message: string) => void;
     /** 拉取远端模型目录；失败时适配器回退兜底表。 */
     fetchRemoteModels?: () => Promise<LoomyRemoteModel[]>;
+    /**
+     * 「现在」的注入点（**只供单测**推进 TTL；生产缺省 `Date.now()`）。
+     *
+     * ⚠️ 为何要注入：TTL 是本 Task 的核心判据，而真实时间无法在用例里推进 ——
+     *    只能靠 `sleep` 的用例会 flaky 且慢。既有同形态先例：`auto-adapter` 的 `now`。
+     */
+    now?(): number;
     /** 读取图片附件的原始字节（内联为 data URL 用）。 */
     readImage?: (attachment: unknown) => Promise<{
         data: Uint8Array;
@@ -86,7 +116,45 @@ export interface LoomyAdapterOptions {
     product?: LoomyProduct;
     /** 注入的 fetch（测试用）。 */
     fetchImpl?: typeof fetch;
+    /**
+     * 远端目录**落地后**的通知回调（issue IKJVTF）。
+     *
+     * 由 `registerLoomyLlm` 注入为 `broadcastCatalogChanged(ctx)`。适配器本身
+     * 拿不到 `ctx`，故必须由接线层桥接（与 `readImage` 等回调同一模式）。
+     *
+     * ⚠️ 必要性：客户端 `ModelCatalogDirectory` 在 `status === 'ready'` 时**短路
+     * 返回缓存**，只在宿主事件上 `refresh()`。没有本回调时，冷启动首拉失败
+     * 缓存的**兜底表**会永久留在对话框里，远端目录真的落地也不重读。
+     */
+    onCatalogLoaded?: () => void;
 }
+/**
+ * 探测**非终态**失败后的退避窗口（毫秒）。
+ *
+ * ## 为什么需要它（2026-10-20 审计的 E-3）
+ *
+ * `isLoomyExpired` 读本地 `expires_at`（登录时刻 +14 天推算**写下**，服务端不下发，
+ * 本插件**永不改写**）⇒ 本地判过期后，前置探测分支**每一轮**都会进。
+ * 而探测的超时上限是 `LOOMY_REQUEST_TIMEOUT_MS` = **60 秒**，且
+ * `probeCredential` 用的是**独立**的 `AbortSignal.timeout`、不联动调用方 `signal`
+ * ⇒ 最坏情况是「每轮首 token 前白等 60 秒」，用户点停止也打断不了。
+ *
+ * 实测（审计沙箱）：`refresh` 永挂 ⇒ `stream()` 8 秒后仍未返回、业务请求 0 次；
+ * 缩短到 250ms 后 `perTurnMs=[316,315,310]`（≈3× 串行叠加，**每轮各等一次**）。
+ *
+ * ## 为什么取 5 分钟
+ *
+ * 探测的**唯一产出**是「要不要提示用户重新登录」，而真失效会由业务请求自己
+ * 以 401/403 或 `100002` 暴露。拿「一次上游抖动」惩罚之后每轮的首 token 延迟，
+ * 是拿用户可感的延迟换一个不急用的信息。
+ * 5 分钟与 `REMOTE_CATALOG_COOLDOWN_MS`（30 秒）相比更宽 —— 因为那条冷却的是
+ * **目录**（影响可用模型集），这条冷却的是一次**只读探测**（不影响任何判定）。
+ *
+ * ⚠️ 与「失败短缓存」的区别：本退避**不改写任何判定**，窗口内用的仍是本轮
+ * 刚解析出的凭据；它只决定「这次要不要去问探测端点」。
+ * ⚠️ 探测**成功**时立刻清掉退避（上游已恢复，没理由继续跳过）。
+ */
+export declare const LOOMY_PROBE_BACKOFF_MS: number;
 /**
  * Loomy 的失败类别。**「要不要换号」与「要不要写冷却」是两件事**——
  * 认证类（401/403）只换号、**绝不写冷却**。
@@ -141,8 +209,102 @@ export declare function classifyLoomyFailure(errorText: string, status: number):
  * 的 429 边界那次已验证过）。
  */
 export declare function shouldRotateLoomyAccount(errorText: string, status: number): boolean;
-/** 该类别是否要写冷却标记（`auth` 不在其中，见 {@link LoomyFailureClass}）。 */
-export declare function recordsLoomyRateLimit(cls: LoomyFailureClass): boolean;
+/**
+ * **Loomy 专属**：`HTTP 200 + 业务码 100002` 是否该按「认证失败、值得换号」处理。
+ *
+ * ## 为什么它是一条**独立**判据，而不是加进 {@link classifyLoomyFailure}
+ *
+ * `classifyLoomyFailure` 与 `classifyRaccoonFailure` 在本仓库明文规定
+ * 「必须**逐格同构**」，并由 `loomy-adapter.spec.ts` 的
+ * 「与 raccoon 对拍：同一报文集逐条同结论」逐条守着。
+ * 而 `100002` 是 **Loomy 独有**的业务码（raccoon 没有等价码，见
+ * `src/loomy.ts` 的 `LOOMY_AUTH_ERROR_CODE`）⇒ 塞进共享分类器会让那条对拍用例
+ * 当场变红，或者逼着给 raccoon 编一个它并不存在的码 —— 两条路都不对。
+ * ⇒ 业务码这一腿留在**本家自己的**判据里，共享分类器保持逐格同构。
+ *
+ * ## 缺陷形态（2026-10-20 审计 E-1，**既有缺陷、非 PR !124 引入**）
+ *
+ * Loomy 的业务失败**恒 HTTP 200**（`src/loomy.ts` 的协议说明：
+ * 「带错的那个 → HTTP 200 + `{"code":"100002","desc":"缺少 token"}`」），
+ * 而请求级换号循环写在 `if (!response.ok)` 里面 ⇒ 200 的认证失败
+ * **一次都不换号**。实测（基线 `b5dab83` 同样）：
+ *
+ * ```
+ * classifyLoomyFailure('100002', 200)   ⇒ 'other'  rotate=false
+ * classifyLoomyFailure('100002', 401)   ⇒ 'auth'   rotate=true   ← 只有状态码是 401 才算
+ * ```
+ *
+ * 而 `100002` 才是 Loomy 表达「token 缺失/失效」的**主通道**。
+ *
+ * ⚠️ 与 `classifyLoomyFailure` 的职责边界：本函数**只回答**「这个响应体是不是
+ * 认证失败」，不参与额度/限流的分类，也**不写冷却标记**（认证类一律不写，
+ * 见 2026-10-06 的全池被封事故）。
+ */
+export declare function isLoomyAuthBusinessCode(envelope: {
+    ok: boolean;
+    code: string;
+}): boolean;
+/**
+ * 该类别是否要写冷却标记（`auth` 不在其中，见 {@link LoomyFailureClass}）。
+ *
+ * ⚠️ 返回**类型谓词**而不是 `boolean`：{@link loomyCooldownResetAtMs} 只接受这两个
+ * 类别，于是「先判类别、再算时长」这条顺序由**编译器**保证 —— 少了谓词，
+ * 调用点忘了守卫时 `auth` 会静默拿到一个冷却时长（旧实现正是那个形状：
+ * `status === 429 ? 1h : 24h` 的三元表达式对认证类也返回 24h）。
+ */
+export declare function recordsLoomyRateLimit(cls: LoomyFailureClass): cls is 'quota' | 'rate';
+/**
+ * 撞墙后把冷却标记写到**哪一刻**（UTC 毫秒）。
+ *
+ * | 类别 | 冷却终点 | 依据 |
+ * |---|---|---|
+ * | `quota` | **UTC+8 当日 24:00**（`nextUtc8DayStartMs`） | 每日赠送额度按自然日重置 |
+ * | `rate` | 撞墙时刻 + 1 小时 | 频率类分钟级恢复，与 trae soft-rate 同档 |
+ *
+ * ## ⚠️⚠️ `quota` 原先记的是「撞墙时刻 + 24h」—— 真实缺陷（Gitee IKL80H）
+ *
+ * 用户真机报障（2026-10-13）：**0 点后上游已经放行（用户自己的账号实测能用），
+ * 插件仍说该模型没到重置时间、不给用**。根因就是这个**滑动窗口**：Loomy 的每日赠送
+ * 额度（每日 5000 / `dailyBalance = dailyQuota - dailyConsumed`）按 **UTC+8 自然日**
+ * 重置，而旧实现从失败那一刻起算 24 小时。用户在 23:50 烧光 ⇒ 标记落到**次日 23:50**，
+ * 于是白等将近一整天。
+ *
+ * 实测取证（注入时钟，失败时刻 `2026-10-13 23:50 UTC+8`）：
+ *
+ * | | 时刻 |
+ * |---|---|
+ * | 修复前写下的标记 | `2026-10-14 23:50`（**+24h**） |
+ * | 正确的自然日终点 | `2026-10-14 00:00`（只差 10 分钟） |
+ * | 0 点后 10 分钟的判定 | 仍判「全部账号限流」，距解禁 **23.67 h** |
+ *
+ * 症状出口两处（都读同一个 `modelRateLimits`）：选号侧
+ * `allAccountsRateLimitedForModel` → `throwIfAllAccountsRateLimited` 报
+ * 「可用账号均在限流中，最近一个将于 <次日 23:50> 解禁」；面板侧的「限额中」徽章
+ * 与「限额重置」行。
+ *
+ * ⚠️ 这同时违反本仓库红线「**同一 provider 内不得有两套同义判据**」：
+ * `aggregate-expiry.ts` 的 `loomyExpiry` 对**同一件事**（Loomy 的每日赠送何时失效）
+ * 用的是 `nextUtc8DayStartMs()`，与适配器这里的 +24h 结论不同。现统一到自然日，
+ * 与 qoder / zcode / codearts 三家同口径。
+ *
+ * ## ⚠️ 与 raccoon 的**冷却时长**不再同档（刻意的，已登记）
+ *
+ * 两家的**失败分类表**（`classifyLoomyFailure` / `classifyRaccoonFailure`）仍必须
+ * 逐格同构（有对拍用例守着），但**冷却时长**由各自的额度结算周期决定：loomy 有
+ * 明确的每日赠送池（自然日），raccoon 侧的 24h 兜底尚未同批核对 ⇒ 本次**只改 loomy**。
+ * 这处不对称已记进 `docs/agent-notes/providers-loomy-raccoon-minimax.md`。
+ *
+ * ## ⚠️ 代价（如实登记）
+ *
+ * `classifyLoomyFailure` 判 `quota` 时**分不清**「每日赠送用尽」与「连永久积分也空了」
+ * ——报文只有 `14018 Credits exhausted`。改用自然日后标记**严格变短**（最多差近 24h）
+ * ⇒ 若某个号永久积分也空，0 点后会被重试一发再重新标记。这是刻意的取舍：
+ * 宁可多发一发失败请求，也不要让用户白等一整天（旧值让**每一个**配额耗尽的号都白等）。
+ *
+ * @param cls - 失败类别；只接受会写标记的两类（由类型谓词保证）。
+ * @param nowMs - 当前时刻（注入以便单测）。
+ */
+export declare function loomyCooldownResetAtMs(cls: 'quota' | 'rate', nowMs?: number): number;
 /** Loomy 模型适配器。chat 端点用 Bearer，业务端点用 token。 */
 export declare class LoomyAdapter extends LlmAdapter {
     private readonly options;
@@ -152,6 +314,14 @@ export declare class LoomyAdapter extends LlmAdapter {
     private readonly fallbackIndex;
     /** 远端模型缓存（含展示名与能力）；未拉取时为 undefined。 */
     private remoteModels;
+    /**
+     * ⚠️ 上次**成功**读到远端目录的时刻（0 = 从未成功过）。
+     *
+     * ⚠️ 与 `remoteModels` **并存**、不是替代：`remoteModels` 存「有哪些模型」，
+     *    本字段存「何时读到的」。两者缺一都会坏：只有 `remoteModels` 则目录永不更新
+     *    （现状）；只有 `catalogAt` 则无内容可展示。
+     */
+    private catalogAt;
     /** 目录加载闸门：并发去重 + 失败/空结果冷却（见 `remote-catalog-gate.ts`）。 */
     private readonly catalogGate;
     constructor(options: LoomyAdapterOptions);
@@ -164,7 +334,28 @@ export declare class LoomyAdapter extends LlmAdapter {
      * 避免 `undefined.toUpperCase is not a function` 在客户端炸开。
      */
     providerInfo(provider: string): LlmProviderInfo;
+    /**
+     * ⚠️ **2026-10-08 Task 7a：三个方法收敛到共享骨架** `createModelCatalog`。
+     *
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架（实测与
+     * `minimax` / `raccoon` **归一化后逐字相同**）。现在只剩 `toCatalogEntry`
+     * 这一个**本家私有**的转换，骨架（门控 → 读目录 → 黑名单 → 回填 → 三态）
+     * 由 `src/model-catalog.ts` 统一持有。
+     */
+    private readonly catalog;
     /** 完整目录（**不套黑名单**），带最终展示名。设置页需要它渲染被关闭的模型。 */
+    /**
+     * ★ **后台目录刷新器入口**（`src/index.ts` 的 `refreshOf` 调 `adapter.refresh?.()`）。
+     *
+     * ⚠️⚠️ 必须由适配器**显式转发** `catalog.refresh`：`ModelCatalog`（`model-catalog.ts`）
+     *    上的这个成员**不会**自动变成适配器的成员 —— `pruned()` 的 Proxy 只透传
+     *    **适配器自己的**成员（`dead-model-store.ts:748-749`）。
+     *    漏转发 ⇒ 刷新器「已武装」却对这家**空转**，且**零日志**（`refreshOf` 返回
+     *    `undefined` 时静默跳过 —— `index.ts` 的装配注释写着这件事）。
+     *    ⚠️ 与 `options.refresh`（HTTP 401 后的**凭据**重取）**不是同一件事**，
+     *    两者同名纯属巧合，**不得合并**。
+     */
+    refresh(): Promise<void>;
     listAllModels(): readonly {
         id: string;
         name: string;
@@ -179,9 +370,19 @@ export declare class LoomyAdapter extends LlmAdapter {
      * 并用 {@link RemoteCatalogGate} 的冷却挡住「每模型重试一次」的放大。
      */
     private loadModels;
-    private inputModalitiesFor;
+    /**
+     * 把本家私有的远端/兜底条目转成共享骨架的中间结构。
+     *
+     * ⚠️ 这里是**唯一**还认识「倍率格式」与「supportsImage」的地方 ——
+     * 骨架不认识它们（各家格式不同）。
+     */
+    private toCatalogEntry;
+    /** 本家全部条目（远端缓存 ?? 兜底表），已转成中间结构。 */
+    private loadCatalogEntries;
+    /** 同步视图（`listAllModels` 用，见 `ModelCatalogConfig.syncCatalog` 的说明）。 */
+    private syncCatalogEntries;
     listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
-    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
+    resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /**
      * 该模型的思考档位（`resolveModel` 的 `reasoning` 字段）。
      *
@@ -197,6 +398,45 @@ export declare class LoomyAdapter extends LlmAdapter {
      * 3. 远端未下发档位时不声明 `reasoning`（UI 显示「当前模型未提供推理等级」）。
      */
     private reasoningFor;
+    /**
+     * 探测退避表（`modelId` → 退避到期时刻）。
+     *
+     * ⚠️ 按 **modelId** 分桶而不是全局一个值：探测本身与模型无关，但热路径的
+     * 前置分支是**按模型**进来的（`isLoomyExpired` 与 `resolveCredential(model)`），
+     * 用全局值会让「A 模型抖动一次 ⇒ B 模型也跳过探测」——那是不必要的耦合，
+     * 而按模型分桶没有额外代价（`Map` 只有几十条）。
+     *
+     * ⚠️ **只增不减**在此处是可接受的：条目数 = 用户用过的模型数（个位到几十），
+     * 每次写都是覆盖同一个键。不做定期清理，避免再引入一个需要调度的东西。
+     */
+    private readonly probeBackoffUntil;
+    /** 「现在」的统一取法（与 `options.now` 注入点同源，单测可推进）。 */
+    private nowMs;
+    /** 该模型当前是否处于探测退避窗口内。 */
+    private probeBackedOff;
+    /** 记一次退避（探测非终态失败后调用）。 */
+    private armProbeBackoff;
+    /** 清掉退避（探测成功，或终态已抛之后）。 */
+    private clearProbeBackoff;
+    /**
+     * 把 `HTTP 200 + 业务码 100002` 的响应**重建**成一个 `401` 响应，交给既有换号循环。
+     *
+     * 返回 `undefined` 表示「不是这种形态，原样继续」。
+     *
+     * ## ⚠️ 三条边界（都是刻意收窄，避免制造新缺陷）
+     *
+     * 1. **只处理 `content-type: application/json`**：SSE 流**不能**在这里 `text()`
+     *    读干——那会把正文吃掉，用户看到空回复。SSE 内嵌错误帧仍归
+     *    `consumeOpenAiSse`。
+     * 2. **只有 `code` 恰为 `LOOMY_AUTH_ERROR_CODE` 才转**：别的业务码（额度、参数）
+     *    形态各异，一律不碰 —— 那是分类器与 `!response.ok` 分支的职责。
+     * 3. **转换后仍带原始报文**：把原 JSON 原文塞回新响应的 body，于是下游
+     *    `errorDetail()` 与日志拿到的仍是上游原话（不编造、不丢信息）。
+     *    ⚠️ `normalize` 出来的 `status` 是 **401**（而不是编一个 4xx），
+     *    因为下游 `classifyLoomyFailure` 对 401 判 `auth`、且认证类**不写冷却**
+     *    （2026-10-06 全池被封事故的铁律）。
+     */
+    private rebuildAuthBusinessFailure;
     /**
      * 兼容 0.1.1-rc.2：新版 `LlmRuntime.prepareCall()` 会调用
      * `registration.adapter.prepareCall(...)`，而本仓库链接的 dsh-llm 副本

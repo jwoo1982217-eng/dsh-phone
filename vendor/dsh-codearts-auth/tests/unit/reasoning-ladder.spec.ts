@@ -138,7 +138,10 @@ describe('canonicalReasoningEffortFor：该填哪几个', () => {
       trae: ['light', 'high', 'extra_high'],
       lobsterai: ['off', 'high', 'xhigh'],
       cline: ['none', 'low', 'medium', 'high', 'max'],
-      raccoon: ['on', 'off'],
+      // ⚠️ Raccoon / CodeArts 的两档按**强度序**声明（`off` 在前，Issue IKLIDV）。
+      // 反查与翻译**都不依赖顺序**，故这里用真实顺序才是有意义的回归锁：
+      // 若哪天有人把「顺序」误当成语义（例如取首项当默认档），本用例仍要绿。
+      raccoon: ['off', 'on'],
       workbuddy: ['high'],
       'deepseek-account': ['none', 'low', 'high', 'max'],
       // Qoder 声明的顺序是乱的（xhigh 在最前），反查不能依赖顺序。

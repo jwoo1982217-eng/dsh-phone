@@ -7,8 +7,8 @@ import { LlmError } from '@deepseek-ai/dsh-llm'
 import { AccountPool } from '../../src/account-pool.js'
 import { rotatingStream } from '../../src/account-rotation.js'
 import { wrapAdapterWithRotation } from '../../src/llm-register-compat.js'
-import { AutoclawIntegration } from '../../src/autoclaw.js'
-import { OpencodeAdapter } from '../../src/opencode-adapter.js'
+import { AutoclawIntegration } from '../../src/autoclaw-local-integration.js'
+import { OpencodeAdapter } from '../../src/opencode-inference-adapter.js'
 import { AutoclawApi } from '../../src/autoclaw-api.js'
 let dir: string, old: string | undefined
 beforeEach(() => { old = process.env.DSH_JET_HUB_STATE_DIR; dir = mkdtempSync(join(tmpdir(), 'exhaustion-')); process.env.DSH_JET_HUB_STATE_DIR = dir })
@@ -16,7 +16,7 @@ afterEach(() => { if (old === undefined) delete process.env.DSH_JET_HUB_STATE_DI
 async function fixture(provider = 'autoclaw', count = 3) {
   const values = new Map<string, string>()
   const ctx = { get: () => undefined, logger: { warn: vi.fn(), info: vi.fn() }, credentials: { resolve: async (ref: unknown) => ({ value: values.get(JSON.stringify(ref)) }), unset: async () => {} } } as any
-  const pool = new AccountPool(ctx)
+  const pool = new AccountPool(ctx, { preserveAccountOrder: true })
   for (const id of ['A', 'B', 'C', 'D', 'E'].slice(0, count)) {
     values.set(JSON.stringify(credentialRef(id)), JSON.stringify({ access_token: `token-${id}`, refresh_token: 'fixture', user_id: id, device_id: 'fixture' }))
     await pool.addAccount({ id, provider, credentialRef: id, enabled: true, nickname: id, refreshable: true, createdAt: 1 })

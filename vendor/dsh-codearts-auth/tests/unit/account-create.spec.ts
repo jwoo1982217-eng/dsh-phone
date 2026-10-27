@@ -23,7 +23,7 @@ it('同厂牌显式添加第二账号启动独立授权，不复用旧身份或�
   await pool.addAccount({ id: 'existing', provider: 'zcode', credentialRef: 'existing-ref', nickname: 'existing', enabled: true, refreshable: false, createdAt: 1 })
   const zcode = { adoptIntoOrphanAccount: vi.fn(async () => 'existing'), localCredential: vi.fn(async () => undefined),
     startLogin: vi.fn(async () => ({ loginUrl: 'https://bigmodel.cn/fixture-authorize', result: new Promise(() => {}) })) }
-  registerJetHubRpc(ctx, pool, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, {} as never, zcode as never)
+  registerJetHubRpc(ctx, pool, {codearts: {} as never, buddy: {} as never, workbuddy: {} as never, lobsterai: {} as never, qoder: {} as never, qodercn: {} as never, trae: {} as never, cline: {} as never, loomy: {} as never, raccoon: {} as never, minimax: {} as never, zcode: zcode as never} as never)
   const create = async (newAccount?: boolean) => {
     const response = await handler!(new Request('http://localhost/api/jet-hub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', rpcId: 'fixture', method: 'jet-hub', payload: { method: 'account.create', payload: { provider: 'zcode', newAccount } } }) }))
     return (await response.json()).result

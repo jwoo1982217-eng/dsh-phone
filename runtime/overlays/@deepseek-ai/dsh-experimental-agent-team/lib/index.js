@@ -1,12 +1,12 @@
 import { Service } from "@deepseek-ai/cordis";
 import z from "@deepseek-ai/schemastery";
-import { inspect } from "node:util";
 import { HarnessError, createUserMessage } from "@deepseek-ai/dsh-llm";
-import { randomUUID } from "node:crypto";
-import { brandString } from "@deepseek-ai/dsh-brand";
 import { steerHostSubagentPrompt } from "@deepseek-ai/dsh-subagent/internal";
-import { foldSubagentDescriptor } from "@deepseek-ai/dsh-subagent";
+import { inspect } from "node:util";
 import { z as z$1 } from "zod";
+import { brandString } from "@deepseek-ai/dsh-brand";
+import { randomUUID } from "node:crypto";
+import { foldSubagentDescriptor } from "@deepseek-ai/dsh-subagent";
 //#region lib/types/error.js
 /** Typed Agent Teams failures. */
 /** Stable failure raised by the Team domain. */
@@ -165,6 +165,7 @@ var TeamJournal = class {
 /** Owns the single Team runtime cancellation fact and disposal timeout. */
 var TeamRuntimeLifecycle = class {
 	disposalTimeoutMs;
+	operations = /* @__PURE__ */ new Set();
 	controller = new AbortController();
 	/**
 	* @param disposalTimeoutMs - maximum wait for one disposal settlement operation.
@@ -202,6 +203,27 @@ var TeamRuntimeLifecycle = class {
 		this.controller.abort(new TeamError("Agent Teams service disposed", "TEAM_DISPOSED"));
 	}
 	/**
+	* Track an admitted send or complete creation transaction until it settles.
+	* @param operation - asynchronous work owned by this runtime.
+	* @returns the same operation.
+	*/
+	track(operation) {
+		this.operations.add(operation);
+		operation.then(() => {
+			this.operations.delete(operation);
+		}, () => {
+			this.operations.delete(operation);
+		});
+		return operation;
+	}
+	/**
+	* Capture outstanding operations after closing admission.
+	* @returns admitted work still awaiting settlement.
+	*/
+	pending() {
+		return [...this.operations];
+	}
+	/**
 	* Await admitted operations and retain failures other than runtime cancellation.
 	* @param operations - admitted operations captured after the admission cutoff.
 	* @param failures - aggregate destination for unexpected rejection or timeout.
@@ -235,54 +257,6 @@ var TeamRuntimeLifecycle = class {
 	}
 };
 //#endregion
-//#region lib/types/persisted.js
-/** Short-lived read-handle access to persisted Team member Sessions. */
-/**
-* Read one stored session's header and complete event log through a
-* short-lived read handle, closing the handle before returning.
-* @param persistence - the durable session store.
-* @param id - the stored session to read.
-* @param signal - cancellation observed by open and read.
-* @returns the stored header and every committed event.
-*/
-async function readPersistedSession(persistence, id, signal) {
-	const handle = await persistence.open(id, "read", { signal });
-	try {
-		const { events } = await handle.read(0, void 0, { signal });
-		return {
-			header: handle.header,
-			inheritedEventCount: handle.inheritedEventCount,
-			events
-		};
-	} finally {
-		await handle.close();
-	}
-}
-//#endregion
-//#region lib/types/session-message.js
-/** Durable Session-message acceptance checks shared by provisioning and mailbox recovery. */
-/** Fold the durable inbox suffix into the messages still awaiting a claim. */
-function pendingInboxMessages(events) {
-	const inbox = {
-		"next-turn": [],
-		"next-step": []
-	};
-	for (const event of events) {
-		if (event.type !== "agent/inbox/spliced") continue;
-		inbox[event.data.target].splice(event.data.start, event.data.removedCount ?? 0, ...event.data.inserted);
-	}
-	return [...inbox["next-turn"], ...inbox["next-step"]];
-}
-/**
-* Test whether one message is model-visible or still durably pending.
-* @param events - one Session's non-inherited event suffix.
-* @param predicate - identity check for the accepted message.
-* @returns whether history or the current inbox contains a match.
-*/
-function messageAccepted(events, predicate) {
-	return events.some((event) => event.type === "user/message" && predicate(event.data)) || pendingInboxMessages(events).some(predicate);
-}
-//#endregion
 //#region lib/types/types.js
 /** Public Agent Teams identities, durable records, and service request values. */
 /**
@@ -309,683 +283,6 @@ function TeamTaskId(id) {
 function TeamMessageId(id) {
 	return id;
 }
-//#endregion
-//#region lib/types/validation.js
-/** Input normalization shared by Team roster and task commands. */
-/**
-* Normalize one required human-authored string.
-* @param value - raw input value.
-* @param field - diagnostic field name.
-* @param maxLength - maximum normalized character count.
-* @returns trimmed non-empty text.
-*/
-function requiredText(value, field, maxLength) {
-	const text = value.trim();
-	if (text.length === 0) throw new TeamError(`${field} must be non-empty`, "TEAM_INVALID_ARGUMENT");
-	if (text.length > maxLength) throw new TeamError(`${field} exceeds ${maxLength} characters`, "TEAM_INVALID_ARGUMENT");
-	return text;
-}
-/**
-* Normalize one workspace-relative path prefix without treating it as a lock.
-* @param value - user-authored path prefix.
-* @returns normalized slash-separated prefix.
-*/
-function writeScope(value) {
-	const normalized = value.replaceAll("\\", "/").replace(/^\.\//u, "").replace(/\/+$/u, "");
-	const segments = normalized.split("/");
-	if (normalized.length === 0 || normalized.startsWith("/") || /^[a-z]:/iu.test(normalized) || segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")) throw new TeamError(`invalid workspace-relative write scope ${JSON.stringify(value)}`, "TEAM_INVALID_WRITE_SCOPE");
-	return normalized;
-}
-//#endregion
-//#region lib/types/roster.js
-/** Team membership, continuable-child provisioning, and roster-owned teardown. */
-const MEMBER_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-/**
-* Resolve one active Team member by model-facing name, including the Lead pseudo-row.
-* @param root - exact live Team Lead.
-* @param state - current Team state.
-* @param rawName - candidate member name.
-* @returns resolved durable id and normalized name.
-*/
-function resolveActiveMember(root, state, rawName) {
-	const name = rawName.trim();
-	if (name === "lead") return {
-		id: root.id,
-		name
-	};
-	const member = state.members.find((candidate) => candidate.name === name);
-	if (member === void 0 || member.phase !== "active") throw new TeamError(`active teammate "${name}" not found`, "TEAM_MEMBER_NOT_FOUND");
-	return {
-		id: member.id,
-		name
-	};
-}
-/** Owns Team identities and the lifecycle of rostered continuable children. */
-var TeamRoster = class {
-	ctx;
-	journal;
-	lifecycle;
-	maxMembers;
-	inFlightCreations = /* @__PURE__ */ new Set();
-	/**
-	* @param ctx - Team service context with Agent, Session, persistence, and subagent services.
-	* @param journal - authoritative Lead-log transaction owner.
-	* @param lifecycle - shared Team runtime admission cutoff.
-	* @param maxMembers - maximum immutable roster entries per Team.
-	*/
-	constructor(ctx, journal, lifecycle, maxMembers) {
-		this.ctx = ctx;
-		this.journal = journal;
-		this.lifecycle = lifecycle;
-		this.maxMembers = maxMembers;
-	}
-	/**
-	* Resolve one exact live Agent's Team role.
-	* @param agent - exact live Agent used as the authority credential.
-	* @returns its root, Team identity, role, and model-facing name.
-	*/
-	membership(agent) {
-		const membership = this.tryMembership(agent);
-		if (membership === void 0) throw new TeamError(`agent "${agent.id}" is not a member of an active Agent Team`, "TEAM_NOT_MEMBER");
-		return membership;
-	}
-	/**
-	* Resolve a caller without throwing for scoped installation and lifecycle observers.
-	* @param agent - candidate exact live Agent.
-	* @returns Team membership, or undefined for non-Team subagents and stale identities.
-	*/
-	tryMembership(agent) {
-		if (this.ctx.agents.get(agent.id) !== agent) return void 0;
-		try {
-			const parentId = agent.session.header.parentSession;
-			if (parentId !== void 0) {
-				const root = this.ctx.agents.get(parentId);
-				if (root !== void 0) {
-					const member = this.journal.state(root).members.find((candidate) => candidate.id === agent.id);
-					if (member?.phase === "active" || member?.phase === "provisioning") return {
-						root,
-						id: TeamId(root.id),
-						role: "teammate",
-						name: member.name
-					};
-					if (this.subagentDescriptor(agent)) return void 0;
-					return {
-						root: agent,
-						id: TeamId(agent.id),
-						role: "lead",
-						name: "lead"
-					};
-				}
-			}
-			if (this.subagentDescriptor(agent)) return void 0;
-			return {
-				root: agent,
-				id: TeamId(agent.id),
-				role: "lead",
-				name: "lead"
-			};
-		} catch {
-			return;
-		}
-	}
-	/**
-	* List the runtime-enriched roster visible to one Team member.
-	* @param membership - exact caller membership resolved by this roster.
-	* @returns Lead and teammate rows in creation order.
-	*/
-	list(membership) {
-		const { root } = membership;
-		const state = this.journal.state(root);
-		const result = [{
-			id: root.id,
-			name: "lead",
-			role: "lead",
-			status: availability(root),
-			...root.options.model === void 0 ? {} : { model: root.options.model },
-			diagnostics: []
-		}];
-		for (const member of state.members) {
-			const live = this.ctx.agents.get(member.id);
-			const model = live?.options.model ?? root.options.model;
-			result.push({
-				id: member.id,
-				name: member.name,
-				role: "teammate",
-				status: member.phase === "failed" ? "failed" : member.phase === "provisioning" ? "provisioning" : availability(live),
-				description: member.description,
-				provider: member.provider,
-				context: member.context,
-				...model === void 0 ? {} : { model },
-				diagnostics: member.error === void 0 ? [] : [member.error]
-			});
-		}
-		return result;
-	}
-	/**
-	* Create one named, continuable direct child of the Team Lead.
-	* @param caller - exact live Lead Agent.
-	* @param request - immutable name, description, prompt, context mode, provider, and cancellation.
-	* @returns the active roster row.
-	*/
-	async spawn(caller, request) {
-		if (this.lifecycle.disposed) throw new TeamError("Agent Teams service is disposing", "TEAM_DISPOSED");
-		const operation = this.spawnAdmitted(caller, request);
-		this.inFlightCreations.add(operation);
-		try {
-			return await operation;
-		} finally {
-			this.inFlightCreations.delete(operation);
-		}
-	}
-	/**
-	* Return admitted creation operations captured for ordered disposal.
-	* @returns detached snapshot ordered only by Set insertion.
-	*/
-	pendingCreations() {
-		return [...this.inFlightCreations];
-	}
-	/**
-	* Reconcile provisioning state when one Team member Session starts.
-	* @param agent - newly started exact live Agent.
-	* @param signal - shared runtime cancellation.
-	*/
-	async recoverFor(agent, signal) {
-		signal.throwIfAborted();
-		const membership = this.tryMembership(agent);
-		if (membership?.role === "lead") await this.reconcileProvisioning(membership.root, signal);
-	}
-	/**
-	* Interrupt one live teammate turn without clearing its pending inbox.
-	* @param caller - exact live Lead Agent.
-	* @param targetName - durable teammate name.
-	* @returns the target status sampled before cancellation.
-	*/
-	interrupt(caller, targetName) {
-		const membership = this.membership(caller);
-		if (membership.role !== "lead") throw new TeamError("only the Team Lead can interrupt teammates", "TEAM_LEAD_REQUIRED");
-		const state = this.journal.state(membership.root);
-		const target = resolveActiveMember(membership.root, state, targetName);
-		if (target.id === membership.root.id) throw new TeamError("the Team Lead cannot interrupt itself", "TEAM_INVALID_TARGET");
-		const live = this.ctx.agents.get(target.id);
-		if (live === void 0) return { previousStatus: "inactive" };
-		const previousStatus = availability(live);
-		this.ctx.subagents.interrupt(target.id, {
-			kind: "ancestor",
-			agent: caller
-		});
-		return { previousStatus };
-	}
-	/**
-	* Group exact live roster children by their current Lead for runtime teardown.
-	* @returns each live Lead and the roster child ids currently in the Agent registry.
-	*/
-	liveChildrenByRoot() {
-		const teams = /* @__PURE__ */ new Map();
-		for (const agent of this.ctx.agents.list()) {
-			const rootId = agent.session.header.parentSession;
-			if (rootId === void 0) continue;
-			const root = this.ctx.agents.get(rootId);
-			if (root === void 0 || !this.journal.state(root).members.some((member) => member.id === agent.id)) continue;
-			const children = teams.get(root) ?? [];
-			children.push(agent.id);
-			teams.set(root, children);
-		}
-		return teams;
-	}
-	/**
-	* Release exact teammate Activations through the continuation lifecycle owner.
-	* @param root - exact live Team Lead authorizing release.
-	* @param childIds - selected roster child ids.
-	*/
-	async stopTeammates(root, childIds) {
-		await this.lifecycle.withTimeout(this.ctx.subagents.drainContinuableChildren(root, childIds));
-	}
-	/** Perform one creation admitted before the Team runtime disposal cutoff. */
-	async spawnAdmitted(caller, request) {
-		const membership = this.membership(caller);
-		if (membership.role !== "lead") throw new TeamError("only the Team Lead can create teammates", "TEAM_LEAD_REQUIRED");
-		const signal = AbortSignal.any([request.signal, this.lifecycle.signal]);
-		signal.throwIfAborted();
-		const root = membership.root;
-		const name = this.memberName(request.name);
-		const description = requiredText(request.description, "description", 200);
-		const childId = brandString(randomUUID());
-		const member = {
-			id: childId,
-			name,
-			description,
-			provider: requiredText(request.provider, "provider", 200),
-			context: request.context,
-			phase: "provisioning"
-		};
-		await this.journal.transact(root.id, async () => {
-			const state = this.journal.state(root);
-			if (state.members.some((member) => member.name === name)) throw new TeamError(`teammate name "${name}" was already used in this Team`, "TEAM_MEMBER_NAME_TAKEN");
-			if (state.members.length >= this.maxMembers) throw new TeamError(`Team member limit ${this.maxMembers} reached`, "TEAM_MEMBER_LIMIT");
-			await this.journal.appendAndFlush(root, "team/member", {
-				version: 2,
-				teamId: TeamId(root.id),
-				member
-			});
-		});
-		let started;
-		try {
-			started = await this.ctx.subagents.startContinuable({
-				childId,
-				provider: request.provider,
-				label: description,
-				request: {
-					prompt: request.prompt,
-					...(request.agentOptions === undefined ? {} : {agentOptions: request.agentOptions}),
-					parent: root
-				},
-				signal
-			});
-			await this.checkpointInitialPrompt(childId, started.messageId, signal);
-		} catch (error) {
-			const failed = {
-				...member,
-				phase: "failed",
-				error: errorMessage(error)
-			};
-			try {
-				const phase = await this.settleProvisioning(root, failed);
-				await this.stopTeammates(root, [childId]);
-				if (phase === "active") throw new TeamError(`teammate "${name}" became active while its creator reported failure`, "TEAM_PROVISIONING_CONFLICT", { cause: error });
-			} catch (recordError) {
-				throw new AggregateError([error, recordError], "teammate creation and durable failure recording both failed");
-			}
-			throw error;
-		}
-		const active = {
-			...member,
-			phase: "active"
-		};
-		if (await this.settleProvisioning(root, active) === "failed") {
-			const conflict = new TeamError(`teammate "${name}" was reconciled as failed while creation was in progress`, "TEAM_PROVISIONING_CONFLICT");
-			try {
-				await this.stopTeammates(root, [childId]);
-			} catch (cleanupError) {
-				/* v8 ignore next -- requires the independently tested HMR settlement conflict and cleanup failure together. */
-				throw new AggregateError([conflict, cleanupError], "provisioning conflict cleanup failed");
-			}
-			throw conflict;
-		}
-		return { member: this.memberView(active) };
-	}
-	/** Flush the accepted initial inbox item before the Lead can commit `active`. */
-	async checkpointInitialPrompt(childId, messageId, signal) {
-		while (true) {
-			signal.throwIfAborted();
-			const session = this.ctx.sessions.get(childId);
-			if (session === void 0) {
-				const stored = await readPersistedSession(this.ctx.sessionPersistence, childId, signal);
-				if (messageAccepted(stored.events.slice(stored.inheritedEventCount), (message) => message.id === messageId)) return;
-				throw new TeamError(`teammate "${childId}" initial prompt was not durably accepted`, "TEAM_PROVISIONING_CONFLICT");
-			}
-			const progress = Promise.withResolvers();
-			progress.promise.catch(() => void 0);
-			const stopEvent = this.ctx.on("session/event", (candidate) => {
-				if (candidate === session) progress.resolve();
-			});
-			const stopDisposed = this.ctx.on("session/disposed", (candidate) => {
-				if (candidate === session) progress.resolve();
-			});
-			const onAbort = () => {
-				const reason = signal.reason;
-				progress.reject(reason instanceof Error ? reason : new TeamError(`teammate creation aborted: ${errorMessage(reason)}`, "TEAM_DISPOSED"));
-			};
-			signal.addEventListener("abort", onAbort, { once: true });
-			try {
-				signal.throwIfAborted();
-				await this.ctx.sessions.flush(session);
-				if (messageAccepted(session.snapshotEvents(session.inheritedEventCount), (message) => message.id === messageId)) return;
-				if (this.ctx.sessions.get(childId) !== session) continue;
-				await progress.promise;
-			} finally {
-				signal.removeEventListener("abort", onAbort);
-				stopDisposed();
-				stopEvent();
-			}
-		}
-	}
-	/** Settle provisioning-only members from their independently durable child Sessions. */
-	async reconcileProvisioning(root, signal) {
-		const provisioning = this.journal.state(root).members.filter((member) => member.phase === "provisioning");
-		for (const member of provisioning) {
-			signal.throwIfAborted();
-			if (this.ctx.agents.get(member.id) !== void 0) continue;
-			let phase = "failed";
-			let failure = "provisioning did not leave a resumable child Session";
-			try {
-				const loaded = await readPersistedSession(this.ctx.sessionPersistence, member.id, signal);
-				const suffix = loaded.events.slice(loaded.inheritedEventCount);
-				const descriptor = foldSubagentDescriptor(suffix);
-				const acceptedInitialPrompt = messageAccepted(suffix, (message) => message.source.kind === "user");
-				if (loaded.header.parentSession === root.id && descriptor?.mode === "continuable" && descriptor.provider === member.provider && acceptedInitialPrompt) phase = "active";
-				else failure = "persisted child Session does not match the provisioned continuation";
-			} catch (error) {
-				failure = `child Session recovery failed: ${errorMessage(error)}`;
-			}
-			signal.throwIfAborted();
-			await this.journal.transact(root.id, async () => {
-				signal.throwIfAborted();
-				const current = this.journal.state(root).members.find((candidate) => candidate.id === member.id);
-				if (current?.phase !== "provisioning") return;
-				const settled = {
-					...current,
-					phase,
-					...phase === "failed" ? { error: failure } : {}
-				};
-				await this.journal.appendAndFlush(root, "team/member", {
-					version: 2,
-					teamId: TeamId(root.id),
-					member: settled
-				});
-			});
-		}
-	}
-	/** Build one runtime member row after successful creation. */
-	memberView(member) {
-		const live = this.ctx.agents.get(member.id);
-		return {
-			id: member.id,
-			name: member.name,
-			role: "teammate",
-			status: availability(live),
-			description: member.description,
-			provider: member.provider,
-			context: member.context,
-			...live?.options.model === void 0 ? {} : { model: live.options.model },
-			diagnostics: []
-		};
-	}
-	/** Validate a never-reused model-facing teammate name. */
-	memberName(value) {
-		if (!MEMBER_NAME.test(value) || value.length > 64 || value === "lead") throw new TeamError("teammate name must be lower-kebab-case, at most 64 characters, and not \"lead\"", "TEAM_INVALID_MEMBER_NAME");
-		return value;
-	}
-	/** Append one terminal provisioning edge unless recovery already settled it. */
-	async settleProvisioning(root, terminal) {
-		return this.journal.transact(root.id, async () => {
-			const current = this.journal.state(root).members.find((member) => member.id === terminal.id);
-			/* v8 ignore next 3 -- the append-only provisioning event is committed by this operation before settlement. */
-			if (current === void 0) throw new TeamError(`provisioned teammate "${terminal.id}" disappeared`, "TEAM_PROVISIONING_CONFLICT");
-			if (current.phase !== "provisioning") return current.phase;
-			await this.journal.appendAndFlush(root, "team/member", {
-				version: 2,
-				teamId: TeamId(root.id),
-				member: terminal
-			});
-			return terminal.phase === "active" ? "active" : "failed";
-		});
-	}
-	/** Whether a Session's own suffix identifies a provider-owned subagent child. */
-	subagentDescriptor(agent) {
-		return foldSubagentDescriptor(agent.session.snapshotEvents(agent.session.inheritedEventCount)) !== void 0;
-	}
-};
-/** Turn availability is independent of whether the Agent is loaded. */
-function availability(agent) {
-	return agent?.status === "running" ? "running" : "inactive";
-}
-//#endregion
-//#region lib/types/mailbox.js
-/** Durable Team mailbox admission, target-local dispatch, acknowledgement, and recovery. */
-/** Owns every process-local state transition for the durable Team mailbox. */
-var TeamMailbox = class {
-	ctx;
-	journal;
-	roster;
-	lifecycle;
-	maxPendingMessagesPerMember;
-	maxMessageBytes;
-	dispatchTails = /* @__PURE__ */ new Map();
-	inFlightMessages = /* @__PURE__ */ new Set();
-	inFlightDispatches = /* @__PURE__ */ new Set();
-	/**
-	* @param ctx - Team service context with Agent, Session, persistence, and subagent services.
-	* @param journal - authoritative Lead-log transaction owner.
-	* @param roster - Team membership and member-name resolver.
-	* @param lifecycle - shared Team runtime admission cutoff.
-	* @param maxPendingMessagesPerMember - per-target queued-minus-delivered limit.
-	* @param maxMessageBytes - maximum complete sender-framed delivery size.
-	*/
-	constructor(ctx, journal, roster, lifecycle, maxPendingMessagesPerMember, maxMessageBytes) {
-		this.ctx = ctx;
-		this.journal = journal;
-		this.roster = roster;
-		this.lifecycle = lifecycle;
-		this.maxPendingMessagesPerMember = maxPendingMessagesPerMember;
-		this.maxMessageBytes = maxMessageBytes;
-	}
-	/**
-	* Queue one durable peer message, then attempt immediate delivery.
-	* @param caller - exact live sending Team member.
-	* @param request - target name, content, and pre-queue cancellation.
-	* @returns durable message identity and immediate-delivery observation.
-	*/
-	async send(caller, request) {
-		if (this.lifecycle.disposed) throw new TeamError("Agent Teams service is disposing", "TEAM_DISPOSED");
-		const operation = this.sendAdmitted(caller, {
-			...request,
-			signal: AbortSignal.any([request.signal, this.lifecycle.signal])
-		});
-		return await this.trackDispatch(operation);
-	}
-	/**
-	* Observe target-side durable receipts and checkpoint their Lead-log acknowledgement.
-	* @param session - exact target Session receiving the event.
-	* @param event - newly appended Session event.
-	*/
-	observeSessionEvent(session, event) {
-		if (this.lifecycle.disposed || event.type !== "user/message" || event.data.source.kind !== "team-message") return;
-		const source = event.data.source;
-		const acknowledgement = Promise.resolve().then(async () => {
-			const root = this.ctx.agents.get(brandString(source.teamId));
-			if (root !== void 0) await this.checkpointDelivered(root, session, source.messageId);
-		}).catch((error) => {
-			this.ctx.logger.warn(`Team message "${source.messageId}" acknowledgement failed: ${errorMessage(error)}`);
-		});
-		this.trackDispatch(acknowledgement);
-	}
-	/**
-	* Retry durable pending messages relevant to one started Team member.
-	* @param agent - newly started exact live Agent.
-	* @param signal - shared runtime cancellation.
-	*/
-	async recoverFor(agent, signal) {
-		signal.throwIfAborted();
-		const membership = this.roster.tryMembership(agent);
-		if (membership === void 0) return;
-		const state = this.journal.state(membership.root);
-		const messages = state.messages.filter((message) => !state.delivered.includes(message.id) && (membership.role === "lead" || message.targetId === agent.id));
-		for (const message of messages) {
-			signal.throwIfAborted();
-			await this.tryDispatch(membership.root, message, signal);
-		}
-	}
-	/**
-	* Return admitted dispatch and acknowledgement operations captured for disposal.
-	* @returns detached snapshot ordered only by Set insertion.
-	*/
-	pendingDispatches() {
-		return [...this.inFlightDispatches];
-	}
-	/** Queue and dispatch one mailbox item admitted before the disposal cutoff. */
-	async sendAdmitted(caller, request) {
-		const membership = this.roster.membership(caller);
-		request.signal.throwIfAborted();
-		const root = membership.root;
-		const content = structuredClone(request.content);
-		const queued = await this.journal.transact(root.id, async () => {
-			request.signal.throwIfAborted();
-			const state = this.journal.state(root);
-			const target = resolveActiveMember(root, state, request.target);
-			if (target.id === caller.id) throw new TeamError("a Team member cannot message itself", "TEAM_SELF_MESSAGE");
-			const pendingForTarget = state.messages.filter((candidate) => candidate.targetId === target.id && !state.delivered.includes(candidate.id)).length;
-			if (pendingForTarget >= this.maxPendingMessagesPerMember) throw new TeamError(`teammate "${target.name}" has ${pendingForTarget} pending messages`, "TEAM_MAILBOX_FULL");
-			const queued = {
-				id: TeamMessageId(`team-message-${randomUUID()}`),
-				senderId: caller.id,
-				senderName: membership.name,
-				targetId: target.id,
-				content
-			};
-			if (Buffer.byteLength(JSON.stringify(this.deliveryContent(queued)), "utf8") > this.maxMessageBytes) throw new TeamError(`team message exceeds ${this.maxMessageBytes} bytes`, "TEAM_MESSAGE_TOO_LARGE");
-			await this.journal.appendAndFlush(root, "team/message/queued", {
-				version: 2,
-				teamId: TeamId(root.id),
-				message: queued
-			});
-			return {
-				message: queued,
-				dispatch: this.tryDispatch(root, queued, request.signal)
-			};
-		});
-		const accepted = await queued.dispatch;
-		return {
-			messageId: queued.message.id,
-			status: accepted ? "accepted" : "queued"
-		};
-	}
-	/** Attempt one queued message exactly once in this process at a time. */
-	tryDispatch(root, message, signal) {
-		if (this.lifecycle.disposed) return Promise.resolve(false);
-		if (this.inFlightMessages.has(message.id)) return Promise.resolve(false);
-		this.inFlightMessages.add(message.id);
-		const operation = this.trackDispatch(this.tryDispatchAdmitted(root, message, AbortSignal.any([signal, this.lifecycle.signal])));
-		const forget = () => {
-			this.inFlightMessages.delete(message.id);
-		};
-		operation.then(forget, forget);
-		return operation;
-	}
-	/** Track one dispatch transaction through delivery admission or contained failure. */
-	trackDispatch(operation) {
-		this.inFlightDispatches.add(operation);
-		operation.then(() => {
-			this.inFlightDispatches.delete(operation);
-		}, () => {
-			this.inFlightDispatches.delete(operation);
-		});
-		return operation;
-	}
-	/** Attempt one queued message admitted before the service lifecycle cutoff. */
-	async tryDispatchAdmitted(root, message, signal) {
-		return await this.serializeDispatch(message, () => this.dispatchThrough(root, message, signal));
-	}
-	/** Serialize delivery admission for one durable target in queued order. */
-	async serializeDispatch(message, operation) {
-		const targetId = message.targetId;
-		/* v8 ignore next -- dispatch tails absorb rejection, so the recovery callback is a fail-safe backstop. */
-		const run = (this.dispatchTails.get(targetId) ?? Promise.resolve()).then(operation, operation);
-		/* v8 ignore next -- dispatchOnce contains delivery failures and serializeDispatch itself does not throw. */
-		const tail = run.then(() => void 0, () => void 0);
-		this.dispatchTails.set(targetId, tail);
-		try {
-			return await run;
-		} finally {
-			if (this.dispatchTails.get(targetId) === tail) this.dispatchTails.delete(targetId);
-		}
-	}
-	/** Deliver every pending target message through `message` in durable queue order. */
-	async dispatchThrough(root, message, signal) {
-		const state = this.journal.state(root);
-		const pending = state.messages.filter((candidate) => candidate.targetId === message.targetId && !state.delivered.includes(candidate.id));
-		const requested = pending.findIndex((candidate) => candidate.id === message.id);
-		if (requested < 0) return state.delivered.includes(message.id);
-		for (const candidate of pending.slice(0, requested + 1)) {
-			const ownsInFlight = !this.inFlightMessages.has(candidate.id);
-			if (ownsInFlight) this.inFlightMessages.add(candidate.id);
-			try {
-				if (!await this.dispatchOnce(root, candidate, signal)) return false;
-			} finally {
-				if (ownsInFlight) this.inFlightMessages.delete(candidate.id);
-			}
-		}
-		return true;
-	}
-	/** Attempt one queued delivery after target-local ordering admits it. */
-	async dispatchOnce(root, message, signal) {
-		try {
-			const target = message.targetId === root.id ? root : this.ctx.agents.get(message.targetId);
-			if (target !== void 0 && this.targetRecorded(target.session, message.id)) return await this.checkpointDelivered(root, target.session, message.id);
-			const source = {
-				kind: "team-message",
-				teamId: TeamId(root.id),
-				messageId: message.id,
-				senderId: message.senderId,
-				senderName: message.senderName
-			};
-			const content = this.deliveryContent(message);
-			if (message.targetId === root.id) {
-				const input = createUserMessage({
-					content,
-					source
-				});
-				root.steer(input);
-				return await this.checkpointDelivered(root, root.session, message.id);
-			}
-			if (target === void 0) {
-				const recorded = await this.persistedTargetRecorded(message.targetId, message.id, signal);
-				if (recorded === void 0) return false;
-				if (recorded) {
-					await this.markDelivered(root, message.id, message.targetId);
-					return true;
-				}
-			}
-			await steerHostSubagentPrompt(this.ctx.subagents, root, message.targetId, content, source, signal);
-			return target === void 0 ? true : await this.checkpointDelivered(root, target.session, message.id);
-		} catch (error) {
-			this.ctx.logger.warn(`team message "${message.id}" remains queued: ${errorMessage(error)}`);
-			return false;
-		}
-	}
-	/** Flush one live target receipt before the Lead records its delivered edge. */
-	async checkpointDelivered(root, target, messageId) {
-		await this.ctx.sessions.flush(target);
-		if (!this.targetRecorded(target, messageId)) return false;
-		await this.markDelivered(root, messageId, target.id);
-		return true;
-	}
-	/** Record delivery unless the acknowledgement already exists. */
-	async markDelivered(root, messageId, targetId) {
-		await this.journal.transact(root.id, async () => {
-			const state = this.journal.state(root);
-			if (state.delivered.includes(messageId)) return;
-			const queued = state.messages.find((message) => message.id === messageId);
-			if (queued === void 0 || queued.targetId !== targetId) return;
-			await this.journal.appendAndFlush(root, "team/message/delivered", {
-				version: 2,
-				teamId: TeamId(root.id),
-				messageId,
-				targetId
-			});
-		});
-	}
-	/** Whether a target Session already contains the durable message identity. */
-	targetRecorded(session, messageId) {
-		return messageAccepted(session.snapshotEvents(session.inheritedEventCount), (message) => message.source.kind === "team-message" && message.source.messageId === messageId);
-	}
-	/** Frame peer content with stable sender and message identity for the receiving model. */
-	deliveryContent(message) {
-		return [{
-			type: "text",
-			text: `Team message ${message.id} from ${message.senderName}:`
-		}, ...structuredClone(message.content)];
-	}
-	/** Read an inactive target's durable log before cold resume; uncertainty keeps the mailbox queued. */
-	async persistedTargetRecorded(targetId, messageId, signal) {
-		try {
-			const stored = await readPersistedSession(this.ctx.sessionPersistence, targetId, signal);
-			return messageAccepted(stored.events.slice(stored.inheritedEventCount), (message) => message.source.kind === "team-message" && message.source.messageId === messageId);
-		} catch (error) {
-			this.ctx.logger.warn(`cannot read Team message target "${targetId}": ${errorMessage(error)}`);
-			return;
-		}
-	}
-};
 //#endregion
 //#region lib/types/task-graph.js
 /** Complete dependency validation for current Team task snapshots. */
@@ -1439,6 +736,460 @@ const teamProjectionDefinition = {
 	}
 };
 //#endregion
+//#region lib/types/persisted.js
+/** Short-lived read-handle access to persisted Team member Sessions. */
+/**
+* Read one stored session's header and complete event log through a
+* short-lived read handle, closing the handle before returning.
+* @param persistence - the durable session store.
+* @param id - the stored session to read.
+* @param signal - cancellation observed by open and read.
+* @returns the stored header and every committed event.
+*/
+async function readPersistedSession(persistence, id, signal) {
+	const handle = await persistence.open(id, "read", { signal });
+	try {
+		const { events } = await handle.read(0, void 0, { signal });
+		return {
+			header: handle.header,
+			inheritedEventCount: handle.inheritedEventCount,
+			events
+		};
+	} finally {
+		await handle.close();
+	}
+}
+//#endregion
+//#region lib/types/session-message.js
+/** Durable Session-message acceptance checks for teammate provisioning. */
+/** Fold the durable inbox suffix into the messages still awaiting a claim. */
+function pendingInboxMessages(events) {
+	const inbox = {
+		"next-turn": [],
+		"next-step": []
+	};
+	for (const event of events) {
+		if (event.type !== "agent/inbox/spliced") continue;
+		inbox[event.data.target].splice(event.data.start, event.data.removedCount ?? 0, ...event.data.inserted);
+	}
+	return [...inbox["next-turn"], ...inbox["next-step"]];
+}
+/**
+* Test whether one message is model-visible or still durably pending.
+* @param events - one Session's non-inherited event suffix.
+* @param predicate - identity check for the accepted message.
+* @returns whether history or the current inbox contains a match.
+*/
+function messageAccepted(events, predicate) {
+	return events.some((event) => event.type === "user/message" && predicate(event.data)) || pendingInboxMessages(events).some(predicate);
+}
+//#endregion
+//#region lib/types/validation.js
+/** Input normalization shared by Team roster and task commands. */
+/**
+* Normalize one required human-authored string.
+* @param value - raw input value.
+* @param field - diagnostic field name.
+* @param maxLength - maximum normalized character count.
+* @returns trimmed non-empty text.
+*/
+function requiredText(value, field, maxLength) {
+	const text = value.trim();
+	if (text.length === 0) throw new TeamError(`${field} must be non-empty`, "TEAM_INVALID_ARGUMENT");
+	if (text.length > maxLength) throw new TeamError(`${field} exceeds ${maxLength} characters`, "TEAM_INVALID_ARGUMENT");
+	return text;
+}
+/**
+* Normalize one workspace-relative path prefix without treating it as a lock.
+* @param value - user-authored path prefix.
+* @returns normalized slash-separated prefix.
+*/
+function writeScope(value) {
+	const normalized = value.replaceAll("\\", "/").replace(/^\.\//u, "").replace(/\/+$/u, "");
+	const segments = normalized.split("/");
+	if (normalized.length === 0 || normalized.startsWith("/") || /^[a-z]:/iu.test(normalized) || segments.some((segment) => segment.length === 0 || segment === "." || segment === "..")) throw new TeamError(`invalid workspace-relative write scope ${JSON.stringify(value)}`, "TEAM_INVALID_WRITE_SCOPE");
+	return normalized;
+}
+//#endregion
+//#region lib/types/roster.js
+/** Team membership, continuable-child provisioning, and roster-owned teardown. */
+const MEMBER_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+/**
+* Resolve one active Team member by model-facing name, including the Lead pseudo-row.
+* @param root - exact live Team Lead.
+* @param state - current Team state.
+* @param rawName - candidate member name.
+* @returns resolved durable id and normalized name.
+*/
+function resolveActiveMember(root, state, rawName) {
+	const name = rawName.trim();
+	if (name === "lead") return {
+		id: root.id,
+		name
+	};
+	const member = state.members.find((candidate) => candidate.name === name);
+	if (member === void 0 || member.phase !== "active") throw new TeamError(`active teammate "${name}" not found`, "TEAM_MEMBER_NOT_FOUND");
+	return {
+		id: member.id,
+		name
+	};
+}
+/** Owns Team identities and the lifecycle of rostered continuable children. */
+var TeamRoster = class {
+	ctx;
+	journal;
+	lifecycle;
+	maxMembers;
+	/**
+	* @param ctx - Team service context with Agent, Session, persistence, and subagent services.
+	* @param journal - authoritative Lead-log transaction owner.
+	* @param lifecycle - shared Team runtime admission cutoff.
+	* @param maxMembers - maximum immutable roster entries per Team.
+	*/
+	constructor(ctx, journal, lifecycle, maxMembers) {
+		this.ctx = ctx;
+		this.journal = journal;
+		this.lifecycle = lifecycle;
+		this.maxMembers = maxMembers;
+	}
+	/**
+	* Resolve one exact live Agent's Team role.
+	* @param agent - exact live Agent used as the authority credential.
+	* @returns its root, Team identity, role, and model-facing name.
+	*/
+	membership(agent) {
+		const membership = this.tryMembership(agent);
+		if (membership === void 0) throw new TeamError(`agent "${agent.id}" is not a member of an active Agent Team`, "TEAM_NOT_MEMBER");
+		return membership;
+	}
+	/**
+	* Resolve a caller without throwing for scoped installation and lifecycle observers.
+	* @param agent - candidate exact live Agent.
+	* @returns Team membership, or undefined for non-Team subagents and stale identities.
+	*/
+	tryMembership(agent) {
+		if (this.ctx.agents.get(agent.id) !== agent) return void 0;
+		try {
+			const parentId = agent.session.header.parentSession;
+			if (parentId !== void 0) {
+				const root = this.ctx.agents.get(parentId);
+				if (root !== void 0) {
+					const member = this.journal.state(root).members.find((candidate) => candidate.id === agent.id);
+					if (member?.phase === "active" || member?.phase === "provisioning") return {
+						root,
+						id: TeamId(root.id),
+						role: "teammate",
+						name: member.name
+					};
+					if (this.subagentDescriptor(agent)) return void 0;
+					return {
+						root: agent,
+						id: TeamId(agent.id),
+						role: "lead",
+						name: "lead"
+					};
+				}
+			}
+			if (this.subagentDescriptor(agent)) return void 0;
+			return {
+				root: agent,
+				id: TeamId(agent.id),
+				role: "lead",
+				name: "lead"
+			};
+		} catch {
+			return;
+		}
+	}
+	/**
+	* List the runtime-enriched roster visible to one Team member.
+	* @param membership - exact caller membership resolved by this roster.
+	* @returns Lead and teammate rows in creation order.
+	*/
+	list(membership) {
+		const { root } = membership;
+		const state = this.journal.state(root);
+		const result = [{
+			id: root.id,
+			name: "lead",
+			role: "lead",
+			status: availability(root),
+			...root.options.model === void 0 ? {} : { model: root.options.model },
+			diagnostics: []
+		}];
+		for (const member of state.members) {
+			const live = this.ctx.agents.get(member.id);
+			const model = live?.options.model ?? root.options.model;
+			result.push({
+				id: member.id,
+				name: member.name,
+				role: "teammate",
+				status: member.phase === "failed" ? "failed" : member.phase === "provisioning" ? "provisioning" : availability(live),
+				description: member.description,
+				provider: member.provider,
+				context: member.context,
+				...model === void 0 ? {} : { model },
+				diagnostics: member.error === void 0 ? [] : [member.error]
+			});
+		}
+		return result;
+	}
+	/**
+	* Create one named, continuable direct child of the Team Lead.
+	* @param caller - exact live Lead Agent.
+	* @param request - immutable name, description, prompt, context mode, provider, and cancellation.
+	* @returns the active roster row.
+	*/
+	async spawn(caller, request) {
+		if (this.lifecycle.disposed) throw new TeamError("Agent Teams service is disposing", "TEAM_DISPOSED");
+		return await this.lifecycle.track(this.spawnAdmitted(caller, request));
+	}
+	/**
+	* Reconcile provisioning state when one Team member Session starts.
+	* @param agent - newly started exact live Agent.
+	* @param signal - shared runtime cancellation.
+	*/
+	async recoverFor(agent, signal) {
+		signal.throwIfAborted();
+		const membership = this.tryMembership(agent);
+		if (membership?.role === "lead") await this.reconcileProvisioning(membership.root, signal);
+	}
+	/**
+	* Interrupt one live teammate turn without clearing its pending inbox.
+	* @param caller - exact live Lead Agent.
+	* @param targetName - durable teammate name.
+	* @returns the target status sampled before cancellation.
+	*/
+	interrupt(caller, targetName) {
+		const membership = this.membership(caller);
+		if (membership.role !== "lead") throw new TeamError("only the Team Lead can interrupt teammates", "TEAM_LEAD_REQUIRED");
+		const state = this.journal.state(membership.root);
+		const target = resolveActiveMember(membership.root, state, targetName);
+		if (target.id === membership.root.id) throw new TeamError("the Team Lead cannot interrupt itself", "TEAM_INVALID_TARGET");
+		const live = this.ctx.agents.get(target.id);
+		if (live === void 0) return { previousStatus: "inactive" };
+		const previousStatus = availability(live);
+		this.ctx.subagents.interrupt(target.id, {
+			kind: "ancestor",
+			agent: caller
+		});
+		return { previousStatus };
+	}
+	/**
+	* Group exact live roster children by their current Lead for runtime teardown.
+	* @returns each live Lead and the roster child ids currently in the Agent registry.
+	*/
+	liveChildrenByRoot() {
+		const teams = /* @__PURE__ */ new Map();
+		for (const agent of this.ctx.agents.list()) {
+			const rootId = agent.session.header.parentSession;
+			if (rootId === void 0) continue;
+			const root = this.ctx.agents.get(rootId);
+			if (root === void 0 || !this.journal.state(root).members.some((member) => member.id === agent.id)) continue;
+			const children = teams.get(root) ?? [];
+			children.push(agent.id);
+			teams.set(root, children);
+		}
+		return teams;
+	}
+	/**
+	* Release exact teammate Activations through the continuation lifecycle owner.
+	* @param root - exact live Team Lead authorizing release.
+	* @param childIds - selected roster child ids.
+	*/
+	async stopTeammates(root, childIds) {
+		await this.lifecycle.withTimeout(this.ctx.subagents.drainChildren(root, childIds));
+	}
+	/** Perform one creation admitted before the Team runtime disposal cutoff. */
+	async spawnAdmitted(caller, request) {
+		const membership = this.membership(caller);
+		if (membership.role !== "lead") throw new TeamError("only the Team Lead can create teammates", "TEAM_LEAD_REQUIRED");
+		const signal = AbortSignal.any([request.signal, this.lifecycle.signal]);
+		signal.throwIfAborted();
+		const root = membership.root;
+		const name = this.memberName(request.name);
+		const description = requiredText(request.description, "description", 200);
+		const childId = brandString(randomUUID());
+		const member = {
+			id: childId,
+			name,
+			description,
+			provider: requiredText(request.provider, "provider", 200),
+			context: request.context,
+			phase: "provisioning"
+		};
+		await this.journal.transact(root.id, async () => {
+			const state = this.journal.state(root);
+			if (state.members.some((member) => member.name === name)) throw new TeamError(`teammate name "${name}" was already used in this Team`, "TEAM_MEMBER_NAME_TAKEN");
+			if (state.members.length >= this.maxMembers) throw new TeamError(`Team member limit ${this.maxMembers} reached`, "TEAM_MEMBER_LIMIT");
+			await this.journal.appendAndFlush(root, "team/member", {
+				version: 2,
+				teamId: TeamId(root.id),
+				member
+			});
+		});
+		try {
+			const started = await this.ctx.subagents.startActivation({
+				delivery: "parent",
+				childId,
+				provider: request.provider,
+				label: description,
+				request: {
+					prompt: request.prompt,
+                    ...(request.agentOptions === undefined ? {} : {agentOptions: request.agentOptions}),
+					parent: root
+				},
+				signal
+			});
+			await this.checkpointInitialPrompt(childId, started.messageId, signal);
+		} catch (error) {
+			const failed = {
+				...member,
+				phase: "failed",
+				error: errorMessage(error)
+			};
+			try {
+				const phase = await this.settleProvisioning(root, failed);
+				await this.stopTeammates(root, [childId]);
+				if (phase === "active") throw new TeamError(`teammate "${name}" became active while its creator reported failure`, "TEAM_PROVISIONING_CONFLICT", { cause: error });
+			} catch (recordError) {
+				throw new AggregateError([error, recordError], "teammate creation and durable failure recording both failed");
+			}
+			throw error;
+		}
+		const active = {
+			...member,
+			phase: "active"
+		};
+		if (await this.settleProvisioning(root, active) === "failed") {
+			const conflict = new TeamError(`teammate "${name}" was reconciled as failed while creation was in progress`, "TEAM_PROVISIONING_CONFLICT");
+			try {
+				await this.stopTeammates(root, [childId]);
+			} catch (cleanupError) {
+				/* v8 ignore next -- requires the independently tested HMR settlement conflict and cleanup failure together. */
+				throw new AggregateError([conflict, cleanupError], "provisioning conflict cleanup failed");
+			}
+			throw conflict;
+		}
+		return { member: this.memberView(active) };
+	}
+	/** Flush the accepted initial inbox item before the Lead can commit `active`. */
+	async checkpointInitialPrompt(childId, messageId, signal) {
+		while (true) {
+			signal.throwIfAborted();
+			const session = this.ctx.sessions.get(childId);
+			if (session === void 0) {
+				const stored = await readPersistedSession(this.ctx.sessionPersistence, childId, signal);
+				if (messageAccepted(stored.events.slice(stored.inheritedEventCount), (message) => message.id === messageId)) return;
+				throw new TeamError(`teammate "${childId}" initial prompt was not durably accepted`, "TEAM_PROVISIONING_CONFLICT");
+			}
+			const progress = Promise.withResolvers();
+			progress.promise.catch(() => void 0);
+			const stopEvent = this.ctx.on("session/event", (candidate) => {
+				if (candidate === session) progress.resolve();
+			});
+			const stopDisposed = this.ctx.on("session/disposed", (candidate) => {
+				if (candidate === session) progress.resolve();
+			});
+			const onAbort = () => {
+				const reason = signal.reason;
+				progress.reject(reason instanceof Error ? reason : new TeamError(`teammate creation aborted: ${errorMessage(reason)}`, "TEAM_DISPOSED"));
+			};
+			signal.addEventListener("abort", onAbort, { once: true });
+			try {
+				signal.throwIfAborted();
+				await this.ctx.sessions.flush(session);
+				if (messageAccepted(session.snapshotEvents(session.inheritedEventCount), (message) => message.id === messageId)) return;
+				if (this.ctx.sessions.get(childId) !== session) continue;
+				await progress.promise;
+			} finally {
+				signal.removeEventListener("abort", onAbort);
+				stopDisposed();
+				stopEvent();
+			}
+		}
+	}
+	/** Settle provisioning-only members from their independently durable child Sessions. */
+	async reconcileProvisioning(root, signal) {
+		const provisioning = this.journal.state(root).members.filter((member) => member.phase === "provisioning");
+		for (const member of provisioning) {
+			signal.throwIfAborted();
+			if (this.ctx.agents.get(member.id) !== void 0) continue;
+			let phase = "failed";
+			let failure = "provisioning did not leave a resumable child Session";
+			try {
+				const loaded = await readPersistedSession(this.ctx.sessionPersistence, member.id, signal);
+				const suffix = loaded.events.slice(loaded.inheritedEventCount);
+				const descriptor = foldSubagentDescriptor(suffix);
+				const acceptedInitialPrompt = messageAccepted(suffix, (message) => message.source.kind === "user");
+				if (loaded.header.parentSession === root.id && descriptor?.mode === "continuable" && descriptor.provider === member.provider && acceptedInitialPrompt) phase = "active";
+				else failure = "persisted child Session does not match the provisioned continuation";
+			} catch (error) {
+				failure = `child Session recovery failed: ${errorMessage(error)}`;
+			}
+			signal.throwIfAborted();
+			await this.journal.transact(root.id, async () => {
+				signal.throwIfAborted();
+				const current = this.journal.state(root).members.find((candidate) => candidate.id === member.id);
+				if (current?.phase !== "provisioning") return;
+				const settled = {
+					...current,
+					phase,
+					...phase === "failed" ? { error: failure } : {}
+				};
+				await this.journal.appendAndFlush(root, "team/member", {
+					version: 2,
+					teamId: TeamId(root.id),
+					member: settled
+				});
+			});
+		}
+	}
+	/** Build one runtime member row after successful creation. */
+	memberView(member) {
+		const live = this.ctx.agents.get(member.id);
+		return {
+			id: member.id,
+			name: member.name,
+			role: "teammate",
+			status: availability(live),
+			description: member.description,
+			provider: member.provider,
+			context: member.context,
+			...live?.options.model === void 0 ? {} : { model: live.options.model },
+			diagnostics: []
+		};
+	}
+	/** Validate a never-reused model-facing teammate name. */
+	memberName(value) {
+		if (!MEMBER_NAME.test(value) || value.length > 64 || value === "lead") throw new TeamError("teammate name must be lower-kebab-case, at most 64 characters, and not \"lead\"", "TEAM_INVALID_MEMBER_NAME");
+		return value;
+	}
+	/** Append one terminal provisioning edge unless recovery already settled it. */
+	async settleProvisioning(root, terminal) {
+		return this.journal.transact(root.id, async () => {
+			const current = this.journal.state(root).members.find((member) => member.id === terminal.id);
+			/* v8 ignore next 3 -- the append-only provisioning event is committed by this operation before settlement. */
+			if (current === void 0) throw new TeamError(`provisioned teammate "${terminal.id}" disappeared`, "TEAM_PROVISIONING_CONFLICT");
+			if (current.phase !== "provisioning") return current.phase;
+			await this.journal.appendAndFlush(root, "team/member", {
+				version: 2,
+				teamId: TeamId(root.id),
+				member: terminal
+			});
+			return terminal.phase === "active" ? "active" : "failed";
+		});
+	}
+	/** Whether a Session's own suffix identifies a provider-owned subagent child. */
+	subagentDescriptor(agent) {
+		return foldSubagentDescriptor(agent.session.snapshotEvents(agent.session.inheritedEventCount)) !== void 0;
+	}
+};
+/** Turn availability is independent of whether the Agent is loaded. */
+function availability(agent) {
+	return agent?.status === "running" ? "running" : "inactive";
+}
+//#endregion
 //#region lib/types/task-board.js
 /** Shared Team task DAG commands and runtime-enriched views. */
 const TASK_GRAPH_ERROR_CODES = {
@@ -1666,10 +1417,9 @@ var TeamTaskBoard = class {
 };
 //#endregion
 //#region lib/types/index.js
-/** Agent Teams service façade over roster, mailbox, task, and runtime lifecycle owners. */
+/** Agent Teams service façade over roster, messaging, task, and runtime lifecycle owners. */
 const DEFAULT_MAX_MEMBERS = 16;
 const DEFAULT_MAX_TASKS = 256;
-const DEFAULT_MAX_PENDING_MESSAGES = 64;
 const DEFAULT_MAX_MESSAGE_BYTES = 65536;
 const DEFAULT_DISPOSAL_TIMEOUT_MS = 5e3;
 /** Validate one positive safe-integer deployment limit. */
@@ -1689,7 +1439,6 @@ var TeamService = class extends Service {
 	static Config = z.object({
 		maxMembers: z.number().step(1).min(1).default(DEFAULT_MAX_MEMBERS),
 		maxTasks: z.number().step(1).min(1).default(DEFAULT_MAX_TASKS),
-		maxPendingMessagesPerMember: z.number().step(1).min(1).default(DEFAULT_MAX_PENDING_MESSAGES),
 		maxMessageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_MESSAGE_BYTES),
 		disposalTimeoutMs: z.number().step(1).min(1).default(DEFAULT_DISPOSAL_TIMEOUT_MS)
 	});
@@ -1699,14 +1448,12 @@ var TeamService = class extends Service {
 	lifecycle;
 	journal;
 	roster;
-	mailbox;
 	tasks;
 	constructor(ctx, config = {}) {
 		super(ctx, "agentTeams");
 		this.config = {
 			maxMembers: positiveLimit("maxMembers", config.maxMembers ?? DEFAULT_MAX_MEMBERS),
 			maxTasks: positiveLimit("maxTasks", config.maxTasks ?? DEFAULT_MAX_TASKS),
-			maxPendingMessagesPerMember: positiveLimit("maxPendingMessagesPerMember", config.maxPendingMessagesPerMember ?? DEFAULT_MAX_PENDING_MESSAGES),
 			maxMessageBytes: positiveLimit("maxMessageBytes", config.maxMessageBytes ?? DEFAULT_MAX_MESSAGE_BYTES),
 			disposalTimeoutMs: positiveLimit("disposalTimeoutMs", config.disposalTimeoutMs ?? DEFAULT_DISPOSAL_TIMEOUT_MS)
 		};
@@ -1716,11 +1463,7 @@ var TeamService = class extends Service {
 			this.activity.notify(TeamId(root.id));
 		});
 		this.roster = new TeamRoster(ctx, this.journal, this.lifecycle, this.config.maxMembers);
-		this.mailbox = new TeamMailbox(ctx, this.journal, this.roster, this.lifecycle, this.config.maxPendingMessagesPerMember, this.config.maxMessageBytes);
 		this.tasks = new TeamTaskBoard(this.journal, this.config.maxTasks);
-		ctx.on("session/event", (session, event) => {
-			this.mailbox.observeSessionEvent(session, event);
-		});
 		ctx.on("agent/created", ({ agent }) => {
 			this.scheduleRecovery(agent);
 		});
@@ -1766,19 +1509,22 @@ var TeamService = class extends Service {
 		return await this.roster.spawn(caller, request);
 	}
 	/**
-	* Queue one durable peer message, then attempt immediate delivery.
+	* Steer one peer message into the target inbox or reject the attempt.
 	* @param caller - exact live sending Team member.
-	* @param request - target name, content, and pre-queue cancellation.
-	* @returns durable message identity and immediate-delivery observation.
+	* @param request - target name, content, and cancellation before acceptance.
+	* @returns accepted inbox identity; acceptance follows normal Agent persistence and does not await model processing.
 	*/
 	async sendMessage(caller, request) {
-		// Keep the scheduler master switch effective for the Team mailbox as well.
-		const scheduler = this.ctx.get("dshSubagentScheduler");
-		if (scheduler && !scheduler.config.delegationEnabled) {
-			const membership = this.roster.membership(caller);
-			if (!(membership.role === "teammate" && request.target === "lead")) scheduler.assertDelegation();
-		}
-		return await this.mailbox.send(caller, request);
+        const scheduler = this.ctx.get("dshSubagentScheduler");
+        if(scheduler && !scheduler.config.delegationEnabled){
+            const membership=this.roster.membership(caller);
+            if(!(membership.role === "teammate" && request.target === "lead")) scheduler.assertDelegation();
+        }
+		if (this.lifecycle.disposed) throw new TeamError("Agent Teams service is disposing", "TEAM_DISPOSED");
+		return await this.lifecycle.track(this.sendAdmitted(caller, {
+			...request,
+			signal: AbortSignal.any([request.signal, this.lifecycle.signal])
+		}));
 	}
 	/**
 	* Create one unowned pending task in the Team Lead log.
@@ -1843,28 +1589,51 @@ var TeamService = class extends Service {
 	tryMembership(agent) {
 		return this.roster.tryMembership(agent);
 	}
-	/** Queue one contained recovery pass after publication has unwound. */
+	/** Deliver an admitted send using the Lead's authority and the actual sender's identity. */
+	async sendAdmitted(caller, request) {
+		const membership = this.roster.membership(caller);
+		request.signal.throwIfAborted();
+		const { root } = membership;
+		const target = resolveActiveMember(root, this.journal.state(root), request.target);
+		if (target.id === caller.id) throw new TeamError("a Team member cannot message itself", "TEAM_SELF_MESSAGE");
+		const content = [{
+			type: "text",
+			text: `Team message from ${membership.name}:`
+		}, ...structuredClone(request.content)];
+		if (Buffer.byteLength(JSON.stringify(content), "utf8") > this.config.maxMessageBytes) throw new TeamError(`team message exceeds ${this.config.maxMessageBytes} bytes`, "TEAM_MESSAGE_TOO_LARGE");
+		const source = {
+			kind: "agent-message",
+			form: "relay",
+			senderSessionId: caller.id
+		};
+		let messageId;
+		if (target.id === root.id) {
+			const input = createUserMessage({
+				content,
+				source
+			});
+			root.steer(input);
+			messageId = input.id;
+		} else messageId = await steerHostSubagentPrompt(this.ctx.subagents, root, target.id, content, source, request.signal);
+		this.activity.notify(membership.id);
+		return { messageId };
+	}
+	/** Queue one contained provisioning reconciliation after publication has unwound. */
 	scheduleRecovery(agent) {
 		queueMicrotask(() => {
 			if (this.lifecycle.disposed) return;
-			this.recoverFor(agent).catch((error) => {
+			this.roster.recoverFor(agent, this.lifecycle.signal).catch((error) => {
 				if (this.lifecycle.disposed) return;
 				this.ctx.logger.warn(`Agent Teams recovery for "${agent.id}" failed: ${errorMessage(error)}`);
 			});
 		});
-	}
-	/** Reconcile roster provisioning before retrying that member's pending mailbox. */
-	async recoverFor(agent) {
-		await this.roster.recoverFor(agent, this.lifecycle.signal);
-		await this.mailbox.recoverFor(agent, this.lifecycle.signal);
 	}
 	/** Stop Team-owned live branches and release every waiter before service disposal completes. */
 	async disposeRuntime() {
 		this.lifecycle.close();
 		this.activity.close();
 		const failures = [];
-		await this.lifecycle.settle(this.roster.pendingCreations(), failures);
-		await this.lifecycle.settle(this.mailbox.pendingDispatches(), failures);
+		await this.lifecycle.settle(this.lifecycle.pending(), failures);
 		for (const [root, childIds] of this.roster.liveChildrenByRoot()) try {
 			await this.roster.stopTeammates(root, childIds);
 		} catch (error) {

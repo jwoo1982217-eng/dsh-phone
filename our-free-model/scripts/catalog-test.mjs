@@ -70,6 +70,10 @@ const idRe = new RegExp(schema.$defs.namespacedId.pattern)
 check('id is namespaced per the schema', idRe.test(manifest.id), true)
 check('name is the npm package name', manifest.name, pkg.name)
 check('version tracks package.json', manifest.version, pkg.version)
+for (const file of ['README.md', 'README_EN.md']) {
+  const pins = [...read(file).matchAll(/"dsh-our-free-model": "file:\.\/vendor\/dsh-our-free-model-([^"]+)\.tgz"/g)].map(match => match[1])
+  check(`${file} installs the trusted local tarball at the shipping version`, pins, [pkg.version])
+}
 check('license tracks package.json', manifest.license, pkg.license)
 
 const required = schema.required

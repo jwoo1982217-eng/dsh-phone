@@ -176,6 +176,38 @@ export interface TraeProduct {
   userAgent: string
   /** 远端模型列表不可用时的兜底模型目录。 */
   fallbackModels: readonly TraeFallbackModel[]
+  /**
+   * 单张请求图片的像素预算。**当前刻意不赋值** —— 见下。
+   *
+   * ## ⚠️ 这里为什么是「声明了但不赋值」
+   *
+   * TRAE 撞的是**请求体体积**（不是腾讯系那道图片 token 预算）：Gitee issue
+   * IKKX0T 的独立实测给出边界 **`(21, 24]` 张** 2560×1600 原图，
+   * 形态是流内 `code=4006 content is too large for AI to understand`。
+   *
+   * 但**本仓库尚未用自己的账号与 fixture 复测过这个边界**，而 issue 的 fixture
+   * 是 3.45 MiB/张、本仓库的是 2.87 MiB/张 —— **量纲不同，不能直接套用**。
+   * 按本仓库既定规矩（「拿不到阈值就不定值」「别为了统一塞一个猜出来的预算」），
+   * 定值前必须先复测：`pnpm test:e2e:image-bisect`
+   * （`tests/e2e/image-limit-bisect.e2e.spec.ts`，会二分到 ≤3 张并打印
+   * 「张数 → 请求体 MiB」的换算）。
+   *
+   * ⚠️ **不要**照抄别家的 1 MiB：那个值是按**各自实测边界**推出来的
+   * （见 `src/image-budget.ts` 的算术），照抄等于把一个没验证的猜测写进产品配置。
+   * ⚠️ 也**不要**因为「字段存在但没人用」就删掉它 —— 它是复测后定值的落点，
+   * 且与其余按体积设限的家形状一致（`LoomyProduct` 有同名字段）。
+   */
+  imagePixelBudget?: number
+  /**
+   * 单张请求图片的**编码字节目标**（base64 展开前）。**当前刻意不赋值** —— 理由同上。
+   *
+   * ⚠️ 复测出边界后**必须显式赋值**（不能靠 `requestImageTargetFor` 的默认参数兜底）：
+   * 那个默认是 2 MiB，为腾讯系的**图片 token 预算**准备的，而 TRAE 撞的是体积 ——
+   * 同款缺陷与后果（越过上游硬限）见 `src/image-budget.ts` 的
+   * `DEFAULT_BODY_LIMITED_IMAGE_MAX_BYTES` 与 `tests/unit/image-budget.spec.ts`
+   * 的「按体积设限的家必须显式给 imageMaxBytes」段。
+   */
+  imageMaxBytes?: number
 }
 
 /** 上游 API 基址（Agent 服务）。 */

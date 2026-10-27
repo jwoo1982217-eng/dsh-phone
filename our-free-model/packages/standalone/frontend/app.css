@@ -125,7 +125,7 @@ main { flex: 1; min-width: 0; }
 .console-breadcrumb strong { font-weight: 500; color: var(--ink-soft); }
 .console-topbar-status { font-size: 11px; }
 .topbar-divider { height: 13px; width: 1px; background: var(--line); margin: 0 4px; }
-.page { max-width: 1440px; margin: 0 auto; padding: 30px 32px; }
+.page { width: 100%; min-width: 0; max-width: 1440px; margin: 0 auto; padding: 30px 32px; }
 .dashboard-heading, .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 25px; }
 .heading-eyebrow, .eyebrow { display: block; color: var(--dsw-alias-label-tertiary); font-size: 10px; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
 .dashboard-heading p, .page-heading p { font-size: 13px; margin-top: 7px; }
@@ -203,7 +203,7 @@ main { flex: 1; min-width: 0; }
 .channel-summary-strip strong small { font-size: 12px; font-weight: 400; }
 .channel-summary-strip .checkin-control { margin-left: auto; font-size: 11px; }
 .ui-switch { width: 33px; height: 20px; padding: 3px; border: 0; border-radius: 12px; background: #d6cfc2; transition: background 200ms var(--ease-out-expo); }
-.ui-switch span { display: block; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 1px 2px rgba(72,58,42,0.12); }
+.ui-switch span { display: block; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 1px 2px rgba(72,58,42,0.12); }
 .ui-switch.on { background: var(--green); }
 .ui-switch.on span { transform: translateX(13px); }
 .channel-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -236,6 +236,11 @@ main { flex: 1; min-width: 0; }
 .provider-detail-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 23px; }
 .provider-detail-sidebar { background: transparent; border: 0; border-right: 1px solid var(--line); border-radius: 0; padding: 0 20px 0 0; }
 .provider-detail-sidebar p { font-size: 11px; margin: 3px 0 25px; }
+.ofm_root .ui-card.provider-detail-sidebar { padding: 18px !important; align-self: start; }
+.ofm_root .provider-detail-sidebar h2:focus { outline: none !important; box-shadow: none !important; }
+@media (min-width: 951px) and (max-width: 1100px) {
+  .provider-detail-layout { grid-template-columns: 170px minmax(0, 1fr); gap: 16px; }
+}
 .detail-label { font-size: 10px; color: #8b93a0; margin-bottom: 9px; }
 .detail-provider-link { display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 5px; padding: 8px; margin: 2px 0; font-size: 11px; color: var(--dsw-alias-label-secondary); transition: background 150ms var(--ease-out-expo), color 150ms var(--ease-out-expo); }
 .detail-provider-link.active { background: var(--accent-soft); color: var(--green); }
@@ -244,6 +249,10 @@ main { flex: 1; min-width: 0; }
 .provider-detail-description p { font-size: 12px; margin: 5px 0 17px; }
 .detail-security-note { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; color: #7b8593; margin-top: 17px; }
 .ofm_root { font-family: inherit; color: var(--ink); }
+#channel-root { gap: 16px; }
+.ofm_root > .dashboard-heading { margin-bottom: 0; }
+.ofm_root > .channel-summary-strip { margin-bottom: 0; padding: 14px 0; }
+.ofm_root > .provider-detail { margin-top: 0; }
 .ofm_root * { letter-spacing: 0 !important; }
 .ofm_root .ofm_seg { display: flex; flex-wrap: wrap; gap: 18px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; padding: 0; margin: 0; }
 .ofm_root .ofm_seg button { background: none; color: var(--dsw-alias-label-secondary); border: 0; border-radius: 0; padding: 10px 0 12px; font-size: 12px; }
@@ -863,7 +872,9 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2ede4; borde
   content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: radial-gradient(120% 90% at 50% 40%, transparent 58%, rgba(4, 5, 8, 0.42) 100%);
 }
-[data-theme="dark"] .sidebar, [data-theme="dark"] .topbar, [data-theme="dark"] main, [data-theme="dark"] .app-shell > * { position: relative; z-index: 1; }
+/* 侧边栏吸附靠基础层的 position: sticky（z-index 也已由基础层给到 1）。
+   这里绝不能给侧边栏补 position，否则它会退回 relative，跟着主界面一起滚走。 */
+[data-theme="dark"] .topbar, [data-theme="dark"] main, [data-theme="dark"] .app-shell > *:not(.sidebar) { position: relative; z-index: 1; }
 [data-theme="dark"] ::selection { background: rgba(0, 208, 192, 0.24); color: #eafffd; }
 
 /* ---------- 侧边栏深色 ---------- */
@@ -1458,6 +1469,33 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f2ede4; borde
 /* ---------- 主题切换过渡（避免生硬闪变） ---------- */
 body, .app-shell, .sidebar, .topbar, .ui-card, .login-card, .login-shell, .loading-screen {
   transition: background-color 300ms var(--ease-out-expo), color 300ms var(--ease-out-expo), border-color 300ms var(--ease-out-expo);
+}
+
+/* ---------- 主题切换：从按钮位置向四周扩散 ----------
+   由 shell.tsx 的 toggle 调 startViewTransition 驱动；这里只描述"新主题"如何盖住旧主题。
+   扩散圆心取 --theme-reveal-x/y（按钮中心，视口坐标），半径取到视口最远角。
+   不支持 View Transition 的宿主（或 prefers-reduced-motion）由 JS 直接切换，看不到这一段。 */
+::view-transition-old(root) {
+  animation: none;
+  /* 旧主题保持不动，等新主题的圆盘扫过来 */
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+  animation: theme-reveal-in 560ms var(--ease-out-expo) both;
+}
+/* 关掉 root 分组自带的缩放/淡入，只留上面这一条扩散 */
+::view-transition-group(root) { animation: none; }
+@keyframes theme-reveal-in {
+  from { clip-path: circle(0 at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%)); }
+  to { clip-path: circle(var(--theme-reveal-r, 150vmax) at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%)); }
+}
+/* 扩散进行中：暂停 300ms 的底色过渡，避免新主题快照抓到"过渡中间色" */
+.theme-transitioning, .theme-transitioning * {
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
 }
 
 /* ---------- Spinner（旋转指示器，只动 transform） ---------- */
@@ -2230,7 +2268,7 @@ input::placeholder, textarea::placeholder { color: #757064; opacity: 1; }
 
 /* ---------- 0. 新增令牌（不改任何旧令牌的值） ---------- */
 :root {
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-glide: cubic-bezier(0.22, 0.61, 0.36, 1);
   --focus-halo: rgba(38, 86, 201, 0.16);
   --ink-quiet: #6a6459;              /* 极小号标签专用，对纸面 5.78:1 */
@@ -3404,7 +3442,7 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   background: linear-gradient(180deg, #f5ede0 0%, #ddd4c2 100%) !important;
   border-radius: 50% !important;
   box-shadow: 0 1px 3px rgba(86,52,10,0.18), 0 0 0 0.5px rgba(180,83,9,0.12) !important;
-  transition: transform 450ms cubic-bezier(0.34,1.4,0.64,1) !important;
+  transition: transform 450ms cubic-bezier(0.16,1,0.3,1) !important;
   position: relative !important;
 }
 /* 滑块高光点：左上小亮点 */
@@ -4348,4 +4386,879 @@ input:disabled, select:disabled, textarea:disabled, .ui-input:disabled {
   clip-path: none !important;
 }
 /* ==== V5 NIGHT · 圆角清零 END ==== */
-/* ==== V5 NIGHT END ==== */
+/* ==== V5 NIGHT · 深度打磨（14 项修复） ==== */
+
+/* --- 1. KPI 图标容器：圆角清零 + 切角 --- */
+[data-theme="dark"] .ov-metric-icon {
+  border-radius: 0 !important;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
+}
+
+/* --- 2. 侧边栏导航按钮：2px 圆角清零 --- */
+[data-theme="dark"] .console-nav-item {
+  border-radius: 0 !important;
+}
+
+/* --- 3. 模型来源 source-row：圆角清零 + 切角 --- */
+[data-theme="dark"] .source-row,
+[data-theme="dark"] .ov-source-row {
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px) !important;
+}
+
+/* --- 4. workspace-switch：12px 圆角清零 + 切角 --- */
+[data-theme="dark"] .workspace-switch {
+  border-radius: 0 !important;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px) !important;
+}
+
+/* --- 5. 全局 ::selection：蓝色泄漏 → 青色 --- */
+[data-theme="dark"] ::selection {
+  background: rgba(0, 208, 192, 0.32) !important;
+  color: #eaf6ff !important;
+}
+
+/* --- 6. 设置页开关：加切角 --- */
+[data-theme="dark"] .settings-toggle {
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* --- 7. hover 卡片：青色微光从左扫到右 --- */
+@keyframes cp5-sweep-glow {
+  0% { background-position: -200% 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { background-position: 200% 0; opacity: 0; }
+}
+[data-theme="dark"] .ui-card:hover,
+[data-theme="dark"] .ov-metric:hover {
+  position: relative;
+}
+[data-theme="dark"] .ui-card:hover::after,
+[data-theme="dark"] .ov-metric:hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(0,208,192,0.07) 45%, rgba(0,208,192,0.13) 50%, rgba(0,208,192,0.07) 55%, transparent 70%);
+  background-size: 200% 100%;
+  animation: cp5-sweep-glow 0.6s ease-out 1 forwards;
+  pointer-events: none;
+  z-index: 1;
+  clip-path: inherit;
+}
+
+/* --- 8. 标题前闪烁方块光标 --- */
+@keyframes cp5-blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+[data-theme="dark"] .card-heading h2::before,
+[data-theme="dark"] .usage-panel h2::before {
+  content: "\25AE  ";
+  color: var(--cp-cyan, #00d0c0);
+  animation: cp5-blink-cursor 1.2s steps(1) infinite;
+  font-size: 0.85em;
+}
+
+/* --- 9. 保存/测试成功 glitch 故障动效（更广泛应用） --- */
+[data-theme="dark"] .settings-status-saved,
+[data-theme="dark"] .ui-button.is-success,
+[data-theme="dark"] .badge-success {
+  animation: 0.3s steps(2) 0s 1 normal both running cp-glitch-pop !important;
+  box-shadow: 0 0 16px -5px var(--cp-glow, rgba(0,208,192,0.16)) !important;
+}
+
+/* --- 10. 状态灯呼吸加强 --- */
+@keyframes cp5-pulse-strong {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px 1px var(--cp-cyan, #00d0c0), 0 0 14px 2px rgba(0,208,192,0.3); }
+  50% { opacity: 0.4; box-shadow: 0 0 2px 0px var(--cp-cyan, #00d0c0), 0 0 4px 0px rgba(0,208,192,0.1); }
+}
+[data-theme="dark"] .status-dot {
+  animation: 1.6s steps(1) infinite cp5-pulse-square, 2.4s ease-in-out infinite cp5-pulse-strong !important;
+}
+
+/* --- 11. 侧边栏选中项：改切角形状 --- */
+[data-theme="dark"] .console-nav-item.selected,
+[data-theme="dark"] .console-nav-item[aria-current] {
+  border-radius: 0 !important;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%) !important;
+}
+
+/* --- 12. 全局滚动条：统一暗底青边 --- */
+[data-theme="dark"] *::-webkit-scrollbar-track {
+  background: #070a0e !important;
+}
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: rgba(0, 208, 192, 0.28) !important;
+  border: 2px solid #070a0e !important;
+  border-radius: 0 !important;
+}
+[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 208, 192, 0.48) !important;
+  box-shadow: 0 0 8px rgba(0, 208, 192, 0.3) !important;
+}
+[data-theme="dark"] * {
+  scrollbar-color: rgba(0, 208, 192, 0.28) #070a0e !important;
+}
+
+/* --- 13. 空状态柱条：暗青色扫描线纹理 --- */
+[data-theme="dark"] .dashboard-chart-bar.zero,
+[data-theme="dark"] .usage-day-bar.zero {
+  background: repeating-linear-gradient(0deg, rgba(0,208,192,0.06) 0px, rgba(0,208,192,0.06) 1px, transparent 1px, transparent 4px) !important;
+  border: 1px solid rgba(0, 208, 192, 0.08) !important;
+}
+
+/* --- 14. 失败/警报指标红色补强 --- */
+[data-theme="dark"] .ov-metric[data-accent="danger"] .ov-metric-icon {
+  background: var(--cp-red-soft, rgba(233,69,66,0.15)) !important;
+  color: var(--cp-red, #e94542) !important;
+  box-shadow: rgba(233,69,66,0.25) 0 0 10px -3px !important;
+}
+
+/* ==== V5 NIGHT · 深度打磨 END ==== */
+
+/* ==== V5 NIGHT · 第二轮深度打磨（26 处圆角清零 + 七级差异化签名） ==== */
+
+/* ---- P0 · 全页面通用元素 ---- */
+
+/* 1. logo 图片：10px 圆角 → 对角切 6px（Ⅵ 图标座级） */
+[data-theme="dark"] .console-mark {
+  border-radius: 0 !important;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
+}
+
+/* 2. 工作空间头像：2px 圆角 → 对角切 4px（Ⅳ 徽章级） */
+[data-theme="dark"] .workspace-avatar {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* 3. 导航指示器：999px 药丸 → 方形刻度线（2px 宽 × 100% 高） */
+[data-theme="dark"] .console-nav-indicator {
+  border-radius: 0 !important;
+  width: 2px !important;
+}
+
+/* 4. 侧边栏底部信息卡：12px 圆角 → 对角切 12px（Ⅶ 骨架级） */
+[data-theme="dark"] .sidebar-support {
+  border-radius: 0 !important;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px) !important;
+}
+
+/* ---- P1 · 差异化签名（不再千篇一律） ---- */
+
+/* 5. 按钮 hover：填充反色（透明底青框 → 青底黑字）+ 辉光 + 微浮起 */
+[data-theme="dark"] .ui-button:hover:not(:disabled) {
+  background: var(--cp-cyan, #00d0c0) !important;
+  color: #0a0f14 !important;
+  box-shadow: 0 0 14px var(--cp-cyan, #00d0c0), 0 0 30px rgba(0, 208, 192, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+[data-theme="dark"] .ui-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+/* 6. 危险按钮 hover：红底白字 + 红色辉光 */
+[data-theme="dark"] .danger-button:hover:not(:disabled),
+[data-theme="dark"] .ui-button.danger:hover:not(:disabled) {
+  background: var(--cp-red, #e94542) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px var(--cp-red, #e94542), 0 0 30px rgba(233, 69, 66, 0.3) !important;
+}
+
+/* 7. 输入框 focus：边框实色 + 辉光 */
+[data-theme="dark"] .ui-input:focus,
+[data-theme="dark"] .ui-input:focus-visible {
+  border-color: var(--cp-cyan, #00d0c0) !important;
+  box-shadow: 0 0 12px rgba(0, 208, 192, 0.25), inset 0 0 0 1px rgba(0, 208, 192, 0.1) !important;
+  outline: none !important;
+}
+
+/* 8. 徽章：等宽大写 + 宽字距 + 霓虹发光 */
+[data-theme="dark"] .ui-badge,
+[data-theme="dark"] .count-badge {
+  font-family: Consolas, "Cascadia Mono", "SF Mono", "JetBrains Mono", monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  font-size: 10px !important;
+  text-shadow: 0 0 6px rgba(0, 208, 192, 0.4) !important;
+}
+
+/* 9. 导航选中项：左侧 2px 青色竖线 + 10% 青色底（差异化于按钮/输入框） */
+[data-theme="dark"] .console-nav-item.selected,
+[data-theme="dark"] .console-nav-item[aria-current] {
+  border-left: 2px solid var(--cp-cyan, #00d0c0) !important;
+  background: linear-gradient(90deg, rgba(0, 208, 192, 0.15), rgba(0, 208, 192, 0.05)) !important;
+}
+
+/* ---- P2 · 各页面残留圆角清零 ---- */
+
+/* 10. 概览页 quick-icon：2px → 对角切 4px */
+[data-theme="dark"] .quick-icon,
+[data-theme="dark"] .ov-quick-icon {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* 11. 概览页 quick-endpoint：10px → 单侧切 8px（Ⅱ 按钮级，右下切） */
+[data-theme="dark"] .quick-endpoint,
+[data-theme="dark"] .ov-endpoint {
+  border-radius: 0 !important;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%) !important;
+}
+
+/* 12. 概览页 source-icon：2px → 对角切 4px */
+[data-theme="dark"] .source-icon {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* 13. 用量页 channel-filters：6px → 清零 */
+[data-theme="dark"] .channel-filters {
+  border-radius: 0 !important;
+}
+
+/* 14. 用量页筛选按钮：2px → 清零 */
+[data-theme="dark"] .channel-filters button {
+  border-radius: 0 !important;
+}
+
+/* 15. 用量页 usage-window-empty：1px → 对角切 8px */
+[data-theme="dark"] .usage-window-empty {
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px) !important;
+}
+
+/* 16. 设置页 settings-field：9px → 对角切 12px（Ⅰ 面板级） */
+[data-theme="dark"] .settings-field {
+  border-radius: 0 !important;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px) !important;
+}
+
+/* 17. 设置页 settings-note：1px → 清零 */
+[data-theme="dark"] .settings-note {
+  border-radius: 0 !important;
+}
+
+/* 18. 设置页 settings-status-dot：1px → 清零 */
+[data-theme="dark"] .settings-status-dot {
+  border-radius: 0 !important;
+}
+
+/* 19. 设置页 settings-toggle 滑块：1px/2px → 清零 */
+[data-theme="dark"] .settings-fieldset .settings-toggle:after,
+[data-theme="dark"] .settings-fieldset .settings-toggle:checked:after,
+[data-theme="dark"] .settings-fieldset .settings-field .settings-toggle {
+  border-radius: 0 !important;
+}
+
+/* 20. API 接入页 cx-icon：1px → 对角切 4px */
+[data-theme="dark"] .cx-icon {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* 21. API 接入页 cx-field：1px → 对角切 8px */
+[data-theme="dark"] .cx-field {
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px) !important;
+}
+
+/* 22. API 接入页 cx-code：1px → 对角切 8px */
+[data-theme="dark"] .cx-code {
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px) !important;
+}
+
+/* 23. 渠道页 ch-metric-icon：1px → 对角切 4px */
+[data-theme="dark"] .ch-metric-icon {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* 24. 渠道页 checkin-control：999px 药丸 → 对角切 8px */
+[data-theme="dark"] .checkin-control {
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px) !important;
+}
+
+/* 25. 渠道页筛选按钮组：4px/6px/8px → 清零 */
+[data-theme="dark"] .channel-filters,
+[data-theme="dark"] .channel-filters button,
+[data-theme="dark"] .channel-filters span {
+  border-radius: 0 !important;
+}
+
+/* 26. 渠道页 provider-logo：2px → 对角切 4px */
+[data-theme="dark"] .provider-logo {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* 27. 模型清单页 model-row-actions 按钮：2px → 清零 */
+[data-theme="dark"] .model-browser .model-row-actions .ui-button-outline,
+[data-theme="dark"] .model-browser .model-row-actions .ui-button {
+  border-radius: 0 !important;
+}
+
+/* 28. 模型清单页 md-copy-done：2px → 清零 */
+[data-theme="dark"] .model-browser .model-row-actions .md-copy-done {
+  border-radius: 0 !important;
+}
+
+/* 29. 登录页 login-card：16px → 对角切 18px（Ⅰ 面板级） */
+[data-theme="dark"] .login-card {
+  border-radius: 0 !important;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px) !important;
+}
+
+/* 30. 登录页 login-card form .primary：11px → 清零（已由按钮级覆盖） */
+[data-theme="dark"] .login-card form .primary {
+  border-radius: 0 !important;
+}
+
+/* 31. 杂项：ui-button-ghost hover 3px → 清零 */
+[data-theme="dark"] .ui-button-ghost:hover {
+  border-radius: 0 !important;
+}
+
+/* 32. 杂项：滚动条 4px → 清零 */
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  border-radius: 0 !important;
+}
+
+/* 33. 杂项：detail-security-note 1px → 清零 */
+[data-theme="dark"] .detail-security-note {
+  border-radius: 0 !important;
+}
+
+/* 34. 杂项：usage-feedback 1px → 清零 */
+[data-theme="dark"] .usage-browser .usage-feedback {
+  border-radius: 0 !important;
+}
+
+/* 35. 杂项：copy-feedback 1px → 清零 */
+[data-theme="dark"] .copy-feedback::after {
+  border-radius: 0 !important;
+}
+
+/* 36. 杂项：usage-model-filters 2px → 清零 */
+[data-theme="dark"] .usage-browser .usage-model-filters select:focus-visible {
+  border-radius: 0 !important;
+}
+
+/* 37. 杂项：usage-pagination 2px → 清零 */
+[data-theme="dark"] .usage-browser .usage-pagination .ui-button {
+  border-radius: 0 !important;
+}
+
+/* ==== V5 NIGHT · 第二轮深度打磨 END ==== */
+/* ==== V5 NIGHT · 第三轮深度打磨（颜色丰富/差异化/棱角分明） ==== */
+
+/* ---- 问题一：颜色太单一 ---- */
+
+/* 1. 红色注入：失败/警报元素必须有红色存在感 */
+[data-theme="dark"] .ov-metric[data-accent="danger"] .ov-metric-icon,
+[data-theme="dark"] .ov-failures .ov-failure-row,
+[data-theme="dark"] .model-browser .channel-error,
+[data-theme="dark"] .usage-feedback.is-error {
+  color: var(--cp-red, #e94542) !important;
+}
+
+/* 失败回合 KPI 图标用红色 */
+[data-theme="dark"] .usage-metrics .ov-metric:nth-child(5) .ov-metric-icon {
+  background: rgba(233, 69, 66, 0.12) !important;
+  color: var(--cp-red, #e94542) !important;
+  box-shadow: rgba(233, 69, 66, 0.2) 0 0 10px -3px !important;
+}
+[data-theme="dark"] .usage-metrics .ov-metric:nth-child(5) strong {
+  color: var(--cp-red, #e94542) !important;
+}
+
+/* 已恢复回合 KPI 图标用琥珀色 */
+[data-theme="dark"] .usage-metrics .ov-metric:nth-child(6) .ov-metric-icon {
+  background: rgba(232, 163, 61, 0.12) !important;
+  color: var(--cp-amber, #e8a33d) !important;
+  box-shadow: rgba(232, 163, 61, 0.2) 0 0 10px -3px !important;
+}
+[data-theme="dark"] .usage-metrics .ov-metric:nth-child(6) strong {
+  color: var(--cp-amber, #e8a33d) !important;
+}
+
+/* 输入/输出 Token 用不同颜色区分 */
+[data-theme="dark"] .usage-metrics .ov-metric:nth-child(3) .ov-metric-icon {
+  background: rgba(0, 208, 192, 0.12) !important;
+  color: var(--cp-cyan, #00d0c0) !important;
+}
+[data-theme="dark"] .usage-metrics .ov-metric:nth-child(4) .ov-metric-icon {
+  background: rgba(232, 163, 61, 0.12) !important;
+  color: var(--cp-amber, #e8a33d) !important;
+}
+
+/* 2. 琥珀色注入：警告/注意类元素 */
+[data-theme="dark"] .ui-badge-warning,
+[data-theme="dark"] .badge-warn {
+  background: rgba(232, 163, 61, 0.12) !important;
+  color: var(--cp-amber, #e8a33d) !important;
+  border-color: rgba(232, 163, 61, 0.35) !important;
+}
+
+/* 3. 状态徽章按语义着色：成功=青、警告=琥珀、错误=红、信息=灰 */
+[data-theme="dark"] .ui-badge-success,
+[data-theme="dark"] .badge-success {
+  background: rgba(0, 208, 192, 0.12) !important;
+  color: var(--cp-cyan, #00d0c0) !important;
+  border-color: rgba(0, 208, 192, 0.35) !important;
+}
+[data-theme="dark"] .ui-badge-danger,
+[data-theme="dark"] .badge-danger {
+  background: rgba(233, 69, 66, 0.12) !important;
+  color: var(--cp-red, #e94542) !important;
+  border-color: rgba(233, 69, 66, 0.35) !important;
+}
+
+/* 4. KPI 数字按语义着色：正常=白、异常=红、注意=琥珀 */
+[data-theme="dark"] .ov-metric strong {
+  color: var(--cp-cyan, #00d0c0) !important;
+  text-shadow: 0 0 12px rgba(0, 208, 192, 0.15) !important;
+}
+
+/* ---- 问题二：设计同质化 ---- */
+
+/* 5. 按钮差异化：主按钮=实心青底黑字（扳机），幽灵按钮=透明底青框（瞄具） */
+[data-theme="dark"] .ui-button-default,
+[data-theme="dark"] .primary {
+  background: var(--cp-cyan, #00d0c0) !important;
+  color: #0a0f14 !important;
+  border-color: var(--cp-cyan, #00d0c0) !important;
+  font-weight: 600 !important;
+}
+[data-theme="dark"] .ui-button-default:hover:not(:disabled),
+[data-theme="dark"] .primary:hover:not(:disabled) {
+  background: #2ee8d8 !important;
+  box-shadow: 0 0 16px rgba(0, 208, 192, 0.4), 0 0 40px rgba(0, 208, 192, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+[data-theme="dark"] .ui-button-default:active:not(:disabled),
+[data-theme="dark"] .primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98) !important;
+  background: #0bc4b4 !important;
+}
+
+/* 幽灵按钮：透明底 + 青框（和主按钮完全不同的视觉语言） */
+[data-theme="dark"] .ui-button-ghost {
+  background: transparent !important;
+  color: var(--cp-cyan, #00d0c0) !important;
+  border-color: rgba(0, 208, 192, 0.35) !important;
+}
+[data-theme="dark"] .ui-button-ghost:hover:not(:disabled) {
+  background: rgba(0, 208, 192, 0.1) !important;
+  border-color: rgba(0, 208, 192, 0.6) !important;
+  box-shadow: 0 0 10px rgba(0, 208, 192, 0.15) !important;
+}
+
+/* 6. 输入框差异化：深色内嵌底 + 右下单侧切（和按钮的左上切方向不同） */
+[data-theme="dark"] .ui-input,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(0, 208, 192, 0.2) !important;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme="dark"] .ui-input:focus,
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--cp-cyan, #00d0c0) !important;
+  box-shadow: 0 0 12px rgba(0, 208, 192, 0.2), inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  outline: none !important;
+}
+
+/* 7. 徽章差异化：更小的切角（4px）+ 更强的发光（和按钮/输入框区分） */
+[data-theme="dark"] .ui-badge,
+[data-theme="dark"] .count-badge {
+  text-shadow: 0 0 8px currentColor !important;
+  font-weight: 600 !important;
+}
+
+/* 8. 导航选中项差异化：左侧 2px 青色竖线 + 背景渐变 + 文字发光 */
+[data-theme="dark"] .console-nav-item.selected,
+[data-theme="dark"] .console-nav-item[aria-current] {
+  border-left: 2px solid var(--cp-cyan, #00d0c0) !important;
+  background: linear-gradient(90deg, rgba(0, 208, 192, 0.15), rgba(0, 208, 192, 0.05)) !important;
+  color: var(--cp-cyan, #00d0c0) !important;
+  text-shadow: 0 0 8px rgba(0, 208, 192, 0.3) !important;
+}
+
+/* ---- 问题三：棱角不分明 ---- */
+
+/* 9. 卡片边框加强：0.666px → 1px + 不透明度提升 */
+[data-theme="dark"] .ui-card,
+[data-theme="dark"] .ov-metric,
+[data-theme="dark"] .usage-panel {
+  border: 1px solid rgba(0, 208, 192, 0.25) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 20px -8px rgba(0, 208, 192, 0.1) !important;
+}
+
+/* 10. 四角 L 型刻度线：用伪元素画真正的四角刻度 */
+[data-theme="dark"] .ui-card::after,
+[data-theme="dark"] .ov-metric::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background:
+    /* 左上角 L */
+    linear-gradient(to right, var(--cp-cyan, #00d0c0) 12px, transparent 12px) top left / 12px 1px,
+    linear-gradient(to bottom, var(--cp-cyan, #00d0c0) 12px, transparent 12px) top left / 1px 12px,
+    /* 右上角 L */
+    linear-gradient(to left, var(--cp-cyan, #00d0c0) 12px, transparent 12px) top right / 12px 1px,
+    linear-gradient(to bottom, var(--cp-cyan, #00d0c0) 12px, transparent 12px) top right / 1px 12px,
+    /* 右下角 L */
+    linear-gradient(to left, var(--cp-cyan, #00d0c0) 12px, transparent 12px) bottom right / 12px 1px,
+    linear-gradient(to top, var(--cp-cyan, #00d0c0) 12px, transparent 12px) bottom right / 1px 12px,
+    /* 左下角 L */
+    linear-gradient(to right, var(--cp-cyan, #00d0c0) 12px, transparent 12px) bottom left / 12px 1px,
+    linear-gradient(to top, var(--cp-cyan, #00d0c0) 12px, transparent 12px) bottom left / 1px 12px !important;
+  background-repeat: no-repeat !important;
+  opacity: 0.5 !important;
+  z-index: 1 !important;
+  clip-path: inherit !important;
+}
+
+/* 11. 按钮边框加强：0.666px → 1px */
+[data-theme="dark"] .ui-button {
+  border-width: 1px !important;
+}
+
+/* 12. 设置页开关加强：更明显的视觉边界 */
+[data-theme="dark"] .settings-toggle {
+  border: 1px solid rgba(0, 208, 192, 0.4) !important;
+  box-shadow: 0 0 8px rgba(0, 208, 192, 0.15), inset 0 0 4px rgba(0, 208, 192, 0.1) !important;
+}
+
+/* 13. 输入框边框加强：0.666px → 1px + 不透明度提升 */
+[data-theme="dark"] .ui-input,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  border-width: 1px !important;
+  border-color: rgba(0, 208, 192, 0.25) !important;
+}
+
+/* 14. 徽章边框加强：不透明度提升 */
+[data-theme="dark"] .ui-badge,
+[data-theme="dark"] .count-badge {
+  border-width: 1px !important;
+  border-color: rgba(0, 208, 192, 0.45) !important;
+}
+
+/* 15. 空状态图表面板加强：边框更明显 */
+[data-theme="dark"] .chart-empty,
+[data-theme="dark"] .ov-chart-empty {
+  border: 1px solid rgba(0, 208, 192, 0.3) !important;
+  box-shadow: inset 0 0 30px -10px rgba(0, 208, 192, 0.15) !important;
+}
+
+/* 16. 侧边栏底部信息卡边框加强 */
+[data-theme="dark"] .sidebar-support {
+  border: 1px solid rgba(0, 208, 192, 0.15) !important;
+}
+
+/* 17. workspace-switch 边框加强 */
+[data-theme="dark"] .workspace-switch {
+  border: 1px solid rgba(0, 208, 192, 0.2) !important;
+}
+
+/* ==== V5 NIGHT · 第三轮深度打磨 END ==== */
+/* ==== V5 NIGHT · 第四轮深度打磨（EAC 协付渠道 + 登录页残留） ==== */
+
+/* 1. EAC 状态徽章（ofm_pill）：999px 药丸 → 切角 4px */
+[data-theme="dark"] .ofm_pill {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* 2. EAC 状态点（ofm_dot）：50% 圆形 → 方形 */
+[data-theme="dark"] .ofm_dot {
+  border-radius: 0 !important;
+  width: 5px !important;
+  height: 5px !important;
+}
+
+/* 3. EAC "点个 Star" 按钮（ofm_starbtn）：7px 圆角 → 切角 8px */
+[data-theme="dark"] .ofm_starbtn {
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px) !important;
+}
+
+/* 4. EAC 信息卡（ofm_hero）：12px/20px 圆角 → 对角切 18px */
+[data-theme="dark"] .ofm_hero {
+  border-radius: 0 !important;
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px) !important;
+}
+
+/* 5. 登录页代码块（code）：6px 圆角 → 切角 4px */
+[data-theme="dark"] code {
+  border-radius: 0 !important;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px) !important;
+}
+
+/* ==== V5 NIGHT · 第四轮深度打磨 END ==== *//* ==== V5 NIGHT END ==== */
+
+/* ==========================================================================
+   ==== V5 DAY · 流光岁月打磨（只动白昼，黑夜一律不碰） =====================
+   依据 impeccable craft-floor：
+   ① kicker 去"装扮感"——缩短字距、弱化前置短线（保留标签本身做导航）；
+   ② 彩色表面次级字改暖调，不再用中性灰（对标 Claude #6c6a64）；
+   ③ 状态徽章分色——成功/警告/危险/信息分色相，别全一个橙；
+   ④ 缓动已在上方 :root 换成指数 ease-out（回弹过时）。
+   ========================================================================== */
+
+/* ① kicker：缩短字距、弱化前置短线，去"等宽仪表盘"味 */
+:root:not([data-theme="dark"]) .heading-eyebrow,
+:root:not([data-theme="dark"]) .eyebrow {
+  letter-spacing: 0.07em !important;
+  color: #8a8175 !important;            /* 暖调 tertiary，不再偏灰 */
+}
+:root:not([data-theme="dark"]) .heading-eyebrow::before,
+:root:not([data-theme="dark"]) .eyebrow::before {
+  width: 10px !important;
+  background: #b49a6a !important;       /* 黄铜短线，贴纸张语言 */
+  opacity: 0.6 !important;
+}
+
+/* ② 彩色表面次级字暖调：徽章、计数、表格次级信息不再用中性灰 */
+:root:not([data-theme="dark"]) .ui-badge {
+  color: #6c6a64 !important;            /* 暖灰，贴奶白画布 */
+  background: #f3efe7 !important;
+}
+:root:not([data-theme="dark"]) .dashboard-metric > div,
+:root:not([data-theme="dark"]) .console-breadcrumb,
+:root:not([data-theme="dark"]) .console-topbar-status,
+:root:not([data-theme="dark"]) .workspace-switch small {
+  color: #7d7668 !important;            /* 次级信息统一暖调 */
+}
+
+/* ③ 状态徽章分色：成功=绿 / 警告=琥珀 / 危险=红 / 信息=黄铜，别全一个橙 */
+:root:not([data-theme="dark"]) .ui-badge-success { background: #eff7f2 !important; color: #177552 !important; border-color: #cfe6da !important; }
+:root:not([data-theme="dark"]) .ui-badge-warning { background: #fbf6ea !important; color: #8a6215 !important; border-color: #e9ddc0 !important; }
+:root:not([data-theme="dark"]) .ui-badge-danger,
+:root:not([data-theme="dark"]) .ui-badge-error   { background: #fdf5f5 !important; color: #9c3343 !important; border-color: #f0d5d5 !important; }
+:root:not([data-theme="dark"]) .ui-badge-blue,
+:root:not([data-theme="dark"]) .ui-badge-info    { background: #f3efe7 !important; color: #8a4b06 !important; border-color: #eedfc6 !important; }
+/* ==== V5 DAY · 流光岁月打磨 END ==== */
+/* ---- V5 DAY 补：侧边栏选中态 & 黄铜按钮（收现代 SaaS 味，贴纸张/黄铜） ---- */
+/* ⑥ 侧边栏选中：圆角收敛 + 左侧一道黄铜细线（页签折角感），不再是大圆角块 */
+:root:not([data-theme="dark"]) .console-nav-item { border-radius: 5px !important; }
+:root:not([data-theme="dark"]) .console-nav-item.selected {
+  border-radius: 5px !important;
+  background: linear-gradient(90deg, rgba(180,83,9,0.10), rgba(180,83,9,0.02)) !important;
+  box-shadow: inset 2px 0 0 #b45309, inset 0 0 0 1px rgba(180,83,9,0.10) !important;
+  color: #8a4b06 !important;
+}
+
+/* ⑦ 黄铜主键：压哑光、减甜度——细刻边 + 几乎无大软阴影，像黄铜铭牌 */
+:root:not([data-theme="dark"]) .ui-button-default,
+:root:not([data-theme="dark"]) .primary {
+  background: linear-gradient(180deg, #b57309, #9a5c06) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.12), 0 1px 2px rgba(86,52,10,0.14) !important;
+  border: 1px solid #8a4b06 !important;
+}
+:root:not([data-theme="dark"]) .ui-button-default:hover,
+:root:not([data-theme="dark"]) .primary:hover {
+  background: linear-gradient(180deg, #c07f0c, #a36307) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(0,0,0,0.10), 0 3px 8px -3px rgba(86,52,10,0.22) !important;
+}
+:root:not([data-theme="dark"]) .ui-button-default:active,
+:root:not([data-theme="dark"]) .primary:active {
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.18) !important;
+}
+/* ==== V5 DAY 补 END ==== */
+/* ==========================================================================
+   ==== V5 DAY · 错位与不合理修复（只动白昼） =============================
+   ========================================================================== */
+
+/* ① 个人工作空间卡片：文字容器允许收缩换行，别被徽章挤成竖排 */
+:root:not([data-theme="dark"]) .workspace-switch > span:not(.workspace-avatar) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+:root:not([data-theme="dark"]) .workspace-switch > span:not(.workspace-avatar) small {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+:root:not([data-theme="dark"]) .workspace-switch > .ui-badge {
+  flex-shrink: 0 !important;   /* 徽章不挤压文字 */
+  margin-left: 0 !important;
+}
+:root:not([data-theme="dark"]) .workspace-switch { flex-wrap: nowrap !important; }
+/* ==== 修复① END ==== */
+/* ③ 能力标签与状态标签语义分层：能力=黄铜描边中性 / 状态=按语义分色 */
+/* 能力标签（纯文本/思考/视觉 = ui-badge-neutral）：黄铜描边，贴"仪器铭牌" */
+:root:not([data-theme="dark"]) .ui-badge-neutral {
+  background: #f6f2ea !important;
+  color: #6b6157 !important;
+  border: 1px solid #e2d9c8 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5) !important;
+}
+/* 状态-警告（不可用/地区受限 = ui-badge-warning）：琥珀 */
+:root:not([data-theme="dark"]) .ui-badge-warning {
+  background: #fbf3e4 !important;
+  color: #9a5c06 !important;
+  border: 1px solid #ecd9b8 !important;
+}
+/* 状态-成功（已探测可用/可用）：绿 */
+:root:not([data-theme="dark"]) .ui-badge-success {
+  background: #edf6f0 !important;
+  color: #1a7a52 !important;
+  border: 1px solid #cfe5d8 !important;
+}
+/* ==== 修复③ END ==== */
+/* ② 测试按钮可点/不可点状态分层：禁用的明显"灰掉+去掉黄铜" */
+:root:not([data-theme="dark"]) .model-browser button:disabled,
+:root:not([data-theme="dark"]) .models-browser button:disabled,
+:root:not([data-theme="dark"]) .ui-button:disabled,
+:root:not([data-theme="dark"]) button[data-testid*="test"]:disabled {
+  opacity: 0.5 !important;
+  background: #efece6 !important;
+  color: #a39b8c !important;
+  border-color: #e2dccd !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+}
+/* ④ 图表区空态：加极淡的黄铜坐标网格，让"没数据"也有仪器感，不再一片死白 */
+:root:not([data-theme="dark"]) .usage-chart-area,
+:root:not([data-theme="dark"]) .chart-area,
+:root:not([data-theme="dark"]) .dashboard-chart {
+  background-image:
+    linear-gradient(to right, rgba(138,75,6,0.05) 1px, transparent 1px),
+    linear-gradient(to top, rgba(138,75,6,0.06) 1px, transparent 1px) !important;
+  background-size: 48px 32px, 100% 32px !important;
+}
+/* ⑤ "0 Token"下那条断掉的虚线：藏掉意图不明的装饰 */
+:root:not([data-theme="dark"]) .usage-total-line,
+:root:not([data-theme="dark"]) .chart-total-line { display: none !important; }
+/* ==== 修复②④⑤ END ==== */
+/* ⑥ 渠道页搜索框：给图标让位，不再压字 */
+:root:not([data-theme="dark"]) .channel-search input,
+:root:not([data-theme="dark"]) input[placeholder*="搜索渠道"],
+:root:not([data-theme="dark"]) input[placeholder*="搜索模型"] {
+  padding-left: 34px !important;
+}
+
+/* ⑧ API 接入页代码块：纯黑 → 深棕墨，贴合暖纸基调 */
+:root:not([data-theme="dark"]) .quick-start pre,
+:root:not([data-theme="dark"]) .code-block,
+:root:not([data-theme="dark"]) pre,
+:root:not([data-theme="dark"]) .connection-code,
+:root:not([data-theme="dark"]) .quick-start-code {
+  background: #2b2118 !important;          /* 深棕墨，不是纯黑 */
+  color: #f2e9da !important;
+  border: 1px solid #4a3a2a !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
+}
+:root:not([data-theme="dark"]) pre code,
+:root:not([data-theme="dark"]) .quick-start code { color: #f2e9da !important; background: transparent !important; }
+/* ==== 修复⑥⑧ END ==== */
+/* ④⑤ 用量图表区精修（真实类名）：0 数据也有仪器刻度感，虚线改实线 */
+/* "0 Token"下那条点状虚线：去掉，改成干净排版 */
+:root:not([data-theme="dark"]) .usage-window-total {
+  border-bottom: none !important;
+  text-decoration: none !important;
+}
+:root:not([data-theme="dark"]) .usage-window-total strong,
+:root:not([data-theme="dark"]) .usage-window-total b { text-decoration: none !important; border: 0 !important; }
+/* 图表区：加淡黄铜坐标网格，0 柱子轨道做出"刻度槽"感 */
+:root:not([data-theme="dark"]) .usage-trend-chart {
+  background-image:
+    linear-gradient(to top, rgba(138,75,6,0.07) 1px, transparent 1px) !important;
+  background-size: 100% 25% !important;
+  border-bottom: 1px solid #e6ddcc !important;
+}
+/* 0 数据柱子的轨道：淡黄铜刻度槽，看得见但克制 */
+:root:not([data-theme="dark"]) .usage-day-track {
+  background: linear-gradient(180deg, rgba(138,75,6,0.045), rgba(138,75,6,0.02)) !important;
+  border: 1px solid rgba(138,75,6,0.08) !important;
+  border-radius: 3px !important;
+}
+:root:not([data-theme="dark"]) .usage-day-bar.zero { background: rgba(138,75,6,0.10) !important; min-height: 3px !important; border-radius: 2px !important; }
+/* ==== 修复④⑤ END ==== */
+/* ⑦ 页面内容少时撑满视口：页脚自然落底，不再浮在中间 */
+:root:not([data-theme="dark"]) .app-shell main {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100vh !important;
+}
+:root:not([data-theme="dark"]) .app-shell main > section.page {
+  flex: 1 0 auto !important;
+}
+:root:not([data-theme="dark"]) .app-shell main > footer {
+  flex-shrink: 0 !important;
+  margin-top: auto !important;
+}
+/* ==== 修复⑦ END ==== */
+/* ① 修正：徽章固定不伸展，文字容器独占剩余空间并允许省略 */
+:root:not([data-theme="dark"]) .workspace-switch { display: flex !important; align-items: center !important; }
+:root:not([data-theme="dark"]) .workspace-switch > .workspace-avatar { flex: 0 0 auto !important; }
+:root:not([data-theme="dark"]) .workspace-switch > span:not(.workspace-avatar):not(.ui-badge) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+:root:not([data-theme="dark"]) .workspace-switch > span:not(.workspace-avatar):not(.ui-badge) > small {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+:root:not([data-theme="dark"]) .workspace-switch > .ui-badge {
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+}
+/* ==== 修复① 修正 END ==== */
+/* ① 补强：标题"个人工作空间"不竖排断行（核心），整体省略 */
+:root:not([data-theme="dark"]) .workspace-switch > span:not(.workspace-avatar):not(.ui-badge) {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+/* ==== 修复① 补强 END ==== */
+/* ⑤ 修正：去掉大 0 下面那条琥珀点状虚线（::after 伪元素画的） */
+:root:not([data-theme="dark"]) [data-testid="usage-window-total"]::after,
+:root:not([data-theme="dark"]) .usage-window-total strong::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+/* ==== 修复⑤ 修正 END ==== */
+/* ==== 夜主题·工作空间卡片修复 ==== */
+/* 赛博终端：文字不竖排，徽章不挤压，省略号截断 */
+[data-theme="dark"] .workspace-switch { display: flex !important; align-items: center !important; }
+[data-theme="dark"] .workspace-switch > .workspace-avatar { flex: 0 0 auto !important; }
+[data-theme="dark"] .workspace-switch > span:not(.workspace-avatar):not(.ui-badge) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+[data-theme="dark"] .workspace-switch > span:not(.workspace-avatar):not(.ui-badge) > small {
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+[data-theme="dark"] .workspace-switch > .ui-badge {
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+}
+/* ==== 夜主题·工作空间卡片修复 END ==== */

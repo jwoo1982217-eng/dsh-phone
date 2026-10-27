@@ -20,7 +20,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -168,7 +168,56 @@ process.exit(0)
     // 装了 Chrome/Chromium 的用户**不该**被这条告警打扰
     expect(isEdgeExecutable(join('C:', 'Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe'))).toBe(false)
     expect(isEdgeExecutable(join('C:', 'Users', 'me', 'scoop', 'apps', 'chromium', 'current', 'chrome.exe'))).toBe(false)
-    // ⚠ 路径里带 "Edge" 字样的第三方 chromium 不该被误报成系统 Edge
+    // ⚠ 路径带 "Edge" 字样的第三方 chromium 不该被误报成系统 Edge
     expect(isEdgeExecutable(join('C:', 'tools', 'EdgeProxy', 'chrome.exe'))).toBe(false)
+  })
+
+  /**
+   * ★★ **组合点护栏**（2026-10-08 抽共享模块时新增）。
+   *
+   * ## 为什么必须有这一条
+   *
+   * 浏览器会话抽到 `ChromiumSession` 后，原来**写死在 `launch()` 里**的
+   * 三个用户可见文案变成了**构造参数**：
+   *
+   * | 原来的字面量位置 | 现在 |
+   * |---|---|
+   * | 错误消息前缀（`'zcode: …'`） | `label` 选项 |
+   * | 「找不到浏览器」文案里的括注 | `notFoundHint` 选项 |
+   * | Edge 兜底告警里的产品名 | `edgeLabel` 选项 |
+   *
+   * ⚠⚠ 反向验证实测（逐个改坏、看本文件会不会红）：
+   *
+   * | 变异 | 结果 |
+   * |---|---|
+   * | 删掉 `notFoundHint` | ✗ **本文件 4 条全绿** |
+   * | `edgeLabel` 从 `'zcode captcha'` 改成 `'zcode'` | ✗ **全绿** |
+   * | `label` 从 `'zcode'` 改成 `'browser'` | ✗ **全绿** |
+   * | `overrideEnvName` 改名 | ✓ 变红 |
+   *
+   * 根因：上面几条子进程用例的判据都是 `toContain('msedge.exe')` /
+   * `toContain('Edge')` / `toContain('ZCODE_CHROME_PATH')` 这种**子串**断言，
+   * 而**前缀与括注不在任何判据里** —— 文案丢了、前缀变了，子串照样命中。
+   *
+   * ⇒ 用源码判据把这三个参数**逐个锚定**。这是「抽共享实现」这类重构
+   * 最容易丢东西的地方：**行为没变、文案变了**，而文案正是用户唯一能看到的东西。
+   *
+   * ⚠ 判据只锚「选项名 = 期望值」这一对，不锚工艺（不检查参数顺序、
+   * 不检查是否用常量），这样后续重构仍能自由调整写法。
+   */
+  it('★ 组合共享会话时必须传对三个用户可见文案（label / notFoundHint / edgeLabel）', () => {
+    const src = readFileSync(join(REPO, 'src', 'zcode-captcha.ts'), 'utf8')
+    for (const [option, value] of [
+      ['label', 'zcode'],
+      ['notFoundHint', '（用于产出阿里云 captcha）'],
+      ['edgeLabel', 'zcode captcha'],
+      ['overrideEnvName', 'ZCODE_CHROME_PATH'],
+      ['profilePrefix', 'zcode-captcha-'],
+    ] as const) {
+      expect(
+        src,
+        `构造共享会话时必须把 ${option} 传成 ${JSON.stringify(value)}（丢了或改成别的值，用户看到的文案就变了）`,
+      ).toMatch(new RegExp(`${option}:\\s*'${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`))
+    }
   })
 })

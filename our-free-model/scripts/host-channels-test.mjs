@@ -100,7 +100,7 @@ function clientHook(call) {
   let bundle
   const source = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
   new Function('window', source)({ __ModuleLoader__: { load(value) { bundle = value } } })
-  const react = { useMemo: fn => fn() }
+  const react = { useMemo: fn => fn(), useRef: value => ({ current: value }), useState: value => [typeof value === "function" ? value() : value, () => {}], useEffect() {}, useCallback: fn => fn }
   const hook = bundle.factory(() => react).__test.useChannelRpc
   return summary => hook({ connection: { rpc: { call } } }, summary)
 }

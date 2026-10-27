@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { collectGatewayEffortViews, collectGatewayModelIds, collectGatewayModels, toGatewayModelIds, toOpenAiModels } from '../../src/openai-gateway/models.js'
+// ⚠️ 用**真实适配器**的声明驱动投影，而不是手写字面量 —— 见
+// 「CodeArts 的两档经真实适配器投影后是升序」用例的注释。
+import { CodeArtsAdapter } from '../../src/llm-adapter.js'
 
 /** 目录采集替身：`broken` provider 的 listModels 一律抛错。 */
 function makeSource() {
@@ -218,13 +222,41 @@ describe('collectGatewayEffortViews（思考档位视图）', () => {
     expect(view?.default).toBe('high')
   })
 
-  it('Raccoon 的二元开关也如实投影（on → high、off → none）', async () => {
+  it('Raccoon 的二元开关也如实投影（off → none、on → high）', async () => {
+    // ⚠️ **顺序跟着声明走**（Issue IKLIDV）：`openai_efforts` 是声明顺序的
+    // 机械投影（`effort-view.ts` 逐个 push `canonical`），声明已按强度序
+    // 规整成 `off → on`，故这里也必须是 `none → high`（由弱到强）。
     const source = traeSource(async () => ({
-      reasoning: { efforts: [{ id: 'on', name: '开启' }, { id: 'off', name: '关闭' }], defaultEffort: 'on' },
+      reasoning: { efforts: [{ id: 'off', name: '关闭' }, { id: 'on', name: '开启' }], defaultEffort: 'on' },
     }))
     const groups = await collectGatewayModels(source)
     const view = (await collectGatewayEffortViews(source, groups)).get('trae/deepseek-v4.1-flash')
-    expect(view?.openai_efforts).toEqual(['high', 'none'])
+    expect(view?.openai_efforts).toEqual(['none', 'high'])
+  })
+
+  /**
+   * ⚠️ **CodeArts 的真实声明必须投影成升序的 `openai_efforts`**（Issue IKLIDV）。
+   *
+   * 这是本 issue 在**本仓库可离线观测**的那一半：档位顺序会一路透传到网关的
+   * `/v1/models`（`openai_efforts` 是声明顺序的机械投影）。故用**适配器真实声明**
+   *（而不是手写字面量）驱动一遍，确认端到端方向正确 —— 手写字面量的用例
+   * 只能证明「投影函数不改序」，证明不了「声明本身是升序」。
+   */
+  it('★ CodeArts 的两档经真实适配器投影后是升序（none → high）', async () => {
+    const adapter = new CodeArtsAdapter({
+      credentialRef: credentialRef('CODEARTS_ACCESS_TOKEN'),
+      resolveCredential: async () => ({
+        access_key_id: 'AK', secret_access_key: 'SK', security_token: 'ST',
+        expires_at: '2099-01-01T00:00:00Z',
+      }),
+      refresh: async () => {},
+      fetchImpl: async () => new Response('not found', { status: 404 }),
+    })
+    const info = await adapter.resolveModel('codearts', 'GLM-5.2')
+    const source = traeSource(async () => ({ provider: 'codearts', ...FLASH, reasoning: info.reasoning }))
+    const groups = await collectGatewayModels(source)
+    const view = (await collectGatewayEffortViews(source, groups)).get('trae/deepseek-v4.1-flash')
+    expect(view?.openai_efforts).toEqual(['none', 'high'])
   })
 
   it('/v1/models 与设置页 RPC 的档位必须同源（各算一遍必然漂移）', async () => {

@@ -30,6 +30,8 @@
  * @module src/combos.js
  */
 
+import { createHash } from 'node:crypto'
+
 export const COMBO_CHANNEL = 'combo'
 export const COMBO_PREFIX = 'combo:'
 export const COMBO_STRATEGIES = ['fallback', 'round-robin']
@@ -43,13 +45,16 @@ export function isComboEntry(entry) {
 
 /** `My Fast Chain` -> `combo:my-fast-chain`. */
 export function comboId(name) {
-  const slug = String(name ?? '')
-    .trim()
-    .toLowerCase()
+  const normalized = String(name ?? '').trim().toLowerCase()
+  if (normalized === '') return ''
+  const slug = normalized
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 48)
-  return slug === '' ? '' : `${COMBO_PREFIX}${slug}`
+  // Non-Latin names still need a stable, URL-safe identity after a reload.
+  const identity = slug && !/[^\x20-\x7e]/.test(normalized) ? slug
+    : `${slug || 'u'}-${createHash('sha256').update(normalized).digest('hex').slice(0, 16)}`
+  return `${COMBO_PREFIX}${identity}`
 }
 
 /**

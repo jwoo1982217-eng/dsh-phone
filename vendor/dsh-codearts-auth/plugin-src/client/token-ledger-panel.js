@@ -39,18 +39,41 @@ export function channelOrder(a, b) {
 }
 
 /**
- * 一行 token 汇总的**紧凑文本**（`↓1.2K ↑340 ⚡800 🧠56`）。
+ * 一行 token 汇总的紧凑文本，明确给出处理量及输入/输出/缓存拆分。
  *
  * ⚠️ 与 Cline 请求表同款约定：只渲染**有值**的段 —— 缓存/推理为 0 时整段
  * 省略，避免一排恒 0 的装饰性数字稀释真正有用的读数。
  */
 export function tokenSummaryText(row) {
   if (!row || typeof row !== 'object') return '—';
-  const parts = ['↓' + formatTokenCount(row.inputTokens ?? 0), '↑' + formatTokenCount(row.outputTokens ?? 0)];
-  if ((row.cacheReadTokens ?? 0) > 0) parts.push('⚡' + formatTokenCount(row.cacheReadTokens));
-  if ((row.cacheWriteTokens ?? 0) > 0) parts.push('✎' + formatTokenCount(row.cacheWriteTokens));
-  if ((row.reasoningTokens ?? 0) > 0) parts.push('🧠' + formatTokenCount(row.reasoningTokens));
-  return parts.join(' ');
+  return '总处理 ' + formatTokenCount(totalTokensOf(row));
+}
+
+/** 统一客户端 fallback 口径：缓存命中输入计入处理量，缓存写入不重复计入。 */
+export function totalTokensOf(row) {
+  if (!row || typeof row !== 'object') return 0;
+  const total = Number(row.totalTokens);
+  if (Number.isFinite(total) && total >= 0) return total;
+  const count = (value) => {
+    const n = Number(value ?? 0);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
+  return count(row.inputTokens) + count(row.cacheReadTokens) + count(row.outputTokens);
+}
+
+/** 汇总格的悬浮详情：紧凑行保留总量，悬浮窗给出完整输入/输出拆分。 */
+export function tokenSummaryTooltip(row) {
+  if (!row || typeof row !== 'object') return '暂无 Token 用量';
+  const lines = [
+    tokenSummaryText(row),
+    '↓ 输入 ' + formatTokenCount(row.inputTokens ?? 0),
+    '↑ 输出 ' + formatTokenCount(row.outputTokens ?? 0),
+  ];
+  if ((row.cacheReadTokens ?? 0) > 0) lines.push('⚡ 缓存命中 ' + formatTokenCount(row.cacheReadTokens));
+  if ((row.cacheWriteTokens ?? 0) > 0) lines.push('✎ 缓存写入 ' + formatTokenCount(row.cacheWriteTokens) + '（不重复计入总处理量）');
+  if ((row.reasoningTokens ?? 0) > 0) lines.push('🧠 推理 ' + formatTokenCount(row.reasoningTokens) + '（已包含在输出中）');
+  lines.push('总处理量 = 输入 + 输出；缓存写入不重复计入');
+  return lines.join('\n');
 }
 
 /**
@@ -97,7 +120,7 @@ export function formatTps(entry) {
 }
 
 /**
- * 均值格（汇总行）：`avg 0.9s · 48 tok/s`；两边都不可测 → `—`。
+ * 性能格显示均值与稳健分位数；没有完整分布样本时只显示均值。
  *
  * ⚠️ 速率是**算术均值**，对离群样本敏感（用户 2026-10-07 报障「982.5 tok/s」）。
  * 服务端已丢弃 `decodeMs` 过短（分母塌缩）的样本，但混合分布下均值仍可能
@@ -105,9 +128,11 @@ export function formatTps(entry) {
  */
 export function avgPerfText(row) {
   const ttft = typeof row?.avgTtftMs === 'number' && row.avgTtftMs > 0 ? formatDuration(row.avgTtftMs) : null;
-  const tps = typeof row?.avgTps === 'number' && row.avgTps > 0 ? row.avgTps + ' tok/s' : null;
-  if (ttft === null && tps === null) return '—';
-  return '首字 ' + (ttft ?? '—') + ' · ' + (tps ?? '—');
+  const speed = typeof row?.p50Tps === 'number' && row.p50Tps > 0
+    ? 'P50 ' + row.p50Tps
+    : typeof row?.avgTps === 'number' && row.avgTps > 0 ? '均值 ' + row.avgTps : null;
+  if (ttft === null && speed === null) return '—';
+  return (ttft === null ? '' : '首字 ' + ttft) + (speed === null ? '' : (ttft === null ? '' : ' · ') + speed + ' tok/s');
 }
 
 /**
@@ -120,11 +145,19 @@ export function avgPerfText(row) {
  * （已实测：单笔 decode=1ms 的样本能把均值从 184 拉到 634592）。
  */
 export function avgPerfTooltip() {
-  return '均值口径：对有实测值的请求取算术平均。'
-    + '「首字」= 首个 chunk 到达前的耗时；'
+  return '性能统计：首字时间取可测请求的算术平均；输出速率均值对离群样本敏感。'
+    + '完整样本的 P50/P90 使用对数直方图估算，桶宽约 9%。'
+    + '「首字」= 首个内容 chunk 到达前的耗时；'
     + '「速率」= 全部输出 token ÷（首块之后 → 结束）的时长，'
     + '要求解码时长 ≥ 100ms（过短视为不可测、不计入）。'
-    + '算术均值对离群样本敏感：个别极快/极慢的请求会明显拉高或拉低该值。';
+    + '算术均值对离群样本敏感；旧版日账本没有分布数据，完成升级后新累计的完整日期才显示 P50/P90。';
+}
+
+/** 汇总性能悬浮详情：把均值和 P90 等次要读数收进鼠标提示。 */
+export function avgPerfDetailTooltip(row) {
+  return avgPerfTooltip() + '\n均值 ' + (row?.avgTps ?? '—') + ' tok/s'
+    + ' · P50 ' + (row?.p50Tps ?? '—') + ' tok/s'
+    + ' · P90 ' + (row?.p90Tps ?? '—') + ' tok/s';
 }
 
 // ───────────────────── 历史视图（第 4 期）─────────────────────
@@ -143,7 +176,7 @@ export function rangeDaysOf(key) {
   return hit === undefined ? 0 : hit.days;
 }
 
-/** 今日的 UTC+8 日键（与服务端 utc8DayKey 同算法；用于高亮柱状图当前日）。 */
+/** 今日的 UTC+8 日键（与服务端 utc8DayKey 同算法；用于高亮热力图当前日）。 */
 export function todayDayKey() {
   const shifted = new Date(Date.now() + 8 * 60 * 60 * 1000);
   const pad = (x) => String(x).padStart(2, '0');
@@ -151,66 +184,37 @@ export function todayDayKey() {
 }
 
 /**
- * 趋势图数据：每日一行（日键 + token 合计 + 请求数），新在前，最多 maxBars 根。
- *
- * ⚠️ 缺数据的天**不补零**（历史里没有键就是没用过）—— 补零需要造日历序列，
- * 会让「最近 30 天」在数据稀疏时出现一长排空柱，观感差且信息量为零。
+ * GitHub 风格的每日用量格。缺失日期补 0，按 UTC+8 日期顺序排列，
+ * level 0–4 按当前窗口的最大日用量分档。
  */
-export function trendBars(historyDays, maxBars = 30) {
-  const list = Array.isArray(historyDays) ? historyDays : [];
+export function historyHeatmapCells(historyDays, days = 30, endDay = todayDayKey()) {
+  const count = Math.max(1, Math.min(90, Math.trunc(Number(days) || 30)));
+  const [year, month, date] = String(endDay).slice(0, 10).split('-').map(Number);
+  const end = new Date(Date.UTC(year, month - 1, date));
   const today = todayDayKey();
-  return list.slice(0, maxBars).map((d) => ({
-    day: d?.day ?? '',
-    isToday: d?.day === today,
-    requests: d?.totals?.requests ?? 0,
-    tokens: (d?.totals?.inputTokens ?? 0) + (d?.totals?.outputTokens ?? 0),
-  }));
-}
-
-/** 柱高下限：极小值也能看见柱子（否则只在最大值那根可见）。 */
-export const BAR_HEIGHT_MIN_PERCENT = 4;
-/** 柱高上限：留出顶部空白，描边与圆角才不会被容器裁掉。 */
-export const BAR_HEIGHT_MAX_PERCENT = 88;
-/** 相对区间宽度：非最大柱能落在 [MIN, MIN+SPAN] 内，最大柱封顶 MAX。 */
-export const BAR_HEIGHT_SPAN_PERCENT = 84;
-/** 孤柱高度：单日窗口下唯一那根（相对比较无意义，给固定值更像「一根柱子」）。 */
-export const BAR_HEIGHT_SINGLE_PERCENT = 72;
-
-/**
- * 柱高百分比（相对窗口内最大值）。
- *
- * ⚠️ **必须有上限**（真实缺陷，用户 2026-10-07 报障）：单日窗口（`today`）下
- * 「今日」既是最大值又是它自己，比值恒为 `t/max = 1` ⇒ 高度 100% ⇒ 唯一那根柱
- * 撑满 64px 容器；`flex: 1 0 14px` 又把它横向拉满整行，于是**一柱独占成
- * 一整条白块**，点开展开后又被卡片挤成竖条 —— 看着像「点击后尺寸突变」，
- * 实则是同一根柱在两种容器宽度下的两种表现。
- *
- * 上限的另一层用意：全等高时不许「一根顶天、其余贴地」的观感。最大值那根
- * 给 {@link BAR_HEIGHT_MAX_PERCENT}（留白让描边与圆角可见），其余按比例缩放
- * 到 {@link BAR_HEIGHT_SPAN_PERCENT} 的区间里 —— 保持相对关系不失真。
- *
- * @param tokens - 该柱的 token 合计。
- * @param maxTokens - 窗口内最大 token 合计（0/垃圾值按 0 处理）。
- * @param barCount - 窗口内的柱子**根数**；只有一根时用固定孤柱高（避免孤柱独占）。
- */
-export function barHeightPercent(tokens, maxTokens, barCount = 0) {
-  const max = typeof maxTokens === 'number' && maxTokens > 0 ? maxTokens : 0;
-  const t = typeof tokens === 'number' && tokens > 0 ? tokens : 0;
-  if (max === 0 || t === 0) return 0;
-  const ratio = t / max;
-  // ⚠️ 孤柱（单日窗口）不参与满量程比较：恒 100% 的那根就是「白块」本体。
-  if (barCount <= 1) return BAR_HEIGHT_SINGLE_PERCENT;
-  // 最大值那根给满量程上限，其余按比例压进 [保底, 满量程上限] 区间。
-  const scaled = BAR_HEIGHT_MIN_PERCENT + ratio * BAR_HEIGHT_SPAN_PERCENT;
-  return Math.round(Math.min(BAR_HEIGHT_MAX_PERCENT, Math.max(BAR_HEIGHT_MIN_PERCENT, scaled)));
-}
-
-/** 柱子的日期短标签（`MM-DD`；非法日键 → 空串，由调用方降级为不渲染）。 */
-export function barDayLabel(day) {
-  if (typeof day !== 'string' || day.length < 10) return '';
-  const m = day.slice(5, 7);
-  const d = day.slice(8, 10);
-  return /^\d{2}-\d{2}$/.test(m + '-' + d) ? m + '-' + d : '';
+  const totalsByDay = new Map((Array.isArray(historyDays) ? historyDays : [])
+    .filter((row) => typeof row?.day === 'string')
+    .map((row) => [row.day, row]));
+  const rows = [];
+  for (let offset = count - 1; offset >= 0; offset -= 1) {
+    const d = new Date(end.getTime() - offset * 86400000);
+    const day = d.toISOString().slice(0, 10);
+    const row = totalsByDay.get(day);
+    rows.push({
+      day,
+      isToday: day === today,
+      requests: row?.totals?.requests ?? 0,
+      tokens: totalTokensOf(row?.totals),
+      level: 0,
+    });
+  }
+  const maxTokens = rows.reduce((max, row) => Math.max(max, row.tokens), 0);
+  for (const row of rows) {
+    if (row.tokens > 0 && maxTokens > 0) {
+      row.level = Math.min(4, Math.max(1, Math.ceil((row.tokens / maxTokens) * 4)));
+    }
+  }
+  return rows;
 }
 
 /** 历史窗口标题（弹窗内小节标题）。 */

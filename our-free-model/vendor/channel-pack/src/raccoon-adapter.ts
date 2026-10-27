@@ -32,6 +32,7 @@ import type {
 import { AccountPool, providerCatalogVisible } from './account-pool.js'
 import { RemoteCatalogGate } from './remote-catalog-gate.js'
 import { settingsNamespaceFor } from './settings-compat.js'
+import { nextUtc8DayStartMs } from './model-queue.js'
 import { isRaccoonExpired, type RaccoonCredential } from './raccoon.js'
 import {
   RACCOON,
@@ -58,6 +59,16 @@ import {
 
 /** 本适配器注册的 provider 路由名（等价于 `RACCOON.id`）。 */
 export const PROVIDER = 'raccoon'
+
+function isQuotaError(data: Record<string, unknown>): boolean {
+  const error = typeof data.error === 'object' && data.error !== null
+    ? data.error as Record<string, unknown>
+    : data
+  return String(error.code ?? data.code) === '402'
+    || /积分不足|余额不足|insufficient[_\s]+(?:points|balance|credits)/i.test(
+      String(error.message ?? error.msg ?? ''),
+    )
+}
 
 /**
  * 把 DSH 的档位 id 映射成请求体的 `extra_body.thinking` 字段。
@@ -167,7 +178,12 @@ export interface RaccoonAdapterOptions {
   /** 解析当前可用凭据。 */
   resolveCredential: (modelId?: string) => Promise<RaccoonCredential | undefined>
   /** 凭据失效时的处理（raccoon 有 refresh 端点，会真续期）。 */
-  refresh: () => Promise<void>
+  refresh: (accountId?: string) => Promise<RaccoonCredential | void>
+  /** Request-local rotation; callers must exclude already attempted accounts. */
+  nextAccount?: (
+    modelId: string,
+    tried: ReadonlySet<string>,
+  ) => Promise<{ accountId: string; credential: RaccoonCredential } | undefined>
   /** 拉取远端模型目录；失败时适配器回退兜底表。 */
   fetchRemoteModels?: () => Promise<RaccoonRemoteModel[]>
   /** 读取图片附件的原始字节（内联为 data URL 用）。 */
@@ -367,9 +383,11 @@ export class RaccoonAdapter extends LlmAdapter {
 
     // 1. 取凭据（过期则先续期）
     let credential = await this.options.resolveCredential(options.model)
+    let accountId = credential === undefined ? undefined
+      : await this.options.accountPool?.findAccountIdByCredential(this.product.id, credential.access_token)
     if (credential === undefined || isRaccoonExpired(credential)) {
-      await this.options.refresh()
-      credential = await this.options.resolveCredential(options.model)
+      credential = await this.options.refresh(accountId || undefined)
+        ?? await this.options.resolveCredential(options.model)
     }
     if (credential === undefined || credential.access_token.length === 0) {
       throw new LlmError('raccoon: no usable credential; log in first', 'MISSING_CREDENTIAL')
@@ -456,30 +474,59 @@ export class RaccoonAdapter extends LlmAdapter {
       }
     }
 
-    let response = await send()
-    // 401/403 时续期一次并重试（raccoon 有 refresh_token 轮换）。
-    if (response.status === 401 || response.status === 403) {
-      await this.options.refresh()
-      const refreshed = await this.options.resolveCredential(options.model)
-      if (refreshed === undefined || refreshed.access_token.length === 0) {
-        throw new LlmError('raccoon: credential expired and refresh failed', 'AUTH', { status: response.status })
+    const tried = new Set<string>()
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (accountId) tried.add(accountId)
+      let emitted = false
+      try {
+        let response = await send()
+        if (response.status === 401 || response.status === 403) {
+          await response.body?.cancel()
+          const refreshed = await this.options.refresh(accountId || undefined)
+            ?? await this.options.resolveCredential(options.model)
+          if (refreshed === undefined || refreshed.access_token.length === 0) {
+            throw new LlmError('raccoon: credential expired and refresh failed', 'AUTH', { status: response.status })
+          }
+          credential = refreshed
+          response = await send()
+        }
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '')
+          let quota = response.status === 402
+          try { quota ||= isQuotaError(JSON.parse(errorText)) } catch {}
+          throw new LlmError(
+            `raccoon: ${errorDetail(errorText)}`,
+            quota ? 'QUOTA_EXCEEDED' : httpErrorCode(response.status),
+            { status: response.status },
+          )
+        }
+        for await (const chunk of consumeOpenAiSse(response, { signal: options.signal }, {
+          label: 'raccoon',
+          firstTokenTimeoutMs: resolveFirstTokenTimeoutMs(),
+          chunkTimeoutMs: resolveChunkTimeoutMs(),
+          isQuotaError,
+          ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
+        })) {
+          emitted = true
+          yield chunk
+        }
+        return
+      } catch (error) {
+        if (options.signal?.aborted || !(error instanceof LlmError) || error.code !== 'QUOTA_EXCEEDED') throw error
+        if (accountId) {
+          await this.options.accountPool?.updateModelRateLimit(accountId, options.model, nextUtc8DayStartMs())
+        }
+        // A new SSE consumer starts block indices at zero; never replay after output.
+        if (emitted || attempt === 2 || this.options.nextAccount === undefined) throw error
+        const next = await this.options.nextAccount(options.model, tried)
+        if (next === undefined || tried.has(next.accountId)) throw error
+        accountId = next.accountId
+        credential = next.credential
+        if (isRaccoonExpired(credential)) {
+          credential = await this.options.refresh(accountId) ?? credential
+        }
       }
-      credential = refreshed
-      response = await send()
     }
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '')
-      throw new LlmError(`raccoon: ${errorDetail(errorText)}`, httpErrorCode(response.status), { status: response.status })
-    }
-
-    // ⚠️ 业务失败也可能以 HTTP 200 + SSE 内嵌错误帧返回，由 consumeOpenAiSse 处理。
-    yield* consumeOpenAiSse(response, { signal: options.signal }, {
-      label: 'raccoon',
-      firstTokenTimeoutMs: resolveFirstTokenTimeoutMs(),
-      chunkTimeoutMs: resolveChunkTimeoutMs(),
-      ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
-    })
   }
 }
 

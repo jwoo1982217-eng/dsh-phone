@@ -14,15 +14,75 @@
  *
  * 故这里起两个回环服务器（一个 CONNECT 代理、一个 SOCKS5 代理），
  * 各跑一次真实的 `fetch`，并断言**目标站点看到的是代理转发的连接**。
+ *
+ * ## ⚠️⚠️ 必须走生产的 `proxyFetch`，不能自己写 `fetch(url, { dispatcher })`
+ *
+ * 本文件原先 5 处都是裸全局 `fetch` 配生产 dispatcher —— 那**恰好把这个缺陷
+ * 重新构造了一遍**：全局 fetch 来自 Node 内置 undici，dispatcher 来自外部
+ * undici 8.x，两者 handler 契约不同源，在 Node 22/24 上恒抛
+ * `InvalidArgumentError: invalid onRequestStart method`（缺陷 IKK4BY）。
+ *
+ * 更要命的是其中 2 条「代理不可用时失败」的用例**因为错误的原因通过**：
+ * 它们只断言「请求 reject」，而契约冲突**恰好也 reject**（`error.cause` 是
+ * `invalid onRequestStart method` 而非 `ECONNREFUSED`）—— 于是缺陷被掩盖了两轮。
+ *
+ * ⇒ 现在所有请求都经 {@link proxyFetch}（生产同款路径）：传了代理就走 undici
+ *   自带的 fetch，与 dispatcher 同源；这才让本文件真正测到「代理链路」。
  */
 import { createServer, type Server } from 'node:http'
 import { createServer as createNetServer, type Socket } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { buildProxyDispatcher, closeAllProxyDispatchers } from '../../src/opencode-proxy.js'
+import { buildProxyDispatcher, closeAllProxyDispatchers, proxyFetch } from '../../src/opencode-proxy.js'
 import type { NormalizedProxy } from '../../src/opencode.js'
 
 /** 记录「谁访问了目标站点」——用于证明流量确实绕过了代理。 */
 const seenViaProxy: string[] = []
+
+/**
+ * 「死代理」端口：合法、但**没有任何进程监听**。
+ *
+ * ⚠️ 用 45xxx 段（而不是 `1` / `9` 之类低端口），理由是**可读性与稳健性**：
+ * 低端口既可能被本机真实服务占用，语义上也不像「测试用的临时端口」。
+ *
+ * ⚠️⚠️ **纠正一处早先写错的理由**（自审时实测发现）：我原先注释说
+ * 「`1` / `9` 落在 fetch 的 forbidden port 名单里会被拦成 `bad port`」——
+ * 这**不准确**。实测（Node 26，逐端口对照）：
+ *
+ * | 变化侧 | 端口 1 / 9 / 25 / 465 / 587 | 结论 |
+ * |---|---|---|
+ * | **target**（请求 URL） | `bad port` | 受 forbidden-port 检查 |
+ * | **proxy**（dispatcher） | `connect ECONNREFUSED …` | **不被检查，真去连了** |
+ *
+ * 即 **forbidden-port 只作用于 target URL，完全不检代理端口**。
+ * 所以「死代理端口 = 1」其实**不会**被 `bad port` 拦，它本来就正确地走
+ * `ECONNREFUSED`。（当初看到 `bad port` 是因为把 **target** 写成了 `:9`，
+ * 报的是目标 URL 的问题，与代理无关。）改用 45999 仍然更好，但理由是
+ * 「不与真实服务撞port、语义清晰」，**不是**「躲避 forbidden port」。
+ */
+const DEAD_PORT = 45_999
+
+/** 沿 `cause` 链收集全部错误 code（连接被拒 / undici 错误码都在这里）。 */
+function collectErrorCodes(error: unknown): string[] {
+  const codes: string[] = []
+  let current: unknown = error
+  for (let depth = 0; depth < 5 && current !== null && current !== undefined; depth += 1) {
+    const code = (current as { code?: unknown }).code
+    if (typeof code === 'string') codes.push(code)
+    current = (current as { cause?: unknown }).cause
+  }
+  return codes
+}
+
+/** 沿 `cause` 链收集全部 message（用于断言「我方抛出的可读错误」确实传到了调用方）。 */
+function collectErrorMessages(error: unknown): string[] {
+  const messages: string[] = []
+  let current: unknown = error
+  for (let depth = 0; depth < 5 && current !== null && current !== undefined; depth += 1) {
+    if (current instanceof Error) messages.push(current.message)
+    current = (current as { cause?: unknown }).cause
+  }
+  return messages
+}
 
 let origin: Server
 let originPort = 0
@@ -145,27 +205,57 @@ describe('HTTP 代理：真实 fetch 经代理到达目标', () => {
   it('per-request dispatcher 生效（风险 R2 的实证）', async () => {
     const proxy: NormalizedProxy = { kind: 'http', url: `http://127.0.0.1:${connectProxyPort}`, label: '' }
     const before = seenViaProxy.length
-    // ⚠️ 这是本仓库最该被验证的一行：外部 undici 的 Dispatcher
-    // 能否被 Node 内置 fetch 接受。duck typing 是否成立只有真跑才知道。
-    const response = await fetch(originUrl, { headers: { 'x-via': 'http-proxy' }, dispatcher: buildProxyDispatcher(proxy) as never } as RequestInit)
+    // ⚠️ 这是本仓库最该被验证的一行：外部 undici 的 Dispatcher 与 fetch 是否同源。
+    // 走生产的 `proxyFetch`（内部用 undici 自带的 fetch），不是裸全局 fetch。
+    const response = await proxyFetch(originUrl, { headers: { 'x-via': 'http-proxy' } }, proxy)
     expect(await response.text()).toBe('origin-ok')
     expect(seenViaProxy.length).toBe(before + 1)
     expect(seenViaProxy.at(-1)).toBe('http:http-proxy')
   })
 
-  it('⚠️ 不传 dispatcher 时走直连（证明上面确实是代理在转发）', async () => {
+  it('⚠️ 不传代理时走直连（证明上面确实是代理在转发）', async () => {
     const before = seenViaProxy.length
-    const response = await fetch(originUrl, { headers: { 'x-via': 'direct' } })
+    // 代理为 undefined ⇒ proxyFetch 退回全局 fetch，即「该账号未配代理」的路径。
+    const response = await proxyFetch(originUrl, { headers: { 'x-via': 'direct' } }, undefined)
     expect(await response.text()).toBe('origin-ok')
     expect(seenViaProxy.at(-1)).toBe('http:direct')
     expect(seenViaProxy.length).toBe(before + 1)
   })
 
-  it('代理不可用时请求失败（不静默回退直连）', async () => {
-    const dead: NormalizedProxy = { kind: 'http', url: 'http://127.0.0.1:1', label: '' }
-    await expect(
-      fetch(originUrl, { dispatcher: buildProxyDispatcher(dead) as never } as RequestInit),
-    ).rejects.toBeDefined()
+  it('⚠️ 传 `Request` 作 init 时必须**抛错**，不能静默降级为 GET（审计发现 C）', async () => {
+    // 反例（实测）：`{ ...new Request(...) }` 展开是**空对象**（method/body/headers
+    // 都不是自有可枚举属性），于是请求会静默变成 GET、丢 body 与头 ——
+    // 这比抛错更危险（错得没有声音）。故 proxyFetch 入口显式拦截。
+    const proxy: NormalizedProxy = { kind: 'http', url: `http://127.0.0.1:${connectProxyPort}`, label: '' }
+    const req = new Request(originUrl, {
+      method: 'POST',
+      body: 'REQ-BODY',
+      headers: { 'x-via': 'req' },
+    })
+    // 前置事实：展开 Request 确实为空（否则本条用例的前提不成立）
+    expect(Object.keys({ ...req })).toHaveLength(0)
+
+    const before = seenViaProxy.length
+    // ⚠️ guard 是**同步 throw**（不是 reject 的 promise）：故用 `toThrow` 而非
+    // `rejects` —— 写成 rejects 会得到「同步抛错」的失败信息，看着像 guard 没生效。
+    expect(() => proxyFetch(originUrl, req as unknown as RequestInit, proxy)).toThrow(/Request/)
+    // ⚠️ 关键：绝不能「悄悄发出去」—— 目标站点不得被访问
+    expect(seenViaProxy.length).toBe(before)
+  })
+
+  it('⚠️ 代理不可用时因「连接被拒」失败，而不是因契约错配失败', async () => {
+    // 2026-10-08 加固（issue IKK4BY）：本用例原先只断言 `rejects.toBeDefined()`，
+    // 于是**契约冲突也让它通过**（两种失败都只是 reject）—— 缺陷被掩盖了两轮。
+    // 现在必须验 cause 是连接层错误，证明它真的去连了、并因连不上而失败。
+    const dead: NormalizedProxy = { kind: 'http', url: `http://127.0.0.1:${DEAD_PORT}`, label: '' }
+    const error = await proxyFetch(originUrl, {}, dead).then(
+      () => null,
+      (e: unknown) => e,
+    )
+    expect(error).toBeDefined()
+    expect(collectErrorCodes(error)).toContain('ECONNREFUSED')
+    // 反面：绝不能是契约错配
+    expect(collectErrorCodes(error)).not.toContain('UND_ERR_INVALID_ARG')
   })
 })
 
@@ -175,7 +265,7 @@ describe('SOCKS5：自建隧道真实联通', () => {
     try {
       const proxy: NormalizedProxy = { kind: 'socks5', url: `socks5://127.0.0.1:${socks.port}`, label: '' }
       const before = socksConnections
-      const response = await fetch(originUrl, { headers: { 'x-via': 'socks' }, dispatcher: buildProxyDispatcher(proxy) as never } as RequestInit)
+      const response = await proxyFetch(originUrl, { headers: { 'x-via': 'socks' } }, proxy)
       expect(await response.text()).toBe('origin-ok')
       expect(socksConnections).toBeGreaterThan(before)
     } finally {
@@ -184,11 +274,15 @@ describe('SOCKS5：自建隧道真实联通', () => {
     }
   }, 15_000)
 
-  it('SOCKS5 代理不存在时失败（不静默回退）', async () => {
-    const dead: NormalizedProxy = { kind: 'socks5', url: 'socks5://127.0.0.1:1', label: '' }
-    await expect(
-      fetch(originUrl, { dispatcher: buildProxyDispatcher(dead) as never } as RequestInit),
-    ).rejects.toBeDefined()
+  it('⚠️ SOCKS5 代理不存在时因连接失败而失败（不是契约错配）', async () => {
+    const dead: NormalizedProxy = { kind: 'socks5', url: `socks5://127.0.0.1:${DEAD_PORT}`, label: '' }
+    const error = await proxyFetch(originUrl, {}, dead).then(
+      () => null,
+      (e: unknown) => e,
+    )
+    expect(error).toBeDefined()
+    expect(collectErrorCodes(error)).toContain('ECONNREFUSED')
+    expect(collectErrorCodes(error)).not.toContain('UND_ERR_INVALID_ARG')
   }, 15_000)
 
   it('⚠️ CONNECT 被拒时报出可读错误（覆盖 fail() 的 throw 路径）', async () => {
@@ -211,12 +305,88 @@ describe('SOCKS5：自建隧道真实联通', () => {
     const port = typeof ra === 'object' && ra !== null ? ra.port : 0
     try {
       const proxy: NormalizedProxy = { kind: 'socks5', url: `socks5://127.0.0.1:${port}`, label: '' }
-      await expect(
-        fetch(originUrl, { dispatcher: buildProxyDispatcher(proxy) as never } as RequestInit),
-      ).rejects.toBeDefined()
+      const error = await proxyFetch(originUrl, {}, proxy).then(
+        () => null,
+        (e: unknown) => e,
+      )
+      expect(error).toBeDefined()
+      // ⚠️ 必须验到**我们自建隧道抛出的那句可读错误**（不是笼统的 fetch failed）：
+      // 早期 `fail()` 写成外层作用域的 `reject` 时会抛 ReferenceError，
+      // 若只断言「rejects」这条用例照样绿 —— 那就又成了假绿。
+      expect(collectErrorMessages(error).join(' | ')).toMatch(/SOCKS5 CONNECT 被拒绝/)
+      expect(collectErrorCodes(error)).not.toContain('UND_ERR_INVALID_ARG')
     } finally {
       await closeAllProxyDispatchers()
       await new Promise<void>((resolve) => { refusing.close(() => resolve()) })
+    }
+  }, 15_000)
+
+  it('⚠️ 默认端口（https → 443）必须真的写进 CONNECT 帧，不能是 0（真实缺陷）', async () => {
+    // 事故（pre-existing，2026-10-08 实测）：旧实现 `Number(opts.port ?? 443)`
+    // 在 undici 传**空字符串**（默认端口时的真实形态）下得到 `Number('') === 0`，
+    // 于是 CONNECT 帧端口是 0 ⇒ 必然失败。而生产 chat 打的正是
+    // `https://opencode.ai/zen`（默认 443）⇒「SOCKS5 代理」修复前恒不可用。
+    //
+    // ⚠️ 为什么要用 `dispatch({ origin })` 而不是 `proxyFetch(url)`：
+    // 只有「无显式端口」的 origin 才会让 undici 传空串；而 `fetch` 的 URL
+    // 解析层不会暴露这一步。故这里绕过 fetch，直接驱动 dispatcher 并
+    // **从 CONNECT 帧里读出端口** —— 这才是本缺陷的真正判据。
+    const targets: string[] = []
+    const spy = createNetServer((socket) => {
+      let buf = Buffer.alloc(0)
+      let stage = 'hello'
+      socket.on('data', (chunk: Buffer) => {
+        buf = Buffer.concat([buf, chunk])
+        if (stage === 'relay') return
+        if (stage === 'hello') {
+          if (buf.length < 2 + (buf[1] ?? 0)) return
+          buf = buf.subarray(2 + (buf[1] ?? 0))
+          socket.write(Buffer.from([0x05, 0x00]))
+          stage = 'connect'
+          return
+        }
+        if (buf.length < 5) return
+        const hostLen = buf[4]!
+        if (buf.length < 5 + hostLen + 2) return
+        targets.push(`${buf.subarray(5, 5 + hostLen).toString('utf8')}:${buf.readUInt16BE(5 + hostLen)}`)
+        // 只看帧内容，不需要真连上 ⇒ 一律拒绝
+        socket.write(Buffer.from([0x05, 0x05, 0, 1, 0, 0, 0, 0, 0, 0]))
+        socket.end()
+      })
+      socket.on('error', () => socket.destroy())
+    })
+    await new Promise<void>((resolve) => spy.listen(0, '127.0.0.1', resolve))
+    const sa = spy.address()
+    const port = typeof sa === 'object' && sa !== null ? sa.port : 0
+    const dispatcher = buildProxyDispatcher({ kind: 'socks5', url: `socks5://127.0.0.1:${port}`, label: '' })
+    const drive = (origin: string): Promise<void> => new Promise((resolve) => {
+      const noop = (): void => {}
+      try {
+        dispatcher.dispatch(
+          { origin, path: '/', method: 'GET', headers: {} } as never,
+          {
+            onRequestStart: noop, onRequestUpgrade: noop, onResponseStart: noop,
+            onResponseData: noop, onResponseEnd: noop, onResponseError: () => resolve(),
+            onConnect: noop, onHeaders: noop, onData: noop, onComplete: noop,
+            onError: () => resolve(),
+          } as never,
+        )
+      } catch { /* 版本差异：抛错也算已驱动 */ }
+      setTimeout(resolve, 1500)
+    })
+
+    try {
+      await drive('https://example.test')          // 默认端口 → 必须 443
+      await drive('https://example.test:8443')     // 显式端口 → 必须原样
+
+      // ⚠️ 核心断言：默认端口是 443，**不是 0**
+      expect(targets[0]).toBe('example.test:443')
+      expect(targets[0]).not.toMatch(/:0$/)
+      // 显式端口不被改动
+      expect(targets[1]).toBe('example.test:8443')
+    } finally {
+      await closeAllProxyDispatchers()
+      await new Promise<void>((resolve) => { spy.close(() => resolve()) })
     }
   }, 15_000)
 })

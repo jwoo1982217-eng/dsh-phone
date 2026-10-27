@@ -30,15 +30,26 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { homedir, tmpdir } from 'node:os'
 import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { browserCandidates, findBrowserExecutable } from '../../src/zcode-captcha.js'
+import { browserCandidates, findBrowserExecutable } from '../../src/chromium-session.js'
 
-/** 被扫描的源码文件（本文件针对的正是它）。 */
+/**
+ * 被扫描的源码文件。
+ *
+ * ⚠ 是 `chromium-session.ts`，**不是** `zcode-captcha.ts`（2026-10-08 抽共享模块）：
+ * 候选链的三个分支函数、出口函数与 `findBrowserExecutable` 全部搬到了那里，
+ * 供 zcode captcha 与库库AI 登录共用。
+ *
+ * ⚠⚠ **本文件的判据全部依赖「扫到的确实是真源码」**，指错文件时的失效是
+ * **静默**的：`fnBody(code, name)` 里的 `expect(start).toBeGreaterThan(-1)`
+ * 会兜住「函数找不到」，但 `stripComments` 那几条整文件正则不会 ——
+ * 它们会在一个不含该代码的文件上求值并**全绿**。改实现文件时**必须同时改这里**。
+ */
 const sourcePath = join(
   dirname(fileURLToPath(import.meta.url)),
   '..',
   '..',
   'src',
-  'zcode-captcha.ts',
+  'chromium-session.ts',
 )
 
 /**
@@ -54,11 +65,42 @@ function stripComments(source: string): string {
     .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
 }
 
-/** 取某个具名函数的**函数体**（按配对大括号切，不靠正则猜边界）。 */
+/**
+ * 取某个具名函数的**函数体**（按配对大括号切，不靠正则猜边界）。
+ *
+ * ⚠⚠ **必须先跳过参数列表**（2026-10-08 修）。
+ *
+ * 早期实现直接 `indexOf('{', start)` 取第一个 `{` —— 对
+ * `browserCandidates` 这种**参数是对象字面量类型**的函数，那个 `{` 落在
+ * **参数类型注解**里，于是「函数体」只截到
+ * `{ platform?: …; env?: …; home?: string }` 就结束了（实测 len=103），
+ * 真正的函数体一行都没扫到 ⇒ 本文件里依赖 `fnBody` 的判据**静默恒真**。
+ * 这正是「扫描类断言必须自带护栏」那条教训的又一实例。
+ *
+ * 修法：先按括号配对找到参数列表的 `)`，再从它之后取第一个 `{`。
+ *
+ * ⚠ 已知边界：若将来某个被扫的函数**返回类型本身含大括号**
+ * （如 `): { a: string } {`），这里仍会取错。本文件扫的 5 个函数返回类型
+ * 分别只有 `string[]` / `string | undefined`，不触发该边界。
+ */
 function fnBody(code: string, name: string): string {
   const start = code.indexOf(`function ${name}(`)
   expect(start, `源码里应能找到 ${name}`).toBeGreaterThan(-1)
-  const open = code.indexOf('{', start)
+  // 先跳过参数列表：从 `(` 起按圆括号配对，找到与之配对的 `)`。
+  const paramsOpen = code.indexOf('(', start)
+  let parens = 0
+  let paramsClose = -1
+  for (let i = paramsOpen; i < code.length; i++) {
+    if (code[i] === '(') parens++
+    else if (code[i] === ')') {
+      parens--
+      if (parens === 0) { paramsClose = i; break }
+    }
+  }
+  if (paramsClose === -1) throw new Error(`${name} 的参数列表括号不配对`)
+  // 再从参数列表之后取函数体。
+  const open = code.indexOf('{', paramsClose)
+  if (open === -1) throw new Error(`${name} 找不到函数体起始大括号`)
   let depth = 0
   for (let i = open; i < code.length; i++) {
     if (code[i] === '{') depth++
@@ -323,6 +365,178 @@ describe('ZCode 浏览器探测', () => {
     //   （上面那条正则锚定的是完整表达式，加在后面就匹配不上而变红）。
     expect(code, 'home 默认值不得混入 USERPROFILE').not.toMatch(
       /const\s+home\s*=[^\n]*USERPROFILE/,
+    )
+  })
+
+  /**
+   * ★★ 上面那条的**范围缺口修补**：判据原先只扫「三个分支函数体 + 一个赋值点」，
+   * **调用点不在扫描范围内**（Gitee issue IKJS58 的复核中发现）。
+   *
+   * ## 缺口实测（本机 Windows，2026-10-08）
+   *
+   * 把注入搬到调用方即可绕过上面那条的全部断言 —— 但它在
+   * 「`USERPROFILE` 被沙箱/CI 改写」时（正是本文件头 ### 2 要防的场景）与
+   * 坏实现**行为等价**：
+   *
+   * ```ts
+   * for (const candidate of browserCandidates({ home: process.env.USERPROFILE })) {
+   * ```
+   *
+   * 实测：`zcode-browser-*.spec.ts` **34 条全绿**、`zcode-browser-detection.spec.ts`
+   * 8/8 全绿。根因是上面那条的扫描域是**函数体白名单**，而缺口在调用点。
+   *
+   * ## 判据为什么需要**两个维度**（单维度实测各漏一半）
+   *
+   * 黑名单（`not.toContain('USERPROFILE')`）对本文件要防的写法无效，且必须
+   * **穷举**变量名才成立 —— 正是本仓库反复出现的那类「同义判据漏一边」：
+   *
+   * ```ts
+   * process.env['USER' + 'PROFILE']        // 拼接：不含字面量 USERPROFILE
+   * const p = process.env; p.USERPROFILE   // 别名：不经 process.env 前缀
+   * ```
+   *
+   * ⇒ 改判「**剥注释后的整份源码里，`process` 的每一次使用都必须在白名单内**」。
+   *
+   * | 维度 | 锁什么 | 漏掉的绕过（实测） |
+   * |---|---|---|
+   * | 只有**属性**白名单 | 属性名 ∈ {platform, env, kill} | `process.env` 搬到**调用点**（M1/M2/M4 全绿） |
+   * | 加**位置**白名单 | `process.env` 只在默认回落处 | —（M1~M5 全红） |
+   *
+   * 1. **属性维度**锚定 `process` **标识符**而非 `process.env` 字面量 ——
+   *    否则 `process['env']`（不含该字面量）会漏掉。
+   * 2. **位置维度**把唯一的合法用法整串剔除，剩余不得再有 `process.env`。
+   *
+   * ⚠ 位置维度用「**剔除**后无残留」而非「计数 == 1」：两者都抓调用点，
+   * 但计数锁会在新增一处完全无害的 `process.platform` 时**假失败**。
+   *
+   * ---
+   *
+   * ## ⚠⚠⚠ 这不是「已穷尽绕过」的防线，只是一枚**防回归锚点**
+   *
+   * 两轮独立审计（2026-10-08）各自实测出多类**全绿漏网**。**别把本判据
+   * 的能力读高了** —— 它锚定的是「`process` 字面拼写」与「`process.env`
+   * 出现的位置」，而这两样都不是「家目录来源」的充分刻画：
+   *
+   * | 已实测的漏网 | 机制 |
+   * |---|---|
+   * | `import proc from 'node:process'` | 进程对象可从**别的模块名**导入 |
+   * | `import { env as hostEnv } from 'node:process'` | 同上（具名导入） |
+   * | `const p = process as NodeJS.Process` | `as` **断言改名**，无 `process.` 前缀 |
+   * | `env[['USER','PROFILE'].join('')]` | `env` 是**合法参数**；属性名可计算 ⇒ **文本层不可判定** |
+   * | `(globalThis as any).eval('pro'+'cess')` | 动态求值 ⇒ **原理上不可判定** |
+   * | `env.VITEST ? home : 偷env` | **测试环境自检测**：跑在 vitest 下就完全规矩 ⇒ 任何在用测试都抓不到 |
+   * | `input.platform === undefined ? 偷env : home` | **条件门**：只在生产调用形态下使坏 |
+   *
+   * ⚠ 前 6 类**纯文本判据原理上都堵不住**（`eval` 与自检测尤其）；
+   * 第 7 类（条件门）已由行为判据的**无参生产入口用例**封死 —— 那是
+   * 本轮审计最有价值的产出，**别把它删了**。
+   *
+   * ⇒ **真正守住「家目录只来自 `homedir()`」的是行为判据**
+   * （`tests/unit/zcode-browser-home-source.spec.ts` 的哨兵 + 默认入口用例）。
+   * 本判据只是**快速静态预警**：它能在**改动默认回落那一行**时立刻出声，
+   * 而代价极低。两者**互补而非冗余**（实测：V2「调用点注入」只有它能抓，
+   * `env[evilKey]` 只有行为判据能抓）。
+   *
+   * ⚠ **新增任何白名单外的 `process.*`（含无辜的 `process.pid`）都会让它变红**
+   * —— 那是**刻意**的：请到白名单处显式登记，而不是绕过它。为此本判据**只扫
+   * 候选链的 5 个函数体**（而不是整个文件），把假失败面压到「与家目录真正相关
+   * 的区域」。
+   */
+  it('★ process 只出现在白名单位置（覆盖调用点的范围缺口）', () => {
+    const code = stripComments(readFileSync(sourcePath, 'utf8'))
+
+    /**
+     * ⚠ 只扫**候选链相关的 5 个函数体**，而不是整个文件。
+     *
+     * 理由（审计实测，2026-10-08）：家目录解析**只发生在这些函数里**；
+     * 扫全文件会让 `process.pid` / `process.hrtime` / `process.stdout` /
+     * `process.env.NODE_ENV` 这类**与家目录无关**的新增用法全部**假失败**
+     * （实测 4 例），而它们完全无辜。窄域让判据只在**真正相关的区域**变红。
+     *
+     * ⚠ 必须含 `findBrowserExecutable`：调用点（`browserCandidates({ home: … })`）
+     * 就在它里面 —— 那正是本判据要补的范围缺口。
+     */
+    const CHAIN_FUNCTIONS = [
+      'windowsBrowserCandidates',
+      'macBrowserCandidates',
+      'linuxBrowserCandidates',
+      'browserCandidates',
+      'findBrowserExecutable',
+    ] as const
+    const region = CHAIN_FUNCTIONS.map((fn) => fnBody(code, fn)).join('\n')
+
+    /**
+     * ⚠ 剥掉**字符串字面量与模板字面量**：错误消息/脚本正文里出现的
+     * `process.env.USERPROFILE`（给人看的文案、内嵌 PowerShell 脚本）不算
+     * 「读取宿主环境变量」。
+     */
+    const withoutStrings = region
+      .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+      .replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
+      .replace(/`(?:[^`\\]|\\.)*`/g, '``')
+
+    /**
+     * 把 `process . env`（点前后有空白）**归一**成 `process.env` 再判。
+     *
+     * ⚠ 必须归一（审计实测漏洞 U2）：`process.  env`（点后多空格）不含
+     * `process.env` 连续字面量，会**同时**绕过位置维度与正向锚定
+     * （`\s*` 之后 `process\.env\b` 要求点后紧邻 `env`）⇒ 实测 9/9 全绿。
+     */
+    const normalized = withoutStrings.replace(/process\s*\.\s*env\b/g, 'process.env')
+
+    // ── 维度 1：属性白名单 ────────────────────────────────────────────────────
+    /**
+     * `process` 的全部合法属性访问（**实测事实**，2026-10-08）：
+     * 候选链区域里只有 `platform` ×1 / `env` ×1（`kill` 不在本区域，
+     * 但保留在集合里以防将来迁入）。
+     *
+     * ⚠ 用逐点枚举而不是「总计数 == N」：后者在**新增**一处 `process.platform`
+     * （完全无害）时会假失败。
+     */
+    const ALLOWED_PROCESS_PROPS = new Set(['platform', 'env', 'kill'])
+    for (const match of normalized.matchAll(/process\s*\.\s*([A-Za-z_$][\w$]*)/g)) {
+      expect(
+        ALLOWED_PROCESS_PROPS.has(match[1]),
+        `候选链里不得读取 process.${match[1]}（白名单只允许 ${[...ALLOWED_PROCESS_PROPS].join(' / ')}）`,
+      ).toBe(true)
+    }
+    // 括号访问一律违规 —— `process['env']` 不含 `process.env` 字面量。
+    expect(
+      normalized,
+      '不得用括号访问 process（如 process["env"]），它会绕过属性名判据',
+    ).not.toMatch(/process\s*\[/)
+    /**
+     * 裸 `process`（既不是属性访问也不是括号访问）不得出现。
+     *
+     * ⚠ 用 `[ \t]*` 而**不是** `\s*`：`\s` 会**跨行**，于是
+     * `const p = process` + 换行 + 下一行的标识符被当成续接，负前瞻失效
+     * ⇒ 实测漏掉「裸 process 别名」（9/9 全绿）。
+     */
+    expect(
+      normalized,
+      '不得把 process 整体当值使用（如 `const p = process`）',
+    ).not.toMatch(/process\b(?![ \t]*[.[\w$])/)
+
+    // ── 维度 2：位置（`process.env` 的唯一合法用途）──────────────────────────
+    /**
+     * ⚠⚠ 判据是「**归一后全区域恰好 1 处 `process.env`**」，且那一处必须是
+     * `env` 的默认回落。
+     *
+     * ⚠ 早期版本用 `split(ENV_DEFAULT).join('')` 把合法串**整串剔除**再查残留 ——
+     * 那是**自身缺陷**（审计实测 V_B4）：剔除是全局的，于是
+     * `const h = (input.env ?? process.env).USERPROFILE ?? home` 里的坏用法
+     * **连同合法串一起被剔除**，残留为空 ⇒ 9/9 全绿。**计数法不会自豁免** ——
+     * 那个坏实现会数到 2 处，直接变红。
+     */
+    const envOccurrences = normalized.match(/process\.env/g) ?? []
+    expect(
+      envOccurrences.length,
+      'process.env 在候选链里只允许出现 1 处（env 的默认回落）；' +
+        '不得把它当作 home 等注入口的取值（应当由 homedir() 求解）',
+    ).toBe(1)
+    // 且那一处必须**确实是**默认回落（不是别的用途）。
+    expect(normalized, 'env 的默认回落必须是 input.env ?? process.env').toMatch(
+      /const\s+env\s*=\s*input\.env\s*\?\?\s*process\.env\b/,
     )
   })
 

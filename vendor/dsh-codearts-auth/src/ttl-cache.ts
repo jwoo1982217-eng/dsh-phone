@@ -53,8 +53,14 @@ export interface TtlCacheOptions<T> {
   now?: () => number
 }
 
-/** 缓存项。`ttlMs` 是**写入时**按 `ttlFor` 定下的、这一条自己的有效期。 */
-interface Entry<T> {
+/**
+ * 缓存项。`ttlMs` 是**写入时**按 `ttlFor` 定下的、这一条自己的有效期。
+ *
+ * ⚠️ **导出**（原先是模块私有的）：`peekStale()` 的返回类型要携带它，
+ * 而一个「返回私有类型」的公开方法在 `.d.ts` 里无法表达 —— TS 会把
+ * `peekStale` 标成返回不可命名的类型，跨包调用方拿不到 `.value` / `.stale`。
+ */
+export interface Entry<T> {
   value: T
   atMs: number
   ttlMs: number
@@ -124,6 +130,38 @@ export class TtlCache<T> {
       return undefined
     }
     return entry
+  }
+
+  /**
+   * ★ 看**过期后**的条目（陈旧兼顶），**不触发加载**。
+   *
+   * ## 为什么要有它（用户 2026-10-16 的要求）
+   *
+   * 「用底层缓存；加载如果得不到新数据，应该读出旧数据，不能直接返回错误
+   *（除非旧数据也没有）」—— {@link peek} 在条目过期那一刻就把 `this.entry`
+   * 丢弃了，于是「上次成功读到的值」在取数失败时**已经取不回来**。
+   *
+   * ## ⚠️ 为什么是**独立方法**而不是给 `peek` 加参数
+   *
+   * `peek()` 是**严格 TTL** 判据，被 `get()` 与多处调用方共用；给它加开关会
+   * 让「这个缓存到底严不严格」变成运行期才确定的事 —— 那正是本仓库红线
+   * 「同一语义两套判据」的形态。⇒ 两条语义各占一个方法名，调用点**写死**。
+   *
+   * ## 语义
+   *
+   * - 有条目（无论新鲜或过期）⇒ 返回它，并附 `stale: true` 标记；
+   * - 一次都没写进过 ⇒ 返回 `undefined`（**没有旧数据可兼顶**，调用方只能报错）；
+   * - ⚠️ **不丢弃**过期条目：兼顶之后取数成功会覆盖它、失败会继续用它，
+   *   两者都不需要「先扔掉再重取」—— 丢弃发生在 `write()` 里。
+   *
+   * ⚠️ **返回值带 `stale` 标记是刻意的**：调用方据此告诉用户「这是 HH:MM 的
+   * 值」，否则用户会把几分钟前的数字当成现状（`balance-cache.ts` 依赖它）。
+   */
+  peekStale(): (Entry<T> & { stale: true | false }) | undefined {
+    const entry = this.entry
+    if (entry === undefined) return undefined
+    const stale = this.now() - entry.atMs >= entry.ttlMs
+    return stale ? { ...entry, stale: true } : { ...entry, stale: false }
   }
 
   /** 写入一个已知值（例如从别处拿到的新配置，避免下一次白加载）。 */

@@ -1,21 +1,4 @@
-/**
- * 腾讯 OrcaTerm（遨驰终端）LLM adapter。
- *
- * 把腾讯云 ligai 网关的 ACP 协议（`/assistant/chat`）投影成 harness 的 provider 合约。
- * 与仓库里其余 adapter 的差异集中在三处，全部由 {@link ORCATerm} 的字段驱动：
- *
- * 1. **凭据不是 bearer token**，而是腾讯云网页登录态 cookie（`uin`/`skey`）或桌面
- *    `ot_session` JWT。两者请求头不同：网页形态**只带 Cookie**，补一个
- *    `Authorization: Bearer` 会被上游按 ot_session 校验并返回 `code=10050000`；
- *    桌面形态则必须同时带 Bearer 与 Cookie。{@link authHeaders} 是唯一的裁决点。
- * 2. **请求体是 ACP 信封**：`input.input` 是 `{"_format":"acp-prompt",…}` 的**字符串**，
- *    不是 `messages` 数组；模型 id 必须上游全名，短名会被静默吞掉。
- * 3. **流式不是纯文本增量**：上游 SSE 的 `content` 字段拼起来是整个响应信封
- *    JSON（`{action,thinking,taskCompletion}`），答案文本本身以 JSON 转义形态分帧到达。
- *    {@link OrcaTermEnvelopeParser} 负责在任意帧切点上增量解码。
- *
- * @module orcaterm-adapter
- */
+import { createDsmlMarkerNormalizer } from './sse.js';
 import { registerAdapterIdempotent } from './llm-register-compat.js';
 import { ORCATerm, ORCATerm_FALLBACK_MODELS, isKnownOrcaTermModel } from './orcaterm-product.js';
 import { prepareOrcaTermInput, resolveOrcaTermTools, OrcaTermToolTextGate } from './orcaterm-harness.js';
@@ -578,6 +561,8 @@ export class OrcaTermAdapter {
         return ORCATerm_FALLBACK_MODELS.map((model) => ({ id: model.id, name: model.name }));
     }
     async listModels(provider) {
+        if (this.deps.providerClosed?.())
+            return [];
         return ORCATerm_FALLBACK_MODELS.map((model) => ({
             provider,
             id: model.id,
@@ -595,7 +580,7 @@ export class OrcaTermAdapter {
             id: model,
             name: known?.name ?? model,
             inputModalities: ['text'],
-            context: { contextWindow: 131072 },
+            ...(known ? { context: { contextWindow: 131072 } } : {}),
             defaultMaxTokens: 8192,
         };
     }
@@ -675,6 +660,7 @@ export class OrcaTermAdapter {
             yield { type: 'finish', reason: { kind: 'error', failure: { message: '用户输入为空', code: 'EMPTY_INPUT' } } };
             return;
         }
+        const dsmlFix = createDsmlMarkerNormalizer();
         const gate = new OrcaTermToolTextGate(prepared.tools.length > 0);
         const pending = [];
         let notify = null;
@@ -683,7 +669,7 @@ export class OrcaTermAdapter {
         let outputText = '', reasoning = '';
         const push = (event) => { pending.push(event); notify?.(); notify = null; };
         const completion = completeStreamed(credential, text, model, options.signal, (delta) => {
-            const safe = gate.feed(delta);
+            const safe = dsmlFix.push(gate.feed(delta));
             if (safe) {
                 outputText += safe;
                 push({ type: 'text-delta', index: 0, text: safe });
@@ -740,7 +726,7 @@ export class OrcaTermAdapter {
             yield { type: 'finish', reason: { kind: 'error', failure: { message: String(error), code: 'INVALID_TOOL_CALL' } } };
             return;
         }
-        const tail = gate.finish(calls.length > 0 || result.truncated === true);
+        const tail = dsmlFix.push(gate.finish(calls.length > 0 || result.truncated === true)) + dsmlFix.flush();
         if (tail) {
             outputText += tail;
             yield { type: 'text-delta', index: 0, text: tail };
@@ -772,6 +758,7 @@ export class OrcaTermAdapter {
 export function registerOrcaTermLlm(ctx, options) {
     const adapter = new OrcaTermAdapter({
         resolveCredential: options.resolveCredential,
+        providerClosed: options.providerClosed,
         recordUsage: options.recordUsage,
         warn: options.warn ?? ((message) => ctx.logger?.warn?.(message)),
     });

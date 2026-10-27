@@ -1,5 +1,3 @@
-import { accountQuotaError, hasStreamOutput, streamError } from './account-failover.js'
-import { afterAccount } from './account-rotation.js'
 /**
  * 某模型的输入模态（`LlmModelInfo` / `LlmResolvedModelInfo` 共用）。
  *
@@ -30,7 +28,7 @@ function inputModalitiesOf(
  * 指纹派生的作用是**防关联**与满足形状门禁，不参与配额计算。
  */
 
-import { LlmAdapter, LlmError, ReasoningEffortId, CONTEXT_WINDOW_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
+import { LlmAdapter, LlmError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type {
   GenerateOptions,
   LlmModelInfo,
@@ -40,25 +38,24 @@ import type {
 } from '@deepseek-ai/dsh-llm'
 import type { Context } from '@deepseek-ai/cordis'
 import {
-  OPENCODE, OPENCODE_FALLBACK_MODELS, OPENCODE_INFERENCE_MODELS, classifyOpencodeError,
-  isFreeOpencodeModel, isReachableOpencodeModel, mergeInferenceModels, usesInferenceLane,
+  OPENCODE, OPENCODE_FALLBACK_MODELS, classifyOpencodeError, isFreeOpencodeModel,
+  isReachableOpencodeModel,
   type OpencodeErrorInfo, type OpencodeErrorKind, type OpencodeFallbackModel,
 } from './opencode-product.js'
 import { listIdentitySlots, type IdentitySlot } from './opencode-auth.js'
 import { deriveRequestId, deriveSessionId, opencodeHeaders, opencodeUserAgent } from './opencode.js'
-import {
-  deriveInferenceSessionId, inferenceHeaders, prepareInferencePayload,
-} from './opencode-inference.js'
-import { buildOpencodePayload } from './opencode-messages.js'
+import { buildOpencodeRequest } from './opencode-messages.js'
+import { normalizeOpencodeResponse } from './opencode-stream.js'
 import {
   getOpencodeCapabilitiesSync, opencodeEffortName, supportsOpencodeImage,
   type OpencodeModelCapability,
 } from './opencode-capability.js'
-import { buildProxyDispatcher } from './opencode-proxy.js'
+import { proxyFetch } from './opencode-proxy.js'
 import { consumeOpenAiSse, collectImages, httpErrorCode, serializeMessages } from './openai-compat.js'
 import { registerAdapterIdempotent } from './llm-register-compat.js'
 import { reportLedgerAccount } from './token-ledger.js'
 import { retryAfterMsFromResponse } from './retry-after.js'
+import { planSessionTitleThinking } from './session-title.js'
 
 /** 目录条目（远端与兜底共用的输出形状）。 */
 export interface OpencodeCatalogEntry extends OpencodeFallbackModel {}
@@ -89,6 +86,21 @@ export async function loadOpencodeCatalog(
   slot: IdentitySlot,
   ttlMs: number = DEFAULT_CATALOG_TTL_MS,
 ): Promise<readonly OpencodeCatalogEntry[]> {
+  // ⚠️⚠️ **必须先读能力表**（Issue IKM9LR）：下面的 `isReachableOpencodeModel`
+  //   依赖远端 `provider.api` 注入的可达性表，而注入发生在读能力表的那一刻。
+  //   不先读 ⇒ 冷启动首帧那张表是空的 ⇒ filter 退化成硬编码本地表 ⇒
+  //   远端明明下发了的新模型被挡掉（本 issue 的原症状，**完全静默**）。
+  //   代价只是一次同步读（内存或磁盘文件），不引入任何等待。
+  //
+  // ⚠️⚠️ **这一句是顺序约束的唯一起作用点**（2026-10-17 对抗审计实测澄清）。
+  //   `OpencodeAdapter.listModels` 原本也有一句同款前置读，实测证明那是**冗余**的
+  //   （单独删掉它，全仓 9078+ 条单测仍全绿）⇒ 已删除，避免「两处同款前缀」
+  //   且误导后来人以为改上面那处就够。
+  //   **守卫**（`tests/unit/models-dev-cache.spec.ts` 的端到端用例）正是靠
+  //   删掉**这一句**才变红 —— 它用本地表里没有的 `zzz-brand-new-x` 作断言，
+  //   对「远端表是否生效」敏感（⚠️ 早先那版用 `deepseek-v4.1-flash-free`
+  //   是**恒真**的：那个 id 已被收录进本地兜底表 ⇒ 顺序颠倒也照样绿）。
+  getOpencodeCapabilitiesSync()
   const cached = catalogCache.get(slot.id)
   if (cached !== undefined && ttlMs > 0 && Date.now() - cached.at < ttlMs) return cached.entries
   let entries: readonly OpencodeCatalogEntry[]
@@ -142,11 +154,22 @@ export async function loadOpencodeCatalog(
 export interface OpencodeAdapterOptions {
   /** 取当前槽序列（账号池顺序 + 匿名槽末位）。 */
   identitySlots: () => Promise<readonly IdentitySlot[]>
-  isLimited?: (slotId: string, modelId: string) => boolean
   /** 拉远端目录；缺省时直接用兜底表。 */
   fetchRemoteCatalog?: OpencodeCatalogFetcher
   /** 用户模型黑名单。 */
   disabledModels?: () => ReadonlySet<string>
+  /**
+   * 「该供应商**整体关闭**」探测（Gitee issue IKP8OF）。
+   *
+   * ⚠️ **与 {@link disabledModels} 是两条腿，不可互相替代**：
+   * 后者是「这些具体 id 被关着」（有界集合），而本回调回答的是
+   * 「用户要求整个供应商关着吗」—— 它能覆盖**关闭之后才出现的模型**，
+   * 那些 id 从未进过黑名单，`disabledModels` 永远看不到它们。
+   *
+   * 本家不走共享骨架（`model-catalog.ts`），故必须在这里显式判一次；
+   * 缺失时按「未整体关闭」处理（老接线 / 单测替身的行为逐字不变）。
+   */
+  providerClosed?: () => boolean
   /** 记录受限的副作用（切槽时由接线层提供）。 */
   markLimited?: (slotId: string, modelId: string, resetAtMs: number) => Promise<void>
   /** 诊断日志。 */
@@ -213,7 +236,6 @@ export function opencodeRetryAfterMs(
 }
 
 export class OpencodeAdapter extends LlmAdapter {
-  private readonly lastSlots = new Map<string, string>()
   constructor(private readonly options: OpencodeAdapterOptions) {
     super()
   }
@@ -229,13 +251,13 @@ export class OpencodeAdapter extends LlmAdapter {
     // 完整，匿名目录看不到它们。
     const slot = slots.find((s) => s.kind === 'account') ?? slots.at(-1)
     if (this.options.fetchRemoteCatalog === undefined || slot === undefined) {
-      return mergeInferenceModels(OPENCODE_FALLBACK_MODELS)
+      return OPENCODE_FALLBACK_MODELS
     }
     // ⚠️ **不要**在适配器上再 memoize 一份：那会让目录永不过期 ——
     // 用户后加一个账号（付费模型本应随之可见）要重启 DSH 才能看到，
     // 表现为「key 明明有效却不显示付费模型」。刷新职责交给带 TTL 的
     // `loadOpencodeCatalog`（默认 5 分钟）。
-    return mergeInferenceModels(await loadOpencodeCatalog(this.options.fetchRemoteCatalog, slot))
+    return loadOpencodeCatalog(this.options.fetchRemoteCatalog, slot)
   }
 
   /**
@@ -247,28 +269,45 @@ export class OpencodeAdapter extends LlmAdapter {
    * （minimax 的同款真实缺陷，见 `minimax-adapter.ts` 的注释）。
    */
   listAllModels(): readonly { id: string; name: string; isFree?: boolean }[] {
-    // ⚠️ 必须把 /inference 免费模型并进来：`listAllModels` 是 Jet Hub RPC
-    // `ModelCatalogSource` 的同步来源（面板「模型」列表），漏掉就会在
-    // 面板里看不到新通道的模型，用户以为没接上。
-    return [...OPENCODE_FALLBACK_MODELS, ...OPENCODE_INFERENCE_MODELS]
-      .filter((m, index, all) => all.findIndex((x) => x.id === m.id) === index)
-      .map((m) => ({ id: m.id, name: m.name, isFree: m.isFree }))
+    return OPENCODE_FALLBACK_MODELS.map((m) => ({ id: m.id, name: m.name, isFree: m.isFree }))
   }
 
   async listModels(_provider: string): Promise<readonly LlmModelInfo[]> {
+    // ⚠️⚠️ 「供应商整体关闭」⇒ 一条都不播（Gitee issue IKP8OF）。
+    // 排在槽位读取之前：关闭态下不需要任何身份/目录工作，且新模型
+    // （关闭之后才进远端目录的）不在黑名单里，只能靠本判据拦住。
+    if (this.options.providerClosed?.() === true) return []
     const slots = await this.options.identitySlots()
     // 无任何槽 = 连匿名槽都没了（异常态）：返回空数组隐藏 provider 分组，
     // **不抛错**（抛错会多一条 provider 级报错，UI 表现为「供应商加载失败」）。
     if (slots.length === 0) return []
+    // ⚠️⚠️ **这里的顺序约束在下一行，不在本函数**（2026-10-17 对抗审计实测澄清）。
+    //
+    // 远端的「协议可达性」与「免费判定」两张表是由 `opencode-capability.ts`
+    // 归一 models.dev 时注入的（见 `publishRemoteTables`），而注入发生在
+    // **读能力表**的那一刻；`catalog()` 内部会逐条调
+    // `isReachableOpencodeModel` / `isFreeOpencodeModel` 过滤远端目录。
+    //
+    // ⚠️ **本函数原本也有一句前置读**，注释写着「顺序不能颠倒」。实测
+    //   （对抗审计 + 我复现）：**那句是冗余的** —— 真正兜住顺序约束的是
+    //   `loadOpencodeCatalog` 里更靠前的那次读（它在 `catalog()` 被调用的
+    //   更内层，必然先执行）。证据：单独去掉本函数那句，全仓 27+9084 条
+    //   单测**仍全绿**；两处同时去掉，端到端守卫立刻变红。
+    //
+    // ⇒ 已删掉本函数那句（避免两处同款前缀、且让人误以为改这里就够了）。
+    //    若将来 `catalog()` 出现**不经过 `loadOpencodeCatalog`** 的路径
+    //    （例如直接用兜底表、或新增别的目录源），顺序约束会**重新失效** ——
+    //    那时必须在这里补回，并**同时**补一条能抓住它的守卫。
+    //
+    // ⚠️ **同步**读（不 await）：渲染路径上等网络会让模型选择器一直空白
+    // （真机事故 2026-10-02）。能力表在下面 map 时用到。
     const all = await this.catalog()
-    // ⚠️ 可见性口径（用户定稿）：只有匿名身份时**只给免费模型**。
-    // 免费判定以**远端 models.dev 的 cost** 为准（见 opencode-capability.ts）。
-    const hasAccountSlot = slots.some((s) => s.kind === 'account')
-    const visible = hasAccountSlot ? all : all.filter((m) => m.isFree)
-    const disabled = this.options.disabledModels?.() ?? new Set<string>()
-    // ⚠️ **同步**读能力表（不 await）：渲染路径上等网络会让模型选择器一直空白
-    // （真机事故 2026-10-02）。拿不到就按纯文本兜底，后台补齐后会重渲染。
     const capabilities = getOpencodeCapabilitiesSync()
+    // ⚠️ 可见性口径（用户定稿）：只有匿名身份时**只给免费模型**。
+    // 免费判定以**远端 models.dev 的 cost** 为准（由上面那次读取注入）。
+    const hasAccountSlot = slots.some((s) => s.kind === 'account')
+    const visible = hasAccountSlot ? all : all.filter((m) => isFreeOpencodeModel(m.id))
+    const disabled = this.options.disabledModels?.() ?? new Set<string>()
     return visible
       .filter((m) => !disabled.has(m.id))
       .map((m) => ({
@@ -346,7 +385,7 @@ export class OpencodeAdapter extends LlmAdapter {
       resolved.reasoning = {
         efforts: capability.efforts.map((effort) => ({
           // ⚠️ `id` 是**品牌类型**（`ReasoningEffortId`），必须经它的构造函数 ——
-          // 与 Qoder 同款（`src/qoder-adapter.ts:581`）。
+          // 与 Qoder 同款（`src/qoder-adapter.ts`）。
           id: ReasoningEffortId(effort),
           // ⚠️ 没有官方中文的档位（models.dev 会下发 `minimal` / `xhigh` 等
           // Qoder 那份表里没有的值）**回退到 id 本身** —— 宁可显示英文原值，
@@ -382,7 +421,7 @@ export class OpencodeAdapter extends LlmAdapter {
  * 3. 收费模型**不经匿名槽**（匿名凭证只认免费模型，见 `pickSlot`）。
  */
   async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    const slots = (await this.options.identitySlots()).filter(slot => !this.options.isLimited?.(slot.id, options.model))
+    const slots = await this.options.identitySlots()
     if (slots.length === 0) {
       throw new LlmError('opencode: 没有可用通道', 'MISSING_CREDENTIAL')
     }
@@ -402,9 +441,7 @@ export class OpencodeAdapter extends LlmAdapter {
     const limited: string[] = []
 
     for (;;) {
-      const last = this.lastSlots.get(options.model)
-      const ordered = last ? [...slots.filter(s => s.id === last), ...afterAccount(slots, last).filter(s => s.id !== last)] : slots
-      const slot = pickSlot(ordered, options.model, tried)
+      const slot = pickSlot(slots, options.model, tried)
       if (slot === undefined) {
         // 全 tried ⇒ 每个槽都试过一次。收费模型走到这里通常是「没有账号槽」。
         throw new LlmError(
@@ -412,65 +449,60 @@ export class OpencodeAdapter extends LlmAdapter {
           'QUOTA_EXCEEDED',
         )
       }
-      this.lastSlots.set(options.model, slot.id)
       tried.add(slot.id)
       // Token 账本（第 2 期）：回报「本笔请求实际使用的槽」（匿名槽 = 'anonymous'）。
       reportLedgerAccount(OPENCODE.id, slot.id)
 
       let delivered = false
-      const buffered: StreamChunk[] = []
       try {
         for await (const chunk of this.streamVia(slot, options)) {
-          const error = streamError(chunk)
-          if (!delivered && error && accountQuotaError(error)) throw error
-          delivered ||= hasStreamOutput(chunk)
-          if (delivered || error) { yield* buffered.splice(0); yield chunk }
-          else buffered.push(chunk)
+          // ⚠️ **任何 chunk 产出都算「已交付」**：本仓库的 `StreamChunk` 联合
+          // （`block-start` / `*-delta` / `block-end` / `usage` / `finish`）里
+          // **没有**「内容之前的前置事件」—— 原设计假设有个 `start` 事件，
+          // 实际类型里不存在（tsc 直接报 TS2367 点破了它）。既然不存在，
+          // 区分「前置」与「内容」就无从谈起，保守取「一律算交付」：
+          // 宁可漏掉一次可切换的机会，也绝不重放（重放会让用户看到重复输出）。
+          delivered = true
+          yield chunk
         }
-        yield* buffered
         return
       } catch (error) {
-        if (delivered || options.signal?.aborted) throw error
-        // 输入/附件/上下文问题换身份无益；保留给宿主压缩与用户取消处理。
-        if (error instanceof LlmError && ['UNSUPPORTED_CONTENT', 'INVALID_REQUEST', CONTEXT_WINDOW_EXCEEDED_CODE, 'CANCELLED'].includes(error.code)) throw error
-        if (error instanceof LlmError && error.code === 'QUOTA_EXCEEDED') {
-          if (!accountQuotaError(error)) throw error
-          await this.options.markLimited?.(slot.id, options.model, Date.now() + 24 * 60 * 60_000)
-          limited.push(`${slot.id}(额度耗尽)`)
-          continue
-        }
+        if (options.signal?.aborted) throw options.signal.reason ?? error
+        if (delivered) throw error
+        if (error instanceof LlmError && (error.code === 'QUOTA_EXCEEDED' || error.code === 'PERMISSION_DENIED')) throw error
 
         const info = classifyOpencodeFailure(error)
         if (info.kind === 'free_tier') {
-          if (usesInferenceLane(options.model)) {
-            // /inference 的 403 是**请求形态门禁**（会话编码/头集/工具定义），
-            // 不是 TLS 指纹也不是额度。`streamVia` 已用新会话重试过一次，
-            // 到这里说明形态仍未通过 —— 报真实原因，别误导用户去买 key。
-            this.options.warn?.(
-              `opencode: /inference 免费通道被 FreeTierError 拒绝（形态门禁）：${info.detail}`,
-            )
-            throw new LlmError(
-              'opencode: /inference 免费通道被拒绝（FreeTierError）。'
-              + '该入口校验请求形态（会话编码 / CLI 头集 / 官方工具定义），'
-              + '不是 key 问题；请把上游返回原文反馈给插件维护者。',
-              'AUTH',
-              { status: 403 },
-            )
-          }
-          // ⚠️⚠️ 2026-10-15 起根因 = **上游传输指纹门禁**，不是 session id 形状。
-          // 真机 1.19.0 抓包矩阵实证：官方 CLI 直连 200；Node/curl/python/
-          // npm-Bun 反代/Bun 裸 TLS + 完全复刻的头序全部 403 FreeTierError。
-          // 免费模型只认官方 CLI 的 TLS/HTTP 指纹 —— **换槽/换 key/换出口都无效**
-          // （每槽发的同一套栈），故不重试，把唯一有效动作写进文案。
+          // V2 同时校验 session 算法、UA/关联头、工具描述与 schema。
+          // 换槽不改变这些协议字段；不得把拒绝原因写死为 session 外形。
           this.options.warn?.(
-            `opencode: 旧 /zen 免费通道被 FreeTierError 拒绝 —— 上游对免费模型启用官方客户端传输指纹门禁：${info.detail}`,
+            `opencode: 免费通道被 FreeTierError 拒绝 —— 检查 V2 端点、session 算法、UA 与工具 schema：${info.detail}`,
           )
+          // ⚠️⚠️ **错误码绝不能取 `AUTH`**（真实缺陷，Gitee issue IKLBSH 归位）。
+          //
+          // `AUTH` 会让 DSH 客户端**丢弃本条 message、换成固定文案「API 密钥无效」**
+          //（`dsh-client-ui-chat/lib/client.js` 的 `failureMessage`；判据与
+          // `buddy-adapter.ts` 的 `contentRejectionError` 注释同源）。而本条文案
+          // 恰好是**唯一**能指路的那句 —— 它说的是「根因是 session id **形状**、
+          // 换 key 或换出口都无效」。换成「API 密钥无效」后用户会去换 key / 重新登录，
+          // 全是无效动作，而**真实报文（`info.detail`）也一并消失**。
+          //
+          // 库内实测取证（866 个会话，`scripts/tmp-scan-iklbsh.mjs`）：两条真实
+          // `turn/end` 失败事件的 code 就是 `AUTH`，message 正是本函数写的那句
+          // `opencode: HTTP 403 — {"type":"error","error":{"type":"FreeTierError",…}}`
+          // —— 即本条缺陷**在真实流量上发生过**（会话
+          // `session-d7c80d34`，2026-10-02）。
+          //
+          // 取下 `PERMISSION_DENIED`：① 客户端不替换它，文案完整送达；
+          // ② `dead-model-store` 的 `IGNORED_CODES` 收它，模型**不会**被误记成
+          //    下架 30 天（`AUTH` 也在该集合里，这一条两侧等价）；
+          // ③ 它不在 `DEFAULT_RETRYABLE_CODES` 里 ⇒ 仍是「确定性、不白退避」，
+          //    与本分支「不重试也不换槽」的设计一致。
+          // 与 `buddy` 的 11140（同样从 `AUTH` 改成 `PERMISSION_DENIED`）同款裁决。
           throw new LlmError(
-            'opencode: 旧 /zen 免费通道被上游拒绝（FreeTierError）。'
-            + '该档只允许官方 OpenCode 客户端的传输指纹调用，第三方直发一律 403；'
-            + '请改用 /inference 免费模型（deepseek-v4.1-flash-free 等），'
-            + '或为通道绑定 Zen/Console 付费 key。',
-            'AUTH',
+            `opencode: 免费通道被上游拒绝（FreeTierError）。`
+            + '该错误由请求协议门禁触发，请检查 V2 端点、session 算法、请求头及工具描述/schema；换 API key 或换出口都无效。',
+            'PERMISSION_DENIED',
             { status: 403 },
           )
         }
@@ -493,7 +525,6 @@ export class OpencodeAdapter extends LlmAdapter {
         }
         if (info.kind === 'server' || info.kind === 'transport') {
           // 上游故障/网络问题：不标记（不是配额问题），只换下一个。
-          if (tried.size >= slots.length) throw error
           this.options.warn?.(`opencode: 通道 ${slot.id} ${info.kind}，换下一个：${info.detail}`)
           continue
         }
@@ -510,8 +541,9 @@ export class OpencodeAdapter extends LlmAdapter {
    *
    * ⚠️ **模型不支持图片时直接抛 UNSUPPORTED_CONTENT**（而不是静默丢弃）——
    * 静默丢弃会让用户以为模型看到了图（Qoder 图片事故的教训）。
-   * 附件字节读取失败时明确报 UNSUPPORTED_CONTENT，与手机版原生通道一致，
-   * 不能把用户图片静默换成占位文本后继续生成。
+   * ⚠️ 附件字节读不出来时写入**空 Map**：`openai-compat` 的
+   * `userContentParts` 遇到缺失会产出 `[image unavailable]` 占位，
+   * 至少让模型知道「这里本该有张图但没拿到」，而不是消息里凭空少一块。
    */
   private async resolveImageUrls(
     model: string,
@@ -536,13 +568,8 @@ export class OpencodeAdapter extends LlmAdapter {
     const readImage = this.options.readImage
     const out = new Map<string, string>()
     for (const [id, ref] of refs) {
-      let image: Awaited<ReturnType<NonNullable<OpencodeAdapterOptions['readImage']>>>
-      try { image = await readImage(ref) } catch (cause) {
-        throw new LlmError('opencode: 无法读取图片原始字节，请重新上传', 'UNSUPPORTED_CONTENT', { cause })
-      }
-      if (image === undefined || image.data.length === 0 || !/^image\//.test(image.mediaType)) {
-        throw new LlmError('opencode: 无法读取图片原始字节，请重新上传', 'UNSUPPORTED_CONTENT')
-      }
+      const image = await readImage(ref)
+      if (image === undefined) continue
       out.set(id, `data:${image.mediaType};base64,${Buffer.from(image.data).toString('base64')}`)
     }
     return out
@@ -555,63 +582,67 @@ export class OpencodeAdapter extends LlmAdapter {
     // 否则图片会被静默丢掉（Qoder 图片丢失事故的同型缺陷）。
     const imageUrls = await this.resolveImageUrls(options.model, options.messages)
     const messages = serializeMessages(options.messages, imageUrls)
-    const payload = buildOpencodePayload({
+    /**
+     * 会话自动命名（`purpose: 'session-title'`）的思考与预算决策（issue IKKVDH）。
+     *
+     * DSH 用 **64 token** 发标题请求且**不传 `reasoningEffort`**，而宿主会把
+     * `normalizeEfforts` 声明的默认档注入进来。本家的档位来自 models.dev
+     * `reasoning_options`：`effort` 形态给原值、`toggle` 形态给
+     * `['none','low']`（含 `none`）⇒ 声明了 `none` 的模型关得掉；
+     * `budget_tokens` 形态**不声明档位**（见 `normalizeEfforts`）⇒ 只能抬预算兜底。
+     */
+    const titlePlan = planSessionTitleThinking({
+      purpose: options.purpose,
+      requestedEffort: options.reasoningEffort === undefined ? undefined : String(options.reasoningEffort),
+      // ⚠️ 档位声明与 `resolveModel` **同源**（能力表的 `efforts`，来自 models.dev）
+      // —— 自己另查一份必然漂移：UI 给了「关闭思考」而请求把它丢掉的缺陷形态。
+      declaredEfforts: getOpencodeCapabilitiesSync().find((c) => c.id === options.model)?.efforts ?? [],
+      maxTokens: options.maxTokens,
+    })
+    const request = buildOpencodeRequest({
       model: options.model,
       messages,
       ...options.system !== undefined && options.system.length > 0 ? { system: options.system } : {},
       ...options.tools !== undefined ? { tools: options.tools } : {},
       ...options.temperature !== undefined ? { temperature: options.temperature } : {},
-      ...options.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {},
+      ...titlePlan.maxTokens !== undefined ? { maxTokens: titlePlan.maxTokens } : {},
       // ⚠️ 思考档位（issue IKJJ0V）：`ReasoningEffortId` 是品牌类型，转普通字符串。
       // `none`（关闭思考）也照发 —— models.dev 的 toggle 形态就产出这一档。
-      ...options.reasoningEffort !== undefined
-        ? { reasoningEffort: String(options.reasoningEffort) }
+      // ⚠️ 标题请求改走 `titlePlan.effort`（声明了 `none` 时就是它）。
+      ...titlePlan.effort !== undefined
+        ? { reasoningEffort: titlePlan.effort }
         : {},
     })
-    // ── 通道分流（2026-10-17）────────────────────────────────────────────
-    // 免费模型走 /inference（新匿名通道，实测 Node fetch 可直连）；
-    // 其它模型/账号槽保持旧 /zen 行为，避免影响已付费的通路。
-    const useInference = usesInferenceLane(options.model)
-    // ⚠️ /inference 闸门要求 stream=true + 官方工具定义；旧 /zen 的 bash/read
-    // 桩在 /inference 会被逐字节校验拒掉（403 FreeTierError）。
-    const wirePayload = useInference ? prepareInferencePayload(payload) : payload
-    const url = useInference
-      ? `${OPENCODE.inferenceBaseUrl}${OPENCODE.inferenceChatPath}`
-      : `${OPENCODE.baseUrl}${OPENCODE.chatPath}`
-    // ⚠️ /inference **拒绝** `x-opencode-request`（见到即 403）；会话头也要
-    // 四头同值 + 降序编码。故不能复用 `opencodeHeaders`。
-    const buildHeaders = (session: string): Record<string, string> => ({
-      ...(useInference
-        ? inferenceHeaders(slot.fingerprint, session, OPENCODE.inferenceUserAgent)
-        : opencodeHeaders(slot.fingerprint, session, deriveRequestId(), opencodeUserAgent(slot.userAgent))),
+    const headers: Record<string, string> = {
+      ...opencodeHeaders(slot.fingerprint, sessionIdOf(options), deriveRequestId(), opencodeUserAgent(slot.userAgent)),
       'content-type': 'application/json',
       accept: 'text/event-stream',
-      // ⚠️ /inference 会**校验**真实 key（无效 key 直接 401 Invalid credential），
-      // 而免费模型用字面量 `public` 才是匿名额度。故免费通道固定 `public`，
-      // 不拿账号 key 去消耗付费额度，也不让「无效/过期 key」把免费模型带崩。
-      authorization: `Bearer ${useInference ? OPENCODE.anonymousKey : slot.apiKey}`,
-    })
-    const makeInit = (headers: Record<string, string>): RequestInit => ({
+      authorization: `Bearer ${slot.apiKey}`,
+    }
+    const init: RequestInit = {
       method: 'POST',
       headers,
-      body: JSON.stringify(wirePayload),
+      body: JSON.stringify(request.payload),
       ...options.signal !== undefined ? { signal: options.signal } : {},
-      // ⚠️ per-request dispatcher：只让本 provider 的这次请求走该账号的出口，
-      // **不动全局**（两个插件抢全局槽位会互相短路整个路由层）。
-      ...slot.proxy === undefined ? {} : { dispatcher: buildProxyDispatcher(slot.proxy) as never },
-    })
-    let response = await fetch(
-      url,
-      makeInit(buildHeaders(useInference ? inferenceSessionIdOf(options) : sessionIdOf(options))),
-    )
-    if (!response.ok && useInference && response.status === 403) {
-      // ⚠️ /inference 的 403 是**请求形态门禁**（会话编码/头集/工具定义），
-      // 不是额度：换一个新会话再试一次即可覆盖「会话被上游判过期」这类抖动。
-      // 仍失败则原样透传，由上层给出可读错误。
-      const peek = await response.clone().text().catch(() => '')
-      if (peek.includes('FreeTierError')) {
-        response = await fetch(url, makeInit(buildHeaders(deriveInferenceSessionId())))
-      }
+    }
+    // ⚠️ 走 `proxyFetch` 而不是裸 `fetch`：有代理时它会把请求交给**与
+    // dispatcher 同源**的 undici fetch。用全局 fetch 会造成跨实例 handler
+    // 契约冲突（Node 22/24 上恒失败），详见 `opencode-proxy.ts` 的 `proxyFetch`。
+    // 它内部处理「无代理时退回全局 fetch」，故这里不再自行分支。
+    // 只约束响应头等待；头到达即撤销定时器，不能误杀长回答。
+    const headerController = new AbortController()
+    const headerTimer = setTimeout(() => headerController.abort(new LlmError('opencode: 等待响应头超时', 'TIMEOUT')), OPENCODE.chatHeaderTimeoutMs)
+    let response: Response
+    try {
+      response = await proxyFetch(`${OPENCODE.baseUrl}${OPENCODE.chatPath}`, {
+        ...init,
+        signal: options.signal === undefined ? headerController.signal : AbortSignal.any([options.signal, headerController.signal]),
+      }, slot.proxy)
+    } catch (error) {
+      if (headerController.signal.aborted) throw headerController.signal.reason
+      throw error
+    } finally {
+      clearTimeout(headerTimer)
     }
     if (!response.ok) {
       // ⚠️ **必须先读体**：Zen 的限流语义（`GoUsageLimitError`）在响应体里，
@@ -634,12 +665,20 @@ export class OpencodeAdapter extends LlmAdapter {
         },
       )
     }
-    yield* consumeOpenAiSse(response, options.signal !== undefined ? { signal: options.signal } : {}, {
-      label: 'opencode',
-      firstTokenTimeoutMs: OPENCODE.chatHeaderTimeoutMs,
-      chunkTimeoutMs: OPENCODE.chatChunkTimeoutMs,
-      ...options.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {},
-    })
+    // ⚠️ 传 `warn`：响应层剔除未知/保留/残缺工具名时必须在宿主日志留痕，
+    // 否则「模型不再调工具」会变成一条查不出原因的静默退化。
+    const normalized = normalizeOpencodeResponse(response, request, this.options.warn)
+    try {
+      yield* consumeOpenAiSse(normalized, options.signal !== undefined ? { signal: options.signal } : {}, {
+        label: 'opencode',
+        firstTokenTimeoutMs: OPENCODE.chatHeaderTimeoutMs,
+        chunkTimeoutMs: OPENCODE.chatChunkTimeoutMs,
+        ...options.maxTokens !== undefined ? { maxTokens: options.maxTokens } : {},
+      })
+    } finally {
+      // 共享消费器只 releaseLock；提前结束、取消与抛错都由本渠道释放前置流/上游。
+      await normalized.body?.cancel().catch(() => {})
+    }
   }
 }
 
@@ -682,24 +721,6 @@ function sessionIdOf(options: GenerateOptions): string {
   if (existing !== undefined) return existing
   const created = deriveSessionId()
   sessionIds.set(key, created)
-  return created
-}
-
-/**
- * /inference lane 的会话级 session id（同一 DSH 会话内稳定）。
- *
- * ⚠️ 与旧 lane **分开缓存**：两条 lane 的会话编码不同（降序 vs 升序），
- * 共用一份会让其中一条拿到形状错误的值 → 403。
- */
-const inferenceSessionIds = new WeakMap<object, string>()
-
-function inferenceSessionIdOf(options: GenerateOptions): string {
-  const key = options.messages as unknown as object
-  if (typeof key !== 'object' || key === null) return deriveInferenceSessionId()
-  const existing = inferenceSessionIds.get(key)
-  if (existing !== undefined) return existing
-  const created = deriveInferenceSessionId()
-  inferenceSessionIds.set(key, created)
   return created
 }
 

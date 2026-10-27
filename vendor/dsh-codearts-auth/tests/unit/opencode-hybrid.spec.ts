@@ -1,29 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { clearOpencodeCapabilitiesCache } from '../../src/opencode-capability.js'
+import { describe, expect, it, vi } from 'vitest'
 import {
   OpencodeHybridAdapter, createOpencodeInferenceAdapter, opencodeInferenceSlot,
 } from '../../src/opencode-hybrid-adapter.js'
 import type { OpencodeLocalAdapter } from '../../src/opencode-local-adapter.js'
-import type { OpencodeAdapter } from '../../src/opencode-adapter.js'
-import { OPENCODE } from '../../src/opencode-product.js'
+import type { OpencodeAdapter } from '../../src/opencode-inference-adapter.js'
+import { OPENCODE } from '../../src/opencode-inference-product.js'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-
-let home: string, oldHome: string | undefined
-beforeEach(async () => {
-  oldHome = process.env.DSH_HOME
-  home = mkdtempSync(join(tmpdir(), 'dsh-hybrid-test-'))
-  process.env.DSH_HOME = home
-  await clearOpencodeCapabilitiesCache()
-})
-afterEach(async () => {
-  await clearOpencodeCapabilitiesCache()
-  rmSync(home, { recursive: true, force: true })
-  if (oldHome === undefined) delete process.env.DSH_HOME
-  else process.env.DSH_HOME = oldHome
-})
 
 function chunk(text: string): StreamChunk {
   // 形状与 dsh-llm 的 text-delta 一致（包装层只透传，不解释）。

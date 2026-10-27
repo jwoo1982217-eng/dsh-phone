@@ -217,7 +217,9 @@ const refused = await fetch(`http://127.0.0.1:${forwardPort}/v1/chat/completions
   body: JSON.stringify({ model: 'space-bunny-free', messages: [{ role: 'user', content: 'hi' }] }),
 })
 const refusedBody = await refused.json()
-check('a refused forward call is a failure', refused.status, 502)
+check('a refused forward call preserves the upstream request status', refused.status, 400)
+check('and preserves its classified code and response type',
+  [refusedBody.error?.code, refusedBody.error?.type], ['SERVER', 'invalid_request_error'])
 check('and says what the gateway said', /unavailable/i.test(refusedBody.error?.message ?? ''), true)
 stub.api.refuseAll = false
 

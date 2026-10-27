@@ -154,6 +154,10 @@ function parseEntryList(value: unknown): Array<{ id: string; name?: string; desc
  *
  * ⚠️ **`clinePass` 不是免费集合**：它是 Cline Pass 订阅制模型
  * （`cline-pass/*`），按订阅额度计费而非免费。把它当免费会误导用户。
+ *
+ * ⚠️ 形状不可识别时返回全空 —— 但调用方**必须**用
+ * {@link isClineRecommendedShape} 另行判定「这次到底算不算取到」，
+ * 否则「HTTP 200 + 网关降级返回 `{}`」会被当成成功（issue IKJVTF）。
  */
 export function parseClineRecommendedModels(value: unknown): ClineRecommendedModels {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -165,6 +169,23 @@ export function parseClineRecommendedModels(value: unknown): ClineRecommendedMod
     recommended: parseEntryList(record.recommended),
     clinePass: parseEntryList(record.clinePass),
   }
+}
+
+/**
+ * `recommended-models` 的响应形状是否**可识别**（issue IKJVTF）。
+ *
+ * 判据是「至少有一个已知键是数组」：
+ * - 三个键全缺（`{}` / HTML 解析出的对象 / 错误 JSON）⇒ 不可识别；
+ * - 任一键是数组（含**合法空数组**）⇒ 可识别 —— 上游把免费模型**全部**下架
+ *   时 `free: []` 是合法状态，不能当成失败（那会让冷却永不清理）。
+ *
+ * ⚠️ 这条判据是必需的：`parseClineRecommendedModels` 对异常形状**静默**返回
+ * 全空，只靠 `warnings` 区分不出「取到了空目录」与「根本没取到」。
+ */
+export function isClineRecommendedShape(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const record = value as Record<string, unknown>
+  return Array.isArray(record.free) || Array.isArray(record.recommended) || Array.isArray(record.clinePass)
 }
 
 /** 解析 `/api/v1/models` 响应，取出 id 列表。 */
@@ -179,6 +200,17 @@ export function parseClineRemoteModelIds(value: unknown): string[] {
     if (typeof id === 'string' && id.trim().length > 0) ids.push(id.trim())
   }
   return ids
+}
+
+/**
+ * `/api/v1/models` 的响应形状是否**可识别**（issue IKJVTF）。
+ *
+ * 判据是 `data` 是数组（**空数组也算**：上游下架全部模型是合法状态）。
+ * `{}` / HTML / 错误 JSON ⇒ 不可识别。
+ */
+export function isClineModelsShape(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  return Array.isArray((value as Record<string, unknown>).data)
 }
 
 /**
@@ -270,6 +302,24 @@ export interface ClineRemoteModels {
   entries: Array<{ id: string; name?: string; description?: string }>
   /** 各来源的失败原因（供日志与探针诊断；成功时为空）。 */
   warnings: string[]
+  /**
+   * **两个来源是否都真的取到了**（issue IKJVTF）。
+   *
+   * ⚠️ **不能**用 `warnings.length === 0` 反推（那是本字段存在的理由）：
+   * 「**主动跳过**一个来源」与「**取到了**一个来源」在 warnings 上不可区分。
+   * 实测两条例外，都会让残缺目录被误判成完整（⇒ 清冷却 + 永久缓存）：
+   *
+   * 1. **无凭据**时 `/api/v1/models` 根本不发请求（见下面的实现）——
+   *    那是**主动跳过**，不是成功。而 `providerCatalogVisible` 只查「有没有
+   *    已登录账号」、**不过滤 `enabled`**，`getAvailableAccount` 却过滤
+   *    ⇒「有账号但全部停用」时门控通过、凭据为 undefined，这条路径真实可达。
+   * 2. **HTTP 200 + 形状异常**（网关降级返回 `{}` 或错误 JSON）：解析器静默
+   *    返回空表，零 warning ⇒ 免费集合永久丢失且不再重试。
+   *
+   * ⇒ 判据必须是**每个来源各自的取数结果**（请求成功 + 形状可识别），
+   * 由 {@link fetchClineRemoteModels} 显式给出。
+   */
+  complete: boolean
 }
 
 /**
@@ -288,6 +338,15 @@ export async function fetchClineRemoteModels(
 ): Promise<ClineRemoteModels> {
   const fetcher = options.fetcher ?? fetch
   const warnings: string[] = []
+  /**
+   * 两个来源各自的成败（**不是**「有没有 warning」—— 见
+   * {@link ClineRemoteModels.complete} 的注释）。
+   *
+   * ⚠️ 「主动跳过」与「取到了」必须分开记：无凭据时 `/models` 被跳过，
+   * 那不是成功，否则残缺目录会被判成完整并永久缓存。
+   */
+  let recommendedOk = false
+  let modelsOk = false
 
   const recommendedPromise = (async (): Promise<ClineRecommendedModels> => {
     try {
@@ -300,7 +359,15 @@ export async function fetchClineRemoteModels(
         warnings.push(`recommended-models HTTP ${response.status}`)
         return { free: [], recommended: [], clinePass: [] }
       }
-      return parseClineRecommendedModels(await response.json())
+      const payload = await response.json()
+      // ⚠️ 形状不可识别（网关降级返回 `{}` / HTML）**必须**记 warning：
+      // 否则 `complete` 会把「取到了一个空壳」当成成功（issue IKJVTF）。
+      if (!isClineRecommendedShape(payload)) {
+        warnings.push('recommended-models 响应形状不可识别（缺 free/recommended/clinePass 数组）')
+        return { free: [], recommended: [], clinePass: [] }
+      }
+      recommendedOk = true
+      return parseClineRecommendedModels(payload)
     } catch (error) {
       warnings.push(`recommended-models ${error instanceof Error ? error.message : String(error)}`)
       return { free: [], recommended: [], clinePass: [] }
@@ -308,9 +375,18 @@ export async function fetchClineRemoteModels(
   })()
 
   const modelsPromise = (async (): Promise<string[]> => {
-    // 无凭据时不发 `/models`：它需要认证，匿名调用必然 401，
-    // 只会白白产生一条 warning。
-    if (options.credential === undefined) return []
+    // 无凭据时不发 `/models`：它需要认证，匿名调用必然 401。
+    //
+    // ⚠️ **但这是一次「跳过」而不是「成功」**（issue IKJVTF）：必须记一条
+    // warning，否则 `complete` 会把「466 条按量计费模型从未被获取」判成完整
+    // ⇒ 清冷却 + 永久缓存 ⇒ 它们再也拉不回来。
+    // 该路径真实可达：`providerCatalogVisible` 只查「有没有已登录账号」、
+    // **不过滤 `enabled`**，而 `getAvailableAccount` 过滤 ⇒「有账号但全停用」时
+    // 门控通过、凭据却是 undefined。
+    if (options.credential === undefined) {
+      warnings.push('models 已跳过：无可用凭据（该来源的模型本次未获取）')
+      return []
+    }
     try {
       const response = await fetcher(`${product.apiBase}${CLINE_MODELS_PATH}`, {
         method: 'GET',
@@ -321,7 +397,14 @@ export async function fetchClineRemoteModels(
         warnings.push(`models HTTP ${response.status}`)
         return []
       }
-      return parseClineRemoteModelIds(await response.json())
+      const payload = await response.json()
+      // ⚠️ 同 recommended：形状不可识别必须记 warning（`{}` / HTML / 错误 JSON）。
+      if (!isClineModelsShape(payload)) {
+        warnings.push('models 响应形状不可识别（缺 data 数组）')
+        return []
+      }
+      modelsOk = true
+      return parseClineRemoteModelIds(payload)
     } catch (error) {
       warnings.push(`models ${error instanceof Error ? error.message : String(error)}`)
       return []
@@ -337,6 +420,9 @@ export async function fetchClineRemoteModels(
     // 但用户可能在 Cline 里已订阅）。
     entries: [...recommended.free, ...recommended.recommended, ...recommended.clinePass],
     warnings,
+    // ⚠️ 两个来源**都真的取到**才算完整。任一被跳过/失败/形状异常 ⇒ false
+    // ⇒ 调用方不永久缓存、闸门留冷却以便补齐（issue IKJVTF）。
+    complete: recommendedOk && modelsOk,
   }
 }
 

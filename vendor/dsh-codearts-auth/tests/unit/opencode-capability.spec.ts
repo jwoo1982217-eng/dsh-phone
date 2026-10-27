@@ -20,7 +20,32 @@ const product = readFileSync(join(here, '../../src/opencode-product.ts'), 'utf8'
 const capability = readFileSync(join(here, '../../src/opencode-capability.ts'), 'utf8')
 const adapter = readFileSync(join(here, '../../src/opencode-adapter.ts'), 'utf8')
 const indexSrc = readFileSync(join(here, '../../src/index.ts'), 'utf8')
+const cacheSrc = readFileSync(join(here, '../../src/models-dev-cache.ts'), 'utf8')
+const {
+  MODELS_DEV_DEADLOCK_MS,
+  MODELS_DEV_TIMEOUT_MS,
+  MODELS_DEV_WORST_CASE_MS,
+} = await import('../../src/models-dev-cache.js')
 
+/**
+ * ⚠️⚠️ 2026-10-17：下面五条断言的**归属地**从 `opencode-capability.ts` 迁到了
+ * `models-dev-cache.ts`（全仓唯一直读点 + 本地文件缓存）。
+ *
+ * ## 为什么不能「就地删掉」
+ *
+ * 它们锁的四条不变式**一条都没失效**，只是**执行位置**变了：
+ * 超时、卡死去重位、磁盘缓存、失败保留旧值。删掉断言等于把它们交给
+ * 「谁下次重构都不会想起来」—— 而这四条每一条都对应一次真实事故
+ * （2026-10-02 渲染路径 await、宿主网络挂死、2026-10-12 IKKZUG 的
+ * 「失败固化」）。
+ *
+ * ## 为什么也不能「原地留着」
+ *
+ * `opencode-capability.ts` **已不再发起任何请求**，断言继续打在那里就是
+ * **恒真**（它只会匹配到注释与转调代码）—— 一条假装在守护的守卫比没有守卫更糟。
+ *
+ * ⇒ 判据跟着职责走，全部改打到共享缓存模块上。
+ */
 describe('能力表的数据源', () => {
   it('✅ 指向 models.dev（官方 CLI 同款源），不是 /zen/v1/models', () => {
     expect(product).toMatch(/modelsDevUrl:\s*'https:\/\/models\.dev\/api\.json'/)
@@ -32,22 +57,37 @@ describe('能力表的数据源', () => {
   it('⚠️⚠️ 拉取有超时（宿主网络异常时 fetch 永不 settle）', () => {
     // 用户报障「一直卡着」：实测 api.json 5.05MB / 1.4s，但宿主网络下
     // fetch 可能永不返回 —— 没有超时会永久悬挂并占住去重位。
-    expect(capability).toMatch(/FETCH_TIMEOUT_MS/)
-    expect(capability).toMatch(/AbortSignal\.timeout\(FETCH_TIMEOUT_MS\)/)
+    // ⚠️ 判据已迁到唯一直读点（2026-10-17）。
+    expect(cacheSrc).toMatch(/MODELS_DEV_TIMEOUT_MS/)
+    expect(cacheSrc).toMatch(/AbortSignal\.timeout\(MODELS_DEV_TIMEOUT_MS\)/)
   })
 
   it('⚠️⚠️ 卡死的上一次拉取不会永久占住去重位', () => {
-    expect(capability).toMatch(/refreshingStartedAt > FETCH_TIMEOUT_MS \* 2/)
+    // ⚠️ 判据已迁到唯一直读点（2026-10-17）。
+    // ⚠️⚠️ **并且阈值必须大于「单轮含重试的最坏耗时」**（用户加重试后新增的耦合）：
+    //   若它仍写成 `MODELS_DEV_TIMEOUT_MS * 2`，一个正在正常重试的刷新会被
+    //   误判成「已死」而再起一个 ⇒ 并发请求翻倍，恰���加剧我们要避免的上游压力。
+    //   本条同时锁住「有死锁判据」与「阈值用独立常量而非超时倍数」两件事。
+    expect(cacheSrc).toMatch(/MODELS_DEV_DEADLOCK_MS/)
+    expect(cacheSrc, '死锁阈值不得再用「超时 × 2」（加了重试后会小于单轮最坏耗时）')
+      .not.toMatch(/refreshingStartedAt > MODELS_DEV_TIMEOUT_MS \* 2/)
+    // ⚠️ 反向也要成立：死锁阈值必须 **>** 单轮最坏耗时，否则上面那问题照旧。
+    expect(MODELS_DEV_DEADLOCK_MS).toBeGreaterThan(MODELS_DEV_WORST_CASE_MS)
   })
 
   it('能力表带磁盘缓存（冷启动直接命中，不下载 5MB）', () => {
-    expect(capability).toMatch(/cache\/opencode-capabilities\.json|opencode-capabilities\.json/)
-    expect(capability).toMatch(/readFile\(cacheFilePath\(\)/)
-    expect(capability).toMatch(/writeFile\(path, JSON\.stringify\(payload\)/)
+    // ⚠️ 判据已迁到唯一直读点（2026-10-17）。文件名也变了：
+    //   旧 `opencode-capabilities.json` → 新 `models-dev.json`（**共享**一份）。
+    expect(cacheSrc).toMatch(/models-dev\.json/)
+    expect(cacheSrc).toMatch(/readFileSync\(modelsDevCacheFile\(\)/)
+    // ⚠️ **必须同步读**：异步链会让冷启动有一段窗口能力表为空，
+    //   而内核的 prompt 准入校验「紧贴用户操作」发生 ⇒ 拒绝发图。
+    expect(cacheSrc).toMatch(/loadDiskCacheSync/)
   })
 
   it('⚠️ 拉取失败返回旧缓存而不是清空（能力不倒退为空）', () => {
-    expect(capability).toMatch(/保留现有缓存继续用/)
+    // ⚠️ 判据已迁到唯一直读点（2026-10-17）。
+    expect(cacheSrc).toMatch(/保留现有缓存继续用/)
   })
 
   it('免费判定用远端 cost（不再依赖本地硬编码表）', () => {
@@ -70,16 +110,37 @@ describe('⚠️⚠️ 渲染路径上不得 await 网络（真机事故：模�
   })
 
   it('⚠️ 同步读取在无缓存时返回空数组（调用方按纯文本兜底）', () => {
+    // ⚠️ 2026-10-17：实现从「返回模块内 memory」改为「读共享缓存并归一」，
+    //   所以判据从字面量 `return memory` 改成**语义等价物**：
+    //   同步入口必须同步返回（不是 Promise），且必须走共享缓存的同步读。
     const at = capability.indexOf('export function getOpencodeCapabilitiesSync')
+    expect(at).toBeGreaterThan(-1)
     const body = capability.slice(at, at + 300)
-    expect(body).toMatch(/return memory/)
+    // ① 不是 async（async 会让调用方的 `await` 变成等网络）
+    expect(body).not.toMatch(/async/)
+    // ② 真的走共享缓存的同步读
+    expect(capability).toMatch(/function readProviderModelsSync|readProviderModelsSync\(/)
   })
 
-  it('接线层做了「预热 + 刷新后广播目录变更」', () => {
-    // 不广播的话 DSH 会一直按「纯文本」渲染，图片能力补不上
-    expect(indexSrc).toMatch(/primeOpencodeCapabilities\(\)/)
-    expect(indexSrc).toMatch(/refreshOpencodeCapabilities\(/)
-    expect(indexSrc).toMatch(/llm\/adapters-updated/)
+  it('⚠️⚠️ 接线层做「预热 + 定期刷新 + 刷新后广播目录变更」', () => {
+    // 不广播的话 DSH 会一直按「纯文本」渲染，图片能力补不上。
+    // ⚠️ 2026-10-17：预热/刷新改由共享缓存的 `primeModelsDev` / `refreshModelsDev`
+    //   承担（**唯一直读点**），而广播与「归一缓存作废」仍在接线层。
+    expect(indexSrc).toMatch(/primeModelsDev\(\)/)
+    expect(indexSrc).toMatch(/refreshModelsDev\(/)
+    // ⚠️ 2026-08（issue IKJVTF 复审）：广播已收口到**唯一**实现
+    //（`src/catalog-broadcast.ts`），故断言的是「调了那个函数」+「真的导入」，
+    // 而不再要求内联 `ctx.emit`（那是旧形态，且用无可选链的 `ctx.logger.warn`）。
+    expect(indexSrc).toMatch(/refreshModelsDev\(\(\)\s*=>\s*\{\s*broadcastCatalogChanged\(ctx\)\s*\}/)
+    expect(indexSrc).toContain("from './catalog-broadcast.js'")
+  })
+
+  it('⚠️⚠️ 定期刷新真的武装了定时器（否则上游新增模型必须重启进程才可见）', () => {
+    // ⚠️ 2026-10-17 新增：改前只有启动时那一次刷新。
+    expect(indexSrc).toMatch(/setInterval/)
+    expect(indexSrc).toMatch(/MODELS_DEV_TTL_MS/)
+    // ⚠️ 定时器必须随插件卸载回收，否则会挂住进程退出。
+    expect(indexSrc).toMatch(/clearInterval/)
   })
 })
 
@@ -165,18 +226,19 @@ describe('图片字节桥接（声明支持就必须真能用）', () => {
     expect(body).toMatch(/不支持图片输入/)
   })
 
-  it('⚠️ 附件读取失败明确报错，不能静默变成占位文本', () => {
+  it('⚠️ 附件读失败时给空 Map（让 openai-compat 产出占位而非凭空少块）', () => {
     const at = adapter.indexOf('private async resolveImageUrls')
-    const body = adapter.slice(at, at + 2400)
-    expect(body).toMatch(/无法读取图片原始字节/)
-    expect(body).toMatch(/UNSUPPORTED_CONTENT/)
-    expect(body).not.toMatch(/if \(image === undefined\) continue/)
+    const body = adapter.slice(at, at + 2200)
+    expect(body).toMatch(/if \(image === undefined\) continue/)
+    // 说明写在函数上方的 JSDoc 里（不在函数体内），故单独取注释块
+    const doc = adapter.slice(Math.max(0, at - 900), at)
+    expect(doc).toMatch(/空 Map/)
+    expect(doc).toMatch(/占位/)
   })
 
   it('接线层传了 readImage', () => {
-    const at = indexSrc.indexOf('const opencodeLocalAdapter =')
-    const body = indexSrc.slice(at, indexSrc.indexOf('registerAdapterIdempotent(ctx.llm, [OPENCODE.id]', at))
-    expect(at).toBeGreaterThan(0)
-    expect(body.match(/readImage:\s*makeReadImage\(ctx\)/g)).toHaveLength(2)
+    const at = indexSrc.indexOf('new OpencodeLocalAdapter(')
+    const body = indexSrc.slice(at, indexSrc.indexOf('const opencodeAdapter =', at))
+    expect(body).toMatch(/readImage:\s*makeReadImage\(ctx\)/)
   })
 })

@@ -43,9 +43,14 @@ import type { LoomyProduct } from './loomy-product.js';
 export declare const LOOMY_DAILY_QUOTA_DESCRIPTION = "\u6BCF\u65E5\u8D60\u9001\u989D\u5EA6\uFF08\u6D88\u8017\u540E\u4E0D\u56DE\u8865\uFF09";
 /** 两个积分池的明细。 */
 export interface LoomyCreditDetail {
-    /** 永久积分（`balance`）。 */
-    permanent: number;
-    /** 每日赠送池余额（`dailyBalance`）。 */
+    /**
+     * 永久积分（`balance`）；`undefined` = **上游未给该字段**。
+     *
+     * ⚠️ **不等于 0**（issue IKMCOO 缺陷 4）：「没给」与「真的是 0」是不同事实，
+     *   折叠成 0 会让一个只有今日额度的账号看起来「永久池已耗尽」。
+     */
+    permanent: number | undefined;
+    /** 每日赠送池余额（`dailyBalance`）；缺省按 0 处理（与既有行为一致）。 */
     daily: number;
     /** 永久 + 每日（`availableBalance`）。 */
     total: number;

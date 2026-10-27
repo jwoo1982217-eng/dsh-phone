@@ -37,8 +37,8 @@
  */
 
 import type { StreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
-import { LlmError, ToolCallId as CallId } from '@deepseek-ai/dsh-llm'
-import { readWithIdleTimeout } from './sse.js'
+import { LlmError, ToolCallId, ToolCallId as CallId } from '@deepseek-ai/dsh-llm'
+import { createDsmlMarkerNormalizer, fixDsmlMarkers, readWithIdleTimeout } from './sse.js'
 
 /** Anthropic 内容块（本实现用到的子集）。 */
 export type AnthropicBlock =
@@ -484,6 +484,8 @@ export async function* consumeAnthropicSse(
   /** 已发过 `block-start` 的 index（tool-call 延后到内容出现）。 */
   const started = new Set<number>()
   let sawAny = false
+  /** DSML 标记归一化器（见 sse.ts）；每个 SSE 消费一个实例。 */
+  const dsmlFix = createDsmlMarkerNormalizer()
 
   /**
    * ★ usage 累计（`message_start` 给 input，`message_delta` 给 output）。
@@ -615,9 +617,13 @@ export async function* consumeAnthropicSse(
 
       if (deltaType === 'text_delta' && typeof record.text === 'string') {
         const block = ensureBlock(index, 'text')
-        block.text += record.text
-        if (record.text.length > 0) sawAny = true
-        yield { type: 'text-delta', index, text: record.text }
+        // ⚠️ **先归一化再累积**（2026-10-13，见 sse.ts 注释）。
+        const fixedText = dsmlFix.push(record.text)
+        block.text += fixedText
+        if (fixedText.length > 0) sawAny = true
+        if (fixedText.length > 0) {
+          yield { type: 'text-delta', index, text: fixedText }
+        }
         continue
       }
       if (deltaType === 'thinking_delta' && typeof record.thinking === 'string') {
@@ -741,8 +747,15 @@ export async function* consumeAnthropicSse(
    */
   for (const block of blocks) {
     if (block.kind === 'text') {
-      if (block.text === '') continue
-      yield { type: 'block-end', index: block.index, block: { type: 'text', text: block.text } }
+      // ⚠️ 收尾下发待定缓冲 + **整串兜底**归一化（幂等，见 sse.ts）。
+      const tail = dsmlFix.flush()
+      if (tail.length > 0) {
+        block.text += tail
+        yield { type: 'text-delta', index: block.index, text: tail }
+      }
+      const normalized = fixDsmlMarkers(block.text)
+      if (normalized === '') continue
+      yield { type: 'block-end', index: block.index, block: { type: 'text', text: normalized } }
       continue
     }
     if (block.kind === 'reasoning') {

@@ -1,6 +1,6 @@
 import { createRequire, isBuiltin } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import fs, { existsSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import fs, { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { inspect, parseEnv } from "node:util";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep, win32 } from "node:path";
 import * as yaml from "js-yaml";
@@ -249,7 +249,7 @@ var Include = class extends EntryTree {
 };
 //#endregion
 //#region lib/types/plugin-compatibility.js
-/** Evaluate plugin dsh peer requirements without importing plugin code. */
+/** Evaluate plugin dsh requirements (`engines.dsh`, else dsh peers) without importing plugin code. */
 function objectOf$1(value, field) {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`${field} must be an object`);
 	return value;
@@ -260,7 +260,7 @@ function runtimeVersionOf(value) {
 }
 function identityField(manifest, field) {
 	const value = Object.hasOwn(manifest, field) ? manifest[field] : void 0;
-	if (typeof value !== "string" || value.trim() === "") throw new Error(`Plugin manifest ${field} must be a non-empty string when dsh peers are incompatible`);
+	if (typeof value !== "string" || value.trim() === "") throw new Error(`Plugin manifest ${field} must be a non-empty string when dsh requirements are unmet`);
 	return value;
 }
 /**
@@ -273,33 +273,46 @@ function getDshRuntimeVersion() {
 	const manifest = objectOf$1(JSON.parse(fs.readFileSync(filename, "utf8")), "app-boot package.json");
 	return runtimeVersionOf(Object.hasOwn(manifest, "version") ? manifest.version : void 0);
 }
+function satisfies(runtimeVersion, range) {
+	return range.trim() !== "" && semver.satisfies(runtimeVersion, range, { includePrerelease: true });
+}
+function unmetRequirements(fields, runtimeVersion) {
+	const engines = Object.hasOwn(fields, "engines") ? objectOf$1(fields.engines, "Plugin manifest engines") : {};
+	if (Object.hasOwn(engines, "dsh")) {
+		const range = engines.dsh;
+		if (typeof range !== "string") throw new Error("Plugin manifest engines.dsh must be a string");
+		return satisfies(runtimeVersion, range) ? {} : { "engines.dsh": range };
+	}
+	if (!Object.hasOwn(fields, "peerDependencies")) return {};
+	const dependencies = objectOf$1(fields.peerDependencies, "Plugin manifest peerDependencies");
+	const unmet = {};
+	for (const [name, range] of Object.entries(dependencies)) {
+		if (typeof range !== "string") throw new Error(`Plugin manifest peerDependencies[${JSON.stringify(name)}] must be a string`);
+		if (name !== "@deepseek-ai/dsh" && !name.startsWith("@deepseek-ai/dsh-")) continue;
+		if (!satisfies(runtimeVersion, [
+			"workspace:^",
+			"workspace:~",
+			"workspace:*"
+		].includes(range) ? runtimeVersion : range)) unmet[name] = range;
+	}
+	return unmet;
+}
 /**
-* Check every @deepseek-ai/dsh or @deepseek-ai/dsh-* peer against the runtime.
-* Prereleases participate in ranges. workspace:^, workspace:~, and workspace:*
-* refer to the current runtime; other invalid ranges are incompatible.
+* Check the plugin's dsh requirements against the runtime. An own `engines.dsh` range decides alone and
+* peerDependencies are ignored; otherwise every @deepseek-ai/dsh or @deepseek-ai/dsh-* peer must match.
+* Prereleases participate in ranges. For peers only, workspace:^, workspace:~, and workspace:* refer to
+* the current runtime; other empty or invalid ranges, including any workspace: `engines.dsh`, are unmet.
 * @param manifest - parsed plugin package.json; inherited fields are ignored.
 * @param exemptions - exact plugin name@version keys mapped to exact runtime versions.
 * @param runtimeVersion - running dsh version, defaulting to this app-boot package.
-* @returns incompatible peers and exemption status, or undefined when none are incompatible.
-* @throws for malformed manifest peer fields, invalid runtime versions, or missing identity on a mismatch.
+* @returns unmet requirements and exemption status, or undefined when every requirement is met.
+* @throws for malformed manifest engines or peer fields, invalid runtime versions, or missing identity on a mismatch.
 */
 function evaluatePluginCompatibility(manifest, exemptions = {}, runtimeVersion = getDshRuntimeVersion()) {
 	runtimeVersionOf(runtimeVersion);
 	const fields = objectOf$1(manifest, "Plugin manifest");
-	if (!Object.hasOwn(fields, "peerDependencies")) return void 0;
-	const dependencies = objectOf$1(fields.peerDependencies, "Plugin manifest peerDependencies");
-	const peers = {};
-	for (const [name, range] of Object.entries(dependencies)) {
-		if (typeof range !== "string") throw new Error(`Plugin manifest peerDependencies[${JSON.stringify(name)}] must be a string`);
-		if (name !== "@deepseek-ai/dsh" && !name.startsWith("@deepseek-ai/dsh-")) continue;
-		const requirement = [
-			"workspace:^",
-			"workspace:~",
-			"workspace:*"
-		].includes(range) ? runtimeVersion : range;
-		if (requirement.trim() === "" || !semver.satisfies(runtimeVersion, requirement, { includePrerelease: true })) peers[name] = range;
-	}
-	if (Object.keys(peers).length === 0) return void 0;
+	const requirements = unmetRequirements(fields, runtimeVersion);
+	if (Object.keys(requirements).length === 0) return void 0;
 	const name = identityField(fields, "name");
 	const version = identityField(fields, "version");
 	const key = `${name}@${version}`;
@@ -307,19 +320,19 @@ function evaluatePluginCompatibility(manifest, exemptions = {}, runtimeVersion =
 		name,
 		version,
 		runtimeVersion,
-		peers,
+		requirements,
 		exempted: (Object.hasOwn(exemptions, key) ? exemptions[key] : void 0)?.includes(runtimeVersion) === true
 	};
 }
 /**
-* Describe incompatible peers, their risk, and the exact-version remedy.
+* Describe unmet requirements, their risk, and the exact-version remedy.
 * Surfaces with their own grant mechanism or locale render the structured result themselves.
 * @param issue - incompatible plugin/runtime result, including exempted mismatches.
 * @returns an English diagnostic for logs and stderr.
 */
 function pluginCompatibilityWarning(issue) {
 	const key = `${issue.name}@${issue.version}`;
-	return `Plugin ${key} is incompatible with dsh ${issue.runtimeVersion}: peerDependencies ${JSON.stringify(issue.peers)}. Running it may cause crashes or data loss. Update the plugin or install a plugin version compatible with this dsh runtime. To accept this risk explicitly, grant the exact-version exemption for ${key} on dsh ${issue.runtimeVersion} with \`dsh plugin allow-version\` or the plugin manager, then retry the installation or restart dsh. Exact-version exemption: ${issue.exempted ? "active" : "not active"}.`;
+	return `Plugin ${key} is incompatible with dsh ${issue.runtimeVersion}: requirements ${JSON.stringify(issue.requirements)}. Running it may cause crashes or data loss. Update the plugin or install a plugin version compatible with this dsh runtime. To accept this risk explicitly, grant the exact-version exemption for ${key} on dsh ${issue.runtimeVersion} with \`dsh plugin allow-version\` or the plugin manager, then retry the installation or restart dsh. Exact-version exemption: ${issue.exempted ? "active" : "not active"}.`;
 }
 //#endregion
 //#region lib/types/profile-compatibility.js
@@ -441,7 +454,7 @@ async function setProfileVersionExemption(profileDir, packageVersion, runtimeVer
 }
 //#endregion
 //#region lib/types/profile-resolution/legacy-links.js
-/** Package directory canonicalization through the active runtime carrier's filesystem. */
+/** Package directory and resource canonicalization through the active runtime carrier's filesystem. */
 /**
 * Return whether the process reads application modules from pkg's virtual filesystem.
 * @returns whether pkg owns the module filesystem.
@@ -456,6 +469,15 @@ function isPackagedExecutable() {
 */
 function realModuleDirectory(path) {
 	return isPackagedExecutable() ? realpathSync(path) : realpathSync.native(path);
+}
+/** Canonicalize a module resource, preserving physical file aliases.
+* SEA archive files are symlink-free and support stat and reads, while their containing directories support realpath.
+* @param path Existing module resource path.
+* @returns Canonical resource path under the active carrier's filesystem.
+* @throws When the resource or its directory cannot be inspected or resolved.
+*/
+function realModuleFile(path) {
+	return !isPackagedExecutable() || lstatSync(path).isSymbolicLink() ? realpathSync(path) : join(realModuleDirectory(dirname(path)), basename(path));
 }
 //#endregion
 //#region lib/types/profile.js
@@ -555,10 +577,18 @@ const DEFAULT_PROFILE_BUNDLES = ["@deepseek-ai/dsh-base"];
 * [admission](../../../../.agents/notes/implemented/architecture/2026-09-21-experimental-capabilities-as-optional-bundles.md)).
 */
 const OPTIONAL_BUNDLES = [
+	"@deepseek-ai/dsh-experimental-session-search",
+	"@deepseek-ai/dsh-experimental-ralph-bundle",
+	"@deepseek-ai/dsh-experimental-terminal-bundle",
+	"@deepseek-ai/dsh-experimental-badge-skill-bundle",
+	"@deepseek-ai/dsh-experimental-session-titles-bundle",
 	"@deepseek-ai/dsh-experimental-agent-team-profile",
 	"@deepseek-ai/dsh-experimental-voice-input-bundle",
+	"@deepseek-ai/dsh-experimental-cot-translation-bundle",
 	"@deepseek-ai/dsh-experimental-auto-review",
-	"@deepseek-ai/dsh-experimental-inspector-profile"
+	"@deepseek-ai/dsh-experimental-inspector-profile",
+	"@deepseek-ai/dsh-experimental-plugin-market-bundle",
+	"@deepseek-ai/dsh-experimental-tool-worktree"
 ];
 const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied after every bundle layer:
 # a top-level YAML array of loader patch entries (id-targeted config
@@ -974,7 +1004,7 @@ function resolveBundleDir(binName, packageName, installAnchor, profileDir) {
 * the shared Harness home. This is used by application-owned profiles whose
 * package project and lifecycle belong to that application.
 * Retired bundles are removed from the stored bundle list first, rewriting the
-* manifest when it listed one. Unreadable bundles, and bundles whose own dsh peers the profile does not exempt, are skipped
+* manifest when it listed one. Unreadable bundles, and bundles whose own dsh requirements the profile does not exempt, are skipped
 * without changing the manifest and listed in `skippedBundles`; nothing is printed.
 * @param binName - the diagnostic prefix on thrown errors.
 * @param dir - absolute profile package directory.
@@ -1079,6 +1109,15 @@ function resolveTelemetryPatch(disabledEnv, hasRow) {
 		disabled: true
 	};
 }
+/** Read the selected bundles' patches, which apply before the profile patch file.
+* @param binName Diagnostic prefix for malformed or missing configuration.
+* @param context Data supplied by the profile launcher.
+* @param initialProfile Already loaded startup profile; omitted reads the current files.
+* @returns Bundle patches in application order.
+*/
+function readBundlePatches(binName, context, initialProfile) {
+	return (initialProfile ?? loadProfileDirectory(binName, context.dir, context.installAnchor, { userLayer: false })).layers.flatMap((layer) => layer.patches);
+}
 /** Read current bundle and user layers with the launch-time overlays.
 * @param binName Diagnostic prefix for malformed or missing configuration.
 * @param context Data supplied by the profile launcher.
@@ -1086,9 +1125,8 @@ function resolveTelemetryPatch(disabledEnv, hasRow) {
 * @returns Detached ordered patches; this function does not update the Loader.
 */
 function readProfilePatches(binName, context, initialProfile) {
-	const profile = initialProfile ?? loadProfileDirectory(binName, context.dir, context.installAnchor, { userLayer: false });
 	const patches = structuredClone([
-		...profile.layers.flatMap((layer) => layer.patches),
+		...readBundlePatches(binName, context, initialProfile),
 		...initialProfile?.patches ?? loadOptionalPatches(binName, context.patchPath) ?? [],
 		...loadOptionalPatches(binName, join(context.home, "cordis.patch.yml")) ?? [],
 		...context.overlays
@@ -1222,6 +1260,14 @@ function sanitizeProfile(binName, profileDir, bundles) {
 /** In-memory profile package routing for Node's default ESM and CommonJS loaders. */
 const WORKER_RESOLUTION_KEY = "@deepseek-ai/dsh-app-boot/profile-resolution";
 const EMPTY_ATTRIBUTES = Object.freeze({});
+/** A successor resolution the running process cannot adopt, such as a retained mapping in another directory; it waits for a restart. */
+var ResolutionRestartRequired = class extends Error {
+	/** @param message Diagnostic naming the rejected changes. */
+	constructor(message) {
+		super(message);
+		this.name = "ResolutionRestartRequired";
+	}
+};
 /**
 * Split a bare request into its package name without allocating path segments.
 * @param request - module specifier to classify.
@@ -1234,6 +1280,15 @@ function barePackageName(request) {
 	if (first < 0) return;
 	const second = request.indexOf("/", first + 1);
 	return second < 0 ? request : request.slice(0, second);
+}
+/** The JavaScript and native real paths of an existing directory; none for a directory that no longer exists. */
+function realSpellings(path) {
+	try {
+		const native = Reflect.get(realpathSync, "native");
+		return [realpathSync(path), ...typeof native === "function" ? [String(Reflect.apply(native, realpathSync, [path]))] : []];
+	} catch (_error) {
+		return [];
+	}
 }
 function canonicalPath(path) {
 	try {
@@ -1249,7 +1304,10 @@ function prefixes(path) {
 }
 function compileResolution(resolution) {
 	return {
-		entries: new Map(resolution.entries.map((entry) => [entry.name, entry])),
+		entries: new Map(resolution.entries.map((entry) => [entry.name, {
+			...entry,
+			realDir: canonicalPath(entry.packageDir)
+		}])),
 		profilesDir: resolution.profilesDir,
 		profileDir: resolution.profileDir,
 		profilePaths: prefixes(resolution.profilesDir),
@@ -1412,11 +1470,65 @@ function sameResolution(left, right) {
 	if (left === right) return true;
 	return canonicalPath(left) === canonicalPath(right);
 }
+/** A directory as given and in its JavaScript and native real paths, each with a trailing separator. */
+function spellings(dir) {
+	const result = new Set([dir + sep]);
+	for (const real of realSpellings(dir)) result.add(real + sep);
+	return [...result];
+}
+/**
+* The previous real directories of packages that moved, each mapped to the current one. Node keeps the real path of
+* every link it resolved through and never refreshes it, so a lookup through a link that now points elsewhere still
+* selects a file below the target Node saw first; {@link MovedDirectories.relocate} selects the same file below the
+* current target instead.
+*/
+var MovedDirectories = class {
+	/** Previous directory to current directory, both with a trailing separator. */
+	targets = /* @__PURE__ */ new Map();
+	/**
+	* Record that a package moved from one directory to another. Every spelling of the previous directory leads to the
+	* current one. A directory that an earlier move led to the previous one now leads to the current one as well, since
+	* Node still selects files below the earliest target.
+	* @param from Previous real directory.
+	* @param to Current real directory.
+	*/
+	record(from, to) {
+		const previous = spellings(from);
+		const current = to + sep;
+		for (const [key, value] of this.targets) if (previous.includes(value)) this.targets.set(key, current);
+		for (const key of previous) this.targets.set(key, current);
+	}
+	/**
+	* Forget the previous directories that are current again, in any spelling, and records that lead to themselves.
+	* @param current The real directories the published resolution maps.
+	*/
+	forget(current) {
+		const active = /* @__PURE__ */ new Set();
+		for (const dir of current) for (const spelling of spellings(dir)) active.add(spelling);
+		for (const [key, value] of [...this.targets]) if (active.has(key) || key === value) this.targets.delete(key);
+	}
+	/**
+	* The same file below the current directory when it exists, for a file below a previous directory that an importer
+	* outside that directory selected. An importer inside the previous directory keeps its own package's files. The
+	* innermost previous directory decides.
+	* @param filename Selected file.
+	* @param parent Importer path.
+	* @returns The file to load.
+	*/
+	relocate(filename, parent) {
+		let from = "";
+		for (const dir of this.targets.keys()) if (filename.startsWith(dir) && dir.length > from.length) from = dir;
+		if (from === "" || parent?.startsWith(from) === true) return filename;
+		const relocated = this.targets.get(from) + filename.slice(from.length);
+		return existsSync(relocated) ? relocated : filename;
+	}
+};
 /** One mutable pointer to the immutable runtime resolution. */
 var ResolutionRouter = class {
 	nodeModulePaths;
 	current;
 	linkedTargets;
+	moved = new MovedDirectories();
 	constructor(resolution, nodeModulePaths) {
 		this.nodeModulePaths = nodeModulePaths;
 		this.current = compileResolution(resolution);
@@ -1425,20 +1537,48 @@ var ResolutionRouter = class {
 	replace(successor) {
 		const entries = new Map(successor.entries.map((entry) => [entry.name, entry]));
 		if (successor.profilesDir !== this.current.profilesDir || successor.profileDir !== this.current.profileDir) throw new Error("profile resolution: a successor cannot change its profile scope");
+		const rejected = [];
+		const moves = [];
 		for (const [name, current] of this.current.entries) {
 			const next = entries.get(name);
 			if (next === void 0 && current.scope === "profile") continue;
-			if (next === void 0 || !sameResolution(current.packageDir, next.packageDir) || current.scope === "installation" && !sameResolution(current.declarer, next.declarer) || current.version !== next.version || current.scope !== next.scope) throw new Error(`profile resolution: replacing ${JSON.stringify(name)} requires a process restart`);
+			if (next !== void 0 && current.scope === "profile" && next.scope === "profile") {
+				if (current.realDir === canonicalPath(next.packageDir)) continue;
+				rejected.push(`profile resolution: replacing ${JSON.stringify(name)} requires a process restart`);
+				continue;
+			}
+			if (next === void 0 || !sameResolution(current.packageDir, next.packageDir) || current.scope === "installation" && !sameResolution(current.declarer, next.declarer) || current.scope === "installation" && current.version !== next.version || current.scope !== next.scope) rejected.push(`profile resolution: replacing ${JSON.stringify(name)} requires a process restart`);
 		}
 		const localPackageNames = new Set(successor.localPackageNames);
-		for (const name of localPackageNames) if (!this.current.localPackageNames.has(name) && this.current.entries.has(name)) throw new Error(`profile resolution: overriding ${JSON.stringify(name)} locally requires a process restart`);
-		for (const root of successor.linkedRoots) {
-			const previous = this.linkedTargets.get(root.name);
-			if (previous !== void 0 && !sameResolution(previous, root.realPath)) throw new Error(`profile resolution: relinking ${JSON.stringify(root.name)} requires a process restart`);
+		for (const name of localPackageNames) if (!this.current.localPackageNames.has(name) && this.current.entries.has(name)) rejected.push(`profile resolution: overriding ${JSON.stringify(name)} locally requires a process restart`);
+		const targets = new Map(this.linkedTargets);
+		for (const [name, previous] of this.linkedTargets) {
+			const root = successor.linkedRoots.find((candidate) => candidate.name === name);
+			const entry = entries.get(name);
+			const target = root?.realPath ?? (entry?.scope === "profile" ? canonicalPath(entry.packageDir) : void 0);
+			if (target === void 0 || sameResolution(previous, target)) continue;
+			moves.push([previous, target]);
+			targets.set(name, target);
 		}
+		if (rejected.length > 0) throw new ResolutionRestartRequired(rejected.join("; "));
 		const next = compileResolution(successor);
-		for (const { name, realPath } of successor.linkedRoots) if (!this.linkedTargets.has(name)) this.linkedTargets.set(name, realPath);
+		for (const { name, realPath } of successor.linkedRoots) targets.set(name, realPath);
+		this.linkedTargets = targets;
+		for (const [from, to] of moves) this.moved.record(from, to);
+		const current = [];
+		for (const entry of next.entries.values()) current.push(entry.realDir);
+		for (const root of successor.linkedRoots) current.push(root.realPath);
+		this.moved.forget(current);
 		this.current = next;
+	}
+	/**
+	* The file to load instead of one Node selected through a link that has moved since; see {@link MovedDirectories}.
+	* @param filename Selected file.
+	* @param parent Importer path.
+	* @returns The file to load.
+	*/
+	relocate(filename, parent) {
+		return this.moved.relocate(filename, parent);
 	}
 	/** Whether a module path has an interception layer: it lies in the profiles tree, the active profile, or a linked root. */
 	hasInterceptionLayerForPath(path) {
@@ -1760,7 +1900,23 @@ function installRuntimeInterception(resolution) {
 				delegatedEsm = previous;
 			}
 		};
-		return adapted;
+		const relocate = (result, parent) => {
+			if (!result.url.startsWith("file:")) return result;
+			const url = new URL(result.url);
+			const filename = fileURLToPath(url);
+			const relocated = router.relocate(filename, parent?.startsWith("file:") === true ? fileURLToPath(parent) : void 0);
+			if (relocated === filename) return result;
+			url.pathname = pathToFileURL(relocated).pathname;
+			return {
+				...result,
+				url: url.href
+			};
+		};
+		return (request, parent, attributes) => {
+			const result = adapted(request, parent, attributes);
+			/* v8 ignore next -- Node 24+ resolves synchronously; the Node 22 matrix covers its Promise result */
+			return result instanceof Promise ? result.then((resolved) => relocate(resolved, parent)) : relocate(result, parent);
+		};
 	};
 	let restoreEsm;
 	/* v8 ignore else -- CI coverage runs Node 24 v2; the Node 22 matrix exercises the v1 adapter */
@@ -1884,7 +2040,11 @@ function installRuntimeInterception(resolution) {
 			delegatedCjs--;
 		}
 	};
-	cjs._resolveFilename = wrappedFilename;
+	const relocatedFilename = (request, parent, main, options) => {
+		const filename = wrappedFilename(request, parent, main, options);
+		return isAbsolute(filename) ? router.relocate(filename, parent?.filename ?? void 0) : filename;
+	};
+	cjs._resolveFilename = relocatedFilename;
 	return {
 		packageDir(specifier, parentURL) {
 			return router.packageDir(specifier, parentURL);
@@ -1894,7 +2054,7 @@ function installRuntimeInterception(resolution) {
 		},
 		dispose() {
 			/* v8 ignore else -- interceptions are disposed in reverse installation order */
-			if (cjs._resolveFilename === wrappedFilename) cjs._resolveFilename = originalFilename;
+			if (cjs._resolveFilename === relocatedFilename) cjs._resolveFilename = originalFilename;
 			restoreEsm();
 		}
 	};
@@ -1933,17 +2093,17 @@ function iconOf(specifier, packageName, parentURL, manifestPath, value) {
 		label = manifestPath;
 		const root = realpathSync(dirname(manifestPath));
 		target = resolve(root, icon);
-		const local = relative(root, realpathSync(target));
+		const local = relative(root, realModuleFile(target));
 		if (local === ".." || local.startsWith(`..${sep}`) || isAbsolute(local)) throw new Error(`${label}: icon must remain inside its manifest directory`);
 	} else {
 		const exported = optionalResourcePath(`${specifier}/icon`, parentURL);
 		if (exported === void 0) return void 0;
 		target = label = exported;
-		assertPackageOwned(realpathSync(target), packageName);
+		assertPackageOwned(realModuleFile(target), packageName);
 	}
 	const mediaType = ICON_MEDIA_TYPES.get(extname(target).toLowerCase());
 	if (mediaType === void 0) throw new Error(`${label}: icon must be SVG, PNG, JPEG, or WebP`);
-	const file = realpathSync(target);
+	const file = realModuleFile(target);
 	const stat = statSync(file);
 	if (!stat.isFile()) throw new Error(`${label}: icon must be a regular file`);
 	if (stat.size > MAX_ICON_BYTES) throw new Error(`${label}: icon exceeds 256 KiB`);
@@ -1961,7 +2121,7 @@ function assertPackageOwned(file, name) {
 }
 /**
 * Resolve a plugin resource through the active Node ESM resolver without evaluating it.
-* @param specifier - complete resource module specifier, including its locale filename.
+* @param specifier - plugin module or exported resource specifier.
 * @param parentURL - owning module-resolution base.
 * @returns the local filesystem path selected by Node and the active profile.
 * @throws when the resolver is unavailable or the resource cannot resolve to a local file.
@@ -2169,7 +2329,7 @@ function preflight(ctx, entries, parentURL, report) {
 			const issue = evaluatePluginCompatibility(manifest, exemptions);
 			return issue === void 0 || issue.exempted ? void 0 : pluginCompatibilityWarning(issue);
 		} catch (error) {
-			return `its declared peer dependencies cannot be validated: ${error instanceof Error ? error.message : String(error)}`;
+			return `its declared dsh requirements cannot be validated: ${error instanceof Error ? error.message : String(error)}`;
 		}
 	};
 	const deny = (row, reason) => {
@@ -2242,6 +2402,42 @@ function prepareProfilePatches(ctx, patches, parentURL, binName = "dsh") {
 	const rows = prepareProfileEntries(ctx, applyEntryPatches([], patches, patchWarning(ctx)), parentURL, binName);
 	return rows.length === 0 ? [] : [{ insert: rows }];
 }
+//#endregion
+//#region lib/types/official-bundle-packages.js
+/** Package admission shared by offline catalog generation and release ordering. */
+/** Public DSH release members available through the ordinary on-demand bundle installer. */
+const ON_DEMAND_BUNDLES = ["@deepseek-ai/dsh-subagent-claude-code", "@deepseek-ai/dsh-subagent-codex"];
+//#endregion
+//#region lib/types/official-bundles.generated.js
+/** Generated offline Official bundle metadata. Run pnpm gen-official-bundle-catalog; do not edit. */
+/** Official on-demand entries, independent of installed packages and registry availability. */
+const OFFICIAL_ON_DEMAND_CATALOG = [{
+	packageName: "@deepseek-ai/dsh-subagent-claude-code",
+	meta: {
+		title: {
+			"en": "Claude Code subagent",
+			"zh": "Claude Code 子智能体"
+		},
+		description: {
+			"en": "Delegate one task to Claude Code using its native authentication and settings.",
+			"zh": "使用 Claude Code 原生认证和设置委派单个任务。"
+		},
+		icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIHZpZXdCb3g9IjAgMCAzNiAzNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIxNC45ODkzIiB5PSIxNS4xODc3IiB3aWR0aD0iMTIuMjM2NSIgaGVpZ2h0PSIxMi4yMzY1IiByeD0iMiIgZmlsbD0idXJsKCNkc2hfcGx1Z2luX2FydF9SMGEpIiBmaWxsLW9wYWNpdHk9IjAuOCI+PC9yZWN0PjxyZWN0IHg9IjguODcxMDkiIHk9IjkuMDY5NyIgd2lkdGg9IjEyLjIzNjUiIGhlaWdodD0iMTIuMjM2NSIgcng9IjIiIGZpbGw9InVybCgjZHNoX3BsdWdpbl9hcnRfUjBiKSIgZmlsbC1vcGFjaXR5PSIwLjgiPjwvcmVjdD48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYSIgeDE9IjIxLjEwNzUiIHkxPSIxNS4xODc3IiB4Mj0iMjEuMTA3NSIgeTI9IjI3LjQyNDMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjNDVFN0E0Ij48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDU5MDlEIj48L3N0b3A+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYiIgeDE9IjE0Ljk4OTQiIHkxPSI5LjA2OTciIHgyPSIxNC45ODk0IiB5Mj0iMjEuMzA2MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIHN0b3AtY29sb3I9IiM2OUI5RkYiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMzMjRERTIiPjwvc3RvcD48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4K"
+	}
+}, {
+	packageName: "@deepseek-ai/dsh-subagent-codex",
+	meta: {
+		title: {
+			"en": "Codex subagent",
+			"zh": "Codex 子智能体"
+		},
+		description: {
+			"en": "Delegate one task to Codex using its native authentication and settings.",
+			"zh": "使用 Codex 原生认证和设置委派单个任务。"
+		},
+		icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIHZpZXdCb3g9IjAgMCAzNiAzNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIxNC45ODkzIiB5PSIxNS4xODc3IiB3aWR0aD0iMTIuMjM2NSIgaGVpZ2h0PSIxMi4yMzY1IiByeD0iMiIgZmlsbD0idXJsKCNkc2hfcGx1Z2luX2FydF9SMGEpIiBmaWxsLW9wYWNpdHk9IjAuOCI+PC9yZWN0PjxyZWN0IHg9IjguODcxMDkiIHk9IjkuMDY5NyIgd2lkdGg9IjEyLjIzNjUiIGhlaWdodD0iMTIuMjM2NSIgcng9IjIiIGZpbGw9InVybCgjZHNoX3BsdWdpbl9hcnRfUjBiKSIgZmlsbC1vcGFjaXR5PSIwLjgiPjwvcmVjdD48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYSIgeDE9IjIxLjEwNzUiIHkxPSIxNS4xODc3IiB4Mj0iMjEuMTA3NSIgeTI9IjI3LjQyNDMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjNDVFN0E0Ij48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDU5MDlEIj48L3N0b3A+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYiIgeDE9IjE0Ljk4OTQiIHkxPSI5LjA2OTciIHgyPSIxNC45ODk0IiB5Mj0iMjEuMzA2MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIHN0b3AtY29sb3I9IiM2OUI5RkYiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMzMjRERTIiPjwvc3RvcD48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4K"
+	}
+}];
 //#endregion
 //#region lib/types/config-schema/native.js
 /** Identity checks at the plugin-export and lazy-builder boundaries. */
@@ -3312,10 +3508,14 @@ var PluginPackages = class extends Service {
 			interception.dispose();
 		}, "profile package resolution");
 	}
+	/** The published runtime resolution, or `undefined` when Node resolves packages alone. */
+	get resolution() {
+		return this.current;
+	}
 	/**
 	* Publish a complete successor generation for this process and subsequently created Workers.
 	* Profile mappings and local package names may be removed after their plugins stop; linked roots may also be removed.
-	* Retained profile mappings may change their declarer, but not their normalized directory, version, or scope;
+	* Retained profile mappings may change their declarer and version, but not their normalized directory or scope;
 	* installation mappings must remain unchanged. Publication does not unload modules or clear Node caches.
 	* @param successor - fully constructed generation accepted by {@link RuntimeInterception.replace}.
 	*/
@@ -3563,7 +3763,30 @@ function loadLayeredEnv(binName, cwd = process.cwd(), warn = (line) => void proc
 }
 const bootstrapIncludes = /* @__PURE__ */ new WeakMap();
 const userPatchesSchema = entryListSchema;
-/** Apply one complete patch generation and wait for Loader activation diagnostics.
+/**
+* Recompose the profile from its complete patch list, together with its runtime resolution. The rows the generation no
+* longer lists are removed first and their disposal finishes while their packages are still mapped; the latest
+* generation of an installed, recomputable resolution is published; the compatibility preflight reads the published
+* packages; the generation is applied to the root Include; entries that ran, and enabled entries whose import failed,
+* start afterwards when the update left them without a running fiber; and activation is judged. A failure before the generation applies,
+* including a publication the resolution rejects, which reports `package-moved`, puts the removed rows back at their
+* places, starting them again, and starts the entries that ran again. An entry waiting for a service is reported as a
+* warning unless it is required. Patches are copied with `structuredClone`, so they hold no functions.
+* @param ctx Booted root context.
+* @param patches Complete ordered patch list.
+* @param binName Diagnostic prefix.
+* @param options What the caller already did and requires.
+* @returns Diagnostics for unchanged pre-existing inactive entries, and the restart reason of a rejected publication.
+* @throws When the root Include is missing; the latest resolution cannot be read or published; preparation or the
+* Loader update rejects; or for a new or changed failure, an inactive required entry, a failed entry that ran, or a
+* healthy fiber whose disposal rejected.
+*/
+function recomposeProfile(ctx, patches, binName, options = {}) {
+	return recompose(ctx, patches, binName, options, true);
+}
+/**
+* Apply a complete patch list to the root Include and judge activation, leaving the runtime resolution and entries
+* whose import failed as they are.
 * @param ctx Booted root context.
 * @param patches Complete ordered patch list.
 * @param binName Diagnostic prefix.
@@ -3571,33 +3794,141 @@ const userPatchesSchema = entryListSchema;
 * @returns Diagnostics for unchanged pre-existing inactive entries; new or changed failures reject.
 */
 async function reconcileProfilePatches(ctx, patches, binName, requiredIds = []) {
-	const entry = bootstrapIncludes.get(ctx);
-	if (entry === void 0) throw new Error(`${binName}: profile reload requires the root Include entry`);
-	const previousFailures = (await inactiveEntries(ctx)).map((failure) => ({
-		...failure,
-		diagnostic: inactiveDiagnostic(failure),
-		fiber: failure.entry.fiber,
-		options: JSON.stringify(failure.entry.options)
-	}));
-	const previousFibers = [...ctx.loader.entries()].flatMap((row) => row.fiber === void 0 ? [] : [{
-		fiber: row.fiber,
-		failed: row.fiber.state === FIBER_FAILED || row.fiber.state === FIBER_DISPOSED
-	}]);
-	const { patches: _previous, ...includeConfig } = entry.options.config;
-	const parentURL = new URL(".", new URL(includeConfig.path, entry.parent.tree.ctx.baseUrl)).href;
-	const prepared = prepareProfilePatches(ctx, patches, parentURL, binName);
-	await entry.update({ config: {
-		...includeConfig,
-		patches: prepared
-	} });
-	const results = await Promise.allSettled(previousFibers.map(({ fiber }) => fiber.await()));
+	return (await recompose(ctx, patches, binName, { requiredIds }, false)).warnings;
+}
+async function recompose(ctx, patches, binName, options, withResolution) {
+	const { requiredIds = [], running = [] } = options;
+	let applying = false;
+	let stopped = [];
+	try {
+		const entry = bootstrapIncludes.get(ctx);
+		if (entry === void 0) throw new Error(`${binName}: profile reload requires the root Include entry`);
+		const previousFailures = (await inactiveEntries(ctx, false)).map((failure) => ({
+			entry: failure.entry,
+			fiber: failure.entry.fiber,
+			options: JSON.stringify(failure.entry.options),
+			diagnostic: failure.entry.fiber?.uid ? reloadDiagnostic(failure) : void 0
+		}));
+		const previousFibers = [...ctx.loader.entries()].flatMap((row) => row.fiber === void 0 ? [] : [{
+			fiber: row.fiber,
+			failed: row.fiber.state === FIBER_FAILED || row.fiber.state === FIBER_DISPOSED
+		}]);
+		const { patches: previous = [], ...includeConfig } = entry.options.config;
+		const current = withResolution ? ctx.get("pluginPackages")?.resolution : void 0;
+		const successor = current instanceof ProfileRuntimeResolution ? await current.computeLatestResolution() : void 0;
+		if (successor !== void 0) {
+			const listed = rowIds(structuredClone(patches));
+			const composed = rowIds(structuredClone(previous));
+			const tree = entry.subgroup?.tree;
+			const dropped = [...ctx.loader.entries()].filter((row) => row.parent.tree === tree && composed.has(row.options.id) && !listed.has(row.options.id));
+			const ids = new Set(dropped.map((row) => row.options.id));
+			const topmost = dropped.filter((row) => !ids.has(row.parent.ctx.fiber.entry?.options.id));
+			stopped = topmost.map((row) => ({
+				group: row.parent,
+				options: structuredClone(row.options),
+				index: row.parent.data.indexOf(row.options)
+			}));
+			if (topmost.length > 0) {
+				const fibers = dropped.flatMap((row) => row.fiber === void 0 ? [] : [row.fiber]);
+				for (const row of topmost) {
+					row.options.disabled = true;
+					row.parent.remove(row.options.id);
+				}
+				await Promise.allSettled(fibers.map((fiber) => fiber.await()));
+				await ctx.loader.await();
+			}
+			try {
+				publish(ctx, successor);
+			} catch (error) {
+				if (!(error instanceof ResolutionRestartRequired)) throw error;
+				return {
+					warnings: [],
+					restartReason: "package-moved"
+				};
+			}
+		}
+		const parentURL = new URL(".", new URL(includeConfig.path, entry.parent.tree.ctx.baseUrl)).href;
+		const prepared = prepareProfilePatches(ctx, patches, parentURL, binName);
+		applying = true;
+		const retried = [...new Set([...running, ...withResolution ? [...ctx.loader.entries()].filter(importFailed) : []])];
+		try {
+			await entry.update({ config: {
+				...includeConfig,
+				patches: prepared
+			} });
+		} finally {
+			await resume(ctx, retried);
+		}
+		const results = await Promise.allSettled(previousFibers.map(({ fiber }) => fiber.await()));
+		await ctx.loader.await();
+		const failures = await inactiveEntries(ctx);
+		const introduced = failures.filter((failure) => {
+			if (requiredIds.includes(failure.entry.options.id)) return true;
+			if (failure.outcome.kind === "pending") return false;
+			if (running.includes(failure.entry)) return true;
+			return !previousFailures.some((previous) => sameFailure(previous, failure));
+		});
+		if (introduced.length > 0) throw new Error(activationDiagnostic(binName, introduced, false).trimEnd());
+		for (const [index, result] of results.entries()) if (result.status === "rejected" && !previousFibers[index]?.failed) throw result.reason;
+		ctx.emit("app-boot/config-reload");
+		return { warnings: failures.map(reloadDiagnostic) };
+	} finally {
+		if (!applying && (stopped.length > 0 || running.length > 0)) try {
+			for (const { group, options, index } of stopped.toSorted((left, right) => left.index - right.index)) {
+				group.data.splice(index, 0, options);
+				await group.create(options);
+			}
+			await resume(ctx, running);
+			const ran = new Set(running.map((row) => row.options.id));
+			for (const failure of await inactiveEntries(ctx)) if (ran.has(failure.entry.options.id)) ctx.logger.warn(`${binName}: ${reloadDiagnostic(failure)}`);
+		} catch (error) {
+			ctx.logger.warn(error);
+		}
+	}
+}
+/** Whether an inactive entry is the failure recorded before: the same entry, fiber and options, and a matching diagnostic. */
+function sameFailure(previous, failure) {
+	return previous.entry === failure.entry && previous.fiber === failure.entry.fiber && previous.options === JSON.stringify(failure.entry.options) && (previous.diagnostic === void 0 || previous.diagnostic === reloadDiagnostic(failure));
+}
+/** The ids of the rows a patch list inserts, including the rows of groups. */
+function rowIds(patches) {
+	const ids = /* @__PURE__ */ new Set();
+	const visit = (rows) => {
+		for (const row of rows) {
+			ids.add(row.id);
+			if ((row.group === true || row.name === "cordis:group") && Array.isArray(row.config)) visit(row.config);
+		}
+	};
+	visit(applyEntryPatches([], patches, () => {}));
+	return ids;
+}
+/** Publish a generation unless it maps exactly what is published, which would only drop the package caches. */
+function publish(ctx, next) {
+	const table = ({ localPackageNames, entries, linkedRoots }) => JSON.stringify([
+		localPackageNames,
+		entries,
+		linkedRoots
+	]);
+	const packages = ctx.pluginPackages;
+	if (table(packages.resolution) !== table(next)) packages.replace(next);
+}
+/** Whether an enabled entry below a running parent has no fiber or keeps the disposed fiber of a failed import. */
+function importFailed(entry) {
+	return enabledEntry(entry) && entry.parent.ctx.fiber.uid !== null && (entry.fiber === void 0 || entry.fiber.state === FIBER_DISPOSED);
+}
+/** Whether an entry is enabled now; a throwing `disabled` expression counts as disabled. */
+function enabledEntry(entry) {
+	try {
+		return !entry.disabled;
+	} catch (_error) {
+		return false;
+	}
+}
+/** Start invalidated entries the Loader still holds without a running fiber, then wait until it settles. */
+async function resume(ctx, invalidated) {
+	const entries = new Set(ctx.loader.entries());
+	for (const row of invalidated) if (entries.has(row) && !row.fiber?.uid) await row.update({}, false, true);
 	await ctx.loader.await();
-	const failures = await inactiveEntries(ctx);
-	const introduced = failures.filter((failure) => requiredIds.includes(failure.entry.options.id) || !previousFailures.some((previous) => previous.entry === failure.entry && previous.fiber === failure.entry.fiber && previous.options === JSON.stringify(failure.entry.options) && previous.diagnostic === inactiveDiagnostic(failure)));
-	if (introduced.length > 0) throw new Error(activationDiagnostic(binName, introduced).trimEnd());
-	for (const [index, result] of results.entries()) if (result.status === "rejected" && !previousFibers[index]?.failed) throw result.reason;
-	ctx.emit("app-boot/config-reload");
-	return failures.map(inactiveDiagnostic);
 }
 /**
 * Load an optional patch-list file: a top-level YAML array of loader patch
@@ -3941,6 +4272,7 @@ const FIBER_DISPOSED = 4;
 const requiredStartupEntryIds = new Set([
 	"agent-loop",
 	"webserver",
+	"web-runtime",
 	"modules",
 	"connection",
 	"headless-runner",
@@ -3948,7 +4280,7 @@ const requiredStartupEntryIds = new Set([
 	"sdk-jsonrpc-server"
 ]);
 /** Render plugin stacks, nested causes, and aggregate member failures once per error. */
-function formatActivationError(error) {
+function formatActivationError(error, stacks = true) {
 	const details = [];
 	const seen = /* @__PURE__ */ new Set();
 	function visit(value) {
@@ -3958,7 +4290,7 @@ function formatActivationError(error) {
 		}
 		if (seen.has(value)) return;
 		seen.add(value);
-		details.push(value.stack ?? value.message);
+		details.push(stacks ? value.stack ?? value.message : String(value));
 		if (value.cause !== void 0) visit(value.cause);
 		if (value instanceof AggregateError) value.errors.forEach(visit);
 	}
@@ -3984,12 +4316,23 @@ var StartupError = class extends Error {
 		});
 	}
 };
+/** The error importing an entry's module raises now, which Node returns from its cache for a module that failed before. */
+async function importFailure(entry) {
+	try {
+		await entry.parent.tree.import(entry.options.name);
+		return;
+	} catch (error) {
+		return error;
+	}
+}
 /**
 * Collect Loader activation failures and disabled-expression errors. Failed
 * fibers are awaited to recover their recorded rejection reason and coalesce
 * duplicate Loader notifications through the next process rejection checkpoint.
+* An entry whose import failed reports the error importing it raises now; without
+* `importNow` nothing is imported and the entry reports a failed import without the import error.
 */
-async function inactiveEntries(ctx) {
+async function inactiveEntries(ctx, importNow = true) {
 	const failures = [];
 	const rejectionReasons = [];
 	for (const entry of ctx.loader.entries()) {
@@ -4007,12 +4350,17 @@ async function inactiveEntries(ctx) {
 			continue;
 		}
 		const fiber = entry.fiber;
-		if (fiber === void 0) {
+		if (fiber === void 0 || fiber.state === FIBER_DISPOSED) {
+			const error = importNow ? await importFailure(entry) : void 0;
 			failures.push({
 				entry,
-				outcome: {
+				outcome: error === void 0 ? {
 					kind: "failed",
-					error: "failed to import"
+					error: fiber === void 0 ? "failed to import" : `fiber state ${String(fiber.state)}`
+				} : {
+					kind: "failed",
+					error,
+					phase: "failed to import"
 				}
 			});
 			continue;
@@ -4055,17 +4403,21 @@ async function inactiveEntries(ctx) {
 	return failures;
 }
 /** Render one failed plugin's original error and activation phase. */
-function failureDetail(outcome) {
-	return `${outcome.phase === void 0 ? "" : `${outcome.phase}: `}${formatActivationError(outcome.error)}`;
+function failureDetail(outcome, stacks = true) {
+	return `${outcome.phase === void 0 ? "" : `${outcome.phase}: `}${formatActivationError(outcome.error, stacks)}`;
 }
 /** Render optional-only warnings without changing startup policy. */
-function activationDiagnostic(binName, failures) {
+function activationDiagnostic(binName, failures, stacks = true) {
 	const noun = failures.length === 1 ? "entry" : "entries";
-	return `${binName}: warning: ${String(failures.length)} ${noun} did not activate\n${failures.map(inactiveDiagnostic).join("\n")}\n`;
+	return `${binName}: warning: ${String(failures.length)} ${noun} did not activate\n${failures.map((failure) => inactiveDiagnostic(failure, stacks)).join("\n")}\n`;
+}
+/** Per-entry reload text, which people read through the Web UI and agents, so it carries error messages without stack frames. */
+function reloadDiagnostic(failure) {
+	return inactiveDiagnostic(failure, false);
 }
 /** Stable per-entry text for reload comparisons and optional warnings. */
-function inactiveDiagnostic({ entry, outcome }) {
-	const detail = outcome.kind === "failed" ? failureDetail(outcome) : `pending (waiting for ${outcome.missing.length === 1 ? "service" : "services"}: ${outcome.missing.join(", ") || "unknown"})`;
+function inactiveDiagnostic({ entry, outcome }, stacks = true) {
+	const detail = outcome.kind === "failed" ? failureDetail(outcome, stacks) : `pending (waiting for ${outcome.missing.length === 1 ? "service" : "services"}: ${outcome.missing.join(", ") || "unknown"})`;
 	return `${entry.options.id} (${entry.options.name}): ${detail}`;
 }
 /** Group startup failures and pending services, marking every required entry. */
@@ -4206,37 +4558,11 @@ async function boot(binName, absoluteConfigPath, patches, prepare, bareModuleBas
 			seen.add(deepest);
 			deepest = deepest.cause;
 		}
-		const stack = deepest instanceof AggregateError ? `\n${deepest.stack ?? deepest.message}\n${deepest.errors.map(formatActivationError).join("\n")}` : deepest instanceof Error && deepest !== cause ? `\n${deepest.stack ?? deepest.message}` : "";
+		const stack = deepest instanceof AggregateError ? `\n${deepest.stack ?? deepest.message}\n${deepest.errors.map((error) => formatActivationError(error)).join("\n")}` : deepest instanceof Error && deepest !== cause ? `\n${deepest.stack ?? deepest.message}` : "";
 		throw new Error(`${binName}: ${stage}: ${detail}${stack}`, { cause });
 	} finally {
 		await diagnostics.fiber.dispose();
 	}
 }
-/** Prompt-section name for the harness-source location line an app bin adds after boot. */
-const HARNESS_SOURCE_SECTION = "harness:source";
-/**
-* Add a global prompt section naming the on-disk harness source checkout while
-* explicitly distinguishing it from the task workspace and current working
-* directory. The self-referential `dsh-tool-cordis` toolset reads and edits this
-* checkout. Call once on the settled boot context ({@link boot}); the section
-* uses the shared first-party placement after reusable instructions
-* and before the Web surface and persona suffix. A booted tree with no
-* `systemPrompt` service has no prompt to augment, so this is then a no-op
-* that returns `undefined`. The section is
-* registered against the `systemPrompt` service's fiber, so a dev HMR reload of
-* that plugin drops it until the next boot.
-* @param ctx - the settled boot context whose global system prompt to augment.
-* @param sourceRoot - the absolute path to the harness checkout root.
-* @returns the section disposer, or `undefined` when no `systemPrompt` service is mounted.
-*/
-function addHarnessSourceSection(ctx, sourceRoot) {
-	const systemPrompt = ctx.get("systemPrompt");
-	if (systemPrompt === void 0) return void 0;
-	return systemPrompt.section({
-		name: HARNESS_SOURCE_SECTION,
-		order: systemPrompt.getSectionOrder("HARNESS_SOURCE"),
-		text: `The DeepSeek Harness implementation checkout is at ${sourceRoot}. The checkout location and current working directory are separate values and may differ; never infer the working directory from this path. Use pwd to determine the current working directory. Use this checkout only to inspect or extend DSH itself.`
-	});
-}
 //#endregion
-export { DEFAULT_PROFILE_BUNDLES, FAIL_LOUD_RELEASE_TIMEOUT_MS, HARNESS_SOURCE_SECTION, LOADER_EXPRESSION_SCHEMA, OPTIONAL_BUNDLES, PROFILES_DIR, PROFILE_COMPATIBILITY_FILENAME, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PluginPackages, ProfileRuntimeResolution, StartupError, addHarnessSourceSection, auditStartupEntries, boot, bundlePatchFiles, bundlePatchPaths, composeEntries, createConfigProjector, createRuntimeResolution, evaluatePluginCompatibility, generateConfigSchema, getDshRuntimeVersion, initProfile, installFailLoud, isNativeConfigSchema, loadEnv, loadLayeredEnv, loadOptionalPatches, loadOverlayPatches, loadProfile, loadProfileDirectory, mountRootInclude, pluginCompatibilityWarning, prepareProfileEntries, prepareProfilePatches, readPluginMeta, readProfileCompatibility, readProfileManifest, readProfilePatches, readProfilePlugins, readProfileVersionExemptions, reconcileProfilePatches, reconcileProfilePlugins, removeLinkProjections, renderConfigDump, reportSkippedBundles, resolveBundleDir, resolveConfigPath, resolveProfileDir, resolveTelemetryPatch, sanitizeProfile, setProfileVersionExemption, writeProfileBundles, writeProfileManifest };
+export { DEFAULT_PROFILE_BUNDLES, FAIL_LOUD_RELEASE_TIMEOUT_MS, LOADER_EXPRESSION_SCHEMA, OFFICIAL_ON_DEMAND_CATALOG, ON_DEMAND_BUNDLES, OPTIONAL_BUNDLES, PROFILES_DIR, PROFILE_COMPATIBILITY_FILENAME, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PluginPackages, ProfileRuntimeResolution, ResolutionRestartRequired, StartupError, auditStartupEntries, boot, bundlePatchFiles, bundlePatchPaths, composeEntries, createConfigProjector, createRuntimeResolution, evaluatePluginCompatibility, generateConfigSchema, getDshRuntimeVersion, initProfile, installFailLoud, isNativeConfigSchema, loadEnv, loadLayeredEnv, loadOptionalPatches, loadOverlayPatches, loadProfile, loadProfileDirectory, mountRootInclude, pluginCompatibilityWarning, prepareProfileEntries, prepareProfilePatches, readBundlePatches, readPluginMeta, readProfileCompatibility, readProfileManifest, readProfilePatches, readProfilePlugins, readProfileVersionExemptions, recomposeProfile, reconcileProfilePatches, reconcileProfilePlugins, removeLinkProjections, renderConfigDump, reportSkippedBundles, resolveBundleDir, resolveConfigPath, resolvePluginResource, resolveProfileDir, resolveTelemetryPatch, sanitizeProfile, setProfileVersionExemption, writeProfileBundles, writeProfileManifest };

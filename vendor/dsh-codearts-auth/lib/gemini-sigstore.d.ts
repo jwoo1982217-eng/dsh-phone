@@ -32,7 +32,7 @@ import type { Context } from '@deepseek-ai/cordis';
  *
  * ⚠️ 独立文件而**不是**塞进 `state.json`：后者是**整体替换**语义，且是 dsh home
  * 级、同机多 profile 共享 —— 旧代码/另一个工作区触发任意一次全量写入就会把
- * 不认识的键抹掉（`src/permanent-lock-store.ts:1-33` 记录的同类事故）。
+ * 不认识的键抹掉（`src/permanent-lock-store.ts` 记录的同类事故）。
  */
 export declare const GEMINI_SIG_FILE = "gemini-sigs.json";
 /**

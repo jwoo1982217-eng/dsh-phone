@@ -12,7 +12,9 @@
   <img alt="状态" src="https://img.shields.io/badge/status-beta-f0a441?style=flat-square">
   <br>
   <a href="https://trendshift.io/repositories/261203"><img alt="GITHUB TRENDING 第 1 名，日榜仓库" src="docs/images/trendshift-daily-laurel-gold.svg" width="250" height="55"></a>
-  <a href="https://trendshift.io/repositories/261203"><img alt="GITHUB TRENDING 第 2 名，周榜仓库" src="docs/images/trendshift-weekly-laurel-purple.svg" width="250" height="55"></a>
+  <a href="https://trendshift.io/weekly?language=JavaScript"><img alt="Trendshift JavaScript 周榜第 1 名（2026-10-05 至 2026-10-11，更新中）" src="docs/images/trendshift-weekly-2026-10-11-first-gold.svg" width="250" height="55"></a>
+  <br>
+  <sub>Trendshift JavaScript 周榜第 1 · 2026-10-05 至 2026-10-11 · 更新中，截至 2026-10-11</sub>
 
 </div>
 
@@ -45,11 +47,11 @@ APK 在启动和插件热重载前检查手机适配，并复用本机已有渠�
 ## 交流群
 
 <div align="center">
-  <img src="docs/images/qq-group-qr.png" alt="AI 技术交流学习群二维码" width="300">
+  <img src="docs/images/qq-group-1073656316.png" alt="ai技术交流群3 入群二维码（群号：1073656316）" width="300">
   <br>
-  <b>QQ 群：386179533（AI 技术交流学习群）</b>
+  <b>QQ 群：1073656316（ai技术交流群3）</b>
   <br>
-  扫码加入群聊，一起交流插件使用心得、反馈问题与分享玩法。
+  扫码或搜索群号加入群聊，一起交流插件使用心得、反馈问题与分享玩法。
 </div>
 
 ---
@@ -57,26 +59,26 @@ APK 在启动和插件热重载前检查手机适配，并复用本机已有渠�
 ## 亮点
 
 - **开箱即用，无配置环节**——不需要账号、不需要 Key、不需要在后台申请配额。
-- **上游来源公开透明**——免费车道来源为 OpenCode 的 Zen 网关（https://opencode.ai），Kilo 渠道来源为 Kilo AI 的公共网关（https://kilo.ai），均直连、不经任何第三方中转。请求由谁处理、数据发往何处，见「上游是哪些源」与「免责声明」。
+- **上游来源公开透明**——免费车道来源为 [OpenCode 的 Zen 网关](https://opencode.ai)，Kilo 渠道来源为 [Kilo AI 的公共网关](https://kilo.ai)，均直连、不经任何第三方中转。请求由谁处理、数据发往何处，见「上游是哪些源」与「免责声明」。
 - **清单跟随上游**——模型集合、上下文长度与能力在每次刷新时向上游重新拉取，插件内不保存静态快照。
 - **选择器只广播可用的模型**——上游清单已声明但网关明确拒绝路由的模型（返回 `Model is unavailable`、或 404 找不到该 id）从下拉框移除，仅在设置页保留记录并注明拒因；网关自身故障（5xx）、配额限制（429）、超时与断网不属于对模型的判定，一律保持可达；被地区策略拦截的模型归入 region-limited 分组。整轮探测全部被拒时同样保留，选择器不会为空。
 - **公告中心 + 实时推送**——仓库维护者在仓库中编辑 JSON 并推送后，所有已安装实例最迟在一个轮询周期内收到；正文为白名单约束下的 HTML，支持图文排版；`urgent` 级别触发全屏弹窗；可选系统级通知。
 - **应用内升级**——设置页一键升级：下载 → SHA-256 校验 → 备份 → 原子替换 → 校验回读 → 热重载，任一步失败自动回滚至上一版本。
 - **热重载**——升级与代码变更即时生效，无需重启应用；也可在设置页手动触发，或启用文件监视自动重载。
 - **按响应体形状判定流式响应**——网关在高负载下会以 `application/json` 的 content-type 返回完整的 SSE 帧序列。插件按响应体形状判定，并将已嗅探的字节重新注入流，既不会导致整轮失败，也不会因 header 与实际内容不符而将可用模型判为不可用。
-- **思考强度实际生效**——Light / Balanced / Deep 对应输出 token 预算 2 048 / 8 192 / 模型上限，且逐次调用留痕。思考不可关闭的模型（MiMo V2.6 等）三档整体翻倍为 4 096 / 16 384 / 模型上限，因为思考与正文共享同一输出额度；设置页每张模型卡均标注该档位实际下发的上限。该能力通过硬性输出上限实现，不依赖上游的 effort 参数（原因见「为什么用预算，而不是 reasoning_effort」）。
+- **思考强度实际生效**——两类模型两种控制：声明了思考档位的模型（如 DeepSeek V4.1 Flash、GLM 5.3 Flash）给出它自己的档位菜单（Off / Low / High / Max 等），选中值按原值下发到上游 `reasoning_effort`，上游会校验该字段、集合外的取值直接 400；没有档位菜单的模型（MiMo V2.6 等）走预算阶梯——Light / Balanced / Deep 对应输出 token 预算 2 048 / 8 192 / 模型上限，思考不可关闭的模型三档整体翻倍为 4 096 / 16 384 / 模型上限，因为思考与正文共享同一输出额度。两者都逐次调用留痕，设置页每张模型卡均标注档位或该档实际下发的上限（详见「思考强度：档位菜单与预算阶梯」）。
 - **不依赖浏览器界面**——插件仅将 llm 作为硬依赖，在没有 web server 的 composition（如 dsh-tui）中同样完成启动并输出模型；看板模块挂载在独立的 fiber 上，待 webServer 就绪后再注册路由，因此既不会阻塞模型车道，也不会因插件先于 web 服务加载而永久丢失设置页。
 - **用量看板，数据全部留在本机**——Token 热力图、总量曲线（支持总计与单模型视图）、输出速度与首字延迟逐次采样。不上传任何数据。
 - **OpenAI 兼容转发端口**——本机其它工具通过 base URL 与 Key 即可调用这些模型。
 - **EAC 渠道（桌面端专属）**——在 DeepSeek Harness 桌面端与 DSHEAC AIO 桌面端中自动解锁一条协付通道，模型以 EAC 前缀显示（如 EAC DeepSeek V4.1 Flash）；凭据加密密封，由宿主指纹闸门把守；该渠道在服务器侧校验 GitHub 授权（登录并 star 本仓库）后才放行对话；在命令行及其它宿主中该通道完全不存在。详见「EAC 渠道」。
 - **Kilo 渠道（免密免费池）**——内置 Kilo AI 公共网关的免费模型池（`isFree` 清单实时拉取，含 `kilo-auto/free` 自动路由），无需任何账号或 Key；模型卡带 Kilo 徽章。思考强度与 EAC 渠道同款：模型自身的档位菜单（Off / Low / Medium / High，默认 High），经网关统一的 `reasoning` 参数真实下发——Off 已逐家族实测将思考归零（nemotron、ling、dots、poolside、apodex、cohere）；stepfun 与 liquid 端点强制思考（对关闭请求返回 400）、两个自动路由不透传关闭，这些模型的菜单不含 Off 档。该池由上游免费提供，上游会在其模型卡中声明 prompt 可能被记录用于改进服务——请勿发送敏感内容，详见「免责声明」。
-- **聚合渠道，自带 Key**——设置页新增一页，把第三方端点接进同一条模型清单：注册表内置 76 家提供商（NVIDIA NIM、OpenRouter、Groq、Cerebras、SambaNova、Gemini、DeepSeek、Mistral、Together、Fireworks、SiliconFlow、Nebius、Chutes、Hugging Face、Cloudflare、Z.ai、Kimi、MiniMax、QwenCloud/Alibaba、Bedrock、Vertex、Vercel AI Gateway、Azure OpenAI，以及无需账号的 Ollama、LM Studio、llama.cpp），写入 Key（本机免账号的提供商不需要）后其模型即以 `provider/model` 出现在选择器里，也可经本地网关调用。Key 只写入本机 0600 的 settings.json，API 只回显 `hasKey` 与 `…abcd` 指纹；每家可单独启停、测试（列表探测，不花一次生成）、发现模型、覆盖 Base URL 与模型清单。OAuth 与 ADC 认证的提供商照常列出，但标注为不可驱动。
+- **聚合渠道，自带 Key**——设置页新增一页，把第三方端点接进同一条模型清单：注册表内置 75 家提供商（NVIDIA NIM、OpenRouter、Groq、Cerebras、SambaNova、Gemini、DeepSeek、Mistral、Together、Fireworks、SiliconFlow、Nebius、Chutes、Hugging Face、Cloudflare、Z.ai、Kimi、MiniMax、QwenCloud/Alibaba、Bedrock、Vertex、Vercel AI Gateway、Azure OpenAI，以及无需账号的 Ollama、LM Studio、llama.cpp），写入 Key（本机免账号的提供商不需要）后其模型即以 `provider/model` 出现在选择器里，也可经本地网关调用。Key 只写入本机 0600 的 settings.json，API 只回显 `hasKey` 与 `…abcd` 指纹；每家可单独启停、测试（列表探测，不花一次生成）、发现模型、覆盖 Base URL 与模型清单。OAuth 与 ADC 认证的提供商照常列出，但标注为不可驱动。
 - **省 Token**——三件事：工具输出压缩（RTK）在请求发出前就地重写 `tool_result`（git diff / status / log、grep、find、ls、tree、构建日志、编号转储、搜索清单、重复日志行），实测 40 KB 的 `git diff` 移除 90% 的字节且模型仍能就它作答；提示词瘦身有 caveman 与 ponytail 两族、默认全关；另有五个不占用上游请求的本地应答。设置页用与用量图表同一批统计行显示压缩前后字节、节省比例、压缩块数与统计调用数。
 - **路由（降级链）**——把任意车道的模型串成一条命名链，以 `combo:<name>` 作为虚拟模型出现在选择器与网关上；`fallback` 固定从链首开始，`round-robin` 轮换起点并连续 N 轮粘滞。链接在输出任何正文之前失败会被整段丢弃，切换对调用方不可见；思考增量不算正文，因此「想了很久才撞上配额墙」正是降级最有价值的场景。
 - **本地网关原生说 Anthropic**——新增 `POST /v1/messages`（流式与非流式，含 thinking / tool_use 块、真实 stop_reason 与流内 error 事件）与 `POST /v1/messages/count_tokens`（本地估算）；`/v1/models` 广播全部车道，含聚合行与链路。网关页新增「接入客户端」分区，按实际绑定的端口与真实要求的密钥生成 Claude Code、Codex、OpenAI SDK、Anthropic SDK、curl 与局域网的可复制配方。
 - **接口具备鉴权围栏**——插件 HTTP 路由优先级高于内核 `/api`，因此内置与内核一致的信任检查（优先复用 composition 的 connection 服务，缺失时退回结构化围栏）。
 - **十三个白嫖渠道，一体接入**——CodeArts（华为云）、CodeBuddy / WorkBuddy（腾讯）、LobsterAI（有道）、Qoder / Qoder 中国版（阿里系）、TRAE（字节）、Cline、Loomy（讯飞）、Raccoon（商汤）、MiniMax Code、ZCode（智谱）、Gemini（Google Code Assist）十一个账号渠道开箱即用，外加 Kilo 免费车道与原匿名免费通道；OpenCode 账号渠道在本插件中默认停用。各渠道的登录流程、账号池、每日积分领取、模型黑名单与其本地 OpenAI 网关（Chat Completions + Responses，默认 `127.0.0.1:8326`）原样挂载与运行；凭据只写入宿主凭据库，浏览器永远拿不到明文。
-- **九页毛玻璃界面**——设置页顶部导航扩为九个页面：原有六页（**免费模型**（鱼缸水位 = 可用模型占比）、**EAC 模型**（鱼缸水位 = 协付池压力）、**白嫖模型接入**（十三张渠道卡：登录、账号、模型开关、一键领取积分）、**数据看板**（今日/全部 Token 消耗、平均生成速度、缓存命中率、成功率，账号透视与模型性能表、最近请求总览）、**运行日志**（逐请求明细：结果、耗时、首字、速度、Token 细分，失败原因悬停可见）与**网关设置**（网关开关/端点/密钥；局域网转发中继：监听地址、端口与独立中继密钥）），新增**聚合渠道**（提供商注册表、Key、测试、发现模型、Base URL 与模型清单覆盖）、**省 Token**（压缩开关、两族提示词档位、五个本地应答与节省统计）与**路由**（降级链编辑器）三页；网关设置页另增「接入客户端」分区。页面切换与卡片入场为 150–250 ms 短动效，`prefers-reduced-motion` 下整体关闭。每页都有直达 GitHub 仓库的 Star 按钮。
+- **十一页毛玻璃界面**——设置页顶部导航扩为十一个页面：原有六页（**免费模型**（鱼缸水位 = 可用模型占比）、**EAC 模型**（鱼缸水位 = 协付池压力）、**白嫖模型接入**（十三张渠道卡：登录、账号、模型开关、一键领取积分）、**数据看板**（今日/全部 Token 消耗、平均生成速度、缓存命中率、成功率，账号透视与模型性能表、最近请求总览）、**运行日志**（逐请求明细：结果、耗时、首字、速度、Token 细分，失败原因悬停可见）与**网关设置**（网关开关/端点/密钥；局域网转发中继：监听地址、端口与独立中继密钥）），新增**聚合渠道**（提供商注册表、Key、测试、发现模型、Base URL 与模型清单覆盖）、**省 Token**（压缩开关、两族提示词档位、五个本地应答与节省统计）、**路由**（降级链编辑器）、**插件升级**（版本检查、一键升级与热重载）与**推荐项目**（EAC-Desktop / EAC-Pack / EAC-design-world 三张卡片：简介、直达链接与 Star 按钮，Star / Fork / 最近提交数实时取自 GitHub，取不到就整块不显示）五页；网关设置页另增「接入客户端」分区。页面切换与卡片入场为 150–250 ms 短动效，`prefers-reduced-motion` 下整体关闭。每页都有直达 GitHub 仓库的 Star 按钮。
 - **局域网转发中继**——渠道网关本身只监听本机（上游的安全选择）；本插件提供自己的转发门：调用方用插件签发与轮换的中继密钥，转发跳由宿主换用网关凭据（凭据不出宿主进程），仅放行 `/v1/*` 模型接口并带环路保护。
 
 ## 你会看到什么
@@ -120,6 +122,16 @@ Chat Completions、Responses API，以及独立网页管理（模型、统计、
 
 ## 安装
 
+> **⚠️ 不要通过 npm 安装本插件。**
+>
+> npm 上的 `dsh-our-free-model` 包**不是本仓库发布的**。它由第三方打包，内容与本仓库
+> 不一致：`index.js`、`client.js` 被改动，并额外包含本仓库从未有过的
+> `src/channel-visibility.js`。装到它得不到本项目审核过的构建，也拿不到本仓库的签名
+> 清单校验与应用内升级。
+>
+> 请只按本文档下方的方式安装：使用本仓库的 Release 发布包，或本地源码目录。
+> 其它渠道出现的同名包一律以本仓库为准。
+
 **命令行（纯 dsh web）**
 
 ```
@@ -130,23 +142,25 @@ dsh plugin --profile web add /绝对路径/dsh-our-free-model
 
 **DSHEAC AIO / 桌面端：请先阅读本节**
 
-桌面端在启动 web 服务之前会执行一道 profile 闸门。其扫描器仅放行 dsh 自身在
-.dsh-module-fallback 下生成的链接；profile 目录树中出现任何其它符号链接或目录
-junction，应用将拒绝启动并报错：
+部分 DSHEAC AIO / 旧版桌面整合包在启动 web 服务之前会执行 profile 闸门，
+限制 profile 中的符号链接或目录 junction。若当前宿主包含该检查，可能报错：
 
 ```
 PROFILE_UPGRADE_REQUIRED: offline dependency migration is not yet available
 ```
 
-因此桌面端不要使用 `link:` 依赖安装，也不要创建 junction。请使用应用内的插件管理器，
-或放置一个真实目录。
+遇到该闸门时，不要使用 `link:` 依赖或 junction；使用应用内插件管理器，
+或下方的本地 tarball 安装。不同宿主的限制以自身日志和安装机制为准。
 
-以真实目录手工安装时，在 /profiles// 下完成三项操作：
+以真实目录手工安装时，使用可信源码打出的本地 tarball：
 
-1. 将发布文件复制至 node_modules/dsh-our-free-model/
-（index.js、client.js、adapter/、src/、locale/、icon.svg、cordis.patch.yml、package.json——adapter/ 不可遗漏：index.js 首行即 import 该目录）
-2. 在 dependencies 中加入 "dsh-our-free-model": "2.1.0"——该版本号跟随仓库 package.json 的 version（版本变更时同步，当前为 2.1.0），不要沿用旧值，也不要写为 link:
-3. 在 dsh.profile.bundles 末尾追加 "dsh-our-free-model"
+1. 创建 `<DSH_HOME>/profiles/<profile>/vendor/`，在审核过的本仓库目录运行 `npm pack --ignore-scripts --pack-destination "<DSH_HOME>/profiles/<profile>/vendor"`，或将本仓库正式发布的同版本 tarball 放入该目录。本地打包不执行 npm 发布。
+2. 在 profile 的 `package.json` 的 dependencies 中加入 `"dsh-our-free-model": "file:./vendor/dsh-our-free-model-2.5.7.tgz"`。文件名版本跟随仓库 `package.json`，不要改成同名 npm 注册表版本；再通过宿主的安装流程解析依赖。
+3. 在 dsh.profile.bundles 末尾追加 `"dsh-our-free-model"`。
+
+包管理器拥有这份安装的字节时，同时将 bundle config 或插件 `settings.json` 的 `distribution` 设为 `managed`，由包管理器统一更新；应用内升级、公告 feed 与热重载会停用，模型功能保留。以后更新时替换可信 tarball 并同步依赖路径，避免包管理器按旧锁文件恢复旧版本。
+
+若手工复制发布文件，必须复制完整包，包括 `adapter/`、`src/`、`locale/` 和 `vendor/channel-pack/` 下的 `pack.js`、WASM、LICENSE、NOTICE；只复制入口脚本会导致渠道加载失败。
 
 不要再向 cordis.patch.yml 添加条目。被 dsh.profile.bundles 引用的包，其自带的
 patch 层会自动生效；两处同时注册将报错 duplicate loader entry id: our-free-model。
@@ -213,14 +227,51 @@ git 执行 `git ls-remote`。若本机 git 配置了 `insteadOf` 重写（常见
 命令行 `dsh plugin add` 无法写入。请在桌面端的插件管理器（设置 → 插件）里完成安装或升级；
 命令行安装仅适用于纯 web profile（`dsh web`）。
 
+## 桌面安装包（macOS，社区构建）
+
+DSH 插件本体无需构建、解压即用；**桌面安装包**（Our Free Model 桌面壳）官方目前只发布 Windows 版。macOS 版为社区构建：源码改动见 [PR #421](https://github.com/Ebony-Vinyl/dsh-our-free-model/pull/421)，可逐行审计；预打好的 Apple Silicon（arm64）包以社区 Release 的版本和校验值为准，也可以自己从源码构建（macOS 上执行 `npm --prefix packages/desktop run build`，完整流水线见 `.github/workflows/build-macos.yml`）。
+
+下载后建议先核对校验和（SHA256 见 PR / Release）：
+
+```bash
+shasum -a 256 ~/Downloads/Our.Free.Model_<version>_aarch64.dmg
+```
+
+**安装后提示「已损坏」或打不开？**
+
+社区构建没有 Apple Developer 账号签名与公证，Gatekeeper 会拦截首次启动——这不是文件真的损坏，以下几种方式任选其一：
+
+1. **右键打开**：在访达中按住 Control 点按应用图标，选择「打开」，在弹窗中再次点按「打开」。
+2. **清除隔离属性**（终端）：
+
+   ```bash
+   xattr -cr /Applications/Our\ Free\ Model.app
+   ```
+
+3. **仍提示损坏时，用 sudo 清除隔离属性**（较新 macOS 对未签名应用校验更严）：
+
+   ```bash
+   sudo xattr -rd com.apple.quarantine "/Applications/Our Free Model.app"
+   ```
+
+4. **在系统设置中放行**：打开「系统设置 → 隐私与安全性」，若出现「仍要打开」按钮，点按确认。
+
+几点说明：
+
+- 当前社区包为 **Apple Silicon（arm64）**；Intel 机型的 Mac 需自行从源码构建。
+- 包内自带 Node 运行时与独立服务，安装后即可使用，无需登录、无需 API Key。
+- 该包未经 Apple 签名与公证，是否信任请以上方可审计的源码改动与可复现的 CI 构建记录为准。
+
 ## 使用说明
 
 **选择模型**：打开输入框的模型选择器，选择 Our Free Model 分组下的任意模型。选择结果按会话持久化。
 
-**调整思考强度**：同一菜单中的 Effort，共三档 Light / Balanced / Deep。档位越高，思考占用的
-输出预算越多；上限为强制下发，因此档位之间存在可测量的差异。思考与可见回答共享同一输出额度，
+**调整思考强度**：同一菜单中的 Effort。声明了思考档位的模型给出它自己的档位（如 Off / Low /
+High / Max），选中值按原值下发；其余模型给 Light / Balanced / Deep 三档，档位越高思考占用的
+输出预算越多，上限为强制下发，因此档位之间存在可测量的差异。思考与可见回答共享同一输出额度，
 因此思考不可关闭的模型会将三档整体上移（设置 → Our Free Model 的模型卡上标注了每档的
-实际数值）。若回答被截断，可切换至 Deep，或调高设置中的单次输出上限。
+实际数值，声明档位的模型则标注档位名）。若回答被截断，可切换至更高档，或调高设置中的
+单次输出上限。
 
 **供本机其它工具调用**：设置 → Our Free Model → 本地转发，启用后复制 base URL 并生成 Key。支持：
 
@@ -267,13 +318,13 @@ Windows 自动检测只支持手动代理，不执行 PAC 自动配置脚本；�
 
 ## 聚合渠道、省 Token、路由与本地网关
 
-### 聚合渠道：自带 Key 的 76 家提供商
+### 聚合渠道：自带 Key 的 75 家提供商
 
-设置页的**聚合渠道**一页把第三方端点接进同一条模型清单。提供商注册表内置 76 家（`src/providers/registry.json`，分类为 `free | free-tier | apikey | oauth | local`），包括 NVIDIA NIM、OpenRouter、Groq、Cerebras、SambaNova、Gemini、DeepSeek、Mistral、Together、Fireworks、SiliconFlow、Nebius、Chutes、Hugging Face、Cloudflare、Z.ai、Kimi、MiniMax、QwenCloud/Alibaba、Bedrock、Vertex、Vercel AI Gateway、Azure OpenAI，以及本机、无需账号的 Ollama、LM Studio、llama.cpp。注册表数据来自 free-claude-code 的提供商目录与 9router 的提供商注册表。
+设置页的**聚合渠道**一页把第三方端点接进同一条模型清单。提供商注册表内置 75 家（`src/providers/registry.json`，分类为 `free | free-tier | apikey | oauth | local`），包括 NVIDIA NIM、OpenRouter、Groq、Cerebras、SambaNova、Gemini、DeepSeek、Mistral、Together、Fireworks、SiliconFlow、Nebius、Chutes、Hugging Face、Cloudflare、Z.ai、Kimi、MiniMax、QwenCloud/Alibaba、Bedrock、Vertex、Vercel AI Gateway、Azure OpenAI，以及本机、无需账号的 Ollama、LM Studio、llama.cpp。注册表数据来自 free-claude-code 的提供商目录与 9router 的提供商注册表。
 
 写入 Key（本机免账号的提供商不需要）后，该提供商的每个模型以 `provider/model` 成为清单行：在选择器里可选，也可经本地网关调用。三种线协议按提供商各自声明：OpenAI Chat Completions、OpenAI Responses 与 Anthropic Messages（后两者用于只提供这两种协议的上游）。
 
-Key 只写入插件自己的 0600 `settings.json`，接口永不回显——页面只显示 `hasKey` 与 `…abcd` 指纹；字段缺省表示保留已存 Key，空字符串表示清除。每家提供商提供：启用/停用、测试、发现模型、Base URL 覆盖（Azure / Cloudflare / Vertex 没有可用默认值，必须覆盖）、模型清单覆盖与移除。测试按钮是**列表探测**：它用提供商的模型列表验证 Key，不花一次生成；提供商声明没有列表接口时，按钮如实说明。OAuth 与 ADC（Google ADC）认证的提供商照常列出并标注「不可驱动」——本车道无法替它们完成交互式登录或云侧凭据流程。
+Key 只写入插件自己的 0600 `settings.json`，接口永不回显——页面只显示 `hasKey` 与 `…abcd` 指纹；字段缺省表示保留已存 Key，空字符串表示清除。每家提供商提供：启用/停用、测试、发现模型、Base URL 覆盖（Azure / Cloudflare / Vertex 没有可用默认值，必须覆盖）、模型清单覆盖与移除。测试按钮是**列表探测**：它用提供商的模型列表验证 Key，不花一次生成；提供商声明没有列表接口时，按钮如实说明。OAuth 与 ADC（Google ADC）认证的提供商照常列出并标注「不可驱动」——本车道无法替它们完成交互式登录或云侧凭据流程。OpenCode 的免密免费池**不在此注册表内**：它要求每请求一枚铸造形状的会话 id、v2 客户端 User-Agent 与一组官方工具声明，本车道的通用传输没有地方承载这些，硬列进来只会是一个点不通的选择器行——这 10 个模型本来就由本插件自己的免费车道原生提供（见「免费车道」）。
 
 ### 省 Token：工具输出压缩、提示词瘦身与本地应答
 
@@ -311,7 +362,7 @@ src/stream.js 三种线协议解码（chat / messages / responses）归一为 ha
 src/messages.js harness 消息 -> 各线协议形态，外加工具调用配对修复
 src/effort.js 思考档位 -> 输出预算
 src/forward.js 独立的 OpenAI 兼容监听器（另含 Anthropic Messages 端点）
-src/providers/registry.json 聚合车道注册表：76 家提供商的分类、认证、线协议与端点
+src/providers/registry.json 聚合车道注册表：75 家提供商的分类、认证、线协议与端点
 src/providers/index.js 注册表读取与 provider/model 复合 id 解析
 src/aggregate.js 聚合车道：清单行、凭据解析、Key 脱敏、列表探测、按线协议发送
 src/anthropic.js /v1/messages 的 Anthropic Messages 编解码与本地 token 估算
@@ -355,11 +406,24 @@ client.js 浏览器半身：手写 ModuleLoader bundle，无构建步骤
 id 并入合并后的清单，因此选择器照常广播它、本地网关照常按名调用它；链的展开与推进判定发生
 在适配器的 `runStream()` 内，于是两个调用方都不必知道降级这件事。
 
-## 为什么用预算，而不是 reasoning_effort
+## 思考强度：档位菜单与预算阶梯
 
-实测结论：在该车道上向上游传递 reasoning-effort 字符串为无效操作——对三个不同名义档位
-反复采样，思考 token 数量在统计上无法区分。提供一个无效控件比不提供更糟，
-因此思考强度实现为硬性输出 token 上限，该上限确实产生约束：留痕的思考 token 随档位单调上升。
+**两类模型，两种控制。**
+
+声明了思考档位的模型（清单里的 `reasoning_options` 给出 `effort.values`）走**档位菜单**：
+选中的档位按原值下发到上游的 `reasoning_effort` 字段，与 EAC / Kilo 渠道同款。这是 2026-10-17
+的复测结论——早期（2026-09-24）该车道确实忽略这个字段，但现在它**会校验**：发一个集合外的
+取值直接回 `400 invalid_value` 并列出可接受集合（`none|minimal|low|medium|high|xhigh|max`），
+而思考量随档位真实变化（`deepseek-v4.1-flash-free` 三次采样中位数：none 0 / low 793 /
+high 700 / xhigh 1405 / max 1906）。因此菜单只列出该模型自己声明过的档位；模型没声明
+「关闭」档（如 GLM 5.3 Flash，其 `none` 实测关不掉思考）就不提供 Off 档。
+
+没有档位菜单的模型（清单只给 `toggle` 或 `budget_tokens`，或压根没有 `reasoning_options`）
+保留**预算阶梯**：思考强度实现为硬性输出 token 上限，该上限确实产生约束——留痕的思考 token
+随档位单调上升。对一个上游表达不了档位的模型，编一档等于谎报能力，所以这里不编。
+
+模型的窗口与输出上限按 9router / models.dev 的口径取（`limit.context` / `limit.output`、
+`modalities.input`）；上游清单本身只公布 id，不含任何能力字段。
 
 ## 三个实际消耗过调试时间的内核行为
 
@@ -490,7 +554,7 @@ docs/issue-12-recovery.md。合并前 review 修复了一处告警
 | 复查本轮发布，发现上述两项自身的问题 | 离线 projection-test.mjs 第 7 节、truncation-test.mjs 第 12 节，另加 tui-test.mjs 一次转发端往返 | ① Messages 线在识别 V4 的 role:'tool' 之后，将同一段结果既放入 tool_result、又保留在紧随的普通块中——文本重复两份，图像连同 base64 重复两份；当前实现在发出结果后跳过该消息自身，撤掉修复则此断言立即失败。② response.incomplete / response.failed / response.done 同样属于 Responses 线的正常收尾，此前仅识别 response.completed，导致触及输出上限的一轮被判定为"被截断"、白白消耗两次重试；当前实现仍由 status 决定 finish token，且不带原因的收尾帧不再清除前一帧已给出的 token。③ 转发端的 /v1/responses 此前无用例覆盖工具历史，现通过桩上游逐字节核对发出的 messages：调用与其结果均存在 |
 | 该车道的正常收尾形态 | 真实上游 probes/stream-terminal-frames.mjs（新增） | 逐帧抓取原始 SSE：finish_reason:"stop" → 带 usage 的帧 → data: [DONE] → {"choices":[],"cost":"0"}，两个模型一致。因此"始终未出现 finish token"确属异常，不属于该车道的另一种正常写法——这也是 #10 判定条件的依据 |
 | 真实车道上无误判 | 真实上游 host-selftest.mjs 全量 | 11 个模型探测 + 普通对话 + 两轮工具 + 三档思考 + 视觉输入，全部落到各自的正常收尾（stop / tool-calls / max-tokens），无一条被判定为截断；被地区门拦截的模型仍返回 REGION_BLOCKED |
-| 上游来源成文（#8） | 代码中全部出网目标逐条核对 | 新增「上游是哪些源」一节：opencode.ai/zen/v1/\*（推理与 /models）、本仓库 feed/\*.json（raw 优先、jsDelivr 兜底）、api.ipify.org / ipinfo.io / ipapi.co（仅读取本机出口 IP 与国家码）。当前无号池、无中转 |
+| 上游来源成文（#8） | 代码中全部出网目标逐条核对 | 新增「上游是哪些源」一节：opencode.ai/inference/v1/\*（推理与 /models，2026-10-14 起；原为 /zen/v1）、本仓库 feed/\*.json（raw 优先、jsDelivr 兜底）、api.ipify.org / ipinfo.io / ipapi.co（仅读取本机出口 IP 与国家码）。当前无号池、无中转 |
 | 离线套件 | npm test（18 个套件） | 全绿；新增 projection、fingerprint 两套，仍不出网、不消耗免费额度 |
 
 ### 上一轮：v1.2.2（对应 issue #1–#4、#6）
@@ -582,7 +646,7 @@ node scripts/sanitize-test.mjs # 公告 HTML 白名单渲染器：XSS 语料必�
 node scripts/trust-test.mjs # 插件路由的请求信任围栏
 node scripts/feed-test.mjs # 公告 feed：解析、故障转移、缓存、到达检测（本地 HTTP 服务器）
 node scripts/updater-test.mjs # 应用内升级：清单校验、SHA-256、备份/回滚（本地 HTTP 服务器）
-node scripts/effort-test.mjs # 思考档位 = 实际下发的 max_tokens，且与留痕档位一致
+node scripts/effort-test.mjs # 档位模型下发 reasoning_effort、预算模型下发 max_tokens，且与留痕档位一致
 node scripts/sniff-test.mjs # 200 响应按 body 形状分流：SSE 帧、单包 JSON、空 body、跨 chunk 多字节、中途 abort
 node scripts/release-e2e.mjs # 使用真实 feed/manifest.json 执行一次升级，并验证虚报字节的清单会被拒绝
 node scripts/picker-test.mjs # 选择器只广播可用的模型，且永不广播空集合
@@ -614,13 +678,13 @@ npm run typecheck # tsc --noEmit，严格检查 adapter/ 接缝（可选：需�
 
 ## EAC 渠道（桌面端专属）
 
-除免费车道外，插件内置一条协付渠道（EAC）。该渠道仅存在于两个桌面宿主中：
+除免费车道外，插件内置一条协付渠道（EAC）。宿主识别支持以下运行方式：
 
 DSHEAC AIO（Tauri 壳）：内核路径、内嵌 node、web-desktop profile 三重信号同时命中才解锁；
 
-DeepSeek Harness 桌面端（Electron 壳）：内核自身提供的 desktop profile 上下文（CLI 按设计拒绝该 profile）加上桌面壳为内核进程设置的运行标记。
+DeepSeek Harness 桌面端（Electron 壳）与 DSH Tauri：使用内核提供的 `desktop` 或 `tauri` profile 上下文；仅有命令行参数不作为通过依据。
 
-在命令行、纯 dsh web 以及任何其它运行方式中，该通道整体不存在：没有模型、没有请求、没有报错，也不会发生解密尝试。
+内核声明的 `web` / `web-desktop` profile 同样支持该渠道。未通过宿主识别时，不展示渠道、不发请求；通过识别后仍需满足独立的 GitHub 授权要求。
 
 显示规则：模型名仅显示模型本名并带渠道前缀，如 EAC DeepSeek V4.1 Flash、EAC Kimi K3；设置页的模型卡上另有独立的 EAC 渠道徽章。
 
@@ -636,13 +700,14 @@ DeepSeek Harness 桌面端（Electron 壳）：内核自身提供的 desktop pro
 
 两条公开免密来源，均直连、不经任何第三方中转；另有第四条出网目标为自建网关（EAC 渠道，见其专节）。
 
-**免费车道：OpenCode 的 Zen 网关，https://opencode.ai/zen/v1/\***。
-具体到代码——src/upstream.js 中每一条均于 2026-09-24 通过直接请求核对：
+**免费车道：OpenCode 的免密网关，https://opencode.ai/inference/v1/\***（2026-10-14 从
+`/zen/v1` 迁到这里；旧路径对免费模型一律 403 FreeTierError）。
+具体到代码——src/upstream.js 中每一条均通过直接请求核对（路径与指纹：2026-10-14 / 10-16）：
 
 | 用途 | 目标 | 携带何种凭据 |
 | --- | --- | --- |
-| 推理请求 | POST …/zen/v1/chat/completions、…/zen/v1/responses、…/zen/v1/messages（按模型分流，见 endpointFor） | Authorization: Bearer public——该车道本身即为公开免密额度，插件中不含任何属于你的密钥 |
-| 模型清单 | GET …/zen/v1/models | 同上 |
+| 推理请求 | POST …/inference/v1/chat/completions、…/inference/v1/responses、…/inference/v1/messages（按模型分流，见 endpointFor） | Authorization: Bearer public——该车道本身即为公开免密额度，插件中不含任何属于你的密钥 |
+| 模型清单 | GET …/inference/v1/models | 同上 |
 | 公告与升级清单 | 本仓库的 feed/\*.json：raw.githubusercontent.com 优先，cdn.jsdelivr.net 兜底 | 无 |
 | 出口地区判定 | api.ipify.org / ipinfo.io / ipapi.co，仅用于读取本机公网 IP 与国家码 | 无 |
 

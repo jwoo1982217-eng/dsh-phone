@@ -7,7 +7,7 @@ const {BasicCompactionEngine} = await import(process.env.DSH_PHONE_COMPACTION_SO
   : new URL('../runtime/overlays/@deepseek-ai/dsh-compaction-basic/lib/index.js', import.meta.url));
 import {estimateMessage} from '@deepseek-ai/dsh-token-meter/estimate';
 
-const agent = () => ({options:{provider:'fixture',model:'local'},session:{id:'fixture-session',requestHeader:()=>({config:{provider:'fixture',model:'local'}}),toolHistory:()=>[]}});
+const agent = () => ({options:{provider:'fixture',model:'local'},session:{id:'fixture-session',requestHeader:()=>({config:{provider:'fixture',model:'local'}}),toolHistory:()=>({tools:[],updates:[]})}});
 function fixture(config={}) {
   const ctx=new Context(), hooks={};
   ctx.provide('tokenMeter',{estimateMessage});

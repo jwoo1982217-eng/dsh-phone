@@ -14,8 +14,9 @@
  * > ① **硬编码副本必然与 `PROVIDERS` 漂移**（新增 provider 时测试不会自动纳入）
  *
  * 那条判据的落法是「从源码真读 `PROVIDERS`，而不是手抄一份样本」。本文件
- * 沿用同一模式：**渠道词表从 `plugin-src/client/jet-hub.js` 真读**，
- * 不在测试里再抄一份渠道名（否则测试自身成了新的漂移源）。
+ * 沿用同一模式：**渠道词表从真源 `src/provider-registry.ts` 真读**
+ *（2026-10-08 起客户端 `PROVIDERS` 即由它派生），不在测试里再抄一份渠道名
+ *（否则测试自身成了新的漂移源）。
  *
  * ## 被锁的三个描述来源（都是 `readPluginMeta` 真实消费的那几处）
  *
@@ -54,15 +55,16 @@
  *
  * ## ⚠️ 下限护栏存在的原因（本仓库踩过的坑）
  *
- * 「描述不含任何渠道名」在**词表为空**时**恒真**。若将来 `PROVIDERS` 的结构变了、
- * 正则失配得到空数组，本文件会**假绿** —— 那比没有测试更坏（看起来测了，其实没测）。
- * 故 `readProviders()` 解析出的条数不足下限时**直接抛错**，与
+ * 「描述不含任何渠道名」在**词表为空**时**恒真**。若将来真源的结构变了、
+ * 取到空数组，本文件会**假绿** —— 那比没有测试更坏（看起来测了，其实没测）。
+ * 故 `readProviders()` 取到的条数不足下限时**直接抛错**，与
  * `new-account-dialog.spec.ts` 的 `ids.length < 10` 护栏同法。
  */
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { PROVIDER_REGISTRY } from '../../src/provider-registry.js'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const read = (path: string): string => readFileSync(resolve(HERE, '../..', path), 'utf8')
@@ -74,24 +76,21 @@ interface ProviderEntry {
 }
 
 /**
- * 从客户端源码**真读**渠道表。
+ * 从 registry **真读**渠道表。
  *
- * ⚠️ 只匹配 `{ id: '…', label: '…'` 的**成对**形式（要求相邻），比单字段匹配精确得多。
- * 刻意**不剥注释**：图标常量是 base64，字母表含 `/`，`stripComments` 会把
- * `//` 序列当行注释吃掉并连带删掉后面的 `PROVIDERS` 行。即便注释里真出现同形文本，
- * 后果也只是**多一个候选词**（断言更严），不会造成假绿。
+ * ⚠️ 2026-10-08 改：原先解析 `plugin-src/client/jet-hub.js` 的 `PROVIDERS`
+ * **源码文本**（正则 `/\{\s*id:\s*'([^']+)',\s*label:\s*'([^']+)'/g`）。
+ * 客户端 `PROVIDERS` 现由 `src/provider-registry.ts` 派生，故这里直接读 registry
+ * —— 既是行为断言，也不再随 `PROVIDERS` 的结构变化而失效。
+ *
+ * ⚠️ 这里只需要 `label`（`id` 不参与品牌词表），但保留成对返回以维持
+ * `ProviderEntry` 的形状与下游判据不变。
  */
 function readProviders (): ProviderEntry[] {
-  const source = read('plugin-src/client/jet-hub.js')
-  const block = /const PROVIDERS = Object\.freeze\(\[([\s\S]*?)\n\]\);/.exec(source)
-  if (block === null) {
-    throw new Error('未能定位 PROVIDERS 字面量 —— 解析方式需随结构变更更新')
-  }
-  const entries = [...(block[1] ?? '').matchAll(/\{\s*id:\s*'([^']+)',\s*label:\s*'([^']+)'/g)]
-    .map((match) => ({ id: match[1] ?? '', label: match[2] ?? '' }))
+  const entries = PROVIDER_REGISTRY.map((d) => ({ id: d.id, label: d.label }))
   // ⚠️ 见文件头「下限护栏存在的原因」：空词表 ⇒ 断言恒真 ⇒ 假绿。
   if (entries.length < 10) {
-    throw new Error(`PROVIDERS 只解析出 ${entries.length} 条（应 ≥10）—— 疑似解析失配，请更新正则`)
+    throw new Error(`PROVIDER_REGISTRY 只取到 ${entries.length} 条（应 ≥10）—— 真源疑似失配`)
   }
   return entries
 }

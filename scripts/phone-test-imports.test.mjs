@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+const loader = fileURLToPath(new URL('./phone-test-imports.mjs', import.meta.url));
+const run = (entry, modules) => execFileSync(process.execPath, ['--import', loader, entry], { env: { ...process.env, DSH_PHONE_TEST_MODULES: modules }, encoding: 'utf8' });
+
+test('selected phone SDK is actual alpha.1 and a missing selected package cannot fall back to canonical dependencies', async t => {
+  assert.ok(process.env.DSH_PHONE_TEST_MODULES, 'Run this proof with the SHA-verified APK dependency closure');
+  const dir = await mkdtemp(path.join(tmpdir(), 'phone-import-proof-')); t.after(() => rm(dir, { recursive: true, force: true }));
+  const proof = path.join(dir, 'version.mjs');
+  await writeFile(proof, "import {readFileSync} from 'node:fs';const resolved=import.meta.resolve('@deepseek-ai/dsh/package.json');console.log(JSON.stringify({resolved,version:JSON.parse(readFileSync(new URL(resolved))).version}));");
+  const actual = JSON.parse(run(proof, process.env.DSH_PHONE_TEST_MODULES));
+  assert.equal(actual.version, '0.2.1-alpha.1'); assert.ok(actual.resolved.startsWith(pathToFileURL(process.env.DSH_PHONE_TEST_MODULES).href));
+  const source = path.join(dir, 'source'), selected = path.join(dir, 'selected/node_modules');
+  await mkdir(path.join(source, 'node_modules/canonical-only'), { recursive: true });
+  await writeFile(path.join(source, 'node_modules/canonical-only/package.json'), JSON.stringify({ type: 'module', exports: './index.mjs' }));
+  await writeFile(path.join(source, 'node_modules/canonical-only/index.mjs'), "export default 'wrong canonical fallback';");
+  const pkg = path.join(selected, 'nested-fixture'); await mkdir(path.join(pkg, 'node_modules/nested-value'), { recursive: true });
+  await writeFile(path.join(dir, 'selected/package.json'), '{}');
+  await writeFile(path.join(pkg, 'package.json'), JSON.stringify({ type: 'module', exports: './index.mjs' }));
+  await writeFile(path.join(pkg, 'index.mjs'), "export {default} from 'nested-value';");
+  await writeFile(path.join(pkg, 'node_modules/nested-value/package.json'), JSON.stringify({ type: 'module', exports: './index.mjs' }));
+  await writeFile(path.join(pkg, 'node_modules/nested-value/index.mjs'), "export default 'selected nested dependency';");
+  const entry = path.join(source, 'proof.mjs');
+  await writeFile(entry, "import value from 'nested-fixture';let missing=false;try{await import('canonical-only')}catch(e){missing=e.code==='ERR_MODULE_NOT_FOUND'}console.log(JSON.stringify({value,missing}));");
+  assert.deepEqual(JSON.parse(run(entry, selected)), { value: 'selected nested dependency', missing: true });
+});

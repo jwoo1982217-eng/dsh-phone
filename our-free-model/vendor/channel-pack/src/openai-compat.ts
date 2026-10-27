@@ -201,6 +201,7 @@ export function serializeMessages(
         .map((block) => String(block.text))
         .join('')
       const text = contentToText(content)
+      if (text.trim().length === 0 && toolCalls.length === 0) continue
       // 挂起的工具结果图片必须在 assistant 之前发出，否则会漂到这条
       // assistant 之后，与产生它们的工具调用脱节。
       flushToolImages()
@@ -230,7 +231,7 @@ export function serializeMessages(
     if (parts !== undefined) {
       flushToolImages()
       wire.push({ role: 'user', content: parts })
-    } else if (text.length > 0 || toolResults.length === 0) {
+    } else if (text.trim().length > 0) {
       flushToolImages()
       wire.push({ role: 'user', content: text })
     }
@@ -386,6 +387,10 @@ export interface ConsumeOpenAiSseOptions {
    * ⚠️ 回调**抛错会被吞掉**：观测失败绝不能把一次正常推理打死。
    */
   onFrame?: (data: Record<string, unknown>) => void
+  /** 将 wire 侧规范化的工具名还原为调用方名称。 */
+  restoreToolName?: (name: string) => string
+  /** Provider-specific quota errors, including HTTP 200 error envelopes. */
+  isQuotaError?: (data: Record<string, unknown>) => boolean
 }
 
 /**
@@ -414,6 +419,7 @@ export async function* consumeOpenAiSse(
   config: ConsumeOpenAiSseOptions,
 ): AsyncIterable<StreamChunk> {
   const { label } = config
+  const restoreToolName = config.restoreToolName ?? ((name: string) => name)
   if (!response.body) throw new LlmError(`${label}: empty model response body`, 'EMPTY_RESPONSE')
 
   const blocks: Array<{ index: number; kind: 'text' | 'reasoning'; text: string }> = []
@@ -469,6 +475,7 @@ export async function* consumeOpenAiSse(
    * 就不发任何 chunk（与「空名字 tool_call」同型修法）。
    */
   const suppressor = createBlankReasoningSuppressor()
+  const proseSuppressor = createBlankReasoningSuppressor()
   const toolCalls = new Map<number, {
     index: number
     text: string
@@ -506,6 +513,7 @@ export async function* consumeOpenAiSse(
    * 非 SSE 响应时把它拼进错误消息，否则用户只能看到一个没有原因的失败。
    */
   let rawSnippet = ''
+  let rawJson = ''
 
   try {
     for (;;) {
@@ -526,6 +534,9 @@ export async function* consumeOpenAiSse(
       }
       if (result.done) break
       const decoded = decoder.decode(result.value, { stream: true })
+      if (!sawDataFrame && config.isQuotaError !== undefined && rawJson.length < 65_536) {
+        rawJson = (rawJson + decoded).slice(0, 65_536)
+      }
       if (rawSnippet.length < RAW_SNIPPET_LIMIT) {
         rawSnippet = (rawSnippet + decoded).slice(0, RAW_SNIPPET_LIMIT)
       }
@@ -616,6 +627,9 @@ export async function* consumeOpenAiSse(
           } catch {
             // 观测是尽力而为，吞掉异常（见选项注释）。
           }
+        }
+        if (data.choices === undefined && config.isQuotaError?.(data)) {
+          throw new LlmError(`${label}: ${errorDetail(payload)}`, 'QUOTA_EXCEEDED')
         }
         if (data.error !== undefined) {
           throw new LlmError(`${label}: ${data.error.message ?? 'unknown error'}`, 'SERVER')
@@ -734,11 +748,12 @@ export async function* consumeOpenAiSse(
         // 一个模型要么走 content、要么走 reasoning_content，**另一侧恒为
         // `null`**。只判 undefined 会让 `.length` 在 null 上崩溃。
         const deltaContent = delta?.content
-        const textDelta = typeof deltaContent === 'string' && deltaContent.length > 0
+        const rawTextDelta = typeof deltaContent === 'string' && deltaContent.length > 0
           ? deltaContent
           : (!gotAnyContent && typeof choice?.message?.content === 'string' ? choice.message.content : undefined)
+        if (typeof deltaContent === 'string' && deltaContent.length > 0) gotAnyContent = true
+        const textDelta = rawTextDelta === undefined ? undefined : proseSuppressor.feed(rawTextDelta)
         if (textDelta !== undefined && textDelta.length > 0) {
-          if (typeof deltaContent === 'string' && deltaContent.length > 0) gotAnyContent = true
           let block = blocks.find(candidate => candidate.kind === 'text')
           if (block === undefined) {
             block = { index: nextIndex++, kind: 'text', text: '' }
@@ -864,7 +879,7 @@ export async function* consumeOpenAiSse(
               type: 'tool-call-delta',
               index: block.index,
               id: ToolCallId(callId),
-              name: block.name!,
+              name: restoreToolName(block.name!),
               argumentsDelta: block.text,
             }
             continue
@@ -873,7 +888,7 @@ export async function* consumeOpenAiSse(
             type: 'tool-call-delta',
             index: block.index,
             id: ToolCallId(callId),
-            ...block.name !== undefined ? { name: block.name } : {},
+            ...block.name !== undefined ? { name: restoreToolName(block.name) } : {},
             argumentsDelta: fragment,
           }
         }
@@ -958,7 +973,7 @@ export async function* consumeOpenAiSse(
       block: {
         type: 'tool-call',
         id: ToolCallId(block.callId ?? ''),
-        name: block.name!,
+        name: restoreToolName(block.name!),
         // 仅把「无参数工具下发的空分片」补成 {}；**残缺参数保持原样**，
         // 由 max-tokens 判定触发重试 —— 把残缺 JSON 补成 {} 会伪造出
         // 合法外观，让 harness 报 missing required property 而非重试。
@@ -1028,10 +1043,12 @@ export async function* consumeOpenAiSse(
     // 标签后仅 13 字符）。此时**不发射空 text 块** —— 空块会污染会话，
     // 且 DSH 的 `EMPTY_RESPONSE` 契约禁止产出空内容块。
     // 但**思考段已归位**，故本响应仍有内容产出，不会被误判为零块。
-    if (cleanedText !== '') {
+    if (cleanedText.trim() !== '') {
       blockCount += 1
       emittedProse = cleanedText
       yield { type: 'block-end', index: textBlock.index, block: { type: 'text', text: cleanedText } }
+    } else {
+      yield { type: 'block-end', index: textBlock.index, block: { type: 'text', text: '' } }
     }
   }
   const reasoningBlock = blocks.find(block => block.kind === 'reasoning')
@@ -1077,6 +1094,12 @@ export async function* consumeOpenAiSse(
   // 而是「响应压根不是 SSE」（网关/错误页直接回了一段 JSON）。
   // 若与下面的截断判定混在一起，用户只会看到一个没有原因的失败。
   if (!sawDataFrame) {
+    let data: unknown
+    try { data = JSON.parse(rawJson) } catch {}
+    if (typeof data === 'object' && data !== null && !Array.isArray(data)
+      && config.isQuotaError?.(data as Record<string, unknown>)) {
+      throw new LlmError(`${label}: ${errorDetail(rawJson)}`, 'QUOTA_EXCEEDED')
+    }
     const snippet = rawSnippet.trim()
     if (snippet.length > 0) {
       throw new LlmError(

@@ -11,6 +11,9 @@ import {
   gatewayCardExpanded,
   gatewayCardLabel,
   gatewayEndpoint,
+  gatewayLoopbackOnly,
+  gatewayFootnote,
+  nonLoopbackNotice,
   gatewayEffortRow,
   gatewayEffortRows,
   gatewayEffortsCurl,
@@ -77,6 +80,126 @@ describe('本机网关面板的文案与判定', () => {
     expect(gatewayEndpoint(OFF)).toBe('')
     expect(gatewayEndpoint(WANTED_BUT_DOWN)).toBe('')
     expect(gatewayEndpoint(null)).toBe('')
+  })
+
+  /**
+   * Issue IKL7UN：host 也可配了，面板必须展示**真实监听地址**。
+   *
+   * ⚠️ 判据里必须同时有 IPv6 那条：`http://${host}:${port}` 的朴素插值对
+   * `::1` 会拼出 `http://::1:8326/v1`（非法 URL，端口被当成 IPv6 的一段），
+   * 只测 IPv4 的话这种实现照样绿。
+   */
+  it('★ 地址用宿主侧的真实 host（容器里是桥接 IP），IPv6 必须带方括号', () => {
+    expect(gatewayEndpoint({ ...RUNNING, address: { host: '172.21.0.8', port: 8326 } }))
+      .toBe('http://172.21.0.8:8326/v1')
+    expect(gatewayEndpoint({ ...RUNNING, address: { host: '::1', port: 8326 } }))
+      .toBe('http://[::1]:8326/v1')
+    // ⚠️ 显示出来的地址必须能被 URL 解析 —— 这是「用户能抄走」的机械判据，
+    // 比逐字符比较更强（对实现方式中立）。
+    for (const host of ['127.0.0.1', '172.21.0.8', '::1', 'fe80::1']) {
+      expect(() => new URL(gatewayEndpoint({ ...RUNNING, address: { host, port: 8326 } })), host).not.toThrow()
+    }
+  })
+
+  /**
+   * ⚠️ 安全声明不得说谎（issue IKL7UN 带出来的**文案正确性**问题）。
+   *
+   * 面板里原有「网关只绑定 127.0.0.1 / 不起作用」这类**常量**文案，它在 host
+   * 可配之后会变成错误陈述：用户绑了容器桥接 IP 时，看到「只绑 127.0.0.1」
+   * 会以为「外面连不上是设计如此」，从而把真实故障排查方向带偏。
+   */
+  /**
+   * ⚠️ 回环判据必须与宿主侧**同源**（审计实测：两套判据立刻漂移）。
+   *
+   * 客户端初版自己写 `/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/` + `=== '[::1]'`，
+   * 于是 `127.1` / `0:0:0:0:0:0:0:1` / `::ffff:127.0.0.1` / `localhost`
+   * 这些**内核实测只在回环可达**的写法被判成「已对外暴露」⇒ 面板输出它自己
+   * 声称要消除的那种错误安全陈述。这批逐条锁住。
+   */
+  it('★ 回环判据：127.0.0.0/8、::1、IPv4-mapped 回环、localhost 都算回环', () => {
+    for (const host of [
+      '127.0.0.1', '127.0.0.2', '127.1', '127.0.0.1.', '::1', '[::1]',
+      '0:0:0:0:0:0:0:1', '::ffff:127.0.0.1', '::ffff:7f00:1', 'localhost',
+    ]) {
+      expect(gatewayLoopbackOnly({ ...RUNNING, address: { host, port: 8326 } }), host).toBe(true)
+    }
+    for (const host of ['172.21.0.8', '192.168.3.125', '0.0.0.0', '::', '::ffff:0:0', 'fe80::1', 'host.docker.internal']) {
+      expect(gatewayLoopbackOnly({ ...RUNNING, address: { host, port: 8326 } }), host).toBe(false)
+    }
+    // address 缺失时按回环（此时根本没有「已暴露」这件事可说，且不该在没运行时报警）。
+    expect(gatewayLoopbackOnly(OFF)).toBe(true)
+    expect(gatewayLoopbackOnly(null)).toBe(true)
+  })
+
+  it('★ 绑了非回环地址时，状态行必须如实说明「不再只有本机可达」', () => {
+    const bridged = { ...RUNNING, address: { host: '172.21.0.8', port: 8326 } }
+    // 正例：回环部署下**不得**多出这句噪音（用户 2026-10-04 刚要求精简过文案）。
+    expect(gatewayStatusLines(RUNNING).join()).not.toContain('172.21')
+    // 反例：绑了桥接 IP 必须点名该地址，让用户意识到暴露面变了。
+    expect(gatewayStatusLines(bridged).join()).toContain('172.21.0.8')
+    // ⚠️ 必须给出**怎么做**（怎么改回去），而不只是陈述事实。
+    expect(gatewayStatusLines(bridged).join()).toMatch(/DSH_OPENAI_GATEWAY_HOST/)
+  })
+
+  /**
+   * ★ 安全脚注必须按实际监听地址分支。
+   *
+   * ⚠️ 这条锁的是**文案不能说谎**，不是排版：
+   * 常量脚注「网关只绑定 127.0.0.1」在绑了桥接 IP 的部署里是错误陈述，
+   * 而且它与同一句的后半段（「同机其它用户也能连」）自相矛盾。
+   */
+  it('★ 安全脚注：回环部署逐字节保留原文案，非回环必须改名并给出改回去的做法', () => {
+    // ① 回环分支逐字节等于用户 2026-10-04 定下的措辞（改它就是无故改 UI 文案）。
+    const original = '网关只绑定 127.0.0.1，但这挡不住同机的其它用户或进程 —— 真正的隔离靠密钥，'
+      + '不要把它配置进任何浏览器端工具或扩展。'
+    expect(gatewayFootnote(RUNNING)).toBe(original)
+    // 未运行时同样是回环口径（此时没有「已暴露」可言，且拿不到 address）。
+    expect(gatewayFootnote(OFF)).toBe(original)
+    expect(gatewayFootnote(null)).toBe(original)
+
+    // ② 非回环分支：必须点名真实地址、不得再声称「只绑定 127.0.0.1」、并给出改法。
+    const bridged = { ...RUNNING, address: { host: '172.21.0.8', port: 8326 } }
+    const text = gatewayFootnote(bridged)
+    expect(text).toContain('172.21.0.8')
+    expect(text).not.toContain('只绑定 127.0.0.1')
+    expect(text).toContain('DSH_OPENAI_GATEWAY_HOST')
+    // ⚠️ 「隔离靠密钥」这条核心告诫**不许丢** —— 它是这段脚注存在的首要理由。
+    expect(text).toContain('密钥')
+    // ⚠️ 「不要配置进浏览器端工具或扩展」也必须留着（暴露面变大时它更关键）。
+    expect(text).toContain('浏览器端工具或扩展')
+    // ⚠️ **必须点名宿主**（红队 netns 实测：宿主经端口映射可达，而它既不是
+    // 「同网络容器」也不是「同机进程」，只说「同网络」会把它漏掉）。
+    expect(text).toContain('宿主')
+    expect(nonLoopbackNotice(bridged)).toContain('宿主')
+  })
+
+  /**
+   * ⚠️⚠️ **这些文案渲染进 React 文本节点，markdown 的 `**` 会原样显示星号**。
+   *
+   * 本仓库已有同型事故（`clineExhaustedAdvice`：用户截图里就是 `**当日免费额度**`，
+   * 见 `docs/agent-notes/providers-cline.md` 的三条规矩）。我在初版非回环脚注里
+   * 写了 `隔离**只**靠密钥` —— 那会原样显示星号。
+   *
+   * 判据用**真实函数的返回值**（而不是源码文本），对实现方式中立。
+   */
+  it('★★ 面板文案一律不得含 markdown 标记（星号会原样显示）', () => {
+    const bridged = { ...RUNNING, address: { host: '172.21.0.8', port: 8326 } }
+    const texts = [
+      gatewayFootnote(RUNNING), gatewayFootnote(bridged), gatewayFootnote(null),
+      nonLoopbackNotice(bridged),
+      ...gatewayStatusLines(RUNNING), ...gatewayStatusLines(bridged),
+      ...gatewayStatusLines(WANTED_BUT_DOWN), ...gatewayStatusLines(ENV_BLOCKED),
+      gatewayToggleNotice(bridged, true), gatewayToggleNotice(RUNNING, true),
+      gatewayToggleNotice(OFF, false), gatewayToggleNotice(ENV_BLOCKED, true),
+      gatewayButtonTitle(RUNNING), gatewayButtonTitle(bridged),
+      gatewayApiKeyHint({ fromEnv: true, path: null, value: 'k' }),
+      gatewayApiKeyHint({ fromEnv: false, path: 'C:/x/api-key', value: 'k' }),
+      gatewayEndpoint(RUNNING), gatewayEndpoint(bridged),
+      gatewayModelsCurl(gatewayEndpoint(RUNNING)), gatewayEffortsCurl(gatewayEndpoint(bridged)),
+    ]
+    for (const text of texts) {
+      expect(text, text).not.toContain('**')
+    }
   })
 
   it('「已选择开启但没监听」必须与「运行中」说不同的话', () => {
@@ -732,7 +855,10 @@ describe('思考档位对照表：复制与空结果文案', () => {
     // 而不是「源码里有没有那串 placeholder」—— 后者在搜索框挪回外面时依然成立。
     const section = source.slice(
       source.indexOf('// ── 第 3 段：思考档位对照表 ──'),
-      source.indexOf('网关只绑定 127.0.0.1'),
+      // ⚠️ 终点锚点用**脚注那段的渲染处**，不是脚注文案：文案随 host 变化
+      // （issue IKL7UN 之后它由 `gatewayFootnote(status)` 产出），
+      // 拿文案当锚点会让「换了个地址」变成测试失败。
+      source.indexOf('// ── 网关弹窗脚注 ──'),
     )
     expect(section, '分界注释必须能定位（改了注释就要改这里）').not.toBe('')
     // ⚠️ 锚点取**展开分支本身**，而不是第一个 `effortsOpen`：操作行里的
@@ -786,7 +912,7 @@ describe('思考档位对照表的排版（不截断）', () => {
     // 从那里切会把上面的模型清单一起圈进来）。
     const effortSection = source.slice(
       source.indexOf('// ── 第 3 段：思考档位对照表'),
-      source.indexOf('网关只绑定 127.0.0.1'),
+      source.indexOf('// ── 网关弹窗脚注 ──'),
     )
     expect(effortSection).not.toBe('')
     expect(effortSection).not.toContain('dim-jh-modelName')
@@ -1049,8 +1175,9 @@ describe('网关弹窗的胶囊不截断（用户报障 2026-10-04）', () => {
     // ⚠️ 用**整个 GatewayPanel 到文末**做区间：卡片行渲染在 GatewayModelRow 里，
     // 用 `indexOf('export function JetHubPage')` 截断会把它们切掉（实测踩到）。
     const panel = source.slice(source.indexOf('function GatewayPanel('))
-    // ① 开关行那个 code（用户 2026-10-04 要求把客户端列举删掉，只剩这一句）
-    expect(panel).toContain('在 127.0.0.1 监听，供客户端调用')
+    // ① 开关行那个 code（用户 2026-10-04 要求把客户端列举删掉，只剩这一句；
+    //    issue IKL7UN 之后地址改为取自真实 host，句式不变）
+    expect(panel).toMatch(/`在 \$\{status\.address\.host\} 监听，供客户端调用`/)
     // ② 卡片行内的模型 ID（在 GatewayModelRow 里，同一个文件）
     expect(source).toContain('gatewayModelKeyOf(model)')
     // ③ API KEY 明文那块也用它（显示明文时，祖先只有 gatewayKeyRow）
@@ -1159,8 +1286,15 @@ describe('网关弹窗第四批（第二轮）：胶囊文案 / 按钮顺序 / �
   const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1')
   const panel = source.slice(source.indexOf('function GatewayPanel('))
 
-  it('① 开关行胶囊只留「在 127.0.0.1 监听，供客户端调用」', () => {
-    expect(panel).toContain("'在 127.0.0.1 监听，供客户端调用'")
+  it('① 开关行胶囊只留「在 … 监听，供客户端调用」，且地址取自真实 host', () => {
+    // ⚠️ 用户 2026-10-04 定下的**句式**保留（「在 X 监听，供客户端调用」）。
+    // ✅ issue IKL7UN 之后 X 必须来自 `status.address.host`：写死 127.0.0.1 会让
+    // 容器部署的用户照着抄一个从容器外连不上的地址 —— 正是该 issue 的症状。
+    expect(panel).toMatch(/`在 \$\{status\.address\.host\} 监听，供客户端调用`/)
+    // 未在监听时退回定性说法，**不得**编造具体地址（与 gatewayEndpoint 的取舍同源）。
+    expect(panel).toContain("'在本机监听，供客户端调用'")
+    // ⚠️ 硬编码 127.0.0.1 的胶囊**必须消失**（剥注释后判，注释里会引用旧写法）。
+    expect(code(panel)).not.toContain('在 127.0.0.1 监听，供客户端调用')
     // ⚠️ 客户端列举必须删掉 —— 它是窄面板下折行、且把「打开/关闭」动作词挤远的成因。
     // 但要**先剥注释**：说明「原先列了 Pi / Continue …」的注释里原样写着它们。
     expect(code(panel)).not.toContain('Pi / Continue')

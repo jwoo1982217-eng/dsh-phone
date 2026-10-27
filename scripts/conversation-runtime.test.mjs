@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 import {Context} from '@deepseek-ai/cordis';import Sessions,{Session} from '@deepseek-ai/dsh-session';import Projections from '@deepseek-ai/dsh-session-projection';
-import Persistence from '@deepseek-ai/dsh-session-persistence-jsonl';import Agents,{installModelSelection} from '@deepseek-ai/dsh-agent';import Loop from '@deepseek-ai/dsh-agent-loop';import SystemPrompt from '@deepseek-ai/dsh-system-prompt';import Tools from '@deepseek-ai/dsh-tools';import Llm,{LlmAdapter,createUserMessage,createAssistantMessage,createToolResultMessage} from '@deepseek-ai/dsh-llm';
+import * as Persistence from '@deepseek-ai/dsh-session-persistence-jsonl';import Agents,{installModelSelection} from '@deepseek-ai/dsh-agent';import Loop from '@deepseek-ai/dsh-agent-loop';import SystemPrompt from '@deepseek-ai/dsh-system-prompt';import Tools from '@deepseek-ai/dsh-tools';import Llm,{LlmAdapter,createUserMessage,createAssistantMessage,createToolResultMessage} from '@deepseek-ai/dsh-llm';
 import {foldSurface} from '@deepseek-ai/dsh-session/surface';import {projectConversationEntries} from '@deepseek-ai/dsh-session/conversation-edit';
 import {ConversationActions} from '../peer/conversation-actions/index.mjs';
 const user=(s,t)=>s.append('user/message',createUserMessage({content:[{type:'text',text:t}],source:{kind:'user'}}),{surfaceOp:'append'});

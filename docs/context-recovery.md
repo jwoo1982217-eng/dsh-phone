@@ -6,6 +6,7 @@
 
 - 压缩使用当前步骤已经组装的模型选择；手动 `/compact` 优先读取尚未消费的用户选择，显式摘要模型配置仍优先。切模型时不继承旧适配器的自动输出预算。
 - 在真实模型容量内预留输出及余量，把超长历史分批整理再合并。工具调用和结果成组，超长单条内容完整分片。分批请求不执行工具；保留附件引用，不假称已读附件内容。
+- 序列化为纯文本的分段不传实时工具历史；直接压缩仍保留真实 Session 的 `{tools, updates}` 快照。不能用 `[]` 伪造工具历史，否则 DeepSeek Flash 等启用工具历史更新的模型会在 SDK 投影阶段报 `Cannot read properties of undefined (reading 'some')`，请求尚未发出就被包装为 `COMPACTION_FAILED`。
 - 仅明确上下文超限才继续缩小输入；每轮最多64次新请求。鉴权、额度、截断、取消、空输出或缺少结束标记均保留原历史，不以重复相同请求恢复。
 - 沿用 SDK 锁、选中范围稳定性与提交事务。摘要完成后恢复前须检查文件与未完成任务，不自动重放不确定的编辑或外部操作。
 
@@ -24,7 +25,7 @@
 ## 验证
 
 ```sh
-node --import ./scripts/phone-test-imports.mjs --test scripts/compaction-recovery.test.mjs scripts/adaptive-compaction.test.mjs
+node --import ./scripts/phone-test-imports.mjs --test scripts/compaction-recovery.test.mjs scripts/adaptive-compaction.test.mjs scripts/compaction-toolhistory.test.mjs
 ```
 
 可通过 `DSH_PHONE_TEST_MODULES` 指定实际活动私有 SDK 的 node_modules，对同一组 SDK 行为做验证。Android 应使用应用自己的 Node 和独立临时工作目录，勿改变正式会话。用例覆盖超长中日韩内容、切1M到32K、取消/损坏/失败保留、重启复用分段、真实SDK事务及压缩后读取随机文件并回传结果。

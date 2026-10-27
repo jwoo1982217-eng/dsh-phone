@@ -13,6 +13,11 @@ import { createScope } from "@deepseek-ai/dsh-scope";
 /** Route prefix owning every api request (`/api` and `/api/<anything>`). */
 const API_PATH = "/api";
 //#endregion
+//#region lib/types/connect-protocol.js
+/** API connection inputs shared by the Host and its clients. */
+/** Launch-token exchange route for API clients. */
+const CONNECT_PATH = "/connect";
+//#endregion
 //#region lib/types/http-bridge.js
 /**
 * node:http ↔ WHATWG fetch bridge for the /api transport (host side of the
@@ -29,9 +34,10 @@ const DEFAULT_MAX_REQUEST_BODY_BYTES = 300 * 1024 * 1024;
 * @param req - incoming node:http request.
 * @param res - node:http response the bridge writes and owns to completion.
 * @param apiHandler - fetch-shaped API carrier the request is dispatched to.
+* @param peer - Peer the carrier admitted the request as.
 * @param maxRequestBodyBytes - maximum bytes buffered for a buffered route.
 */
-async function bridge(req, res, apiHandler, maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
+async function bridge(req, res, apiHandler, peer, maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES) {
 	const abort = new AbortController();
 	res.on("close", () => {
 		if (!res.writableEnded) abort.abort();
@@ -79,7 +85,7 @@ async function bridge(req, res, apiHandler, maxRequestBodyBytes = DEFAULT_MAX_RE
 		signal: abort.signal,
 		duplex: "half"
 	});
-	const response = await apiHandler.fetch(request);
+	const response = await apiHandler.fetch(request, peer);
 	const requestUnread = bodyMode === "streaming" && !req.readableEnded;
 	const responseHeaders = Object.fromEntries(response.headers.entries());
 	res.writeHead(response.status, requestUnread ? {
@@ -131,23 +137,27 @@ function isLoopbackHostname(hostname) {
 * the attacker's domain while the socket reaches this server) and cross-site
 * requests fired from a malicious page. The Host fence binds every request,
 * browser-looking or not: over plain HTTP a browser attaches neither Origin
-* nor Fetch-Metadata to reads (images and navigations — those
-* headers go only to trustworthy destinations), so an unmarked request may
-* still be a rebound browser read and Host is the one header rebinding cannot
-* forge. Non-browser and remote clients pass the same fence via loopback,
-* deployment-derived LAN IP literals, or a declared `trustedHosts` authority.
-* Network reachability and authentication stay out of scope: binding policy
-* belongs to the webserver config, and this fence is not an auth layer.
+* nor Fetch-Metadata to reads (images and navigations — those headers go only
+* to trustworthy destinations), so an unmarked request may still be a rebound
+* browser read and Host is the one header rebinding cannot forge. Non-browser
+* and remote clients pass the same fence via loopback, the listener's bind IP
+* literal, or a declared `trustedHosts` authority. Binding policy belongs to
+* the webserver config; this fence never establishes identity.
 */
 function header$1(headers, name) {
 	if (headers instanceof Headers) return headers.get(name) ?? void 0;
 	const value = headers[name];
 	return typeof value === "string" ? value : void 0;
 }
-/** Normalized URL of a Host-header authority (hostname lowercased, default port stripped, IPv6 bracketed), or undefined when unparsable. */
-function parseAuthority(authority) {
+/**
+* Normalized URL of a bare authority (hostname lowercased, default port
+* stripped, IPv6 bracketed), or undefined when unparsable.
+* @param authority - `host` or `host:port` text.
+* @param scheme - special scheme to parse under; its default port is the one stripped.
+*/
+function parseAuthority(authority, scheme = "http:") {
 	try {
-		return new URL(`http://${authority}`);
+		return new URL(`${scheme}//${authority}`);
 	} catch {
 		return;
 	}
@@ -179,43 +189,83 @@ function assertTrustedAuthority(entry) {
 * shapes like `host:port ` as port-less.
 */
 function canonicalAuthority(entry, entryUrl) {
-	const port = entryUrl.port !== "" ? entryUrl.port : new URL(`https://${entry}`).port;
+	const port = entryUrl.port !== "" ? entryUrl.port : new URL(`${entryUrl.protocol === "http:" ? "https:" : "http:"}//${entry}`).port;
 	return port === "" ? entryUrl.hostname : `${entryUrl.hostname}:${port}`;
 }
 /**
 * Whether the request authority matches a `trustedHosts` entry. An entry with
 * an explicit port matches that exact authority; a port-less entry matches the
-* hostname on any port (the shape the CLI derives for IP-literal LAN serving,
-* where the bound port may be OS-assigned). Both sides compare through WHATWG
-* normalization, so case and a redundant `:80` never decide trust.
+* hostname on any port. Both sides compare through WHATWG normalization,
+* so case and a redundant scheme-default port never decide trust.
 */
-function isTrustedAuthority(hostUrl, trustedHosts) {
+function isTrustedAuthority(hostUrl, trustedHosts, protocol) {
 	return trustedHosts.some((entry) => {
-		const entryUrl = parseAuthority(entry);
+		const entryUrl = parseAuthority(entry, protocol);
 		if (entryUrl === void 0) return false;
 		return canonicalAuthority(entry, entryUrl) === entryUrl.hostname ? entryUrl.hostname === hostUrl.hostname : entryUrl.host === hostUrl.host;
 	});
 }
 /**
+* Classify an authority already accepted by {@link assertTrustedAuthority}.
+* @param entry - the configured authority, verbatim.
+* @returns true unless the entry parses as a loopback hostname.
+*/
+function isRemoteAuthority(entry) {
+	const url = parseAuthority(entry);
+	return url === void 0 || !isLoopbackHostname(url.hostname);
+}
+/**
+* Whether a parsed authority names the deployment's own bind address. A browser
+* dialing that literal sends it as Host, and accepting it grants nothing
+* further: the literal is no rebinding target, the Origin and cross-site checks
+* still apply, and it stays outside `trustedHosts`. Matching ignores the port,
+* like a port-less entry, and any `%zone` id (an interface selector, not
+* address text).
+*/
+function isBindAddressAuthority(hostUrl, bindHost) {
+	if (bindHost === void 0) return false;
+	const zoneAt = bindHost.indexOf("%");
+	const address = zoneAt === -1 ? bindHost : bindHost.slice(0, zoneAt);
+	const bindUrl = parseAuthority(address.includes(":") ? `[${address}]` : address);
+	return bindUrl !== void 0 && bindUrl.hostname === hostUrl.hostname;
+}
+/**
 * Decide whether one /api request may reach the RPC bridge.
 * @param request - Node HTTP or Fetch request facts (headers).
 * @param trustedHosts - non-loopback authorities this deployment serves: exact `host:port`, or port-less `host` matching any port.
-* @returns true when the Host is ours (loopback or trusted) and any attached browser markers are same-origin.
+* @param bindHost - the listener's own bind IP literal, accepted on any port independently of `trustedHosts`.
+* @param protocol - listener protocol for default Host ports; HTTP when no Web carrier is mounted.
+* @returns true when the Host is ours (loopback, the bind address, or trusted) and any attached browser markers are same-origin.
 */
-function isTrustedApiRequest(request, trustedHosts) {
+function isTrustedApiRequest(request, trustedHosts, bindHost, protocol = "http:") {
 	const host = header$1(request.headers, "host");
 	if (host === void 0) return false;
-	const hostUrl = parseAuthority(host);
+	const hostUrl = parseAuthority(host, protocol);
 	if (hostUrl === void 0) return false;
-	if (!isLoopbackHostname(hostUrl.hostname) && !isTrustedAuthority(hostUrl, trustedHosts)) return false;
+	if (!isLoopbackHostname(hostUrl.hostname) && !isTrustedAuthority(hostUrl, trustedHosts, protocol) && !isBindAddressAuthority(hostUrl, bindHost)) return false;
 	if (header$1(request.headers, "sec-fetch-site") === "cross-site") return false;
 	const origin = header$1(request.headers, "origin");
 	if (origin === void 0) return true;
+	return isSameAuthorityOrigin(origin, host);
+}
+/**
+* Compare Host under the Origin's HTTP(S) scheme so default ports normalize
+* consistently. The transport may remain HTTP behind an HTTPS proxy.
+* @param origin - verbatim Origin header value.
+* @param host - verbatim Host header value already accepted by the Host fence.
+* @returns true only when the Origin is this listener's own `http(s)` authority.
+*/
+function isSameAuthorityOrigin(origin, host) {
+	let originUrl;
 	try {
-		return new URL(origin).host === hostUrl.host;
+		originUrl = new URL(origin);
 	} catch {
 		return false;
 	}
+	const scheme = originUrl.protocol === "https:" ? "https:" : originUrl.protocol === "http:" ? "http:" : void 0;
+	if (scheme === void 0) return false;
+	const hostUrl = parseAuthority(host, scheme);
+	return hostUrl !== void 0 && originUrl.host === hostUrl.host;
 }
 //#endregion
 //#region lib/types/browser-auth.js
@@ -253,12 +303,13 @@ function header(headers, name) {
 	const value = headers[name];
 	return typeof value === "string" ? value : void 0;
 }
-/** Canonical request authority used as the cookie name and signed audience. */
-function requestAuthority(headers) {
+/** Protocol-scoped cookie audience; HTTP retains its existing authority-only spelling. */
+function requestAudience(headers, secure) {
 	const host = header(headers, "host");
 	if (host === void 0) return void 0;
 	try {
-		return new URL(`http://${host}`).host;
+		const url = new URL(`${secure ? "https:" : "http:"}//${host}`);
+		return secure ? url.origin : url.host;
 	} catch {
 		return;
 	}
@@ -293,20 +344,21 @@ function cookieValue(headerValue, name) {
 	}
 }
 /** Serialize the fixed browser-session attributes; generated names and values are cookie-safe base64url. */
-function sessionCookie(name, value, expiresAt, maxAgeSeconds) {
-	return `${name}=${value}; Max-Age=${String(maxAgeSeconds)}; Path=/; Expires=${new Date(expiresAt).toUTCString()}; HttpOnly; SameSite=Strict`;
+function sessionCookie(name, value, expiresAt, maxAgeSeconds, secure) {
+	const attributes = `${name}=${value}; Max-Age=${String(maxAgeSeconds)}; Path=/; Expires=${new Date(expiresAt).toUTCString()}; HttpOnly; SameSite=Strict`;
+	return secure ? `${attributes}; Secure` : attributes;
 }
 function signature(secret, body) {
 	return createHmac("sha256", secret).update(body).digest();
 }
 function encodeCookie(payload, secret) {
 	const body = encodeBase64Url(Buffer.from(JSON.stringify(payload), "utf8"));
-	return `v1.${body}.${encodeBase64Url(signature(secret, body))}`;
+	return `v${payload.version}.${body}.${encodeBase64Url(signature(secret, body))}`;
 }
 function decodeCookie(value, secret) {
 	const parts = value.split(".");
 	const [version, body, encodedSignature] = parts;
-	if (parts.length !== 3 || version !== "v1" || body === void 0 || encodedSignature === void 0) return;
+	if (parts.length !== 3 || version !== "v1" && version !== "v2" || body === void 0 || encodedSignature === void 0) return;
 	const actualSignature = decodeBase64Url(encodedSignature);
 	if (actualSignature === void 0) return void 0;
 	const expectedSignature = signature(secret, body);
@@ -319,8 +371,22 @@ function decodeCookie(value, secret) {
 	} catch {
 		return;
 	}
-	if (!isRecord(decoded) || decoded.version !== COOKIE_PAYLOAD_VERSION || typeof decoded.authority !== "string" || !Number.isSafeInteger(decoded.issuedAt) || !Number.isSafeInteger(decoded.expiresAt)) return void 0;
-	return decoded;
+	if (!isRecord(decoded) || decoded.version !== COOKIE_PAYLOAD_VERSION && decoded.version !== 2 || version !== `v${decoded.version}` || typeof decoded.authority !== "string" || typeof decoded.issuedAt !== "number" || !Number.isSafeInteger(decoded.issuedAt) || typeof decoded.expiresAt !== "number" || !Number.isSafeInteger(decoded.expiresAt)) return void 0;
+	const payload = {
+		authority: decoded.authority,
+		issuedAt: decoded.issuedAt,
+		expiresAt: decoded.expiresAt
+	};
+	if (decoded.version === COOKIE_PAYLOAD_VERSION) return {
+		version: COOKIE_PAYLOAD_VERSION,
+		...payload
+	};
+	if (typeof decoded.id !== "string" || decoded.id.length === 0) return void 0;
+	return {
+		version: 2,
+		...payload,
+		id: decoded.id
+	};
 }
 async function initializeSecret(credentials) {
 	const generated = {
@@ -383,14 +449,18 @@ var BrowserAuth = class BrowserAuth {
 	* 401 response.
 	* @param req - incoming root or configured-index request.
 	* @param res - response owned when this method returns false.
+	* @param secure - whether the listener receiving this request serves TLS; the
+	* minted cookie carries `Secure` when it does. Only that listener's own
+	* protocol decides, never a `publicUrl` announcement or a forwarded header:
+	* those describe a hop this process does not terminate.
 	* @returns true only when the caller may serve index.html.
 	*/
-	authorizeIndex(req, res) {
+	authorizeIndex(req, res, secure = false) {
 		/* v8 ignore next -- node:http always supplies url on server requests. */
 		const url = new URL(req.url ?? "/", "http://dsh.invalid");
 		const tokens = url.searchParams.getAll(TOKEN_QUERY);
 		if (tokens.length > 0) {
-			const authority = requestAuthority(req.headers);
+			const authority = requestAudience(req.headers, secure);
 			if (req.method === "GET" && url.pathname === "/" && tokens.length === 1 && authority !== void 0 && tokenMatches(tokens.join(""), this.launchToken)) {
 				const issuedAt = Date.now();
 				const expiresAt = issuedAt + this.maxAgeMilliseconds;
@@ -404,12 +474,12 @@ var BrowserAuth = class BrowserAuth {
 					"cache-control": "no-store",
 					"location": "./",
 					"referrer-policy": "no-referrer",
-					"set-cookie": sessionCookie(cookieName(authority), value, expiresAt, Math.floor(this.maxAgeMilliseconds / 1e3))
+					"set-cookie": sessionCookie(cookieName(authority), value, expiresAt, Math.floor(this.maxAgeMilliseconds / 1e3), secure)
 				});
 				res.end();
 				return false;
 			}
-			if (req.method === "GET" && url.pathname === "/" && this.isAuthenticated(req)) {
+			if (req.method === "GET" && url.pathname === "/" && this.isAuthenticated(req, secure)) {
 				res.writeHead(303, {
 					"cache-control": "no-store",
 					"location": "./",
@@ -421,25 +491,82 @@ var BrowserAuth = class BrowserAuth {
 			this.writeUnauthorized(req, res);
 			return false;
 		}
-		if (this.isAuthenticated(req)) return true;
+		if (this.isAuthenticated(req, secure)) return true;
 		this.writeUnauthorized(req, res);
 		return false;
 	}
 	/**
+	* Exchange the launch token for an independent API operator; omitted interactions default to none.
+	* @param req - trusted GET request on /connect with at most one interactions declaration.
+	* @param res - response owned to completion, redirecting to the API mux on success.
+	* @param secure - whether the receiving listener serves TLS.
+	* @param publish - synchronously create the operator before exposing its signed credential.
+	*/
+	authorizeConnect(req, res, secure, publish) {
+		const url = new URL(req.url ?? "/", "http://dsh.invalid");
+		const declarations = url.searchParams.getAll("interactions");
+		const interactions = declarations[0] ?? "none";
+		if (declarations.length > 1 || interactions !== "answer" && interactions !== "none") {
+			res.writeHead(400, {
+				"cache-control": "no-store",
+				"content-type": "text/plain; charset=utf-8"
+			});
+			res.end("interactions must be declared once as answer or none\n");
+			return;
+		}
+		const tokens = url.searchParams.getAll(TOKEN_QUERY);
+		const authority = requestAudience(req.headers, secure);
+		if (req.method !== "GET" || url.pathname !== "/connect" || tokens.length !== 1 || authority === void 0 || !tokenMatches(tokens.join(""), this.launchToken)) {
+			this.writeUnauthorized(req, res);
+			return;
+		}
+		const issuedAt = Date.now();
+		const expiresAt = issuedAt + this.maxAgeMilliseconds;
+		const value = encodeCookie({
+			version: 2,
+			authority,
+			id: publish(interactions),
+			issuedAt,
+			expiresAt
+		}, this.secret);
+		res.writeHead(302, {
+			"cache-control": "no-store",
+			"location": "./api/remote.mux",
+			"referrer-policy": "no-referrer",
+			"set-cookie": sessionCookie(cookieName(authority), value, expiresAt, Math.floor(this.maxAgeMilliseconds / 1e3), secure)
+		});
+		res.end();
+	}
+	/**
 	* Verify the authority-bound browser cookie on a Host request.
 	* @param request - request headers carrying Host and Cookie.
+	* @param secure - whether the receiving listener uses TLS, including its default port.
 	* @returns true only for an unexpired cookie signed by this activation's loaded secret.
 	*/
-	isAuthenticated(request) {
-		const authority = requestAuthority(request.headers);
+	isAuthenticated(request, secure = false) {
+		return this.authenticate(request, secure)?.version === COOKIE_PAYLOAD_VERSION;
+	}
+	/**
+	* Verify an API credential without creating or reviving its operator.
+	* @param request - request headers carrying Host and Cookie.
+	* @param secure - whether the receiving listener uses TLS.
+	* @returns the signed operator id, or undefined for invalid, expired, or browser cookies.
+	*/
+	authenticateApi(request, secure = false) {
+		const payload = this.authenticate(request, secure);
+		return payload?.version === 2 ? payload.id : void 0;
+	}
+	authenticate(request, secure) {
+		const authority = requestAudience(request.headers, secure);
 		const rawCookie = header(request.headers, "cookie");
-		if (authority === void 0 || rawCookie === void 0) return false;
+		if (authority === void 0 || rawCookie === void 0) return void 0;
 		const value = cookieValue(rawCookie, cookieName(authority));
-		if (value === void 0) return false;
+		if (value === void 0) return void 0;
 		const payload = decodeCookie(value, this.secret);
-		if (payload === void 0 || payload.authority !== authority) return false;
+		if (payload === void 0 || payload.authority !== authority) return void 0;
 		const now = Date.now();
-		return payload.issuedAt <= now && payload.expiresAt > now && payload.expiresAt > payload.issuedAt && payload.expiresAt - payload.issuedAt <= this.maxAgeMilliseconds;
+		if (payload.issuedAt > now || payload.expiresAt <= now || payload.expiresAt <= payload.issuedAt || payload.expiresAt - payload.issuedAt > this.maxAgeMilliseconds) return void 0;
+		return payload;
 	}
 	writeUnauthorized(req, res) {
 		res.writeHead(401, {
@@ -516,26 +643,39 @@ const serverResponseSchema = z$1.object({
 /** Either Connection RPC envelope direction. */
 const rpcMessageSchema = z$1.discriminatedUnion("type", [clientRequestSchema, serverResponseSchema]);
 //#endregion
-//#region lib/types/operator-peer.js
+//#region lib/types/peer.js
 /**
-* The operator Peer: the one party this Host answers to. Connection owns it
-* for its own lifetime, admits every request as it, and hands it to each
-* Remote call as `invocation.peer`.
-* @module @deepseek-ai/dsh-client-connection/src/operator-peer
+* The Peer: one party admitted to this Host. Its creator fixes the principal
+* it speaks for and owns its lifetime; Gateway hands it to each Remote call as
+* `invocation.peer`.
+* @module @deepseek-ai/dsh-client-connection/src/peer
 */
 /**
-* The operator's scope. The instance is its own scope key, so `scopeOf(peer.ctx)`
+* One Peer's scope. The instance is its own scope key, so `scopeOf(peer.ctx)`
 * returns it and events dispatched with `scopeTarget(subject, peer)` reach
 * listeners registered through `peer.ctx` and nobody else.
 */
-var OperatorPeer = class {
+var Peer = class {
 	id = randomUUID();
 	ctx;
+	principal;
+	interactions;
+	signal;
 	scope;
-	/** @param owner - Connection plugin context the scope fiber hangs under. */
-	constructor(owner) {
+	/**
+	* @param owner - Context the scope fiber hangs under; disposing it disposes the Peer.
+	* @param options - the principal fixed for this Peer's lifetime.
+	*/
+	constructor(owner, options) {
+		this.principal = options.principal;
+		this.interactions = options.interactions ?? "answer";
 		this.scope = createScope(owner, this);
 		this.ctx = this.scope.ctx;
+		const lifetime = new AbortController();
+		this.signal = lifetime.signal;
+		this.ctx.effect(() => () => {
+			lifetime.abort(/* @__PURE__ */ new Error(`Peer ${this.id} was disposed`));
+		}, "client-connection: Peer lifetime");
 	}
 	/** Tear down every connection-lifetime registration; racing calls share one completion. */
 	dispose() {
@@ -552,10 +692,14 @@ const ENDPOINT_SEGMENT_PATTERN = /^[A-Za-z0-9_$.-]+$/;
 var HostConnectionService = class extends Service {
 	trustedHosts;
 	browserAuth;
-	/** The operator Peer every admitted request speaks for. */
-	operator;
+	/** The Peer every authenticated browser connection shares. */
+	browserPeer;
+	peers = /* @__PURE__ */ new Map();
+	owner;
+	disposed = false;
 	interceptors = /* @__PURE__ */ new Map();
 	fetchRoutes = /* @__PURE__ */ new Map();
+	allowsRemoteAuthorities;
 	/**
 	* Provide the Host half over the active HTTP server.
 	* @param ctx - owning Connection plugin context.
@@ -566,8 +710,15 @@ var HostConnectionService = class extends Service {
 		super(ctx, "connection");
 		this.trustedHosts = trustedHosts;
 		this.browserAuth = browserAuth;
-		this.operator = new OperatorPeer(ctx);
-		ctx.effect(() => () => this.operator.dispose(), "client-connection: operator Peer");
+		this.owner = ctx;
+		this.browserPeer = new Peer(ctx, { principal: { kind: "owner" } });
+		ctx.effect(() => async () => {
+			this.disposed = true;
+			const peers = [this.browserPeer, ...Array.from(this.peers.values(), (record) => record.peer)];
+			this.peers.clear();
+			await Promise.all(peers.map((peer) => peer.dispose()));
+		}, "client-connection: Peer scopes");
+		this.allowsRemoteAuthorities = trustedHosts.some(isRemoteAuthority);
 	}
 	/** Generic channel registry scoped to the Context reading this service. */
 	get rpc() {
@@ -582,19 +733,80 @@ var HostConnectionService = class extends Service {
 		const owner = this.ctx;
 		return { register: (route) => this.registerFetchRoute(owner, route) };
 	}
-	/** Apply the configured Host/Origin fence, then browser authentication. */
+	/** Apply the Host/Origin fence and require an authenticated live Peer. */
 	requestRejection(request) {
-		if (!isTrustedApiRequest(request, this.trustedHosts)) return 403;
-		return this.browserAuth.isAuthenticated(request) ? void 0 : 401;
+		const admission = this.admit(request);
+		return "rejection" in admission ? admission.rejection : void 0;
 	}
-	/** A request that passes the fence and authentication speaks for the operator. */
+	/** Browser requests share an owner Peer; API HTTP does not depend on an attached socket. */
 	admit(request) {
-		const rejection = this.requestRejection(request);
-		return rejection === void 0 ? { peer: this.operator } : { rejection };
+		if (!this.isTrusted(request)) return { rejection: 403 };
+		if (this.disposed) return { rejection: 401 };
+		const secure = this.owner.get("webServer")?.protocol === "https:";
+		if (this.browserAuth.isAuthenticated(request, secure)) return { peer: this.browserPeer };
+		const id = this.browserAuth.authenticateApi(request, secure);
+		const record = id === void 0 ? void 0 : this.peers.get(id);
+		return record === void 0 ? { rejection: 401 } : { peer: record.peer };
 	}
-	/** Authenticate an index request through the process-token exchange or cookie. */
+	/** Create one in-process Peer owned by the Context that read this service. */
+	createPeer(options) {
+		return new Peer(this.ctx, options);
+	}
+	/** Claim API socket ownership synchronously; callers release on termination or failed upgrade. */
+	admitConnection(request) {
+		const admission = this.admit(request);
+		if ("rejection" in admission) return admission;
+		const record = this.peers.get(admission.peer.id);
+		if (record === void 0) return {
+			...admission,
+			release: () => Promise.resolve()
+		};
+		if (record.ownsSocket) return { rejection: 409 };
+		record.ownsSocket = true;
+		let released;
+		return {
+			peer: record.peer,
+			release: () => {
+				if (released !== void 0) return released;
+				this.peers.delete(record.peer.id);
+				released = record.peer.dispose();
+				return released;
+			}
+		};
+	}
+	isTrusted(request) {
+		const carrier = this.owner.get("webServer");
+		return isTrustedApiRequest(request, this.trustedHosts, carrier?.host, carrier?.protocol ?? "http:");
+	}
+	publishPeer(interactions) {
+		const peer = new Peer(this.owner, {
+			principal: { kind: "owner" },
+			interactions
+		});
+		this.peers.set(peer.id, {
+			peer,
+			ownsSocket: false
+		});
+		return peer.id;
+	}
+	/**
+	* Authenticate and publish a credential before sending the connect redirect.
+	* @param request - launch-token request on /connect.
+	* @param response - response owned to completion.
+	*/
+	authorizeConnect(request, response) {
+		if (!this.isTrusted(request) || this.disposed) {
+			response.writeHead(this.disposed ? 401 : 403);
+			response.end(this.disposed ? "unauthorized" : "forbidden");
+			return;
+		}
+		this.browserAuth.authorizeConnect(request, response, this.owner.get("webServer")?.protocol === "https:", (interactions) => this.publishPeer(interactions));
+	}
+	/**
+	* Authenticate an index request; native TLS listeners mint Secure cookies.
+	*/
 	authorizeIndex(request, response) {
-		return this.browserAuth.authorizeIndex(request, response);
+		return this.browserAuth.authorizeIndex(request, response, this.ctx.get("webServer")?.protocol === "https:");
 	}
 	/** Add this process's launch token to the clean application URL. */
 	authenticatedUrl(baseUrl) {
@@ -611,14 +823,17 @@ var HostConnectionService = class extends Service {
 				const route = this.fetchRoutes.get(url.pathname);
 				return route?.methods.has(method) === true ? route.requestBody : "buffered";
 			},
-			fetch: (request) => {
+			fetch: (request, peer) => {
 				const pathname = new URL(request.url).pathname;
 				const route = this.fetchRoutes.get(pathname);
-				if (route?.methods.has(request.method) === true) return route.fetch(request);
+				if (route?.methods.has(request.method) === true) {
+					if (peer.principal.kind !== "owner") return Promise.resolve(new Response("forbidden", { status: 403 }));
+					return route.fetch(request);
+				}
 				const endpoint = endpointFromPath(channel, pathname);
 				const interceptor = this.interceptors.get(channel);
 				if (endpoint === void 0 || interceptor === void 0 || !interceptor.matches(endpoint)) return Promise.resolve(new Response("not found", { status: 404 }));
-				return interceptor.fetchHandler.fetch(request);
+				return interceptor.fetchHandler.fetch(request, peer);
 			}
 		};
 	}
@@ -639,7 +854,7 @@ var HostConnectionService = class extends Service {
 	}
 	register(owner, channel, handler) {
 		assertChannel(channel);
-		const fetchHandler = rpcFetchHandler(channel, handler, this.operator);
+		const fetchHandler = rpcFetchHandler(channel, handler);
 		const route = {
 			kind: "prefix",
 			path: channel,
@@ -650,16 +865,23 @@ var HostConnectionService = class extends Service {
 					res.end(admission.rejection === 401 ? "unauthorized" : "forbidden");
 					return;
 				}
-				await bridge(req, res, fetchHandler);
+				await bridge(req, res, fetchHandler, admission.peer);
 			}
 		};
-		return owner.effect(() => owner.webServer.register(route), `client-connection: ${channel} rpc channel`);
+        // The caller owns this route but need not depend on a browser carrier.
+        // Resolve webServer in its injected child context, never the caller context.
+        return owner.effect(() => {
+            const carrier = owner.inject(["webServer"], (webCtx) => {
+                webCtx.effect(() => webCtx.webServer.register(route), `client-connection: ${channel} rpc route`);
+            });
+            return () => carrier.dispose();
+        }, `client-connection: ${channel} rpc channel`);
 	}
 	registerInterceptor(owner, channel, matches, handler) {
 		if (channel !== "/api") throw new Error(`connection: invalid shared RPC channel ${JSON.stringify(channel)}`);
 		const interceptor = {
 			matches,
-			fetchHandler: rpcFetchHandler(channel, handler, this.operator)
+			fetchHandler: rpcFetchHandler(channel, handler)
 		};
 		return owner.effect(() => {
 			if (this.interceptors.has(channel)) throw new Error(`connection: shared RPC channel ${JSON.stringify(channel)} already has an interceptor`);
@@ -670,10 +892,10 @@ var HostConnectionService = class extends Service {
 		}, `client-connection: ${channel} rpc interceptor`);
 	}
 };
-function rpcFetchHandler(channel, handler, peer) {
+function rpcFetchHandler(channel, handler) {
 	return {
 		requestBodyMode: () => "buffered",
-		async fetch(request) {
+		async fetch(request, peer) {
 			const endpoint = endpointFromPath(channel, new URL(request.url).pathname);
 			if (request.method !== "POST" || endpoint === void 0) return new Response("not found", { status: 404 });
 			if (request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() !== "application/json") return new Response("content type must be application/json", { status: 415 });
@@ -795,7 +1017,7 @@ function assertImageBodyCapacity(ctx, maxRequestBodyBytes) {
 	if (maxRequestBodyBytes < requiredImageBodyBytes) throw new Error(`client-connection maxRequestBodyBytes (${String(maxRequestBodyBytes)}) must be at least ${String(requiredImageBodyBytes)} for the configured aggregate image limit`);
 }
 /** Services required before providing Connection. */
-const inject = ["credentials", "webServer"];
+const inject = ["credentials"];
 const Config = z.object({
 	recovery: ConnectionRecoveryConfigSchema.default({}),
 	trustedHosts: z.array(String).default([]),
@@ -837,14 +1059,21 @@ async function apply(ctx, config) {
 					res.end(admission.rejection === 401 ? "unauthorized" : "forbidden");
 					return;
 				}
-				await webCtx.waterfall("connection/request", req, res, () => bridge(req, res, fetchHandler, maxRequestBodyBytes));
+				await webCtx.waterfall("connection/request", req, res, () => bridge(req, res, fetchHandler, admission.peer, maxRequestBodyBytes));
 			}
 		};
 		webCtx.effect(() => webCtx.webServer.register(route), "client-connection: /api route");
+		webCtx.effect(() => webCtx.webServer.register({
+			kind: "exact",
+			path: CONNECT_PATH,
+			handler: (req, res) => {
+				connection.authorizeConnect(req, res);
+			}
+		}), "client-connection: /connect route");
 	});
 	ctx.inject(["attachments"], (attachmentCtx) => {
 		assertImageBodyCapacity(attachmentCtx, maxRequestBodyBytes);
 	});
 }
 //#endregion
-export { API_PATH, Config, HostConnectionService, OperatorPeer, RpcId, apply, clientRequestSchema, inject, name, rpcErrorSchema, rpcIdSchema, rpcMessageSchema, rpcResultSchema, serverResponseSchema, transportError };
+export { API_PATH, CONNECT_PATH, Config, HostConnectionService, Peer, RpcId, apply, clientRequestSchema, inject, name, rpcErrorSchema, rpcIdSchema, rpcMessageSchema, rpcResultSchema, serverResponseSchema, transportError };

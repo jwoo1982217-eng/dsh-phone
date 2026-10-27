@@ -174,6 +174,182 @@ describe('recordThroughStream：记账骨架', () => {
   })
 
   /**
+   * ⚠️⚠️ **取消必须传播到上游适配器**（真实缺陷，本 PR 首版漏掉；两道闸门缺一不可）。
+   *
+   * 上面那条「提前 break」只断言**记账行数** —— 它在缺陷下**照样通过**（实测），
+   * 因为 `recordThroughStream` 自己的 `for await` 有转发语义，断链发生在它消费的
+   * `withTokenLedgerAccountContext` 那一层。故必须直接断言**上游 finally 是否执行**。
+   *
+   * 影响面：上游 `finally` 是各适配器释放 SSE 资源的唯一位置
+   * （`reader.cancel()` / `releaseLock()`、zcode 的 `clearTimeout` / 移除 abort 监听）。
+   * 不执行 ⇒ 用户点「停止」后连接与定时器一同泄漏（与 zcode「停止按钮无效」事故同型）。
+   */
+  describe('★ 取消传播：上游 finally 必须执行', () => {
+    /** 上游适配器骨架：`finally` 置标志，模拟真实适配器的资源释放。 */
+    function guardedStream(released: { value: boolean }) {
+      return async function* () {
+        try {
+          yield { type: 'text' }
+          yield { type: 'text' }
+          yield { type: 'text' }
+        } finally {
+          released.value = true
+        }
+      }
+    }
+
+    it('消费方 break ⇒ 上游 finally 执行（缺陷下这条必须变红）', async () => {
+      const released = { value: false }
+      for await (const _ of recordThroughStream(
+        guardedStream(released),
+        { channel: 'direct', provider: 'p', model: 'm', startedAt: Date.now() },
+      )) {
+        break
+      }
+      // ⚠️ 给微任务队列一次机会（转发是 await 的）。
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(released.value, 'break 后上游 finally 未执行 ⇒ reader/定时器泄漏').toBe(true)
+    })
+
+    it('消费方在循环体内抛错（= dsh-agent-loop 的 signal.throwIfAborted 取消路径）⇒ 上游 finally 执行', async () => {
+      const released = { value: false }
+      await expect((async () => {
+        for await (const _ of recordThroughStream(
+          guardedStream(released),
+          { channel: 'direct', provider: 'p', model: 'm', startedAt: Date.now() },
+        )) {
+          // 复刻 `dsh-agent-loop/lib/index.js` 的取消：循环体内抛错，而非 break。
+          throw new Error('aborted by user')
+        }
+      })()).rejects.toThrow('aborted by user')
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(released.value, 'throw 取消路径下上游 finally 未执行').toBe(true)
+    })
+
+    it('显式 iterator.return() ⇒ 上游 finally 执行', async () => {
+      const released = { value: false }
+      const stream = recordThroughStream(
+        guardedStream(released),
+        { channel: 'direct', provider: 'p', model: 'm', startedAt: Date.now() },
+      )[Symbol.asyncIterator]()
+      await stream.next()
+      await stream.return?.(undefined)
+      expect(released.value).toBe(true)
+    })
+
+    it('正常读完整条流时 finally 照常执行（修复不得影响成功路径）', async () => {
+      const released = { value: false }
+      const chunks = await collect(recordThroughStream(
+        guardedStream(released),
+        { channel: 'direct', provider: 'p', model: 'm', startedAt: Date.now() },
+      ))
+      expect(chunks).toHaveLength(3)
+      expect(released.value).toBe(true)
+    })
+
+    it('不带 finally 的纯 yield* 上游也要能正常读完（回归：转发不得引入异常）', async () => {
+      const chunks = await collect(recordThroughStream(
+        async function* () { yield { type: 'text' }; yield usageChunk(3, 1) },
+        { channel: 'direct', provider: 'p', model: 'm', startedAt: Date.now() },
+      ))
+      expect(chunks).toHaveLength(2)
+    })
+
+    /**
+     * ⚠️⚠️ **关闭动作挂起时，原始错误必须仍能传播**（红队复审发现的回归，实测复现）。
+     *
+     * `finally` 里若无超时地 `await iterator.return()`，而上游关闭永不 resolve
+     *（适配器 `finally` 里 `await reader.cancel()` 卡在已断开的连接上），则 `finally`
+     * 永不返回 ⇒ **本层已捕获的错误被永久吞掉**，消费方卡死在 `for await` 里
+     *（与「停止按钮无效」同型）。修复前实测判为 `HUNG`，加超时后 2s 内抛出原始错误。
+     */
+    it('★ 上游关闭挂起（return 永不 resolve）⇒ 原始错误仍必须在超时内传播', async () => {
+      // 上游：next 抛错；return 永不 resolve（模拟 reader.cancel() 卡在断开的连接上）
+      const hangingOpen = () => ({
+        [Symbol.asyncIterator]() {
+          return {
+            async next(): Promise<IteratorResult<unknown>> { throw new Error('upstream-500') },
+            return(): Promise<IteratorResult<unknown>> { return new Promise(() => {}) }, // 永不 resolve
+          }
+        },
+      })
+      // 走**真实链路**：recordThroughStream → withTokenLedgerAccountContext → 上游
+      const outcome = await Promise.race([
+        collect(recordThroughStream(
+          hangingOpen,
+          { channel: 'direct', provider: 'p', model: 'm', startedAt: Date.now() },
+        )).then(() => 'completed', (error: unknown) => `threw:${(error as Error).message}`),
+        new Promise<string>((resolve) => {
+          const timer = setTimeout(() => resolve('HUNG'), 5_000)
+          timer.unref?.()
+        }),
+      ])
+      expect(outcome, '关闭挂起吞掉了原始错误 ⇒ 消费方永久卡死').toBe('threw:upstream-500')
+    })
+
+    /**
+     * ⚠️⚠️ **超时只影响「等待」，不影响「清理是否最终发生」**（如实钉住真实语义）。
+     *
+     * 实测时间线（本用例的 fixture：上游持续吐帧、关闭动作耗时 3s）：
+     * ```
+     * return() 开始        @1ms      ← break 后本层立刻转发了关闭信号
+     * 消费方 break 返回     @2004ms   ← 2s 超时到，不再等
+     * ★ 清理完成            @3009ms   ← 被"放弃"的那个 promise 仍在后台跑完
+     * ```
+     * 即 `Promise.race` 是**放弃等待**，不是**取消动作** —— 上游清理（`releaseLock()`
+     * / `removeEventListener()`）**最终仍会执行**，只是消费方不再阻塞等它。
+     *
+     * ⚠️⚠️ **这一点曾被写错（首版实现注释 + 两轮审计都称"清理永不执行"），务必按实测写**：
+     * 事实是「消费方提前 2s 拿到控制权 + 上游清理延后完成」。这比"永不清理"温和得多，
+     * 但仍有真实代价：**清理完成前上游资源（连接/reader/监听器）一直占着**，
+     * 高频取消时会有多个清理在后台并发堆积。
+     *
+     * ⚠️⚠️ **写法要求（首版踩过坑）**：fixture 必须让消费方**真的提前关闭**（`break`），
+     * 否则走「正常读完」路径时**根本不会调用 `return()`** —— 那样断言恒真，用例沦为
+     * 同义反复（实测：那种写法下把实现改成「后台续跑」，全仓用例照样全绿）。
+     */
+    it('★ 超时只放弃等待：消费方提前返回，上游清理随后仍在后台完成', async () => {
+      const cleanupAt: number[] = []
+      const started = Date.now()
+      // 上游：持续吐帧（不 done），关闭动作耗时 3s（> 2s 超时）
+      const slowCleanupStream = () => ({
+        [Symbol.asyncIterator]() {
+          return {
+            async next(): Promise<IteratorResult<unknown>> {
+              return { value: { type: 'text' }, done: false } // 永不 done
+            },
+            async return(): Promise<IteratorResult<unknown>> {
+              await new Promise((resolve) => setTimeout(resolve, 3_000))
+              cleanupAt.push(Date.now() - started)
+              return { value: undefined, done: true }
+            },
+          }
+        },
+      })
+
+      // 消费方 break ⇒ 真的提前关闭 ⇒ 本层转发 return()
+      for await (const _ of recordThroughStream(
+        slowCleanupStream,
+        { channel: 'direct', provider: 'p', model: 'm', startedAt: Date.now() },
+      )) {
+        break
+      }
+      const closeMs = Date.now() - started
+      // ① 消费方应在 ~2s（超时）就拿到控制权，而不是等满 3s
+      expect(closeMs, `关闭应被超时切断（实测 ${closeMs}ms）`).toBeLessThan(2_900)
+      // ② 此刻清理还没跑完（否则说明根本没走超时路径）
+      expect(cleanupAt, '此刻不该已完成清理').toEqual([])
+
+      // ③ ★ 关键断言：再等 1.5s（跨过上游那 3s 的清理）—— 清理**应当已经完成**，
+      //    证明超时是「不再等」而非「取消动作」。若将来改成真正中止上游（清理永不
+      //    发生），这里会变红，提醒同步更新 CLOSE_STREAM_TIMEOUT_MS 的注释。
+      await new Promise((resolve) => setTimeout(resolve, 1_500))
+      expect(cleanupAt.length, '清理最终未完成 ⇒ 语义已变，请更新注释').toBe(1)
+      expect(cleanupAt[0], '清理完成时刻应晚于超时返回时刻').toBeGreaterThan(closeMs)
+    })
+  })
+
+  /**
    * 第 2 期（账号维度）：包装层在 **usage 帧到达时** 读回报表 —— 此时
    * `resolveCredential` 早已跑完（凭据先于任何 SSE 帧），时序才正确。
    * ⚠️ 若在 stream 开始前读，会拿到「上一笔请求」的账号（生成器懒执行）。
@@ -195,7 +371,7 @@ describe('recordThroughStream：记账骨架', () => {
     expect(row.accountId).toBe('acct-live')
   })
 
-  it('账号归属：失败行（没等到 usage）用 finally 兜底读回报表', async () => {
+  it('账号归属：失败行不借用共享回报表里的旧账号', async () => {
     resetTokenLedgerForTests()
     resetLedgerAccountsForTests()
     reportLedgerAccount('qoder', 'acct-stale')
@@ -205,8 +381,8 @@ describe('recordThroughStream：记账骨架', () => {
     ))).rejects.toBeDefined()
     const row = readTokenLedger().entries[0]!
     expect(row.error).toBe('502')
-    // 失败行归属退回「最后解析出的账号」：排查「哪个号挂了」需要它。
-    expect(row.accountId).toBe('acct-stale')
+    // 没有本请求上下文时必须留空，不能把另一个请求残留的账号标到这笔失败记录。
+    expect(row.accountId).toBeUndefined()
   })
 
   it('账号归属：无人回报时空缺（accountId 缺省，不伪造）', async () => {

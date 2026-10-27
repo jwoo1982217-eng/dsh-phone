@@ -37,11 +37,22 @@ export declare function loadOpencodeCatalog(fetchCatalog: OpencodeCatalogFetcher
 export interface OpencodeAdapterOptions {
     /** 取当前槽序列（账号池顺序 + 匿名槽末位）。 */
     identitySlots: () => Promise<readonly IdentitySlot[]>;
-    isLimited?: (slotId: string, modelId: string) => boolean;
     /** 拉远端目录；缺省时直接用兜底表。 */
     fetchRemoteCatalog?: OpencodeCatalogFetcher;
     /** 用户模型黑名单。 */
     disabledModels?: () => ReadonlySet<string>;
+    /**
+     * 「该供应商**整体关闭**」探测（Gitee issue IKP8OF）。
+     *
+     * ⚠️ **与 {@link disabledModels} 是两条腿，不可互相替代**：
+     * 后者是「这些具体 id 被关着」（有界集合），而本回调回答的是
+     * 「用户要求整个供应商关着吗」—— 它能覆盖**关闭之后才出现的模型**，
+     * 那些 id 从未进过黑名单，`disabledModels` 永远看不到它们。
+     *
+     * 本家不走共享骨架（`model-catalog.ts`），故必须在这里显式判一次；
+     * 缺失时按「未整体关闭」处理（老接线 / 单测替身的行为逐字不变）。
+     */
+    providerClosed?: () => boolean;
     /** 记录受限的副作用（切槽时由接线层提供）。 */
     markLimited?: (slotId: string, modelId: string, resetAtMs: number) => Promise<void>;
     /** 诊断日志。 */
@@ -79,7 +90,6 @@ export declare function pickSlot(slots: readonly IdentitySlot[], modelId: string
 export declare function opencodeRetryAfterMs(kind: OpencodeErrorKind, retryAfterMs: number | undefined, attempt: number): number;
 export declare class OpencodeAdapter extends LlmAdapter {
     private readonly options;
-    private readonly lastSlots;
     constructor(options: OpencodeAdapterOptions);
     providerInfo(provider: string): LlmProviderInfo;
     private catalog;
@@ -118,8 +128,9 @@ export declare class OpencodeAdapter extends LlmAdapter {
      *
      * ⚠️ **模型不支持图片时直接抛 UNSUPPORTED_CONTENT**（而不是静默丢弃）——
      * 静默丢弃会让用户以为模型看到了图（Qoder 图片事故的教训）。
-     * 附件字节读取失败时明确报 UNSUPPORTED_CONTENT，与手机版原生通道一致，
-     * 不能把用户图片静默换成占位文本后继续生成。
+     * ⚠️ 附件字节读不出来时写入**空 Map**：`openai-compat` 的
+     * `userContentParts` 遇到缺失会产出 `[image unavailable]` 占位，
+     * 至少让模型知道「这里本该有张图但没拿到」，而不是消息里凭空少一块。
      */
     private resolveImageUrls;
     /** 用指定槽发一次请求（轮换循环的复用单元）。 */

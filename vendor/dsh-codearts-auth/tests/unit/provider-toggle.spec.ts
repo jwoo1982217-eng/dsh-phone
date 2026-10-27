@@ -38,6 +38,68 @@ function panelBody(): string {
   return offset === -1 ? rest : rest.slice(0, offset + 1)
 }
 
+/**
+ * 取**窄屏（手机适配）那一段** media 查询的规则体。
+ *
+ * ⚠️ 为什么要切片而不是对全文断言：这片样式里 `flex-direction: column` 另有
+ * 17 处（各面板与弹窗自身就是列方向），`width` 更到处都是 —— 对全文匹配
+ * 「有没有 flex-direction: column」是**恒真**的，那种用例没有牙。
+ *
+ * ⚠️ 锚点用**注释标题**（`── 窄屏（手机`），不是 `.dim-jh-layout` 规则本身：
+ * 后者在宽屏区出现一次、窄屏区又一次，按它切会把宽屏那份也吞进来，
+ * 于是「窄屏里不得出现 228px」的反向断言会**恒假红**。
+ *
+ * ## ⚠️⚠️ 2026-10-20 审计整改：本 helper 原版有 3 处假绿
+ *
+ * 变异测试实测（变异后 154 条用例**全绿**）暴露的问题与修法：
+ *
+ * 1. **整段被 `/* *\/` 注释掉 ⇒ 全绿**；**media 条件改成 `max-width: 1px`
+ *    （永不命中）或 `min-width: 720px`（笔误）⇒ 全绿**。
+ *    ⇒ 修法：返回**已剥注释**的文本，并由调用方显式断言 media 条件。
+ * 2. **空块时反向断言恒绿**。⇒ 锚点守卫保留，且正向断言先跑。
+ *
+ * ⚠️ 还有一条**不在本 helper 里**、但同源的假绿：原用例的
+ * `toMatch(/\.dim-jh-rail \{[\s\S]*?width: auto/)` 的 `[\s\S]*?` 会**越过
+ * 选择器的闭合花括号**，命中的是块内后面 `.dim-jh-provider { width: auto }`
+ * 的字面量 ⇒ 删掉 rail 的 `width: auto` 全绿。⇒ 修法见调用方：改用
+ * `[^}]*`（不跨花括号）做块内匹配。
+ *
+ * @returns 从窄屏注释标题起、到下一段注释标题前的**已剥注释**规则文本。
+ */
+function narrowScreenBlock(styles: string): string {
+  const start = styles.indexOf('── 窄屏（手机')
+  expect(start, '找不到窄屏主布局的注释标题（可能被改名或删除）').toBeGreaterThan(-1)
+  // 结束锚点取「用量浮层那一段的注释标题」——它紧随其后，是**下一个**独立段落。
+  const end = styles.indexOf('── 窄屏：用量浮层', start)
+  expect(end, '找不到浮层窄屏段的注释标题（用于界定上一段的结束）').toBeGreaterThan(start)
+  return stripCssComments(styles.slice(start, end))
+}
+
+/** 剥掉 CSS 注释：注释掉的规则不生效，文本断言不得把它当证据。 */
+function stripCssComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+/**
+ * 取**某条 CSS 规则**在给定文本里的声明体（**不跨选择器**）。
+ *
+ * ⚠️⚠️ 这是审计实测的假绿根因：`/\.dim-jh-rail \{[\s\S]*?width: auto/` 的
+ * `[\s\S]*?` 会一路吃到块内**后面**的 `.dim-jh-provider { width: auto }`，
+ * 于是「rail 有没有 width: auto」这个判据**实际在测另一个选择器**。
+ * 实测后果：删掉 rail 的 `width: auto` 后 154 条用例全绿，而 rail 真的退回
+ * 228px、右面板可用宽度从 444px 掉到 216px（正是本 PR 要修的症状）。
+ *
+ * 判据用 `[^}]*`：CSS 声明体内部不会出现裸 `}`，故不会跨规则边界。
+ *
+ * @returns 该规则的声明体（不含选择器与花括号）；规则不存在时返回 null。
+ */
+function cssRuleBody(block: string, selector: string): string | null {
+  // 选择器按字面量转义（本文件只用 `.dim-jh-*` 这类简单选择器）。
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`).exec(block)
+  return match === null ? null : match[1]
+}
+
 describe('groupProviders（左侧分组）', () => {
   it('按 closed 分成两组，且保持传入顺序', () => {
     const providers = [P('a'), P('b'), P('c'), P('d')]
@@ -103,6 +165,30 @@ describe('providerSwitchState（开关三形态）', () => {
     expect(s.disabled).toBe(true)
     expect(s.checked).toBe(true)
     expect(s.reason).toContain('没有可关闭的模型')
+  })
+
+  /**
+   * ★★ **「已关闭」必须永远可点开，即使 `total === 0`**（Gitee issue IKP8OF，真死锁）。
+   *
+   * ## 缺陷形态（真实可达）
+   *
+   * 用户关闭了某供应商，随后它的账号被全部删除 / 目录被清空 ⇒ `total` 变成 0，
+   * 而 `closed` 仍为 `true`（关闭**意图**与目录快照无关，这正是 IKP8OF 的修复点）。
+   * 若判据顺序是「先判 `total <= 0` ⇒ 禁用」，开关就变成**点不动的「已关闭」**：
+   * 用户既关不掉也打不开，**没有任何出路**（只能手工编辑 `state.json`）。
+   *
+   * ## 为什么顺序必须反
+   *
+   * 「`total <= 0` ⇒ 禁用」的本意是「没有模型可关 ⇒ **关闭**动作会被服务端拒绝，
+   * 别让用户白点」（见 `providerSwitchState` 的方法头）。它约束的是**关闭**方向；
+   * 而已关闭时用户要做的恰恰是**打开**，那个方向永远合法
+   *（`provider.setEnabled(true)` 不读目录、纯本地清黑名单 + 清意图）。
+   */
+  it('★★ 已关闭 + total 为 0 → 仍必须可点开（不得变成点不动的死开关）', () => {
+    const s = providerSwitchState({ models: { total: 0, disabled: 0 }, closed: true })
+    expect(s.disabled, '★★ 已关闭却禁用 ⇒ 用户永远打不开它（IKP8OF 的死锁）').toBe(false)
+    expect(s.checked, '已关闭 ⇒ 勾选态必须是 false（点击即打开）').toBe(false)
+    expect(s.reason).toBeNull()
   })
 
   it('② 状态未知（undefined）→ 禁用并说明原因', () => {
@@ -263,6 +349,27 @@ describe('供应商开关的接线（源码级回归）', () => {
   })
 
   /**
+   * ⚠️ **按钮顺序：新建账号必须排在「国际站分流」之前**
+   * （2026-10-17 用户要求「minimax国际版的新建账号放在国际站分流之前」）。
+   *
+   * 理由：新建账号是**主操作**，分流设置是**排障用的次要入口**。
+   * 次要项排在主操作前面，会让用户先看到「分流设置」而不是「怎么加账号」。
+   *
+   * ⚠️ 判据用**位置先后**而不是「字符串包含」——后者对顺序完全不敏感，
+   * 把两个按钮调换位置它照样绿（本仓库记过「源码级断言必须锚定片段」）。
+   */
+  it('★★ minimaxintl 面板里「+ 新建账号」排在「国际站分流设置」之前', () => {
+    const newAccountAt = source.indexOf("'+ 新建账号'")
+    const xffAt = source.indexOf("'国际站分流设置'")
+    expect(newAccountAt, '找不到「+ 新建账号」的渲染点').toBeGreaterThan(-1)
+    expect(xffAt, '找不到「国际站分流设置」的渲染点').toBeGreaterThan(-1)
+    expect(
+      newAccountAt,
+      '「+ 新建账号」必须排在「国际站分流设置」之前（主操作在前、排障入口在后）',
+    ).toBeLessThan(xffAt)
+  })
+
+  /**
    * ⚠️ 这条锁的是本次改动的**核心要求**：开关不得再挂在左侧供应商行尾。
    * 它曾与「选择要看哪个供应商」这个高频无害动作挤在同一行 —— 一个破坏性批量
    * 操作挂在导航栏上，既容易误点，也让窄栏长出了控件。
@@ -381,6 +488,127 @@ describe('供应商开关的样式约束（源码级回归）', () => {
     expect(styles).toMatch(/\.dim-jh-provider \{[^}]*gap: 8px; padding: 8px 10px/)
   })
 
+  /**
+   * ⚠️⚠️ 窄屏（手机 / 远程访问）主布局必须有适配（报障 2026-10-17，附窄屏截图）。
+   *
+   * ## 缺陷形态
+   *
+   * 主布局 `.dim-jh-layout` 是**写死的左右两栏**、`.dim-jh-rail` 固定 228px，
+   * 而文件里原有的 3 处 media 查询**只覆盖弹窗内部**（Token 用量表格、用量徽标），
+   * 一条都没管主布局。窄屏宽度约 400px 时右面板只剩约 76px：
+   *
+   * ```
+   * 400 − 228(rail) − 24×2(宿主 SettingsRoot) − 24×2(面板 padding) ≈ 76px
+   * ```
+   *
+   * 症状是右面板被压成一条窄缝、操作按钮被裁断、中文提示逐字竖排
+   * （截图里「一键领取积分 / 重测所有 / 重置所有」只剩右端露出来）。
+   *
+   * ## 修法与其边界
+   *
+   * 窄屏改为**上下两段**：左栏降级为顶部**横向可滑动**的标签条，右面板获整宽。
+   * 三条判据缺一不可，故逐条点名：
+   * - `flex-direction: column` —— 两栏改两段（只改方向，不动 rail 的 228px 基准，
+   *   故上面那条 228px 断言在宽屏下仍然成立）；
+   * - `overflow-x: auto` —— 标签条必须能横向滑动，否则供应商多了会撑破屏幕；
+   * - `display: contents` —— 分组外壳（railGroup）在横排下必须展平，
+   *   否则每个分组各占一整行（竖排退回）。
+   *
+   * ⚠️ 断言必须锚在**窄屏块内部**，不能对全文匹配：`flex-direction: column`
+   * 在文件里另有 17 处（各面板/弹窗自身），对全文断言会**恒真**（假绿）。
+   */
+  it('⚠️ 窄屏主布局：rail 降级为顶部横滑标签条 + 分组展平（用户报障 2026-10-17）', () => {
+    const block = narrowScreenBlock(styles)
+
+    // ⓪ 媒体条件必须真的生效 —— 审计实测的假绿之一：把条件改成
+    //    `max-width: 1px`（永不命中）或 `min-width: 720px`（笔误）时原用例全绿。
+    expect(block, '窄屏主布局块必须用 max-width 断点').toMatch(/@media \(max-width: 720px\)/)
+    expect(block, '不得出现 min-width（min/max 笔误会让窄屏永远不命中）').not.toMatch(/min-width/)
+
+    // ① 两栏改两段。
+    const layout = cssRuleBody(block, '.dim-jh-layout')
+    expect(layout, '窄屏块里必须有 .dim-jh-layout 规则').not.toBeNull()
+    expect(layout, '.dim-jh-layout 必须切到列方向（两栏改两段）').toMatch(/flex-direction: column/)
+
+    // ② rail 降级为横向标签条 —— 每条腿都用**块内匹配**（[^}]*），
+    //    不能用 [\s\S]*?（那会跨到后面的 .dim-jh-provider 去，见 helper 注释）。
+    const rail = cssRuleBody(block, '.dim-jh-rail')
+    expect(rail, '窄屏块里必须有 .dim-jh-rail 规则').not.toBeNull()
+    expect(rail, '标签条必须可横向滑动，否则供应商一多就撑破屏幕').toMatch(/overflow-x: auto/)
+    expect(rail, '标签条必须是横向 flex（否则退回基础规则的 grid 竖排）').toMatch(/display: flex/)
+    expect(rail, '标签条必须显式 flex-direction: row').toMatch(/flex-direction: row/)
+    // ③ 分组外壳展平。
+    const group = cssRuleBody(block, '.dim-jh-railGroup')
+    expect(group, '窄屏块里必须有 .dim-jh-railGroup 规则').not.toBeNull()
+    expect(group, 'railGroup 必须 display: contents，否则分组各占一整行').toMatch(/display: contents/)
+    // 竖排退回的反向断言：分组标题在横排标签条里必须隐藏。
+    const title = cssRuleBody(block, '.dim-jh-railGroupTitle')
+    expect(title, '窄屏块里必须有 .dim-jh-railGroupTitle 规则').not.toBeNull()
+    expect(title).toMatch(/display: none/)
+  })
+
+  /**
+   * ⚠️ 窄屏块**不得复活**那条 rail 固定宽度：它只该在宽屏生效。
+   *
+   * 反向断言的理由：228px 在窄屏是缺陷的**组成部分**（正是它把右面板压到 76px）。
+   * 若有人「为省事」把 `width: auto` 删掉，窄屏会重新退回固定 228px 的窄缝，
+   * 而宽屏的 228px 断言依然全绿 —— 那种回归只有本用例看得见。
+   *
+   * ⚠️ 判据用「窄屏块内不得出现 width: 228px」而不是「全文不得出现」：
+   * 宽屏那条规则**必须**保留（上面已逐个锁住）。
+   *
+   * ## ⚠️⚠️ 2026-10-20 审计整改
+   *
+   * 原用例的**两条断言都是假绿**，实测（变异后 154 条全绿）：
+   * - `toMatch(/\.dim-jh-rail \{[\s\S]*?width: auto/)` 的 `[\s\S]*?` 会跨到块内
+   *   后面的 `.dim-jh-provider { width: auto }` ⇒ **删掉 rail 的 `width: auto`
+   *   全绿**（而 rail 真的退回 228px、右面板从 444px 掉到 216px）。
+   * - `not.toMatch(/width: 228px/)` 只认「带空格的 `width: 228px`」这一种字面
+   *   ⇒ 写成 `width:228px`（无空格）或 `flex: 0 0 228px` 都能绕过。
+   * ⇒ 修法：正向用 {@link cssRuleBody} 做块内取值；反向**同时**排掉
+   *   固定宽度的三种常见写法。
+   */
+  it('⚠️ 窄屏块内不得把 rail 写回固定宽度（228px 只属于宽屏）', () => {
+    const block = narrowScreenBlock(styles)
+    const rail = cssRuleBody(block, '.dim-jh-rail')
+    expect(rail, '窄屏块里必须有 .dim-jh-rail 规则').not.toBeNull()
+
+    // 正向：必须显式 width: auto（才能盖掉基础规则的 228px）。
+    expect(rail, '窄屏 rail 必须 width: auto 覆盖基础规则的 228px').toMatch(/width:\s*auto/)
+
+    // 反向：三种把宽度写死的形态都要排掉（空格、无空格、flex 简写）。
+    expect(rail, '不得写 width: 228px（含无空格写法）').not.toMatch(/width:\s*228px/)
+    expect(rail, '不得用 flex 简写写死宽度（flex: 0 0 228px）').not.toMatch(/flex:\s*0\s+0\s+\d+px/)
+    expect(rail, '不得用 flex-basis 写死宽度').not.toMatch(/flex-basis:\s*\d+px/)
+  })
+
+  /**
+   * ⚠️⚠️ **「靠源顺序覆盖」这个前提本身必须有守卫**（2026-10-20 审计新增）。
+   *
+   * 窄屏块能盖掉基础规则，靠的是**同特异性 + 源顺序在后**（CSS 层没有别的机制）。
+   * 审计实测：把基础 `.dim-jh-rail { width: 228px; … }` 规则挪到窄屏 media
+   * **之后** ⇒ 窄屏覆盖完全失效（rail 退回 228px + `display: grid` 竖排），
+   * 而当时 4 条用例**全绿** —— 这个前提写进了注释却没有任何断言守着。
+   *
+   * ⚠️ 判据只对 `.dim-jh-rail` 成立，**不要**对 `.dim-jh-layout` 照搬：
+   * 基础 `.dim-jh-layout { display:flex; flex:1; overflow:hidden }` 里**没有**
+   * `flex-direction`，与窄屏声明**属性不重叠** ⇒ 把它挪后不影响几何
+   * （审计初稿曾把它也算作缺陷，实测几何不变，已订正）。
+   */
+  it('⚠️ 窄屏 media 块必须排在基础 .dim-jh-rail 规则之后（源顺序是覆盖的唯一依据）', () => {
+    const baseRailIndex = styles.indexOf('.dim-jh-rail { width: 228px;')
+    expect(baseRailIndex, '找不到基础 .dim-jh-rail 规则（228px）').toBeGreaterThan(-1)
+    const narrowIndex = styles.indexOf('── 窄屏（手机')
+    expect(narrowIndex, '找不到窄屏块注释标题').toBeGreaterThan(-1)
+    const narrowMediaIndex = styles.indexOf('@media (max-width: 720px)', narrowIndex)
+    expect(narrowMediaIndex, '找不到窄屏 media 块').toBeGreaterThan(-1)
+    expect(
+      narrowMediaIndex,
+      '窄屏 media 块必须排在基础 .dim-jh-rail 规则**之后**：两者特异性相同，'
+      + '靠源顺序后者胜出。挪到前面会让窄屏的 width:auto 完全失效（rail 退回 228px）',
+    ).toBeGreaterThan(baseRailIndex)
+  })
+
   it('弹窗里的开关保持 flex: none（目标控件不参与收缩）', () => {
     expect(styles).toMatch(/\.dim-jh-switch \{[^}]*flex: none/)
   })
@@ -456,6 +684,68 @@ describe('供应商弹窗的自定义排序（2026-10-06 拖拽需求）', () =>
       const open = [P('a'), P('b'), P('c')]
       sortOpenProvidersByOrder(open, ['c', 'a'])
       expect(open.map(p => p.id)).toEqual(['a', 'b', 'c'])
+    })
+
+    /**
+     * ⚠️⚠️ **新增 provider 不能被缀到末尾**（真实缺陷，2026-10-17 用户报障
+     * 「minimax 国际版的顺序应该在中国版下面」）。
+     *
+     * `providerOrder` 是用户拖拽时快照的**全量 id 数组**；插件后来新增 provider
+     * 时老用户的数组里没有新 id ⇒ 新 provider 一直排在末位，而它在注册表里的
+     * 声明位置可能紧挨着某个相关项。老用户**不重新拖一次就永远好不了**。
+     *
+     * 实测本机 `state.json`：那份顺序缺 6 个新增 provider
+     *（`minimaxintl` / `officeace` / `accio` / `autoclaw` / `modelscope` / `aggregate`）。
+     */
+    it('★★ 传声明序时，缺失的新增 provider 落回「声明位置」而不是缀尾', () => {
+      // 声明序：… a, b, NEW, c, d …
+      const declared = ['a', 'b', 'new', 'c', 'd']
+      const open = declared.map(P)
+      // 老用户的顺序表里**没有** 'new'
+      const order = ['a', 'b', 'c', 'd']
+      expect(sortOpenProvidersByOrder(open, order, declared).map(p => p.id))
+        .toEqual(['a', 'b', 'new', 'c', 'd'])
+    })
+
+    it('★★ minimaxintl 必须紧跟 minimax（用户报障的具体形态）', () => {
+      const declared = ['codearts', 'minimax', 'minimaxintl', 'zcode', 'gemini']
+      const open = declared.map(P)
+      // 真实形态：老顺序表里有 minimax，但**没有** minimaxintl
+      const order = ['codearts', 'minimax', 'zcode', 'gemini']
+      const got = sortOpenProvidersByOrder(open, order, declared).map(p => p.id)
+      expect(got, 'minimaxintl 被缀到末尾了').toEqual([
+        'codearts', 'minimax', 'minimaxintl', 'zcode', 'gemini',
+      ])
+      expect(got.indexOf('minimaxintl')).toBe(got.indexOf('minimax') + 1)
+    })
+
+    it('★ 声明在最前的缺失项排到最前（锚点为 null 的分支）', () => {
+      const declared = ['new', 'a', 'b']
+      const open = declared.map(P)
+      expect(sortOpenProvidersByOrder(open, ['a', 'b'], declared).map(p => p.id))
+        .toEqual(['new', 'a', 'b'])
+    })
+
+    it('★ 连续多个缺失项保持声明相对顺序', () => {
+      const declared = ['a', 'x', 'y', 'z', 'b']
+      const open = declared.map(P)
+      expect(sortOpenProvidersByOrder(open, ['a', 'b'], declared).map(p => p.id))
+        .toEqual(['a', 'x', 'y', 'z', 'b'])
+    })
+
+    it('★ 未传声明序时退化为旧行为（缺失项缀尾，保持向后兼容）', () => {
+      const open = [P('a'), P('b'), P('c'), P('d')]
+      // 与第一条例同口径：不传第三参 ⇒ 未列出的按传入顺序补后
+      expect(sortOpenProvidersByOrder(open, ['a', 'b']).map(p => p.id))
+        .toEqual(['a', 'b', 'c', 'd'])
+    })
+
+    it('★★ 用户已自定义的相对顺序**不允许**被声明序覆盖', () => {
+      // 用户把 d 拖到了 a 前面 —— 声明序里 d 在后，但必须尊重用户。
+      const declared = ['a', 'b', 'c', 'd']
+      const open = declared.map(P)
+      expect(sortOpenProvidersByOrder(open, ['d', 'a', 'b', 'c'], declared).map(p => p.id))
+        .toEqual(['d', 'a', 'b', 'c'])
     })
   })
 
@@ -715,9 +1005,22 @@ describe('供应商弹窗的自定义排序（2026-10-06 拖拽需求）', () =>
     it('主页 rail 的已打开组按 providerOrder 排序（closed 组恒声明序沉底）', () => {
       // ⚠️ renderRail 在 JetHubPage 里（ProviderSwitchPanel 之后），panelBody()
       // 的结束锚切不到它 —— 用整份 source 断言。
-      expect(source).toContain('sortOpenProvidersByOrder(open, providerOrder)')
+      //
+      // ⚠️ 2026-10-17：调用点**多传了第三个实参**（声明顺序），用于把
+      // `providerOrder` 里缺失的新增 provider 补回声明位置
+      //（否则 `minimaxintl` 会被缀到末尾）。故判据不能写死旧的两参形态 ——
+      // 用正则在「已打开组」那段里找调用，允许任意实参列表。
+      expect(source).toMatch(/sortOpenProvidersByOrder\(\s*open,\s*providerOrder\b/)
       // 关闭组不参与自定义排序（用户口径：「这个逻辑不变」）。
       expect(source).toContain("group(`已关闭 (${closed.length})`, closed, 'closed')")
+      /**
+       * ⚠️ **第三个实参必须真的传**（否则修复静默失效）：
+       * `sortOpenProvidersByOrder` 在缺省第三参时会退化为「缺失项缀尾」的旧行为 ——
+       * 那正是用户报障的形态。这条断言是本修复的**唯一源码级闸门**。
+       */
+      expect(source).toMatch(
+        /sortOpenProvidersByOrder\(\s*open,\s*providerOrder,\s*PROVIDERS\.map\(p => p\.id\)/,
+      )
     })
 
     it('默认选中卡片 = 自定义序第一位（providerTouchedRef 一次性纠偏）', () => {

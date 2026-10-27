@@ -26,6 +26,21 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import type { ProviderAccountEntry } from './types.js';
+/**
+ * 把 fetch 抛出的错误整理成**带根因**的可读串。
+ *
+ * ## ⚠️ 为什么不能只取 `error.message`（issue IKK4BY 第 2 点）
+ *
+ * Node 的 `fetch` 在**任何**传输层失败时抛的 `TypeError` 其 `message` 恒为
+ * `'fetch failed'`，真正原因（`ECONNREFUSED` / `ENOTFOUND` / `UND_ERR_*` /
+ * TLS 握手失败 …）只挂在 `error.cause` 上。只取 message 的后果是**所有**故障
+ * 都退化成同一句无信息量的话 —— 本 issue 的报障正是这样：
+ * 「固定显示测试失败 fetch failed，耗时 0 到 1 毫秒」，用户与排障者都无从下手。
+ *
+ * 这里逐层展开 `cause`（fetch 的 cause 还可能再套一层），最多 3 层，
+ * 避免病态的自引用链把日志撑爆。
+ */
+export declare function describeFetchError(error: unknown): string;
 export interface RpcOpencodeAddAccountRequest {
     apiKey: string;
     nickname?: string;

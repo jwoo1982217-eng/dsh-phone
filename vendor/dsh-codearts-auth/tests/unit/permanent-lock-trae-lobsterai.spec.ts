@@ -108,8 +108,17 @@ describe('选号器泛型化后对两家的实际行为', () => {
    * 已实测：删掉两家的 `getAvailableAccount(..., picked.tried)`、删掉
    * `reportLedgerAccount`、不传 `modelId`、串用 `fetchBalance` ……
    * 这 6 条用例**一条都不会红**。真正的差异由本文件末尾的
-   * `真实 fetchBalance 链路` 一节覆盖，接线正确性由 `buddy-permanent-lock.spec.ts`
-   * 的 `pickCallBlock` 守卫覆盖。
+   * `真实 fetchBalance 链路` 一节覆盖；**接线正确性**（工厂配置项把哪一份
+   * 凭据解析器交给了共享编排）由 `credential-resolver.spec.ts` 的
+   * 「LobsterAI 用**自己的**凭据解析器」那两条覆盖（形状损坏的凭据不得被交出 +
+   * 形状合法的照常交出）。
+   * ⚠️ 原先此处指向的 `pickCallBlock` 守卫**已随 Task 6 删除**（那个 helper 锚的
+   * 旧调用形不存在了），故指针改指上面那两条。
+   * ⚠️ **别把 `buddy-permanent-lock.spec.ts` 的行为组算作接线的守卫** ——
+   * 已实测：把 `src/index.ts` 的 `readCredential` 换成**另一家的**解析器后，
+   * 该文件 **42/42 全绿**（它只在 `() => undefined` 这种「恒不交凭据」的实现下红）。
+   * 真正会因「接错了另一家的解析器」而变红的只有 `credential-resolver.spec.ts`
+   * 那两条（第三轮复审已双向复现）。
    */
   /** 造一个选择器：余额由固定表给出，凭据解析恒成功。 */
   function makeSelector<TProduct, TCredential extends { token: string }>(

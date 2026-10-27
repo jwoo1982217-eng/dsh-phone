@@ -67,6 +67,17 @@
  * 阿里云风控会看这个差异。headful 在 Windows 上可以**不打扰用户**
  * （`--window-position=-32000,-32000` 移出屏幕）。
  */
+/**
+ * 浏览器侧通用件**已搬到 `./chromium-session.js`**（库库AI 的登录注册也复用它）。
+ *
+ * ⚠️ 这里**必须继续 re-export**，两条理由各管一件事：
+ * 1. 既有调用方（`zcode-auth.ts` / `zcode-adapter.ts` 等）与一批回归用例
+ *    是按 `./zcode-captcha.js` 这个路径 import 的，砍掉导出面等于改 API；
+ * 2. 源码扫描型用例（拿 `readFileSync` 读源码做断言的那些）已改为指向
+ *    `chromium-session.ts` —— 那是**代码真正所在**的文件，否则断言会打空、
+ *    变成假绿。
+ */
+export { browserCandidates, browserNotFoundMessage, buildLinuxSkipTaskbarArgs, buildMacosMiniaturizeArgs, findBrowserExecutable, isEdgeExecutable, parseWmctrlList, } from './chromium-session.js';
 /** 阿里云 captcha 配置（服务端下发；此处为实测兜底值）。 */
 export interface ZcodeCaptchaConfig {
     /** 区域：`cn`。 */
@@ -75,7 +86,76 @@ export interface ZcodeCaptchaConfig {
     prefix: string;
     /** 场景 id。 */
     sceneId: string;
+    /**
+     * 上游是否**启用** captcha（服务端 `data.configs.captcha.enabled`）。
+     *
+     * ⚠ **可选**：缺席 = 「不知道」，不是 `false`。两者语义完全不同
+     * （见 {@link requiresCaptchaUpfront}）。
+     */
+    enabled?: boolean;
+    /**
+     * 上游是否**对模型请求（推理）跳过** captcha 校验
+     * （服务端 `data.configs.captcha.skip_model_request`）。
+     *
+     * ## 为什么这个字段必须读出来（2026-10-12，用户要求核实 3.14.5）
+     *
+     * 官方闭源版 **3.14.5** 的渲染层产物（`out/renderer/assets/styles-*.js`）
+     * 逆向得到这样一条链：
+     *
+     * ```js
+     * // ① 准入：只有智谱积分账号走这条
+     * function xnn(e){ return e?.access?.type==='zhipu-account' && e.access.mode==='start-plan' }
+     *
+     * // ② 索要 captcha（`model-request` 与 `captcha-retry` 两种 reason 都进这里）
+     * async function Lnn(e){
+     *   if (!xnn(e.providerConfig)) return
+     *   if (t?.enabled===false || t?.skipModelRequest===true) return { headers:{} }  // ← 跳过
+     *   const n = await Pnn(t, {...})
+     *   return { headers: unn({ captchaVerifyParam: n, captchaRegion: t.region }) }
+     * }
+     * ```
+     *
+     * 且 host 侧新增 `interaction/requestProviderRuntimeHeaders` RPC，其 `reason`
+     * 取值域是 `['model-request', 'captcha-retry']` —— **推理请求真的会走 captcha**，
+     * 被拒后还会用 `captcha-retry` 重试一轮。
+     *
+     * 服务端**当前**把开关关着（本机实测，只发 GET、零额度）：
+     * `{ enabled:true, prefix:'no8xfe', region:'cn', sceneId:'11xygtvd',
+     *    skip_model_request:true }` ⇒ `Lnn` 第二行即返回，不产 param、不注头。
+     *
+     * ⚠ **官方把它转成 camelCase**（`getCaptchaConfig()` 里逐字
+     * `let { skip_model_request: r, ...o } = n; return { ...o,
+     * ...typeof r === 'boolean' ? { skipModelRequest: r } : {} }`）——
+     * 我们的读法必须与它一致，且**同样只在真的是布尔时才写字段**。
+     */
+    skipModelRequest?: boolean;
 }
+/**
+ * 上游是否**明确要求**推理请求带 captcha —— 即「首发就该带，别再先探」。
+ *
+ * ## 三态（这是本判据的全部要点，别简化成布尔）
+ *
+ * | `skipModelRequest` | `enabled` | 返回 | 理由 |
+ * |---|---|---|---|
+ * | **`false`** | 非 `false` | **`true`** | 上游明确要 ⇒ 先探**必然**被 `3007` 拒，白吃一发往返 |
+ * | `true` | 非 `false` | `false` | 上游明确不校验 ⇒ 先探零成本，且能省掉一次 mint |
+ * | **缺席 / 非布尔** | 任意 | `false` | **不知道就不猜** |
+ * | 任意 | **`false`** | `false` | 上游把 captcha 整个关了 ⇒ 一票否决 |
+ *
+ * ## ⚠⚠ 两个最容易写反的地方
+ *
+ * 1. **方向**：能省的是 `skipModelRequest === false`（明确要 ⇒ 直接带），
+ *    **不是** `true`。`true` 表示上游不校验，先探本来就零成本、无可省。
+ * 2. **缺席 ≠ `false`**：若写成 `skipModelRequest !== true` 或
+ *    `Boolean(skipModelRequest === false)` 之类的宽松判据，就会在
+ *    **老配置 / 上游字段漂移**时把「不知道」当成「上游明确要验证」，
+ *    于是**每个请求白发一个 param** —— 白扣的是阿里云**设备级**配额
+ *    （同设备每小时 150 次，实测口径见 `captcha-backoff.ts`）。
+ *    这正是本仓库记过的「读不到就不猜」原则（同额度桶那条）。
+ *
+ * ⚠ 判据**只读配置**，不发网络、不碰浏览器 ⇒ 可以在热路径上每次调用。
+ */
+export declare function requiresCaptchaUpfront(config: Pick<ZcodeCaptchaConfig, 'enabled' | 'skipModelRequest'> | undefined): boolean;
 /**
  * 兜底 captcha 配置。
  *
@@ -143,81 +223,6 @@ export declare function validateCaptchaParam(param: unknown): {
     ok: boolean;
     reason?: string;
 };
-/**
- * 浏览器可执行文件的**候选链**（按优先级，`ZCODE_CHROME_PATH` 恒排第一）。
- *
- * ## 为什么抽成**纯函数**
- *
- * 候选链按平台分叉后，**macOS / Linux 分支在本仓库的 Windows CI 上一次都执行不到** ——
- * 直接写在 `findBrowserExecutable()` 里，这些路径会永远「静默通过」，
- * 直到用户报障（IKJKNT 就是 macOS 的 macOS 那条的先例）。
- * 抽出来后它们是纯字符串计算，可在任何平台断言。
- *
- * 三个入参都可注入，正是为了这个：`platform` 定分支、`env` 造 scoop /
- * `ZCODE_CHROME_PATH`、`home` 造 `~/Applications` 与 `~/.local/share/flatpak`。
- *
- * ## ⚠⚠ **`else` 分支是 Windows —— 别把它当「非 Win 也走这儿」
- *
- * 三个平台的分支必须**显式**列全。历史上 `linux` 落在 else 里拼出一套
- * `PROGRAMFILES` / `msedge.exe`（Linux 上全不存在 ⇒ 恒找不到浏览器），
- * 与 macOS 那条**完全同型**。**新增平台时务必在这里加一条显式分支。**
- *
- * ## ⚠ 两个必须防的坑（都实测踩过）
- *
- * ### 1. 空环境变量会产生**相对路径**
- *
- * `join('', 'Google', 'Chrome', …)` 返回 `Google\Chrome\…` —— 一个**相对路径**，
- * `existsSync` 会相对**当前工作目录**解析。于是「当前目录下恰好有个同名文件」
- * 会被误判成浏览器，而真正的浏览器却找不到。
- *
- * ⇒ {@link findBrowserExecutable} 只接受**绝对路径**候选（`isAbsolute` 过滤）。
- *
- * ### 2. `USERPROFILE` 不等于家目录
- *
- * scoop 的安装位置在 `~/.scoop` 或 `~/scoop` 下，而 `~` 应当用
- * `os.homedir()` 求（它还会看 `HOME`，且在 `USERPROFILE` 被改写时仍正确）。
- * 用 `process.env.USERPROFILE` 拼路径会在「环境变量异常/被沙箱改写」时失效 ——
- * 实测：把 `USERPROFILE` 指到沙箱后，原本可用的 scoop chromium 就找不到了。
- */
-export declare function browserCandidates(input?: {
-    platform?: NodeJS.Platform;
-    env?: Record<string, string | undefined>;
-    home?: string;
-}): string[];
-/** 在候选链里挑第一个**存在**的绝对路径。 */
-export declare function findBrowserExecutable(): string | undefined;
-/**
- * 找不到浏览器时的**用户可执行提示**（按平台说人话）。
- *
- * ## 为什么必须分平台（Gitee issue IKJKNT）
- *
- * 修复前是单一口径：「已尝试 scoop chromium / Chrome / Chromium / Edge；
- * 可用 ZCODE_CHROME_PATH 显式指定 **chrome.exe** 路径。」
- * —— macOS 上 **scoop 根本不存在**、`chrome.exe` 也不是那个文件名
- * （见 {@link MAC_BROWSER_BUNDLES}），用户照着提示做只会更懵。
- * 回归用例见 `tests/unit/zcode-browser-macos.spec.ts`。
- */
-export declare function browserNotFoundMessage(platform?: NodeJS.Platform): string;
-/**
- * 该可执行文件是否是**系统 Edge**（候选链的最后几档）。
- *
- * ## 为什么单独抽成纯函数
- * 「实际用了哪个浏览器」需要被**告警**（issue IKJLB1 的期望行为 2：
- * 用户不知道系统在拿 Edge 兜底）。告警条件必须可测，故不留在 `launch()` 里。
- *
- * ⚠️ 判据是**文件名**（不区分大小写），而不是路径里搜 `Edge`：
- * 前者对 `…\Microsoft\Edge\Application\msedge.exe`、scoop 布局、
- * macOS 的 `…/Microsoft Edge.app/Contents/MacOS/Microsoft Edge` 以及
- * 用户经 `ZCODE_CHROME_PATH` 指向的 Edge 副本都成立；
- * 后者会把路径中恰好含 "Edge" 字样的第三方 chromium 误报成系统 Edge。
- *
- * ⚠⚠ **macOS 那个名字是同型缺陷的修复**（2026-10-03，issue IKJKNT）：
- * 原判据只认 `msedge.exe`，而 macOS 包内二进制叫 **`Microsoft Edge`**
- * （无扩展名）⇒ Mac 用户落到 Edge 兜底时**一声不吭**，与 IKJLB1
- * 的期望行为 2 直接冲突。补这个别名时别把判据改成 `includes('edge')`
- * —— 那会把 `Brave Browser` 之类的路径误伤。
- */
-export declare function isEdgeExecutable(executable: string): boolean;
 /**
  * 构造请求体里那段「建 DOM + 注入 SDK」的表达式。
  *
@@ -383,93 +388,6 @@ export interface ZcodeCaptchaBrowserOptions {
     log?: (message: string) => void;
 }
 /**
- * macOS：把该 pid 的 chrome 窗口**最小化**（`set miniaturized of every window to true`）。
- *
- * ## 为什么是最小化（而非 osascript 移屏 / 1x1）
- *
- * 真机（macOS，主屏 0,0 1470×956）对 4 种藏法逐一验证了「窗口是否仍挂在
- * 屏幕可见区」与「captcha 是否仍能 mint」：
- *
- * | 藏法 | 命令 | captcha 实测 |
- * |---|---|---|
- * | 最小化 | `set miniaturized … to true` | **稳**（10/10 mint OK，paramLen 280） |
- * | 移到 -32000 | `set position … to {-32000,-32000}` | **偶发 `F001`**（窗口离屏时 SDK 取证帧偶尔拿到空 canvas） |
- * | 1×1 缩到角 | `set size … to {2,2}` | 偶发 F001（同上，渲染尺寸过小触发 SDK 重试） |
- * | `--headless=new` | （启动参数） | 一律 `F001`，**不可用** |
- *
- * 结论：macOS 上**最小化是唯一同时满足「不挡屏幕」与「mint 稳定」**的做法。
- * 最小化后窗口缩到屏幕右下角（Dock 区），肉眼几乎不可见，且不破坏 captcha。
- *
- * ## 为什么不用 osascript `set position`（移屏）
- *
- * `--window-position=-32000,-32000` 已经由 `launch()` 传给了 chromium，但
- * **macOS 的 WindowServer 会把离屏窗口钳回屏幕内**（与 `--headless` 相反，
- * 这是系统行为，不是 chromium 行为）。所以「移屏」这条在 macOS 上等于没移。
- * 最小化则不受该钳制影响（窗口仍在屏幕坐标系内，只是缩到角上）。
- *
- * ## ⚠⚠ 依赖：宿主必须已授予 macOS「辅助功能」权限（与 Linux 的 wmctrl 不同）
- *
- * | | Linux | macOS |
- * |---|---|---|
- * | 机制 | WM 协议（EWMH 客户端消息） | `osascript` 驱动 System Events 的 UI 脚本 |
- * | 依赖 | 外部工具 `wmctrl` | 系统自带 `osascript`，**但 UI 脚本需宿主被授予「辅助功能」权限** |
- * | 缺了怎么办 | `apt install wmctrl`，一条命令 | 系统设置 → 隐私与安全性 → 辅助功能 → 勾选宿主，**通常还要重启应用** |
- * | 用户知道吗 | 报错会说「没装 wmctrl」 | **大多数人不知道这个权限存在**，且授权可能随应用升级被重置 |
- *
- * ⇒ 未授权时 `osascript` 非零退出，被本函数的静默语义吞掉，**窗口照常弹出**。
- * 这是「减少打扰」的优化失效，不是功能故障；用户报「窗口还是弹出来」时先查这一项。
- *
- * ## 接入与失败语义（与 Windows/Linux 侧对称）
- *
- * - **失败必须静默**：这是「减少打扰」的优化，不是功能依赖。`spawn` 的
- *   `error`/非零退出都直接吞掉，最坏结果回到修复前的行为（窗口正常弹出），
- *   **绝不能让 captcha 因此不可用**。
- * - 与 Windows 侧一样用 `windowsHide: true` + `stdio: 'ignore'` 异步 fire-and-forget。
- * - **只按 pid 匹配**（`unix id`），刻意没有「按进程名兜底」—— 理由与代价见
- *   {@link hideWindowMacos} 的函数头。
- * - ⚠ 本函数是本文件**唯一**拼 AppleScript 的地方，且**只插值一个整数**：
- *   没有字符串插值 ⇒ 没有引号/反斜杠转义问题（初版的进程名兜底栽在这里）。
- *
- * @param pid 目标浏览器主进程 pid。
- * @returns `osascript` 参数数组（`-e <script>`），纯函数便于单测锁死。
- */
-export declare function buildMacosMiniaturizeArgs(pid: number): string[];
-/**
- * 构造「把窗口加入 `_NET_WM_STATE_SKIP_TASKBAR`」的 `wmctrl` 参数。
- *
- * ⚠ `-i` 必带：让 `-r` 按**窗口 id** 匹配（`0x...`），而不是按标题 ——
- * 标题里有空格/括号（chromium 的标题是「新标签页 - Chromium」）会被误解析。
- *
- * ⚠ **只加 `skip_taskbar`，不加 `skip_pager`**：前者即「不出现在任务栏」
- * （这正是要的）。`skip_pager` 是「不出现在工作区切换器」，与本次目的无关，
- * 多加会改变用户对窗口的既有预期（用户没要求隐藏工作区条目）。
- *
- * ⚠ 也**不**用 `-b add,hidden`（最小化）：chromium 已经用
- * `--window-position=-32000,-32000` 移出屏幕，再改最小化状态会与
- * captcha 流程的窗口假设冲突（那些流程依赖窗口"存在且可渲染"）。
- */
-export declare function buildLinuxSkipTaskbarArgs(windowId: string): string[];
-/**
- * 从 `wmctrl -lp` 的输出里筛出**属于指定 pid** 的窗口 id。
- *
- * 输出格式（每行，字段以空白分隔）：
- * ```
- * 0x0320000a  0 12345  hostname  Window Title
- * └─ 窗口 id  │  └─ pid
- *            └─ 桌面号
- * ```
- *
- * ⚠ **标题可能含任意空白**，故只能按「前 4 个字段」切分，**不能**整体
- * `split(/\s+/)` 后取全部 —— 那样标题会被拆散（对本用途无害，但会让人
- * 误以为解析"完全正确"）。
- *
- * ⚠ 只取**前 4 个字段**：第 4 列（hostname）之后全是标题。
- * 用 `split(/\s+/, 5)`（限 5 段）恰好把标题保留为最后一段。
- *
- * @returns 属于该 pid 的窗口 id（形如 `0x0320000a`）；解析不到就返回空数组。
- */
-export declare function parseWmctrlList(output: string, pid: number): string[];
-/**
  * 常驻浏览器会话。
  *
  * ## 为什么常驻
@@ -488,12 +406,15 @@ export declare function parseWmctrlList(output: string, pid: number): string[];
  */
 export declare class ZcodeCaptchaBrowser {
     private readonly options;
-    private child;
-    private browserWs;
-    private browserCdp;
-    private profileDir;
-    private port;
-    private starting;
+    /**
+     * 共享的 chromium 会话（**进程 + 调试端口 + 浏览器级 CDP 通道**）。
+     *
+     * ⚠ 本类**不再自己**管进程、端口与「连不上旧实例」那条隐蔽链 —— 那些
+     * 全部搬到了 {@link ChromiumSession}，由它与库库AI 的登录浏览器**共用同一份
+     * 实现**（一份语义一处实现）。本类只保留 **captcha 专有**的状态：复用页池
+     * 与占用闸门。
+     */
+    private readonly session;
     /**
      * 复用的 captcha 页面（停在 {@link CAPTCHA_PAGE_ORIGIN} 上）。
      *
@@ -510,20 +431,38 @@ export declare class ZcodeCaptchaBrowser {
     private pageBusy;
     /** 诊断输出（见 {@link ZcodeCaptchaBrowserOptions.log}），缺省 undefined = 静默。 */
     private readonly log;
-    /**
-     * 浏览器**起不来 / 自己没了**的可读原因（由 `launch()` 里的
-     * `'error'` / `'exit'` 监听写入，见该处注释）。
-     *
-     * `undefined` = 一切正常。轮询循环每轮检查它，命中即立刻失败 ——
-     * 否则「浏览器秒退」要白等满 `readyTimeoutMs`（默认 30 秒）才报错。
-     */
-    private spawnFailure;
     constructor(options?: ZcodeCaptchaBrowserOptions);
+    /**
+     * 浏览器级 CDP 通道。
+     *
+     * ⚠ 必须**可读又可写**（不是只读 getter）：既有回归用例直接往这个字段
+     * 注入桩（`tests/unit/zcode-page-prepared.spec.ts` 的 `makeBrowserWithStub`）。
+     * 这里转发到会话上，避免「同一个通道在两层各存一份」。
+     */
+    private get browserCdp();
+    private set browserCdp(value);
+    /**
+     * 浏览器级 WebSocket（同样转发）。
+     *
+     * ⚠ 用例注入的是 `{ readyState: 1 }` 这种**形状兼容的桩**，
+     * 故这里只按 `readyState` 用，不调用真实 WebSocket 的方法。
+     */
+    private get browserWs();
+    private set browserWs(value);
+    /** 调试端口（`/json/list` 与 `/json/close` 用）。 */
+    private get port();
     /** 浏览器是否已就绪。 */
     get ready(): boolean;
-    /** 启动（幂等；并发调用共享同一次启动）。 */
+    /**
+     * 启动（幂等；并发调用共享同一次启动）。
+     *
+     * ⚠ 失败时**必须连页池一起清掉**（保持重构前的行为）：起不来的那一轮里，
+     * 上一次成功会话遗留的页面已经指向一个**不存在的浏览器**，留着会让
+     * 后续 `acquirePage()` 直接交出死页面。
+     */
     start(): Promise<void>;
-    private launch;
+    /** 关掉复用页、放开占用闸门（**不碰**浏览器进程）。 */
+    private resetPages;
     /**
      * 产出**一个新鲜**的 captcha param。
      *
@@ -650,45 +589,17 @@ export declare class ZcodeCaptchaBrowser {
     /** 归还页面（保留复用）。 */
     private releasePage;
     /**
-     * 终止浏览器进程**树**并清理所有 CDP 连接。
+     * 关闭浏览器并清理临时 profile。
      *
-     * ## ⚠ 为什么必须杀**整棵树**（真实缺陷）
+     * ⚠ **不再有**「只杀进程、保留 profile」的那条路：它原本只服务于
+     * `launch()` 内部的失败清理（起不来 / 端口没就绪 / 端口误配时重来一次），
+     * 而那些路径已随启动流程一起搬进 {@link ChromiumSession}，由它自己
+     * 按需调用自己的 `kill()`。留一个**没有调用方**的私有方法只会制造
+     * 「进程树有两个所有者」的错觉 —— 进程生命周期**只有一处**实现。
      *
-     * 早期只写 `this.child?.kill()` —— 那只杀**主进程**。而 Chromium 是
-     * **多进程架构**（browser / gpu / renderer / utility 各一个进程），
-     * 主进程被 `SIGTERM` 后**子进程会变成孤儿继续运行**。
-     *
-     * 实测证据（一次被中断的测试后）：
-     *   - **12 个** 残留 `chrome.exe` 全指向同一个 `--user-data-dir`
-     *   - **28 个**残留的 `zcode-captcha-*` 临时 profile 目录
-     *
-     * 生产影响：**每次会话泄漏约 200MB**（一个 Chromium 实例），
-     * 且残留进程占着调试端口，会干扰后续启动（曾让一次 `max` 档位测试
-     * 表现得像「卡住 80 秒」，实为旧实例干扰）。
-     *
-     * 修法：POSIX 用进程组（`detached: true` + `kill(-pid)`），
-     * Windows 用 `taskkill /T /F`（`/T` = 含子进程树）。
+     * ⚠ 进程树清理的全部取证（为什么必须整棵树、为什么必须同步
+     * `taskkill /T /F`、端口误配那条隐蔽链）见 `ChromiumSession`。
      */
-    private kill;
-    /**
-     * 终止浏览器及其**全部子进程**。
-     *
-     * ⚠ 不能退回成 `child.kill()`（见 {@link kill} 的说明：会留下孤儿）。
-     *
-     * ⚠⚠ **必须同步等它做完**（真实缺陷）：早期用异步 `spawn('taskkill', …)`
-     * 后立即返回 —— 调用方以为清理完了、紧接着启动下一轮，而旧实例**还活着
-     * 占着端口**。若下一轮随机撞到同一端口就会串成：
-     * 连到旧实例 → `child` 指向已退出的新进程 → `dispose()` 打空 →
-     * **旧实例整棵树泄漏**（实测 10~14 个进程）。
-     *
-     * 实测对照：`dispose()` 后**立即**下一轮会偶发泄漏；
-     * 每轮间隔 2.5 秒则 5/5 干净 —— 正是「没等它退完」的特征。
-     *
-     * 故改用 `spawnSync`：清理路径阻塞几十毫秒是可接受的，
-     * 换来确定性的「返回即已终止」。
-     */
-    private killProcessTree;
-    /** 关闭浏览器并清理临时 profile。 */
     dispose(): void;
 }
 /**

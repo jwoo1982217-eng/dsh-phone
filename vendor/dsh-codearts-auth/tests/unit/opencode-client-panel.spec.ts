@@ -10,6 +10,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { descriptorOf } from '../../src/provider-registry.js'
+import { PROVIDER_ICONS } from '../../plugin-src/client/provider-icons.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const hub = readFileSync(join(here, '../../plugin-src/client/jet-hub.js'), 'utf8')
@@ -18,19 +20,25 @@ const product = readFileSync(join(here, '../../src/opencode-product.ts'), 'utf8'
 
 describe('PROVIDERS 登记', () => {
   it('含 opencode 条目', () => {
-    expect(hub).toMatch(/\{\s*id:\s*'opencode',\s*label:\s*'OpenCode'/)
+    // ⚠️ 2026-10-08 改：`PROVIDERS` 由 `src/provider-registry.ts` 派生，
+    // 故读 registry 的**行为断言**，不再扫 `jet-hub.js` 的源码文本。
+    expect(descriptorOf('opencode')).toBeDefined()
+    expect(descriptorOf('opencode')?.label).toBe('OpenCode')
   })
   it('⚠️ label 与 OPENCODE.displayName 逐字一致（rail 宽度算式依赖它）', () => {
     const name = product.match(/displayName:\s*'([^']+)'/)?.[1]
     expect(name).toBe('OpenCode')
-    expect(hub).toMatch(new RegExp(`id: 'opencode', label: '${name}'`))
+    expect(descriptorOf('opencode')?.label).toBe(name)
   })
   it('⚠️ label 长度不触发 rail 换行（≤ 12 字符，参照 raccoon 的约束）', () => {
-    const label = hub.match(/id: 'opencode', label: '([^']+)'/)?.[1] ?? ''
+    const label = descriptorOf('opencode')?.label ?? ''
     expect(label.length).toBeLessThanOrEqual(12)
   })
   it('图标常量已定义且是合法 base64 data URL', () => {
-    const m = hub.match(/const OPENCODE_ICON = 'data:image\/svg\+xml;base64,([^']+)'/)
+    // ⚠️ 2026-10-08：图标已从 `jet-hub.js` 抽到纯数据模块 `provider-icons.js`，
+    // 故直接读该模块的实际值（行为断言）。
+    const uri = PROVIDER_ICONS.opencode ?? ''
+    const m = /^data:image\/svg\+xml;base64,(.+)$/.exec(uri)
     expect(m, '应定义 OPENCODE_ICON').not.toBeNull()
     const svg = Buffer.from(m![1]!, 'base64').toString('utf8')
     expect(svg.startsWith('<svg')).toBe(true)
@@ -162,20 +170,34 @@ describe('面板文案', () => {
 })
 
 describe('弹窗必须是 React 组件（hooks 规则，真实事故 2026-10-02）', () => {
-  it('⚠️⚠️ 两个弹窗都导出为**组件**（大写命名），不是 render* 普通函数', () => {
+  it('⚠️⚠️ 三个弹窗都导出为**组件**（大写命名），不是 render* 普通函数', () => {
     // 含 useState 的函数若被直接调用，其 hook 会算进调用方组件 ⇒
     // React #310「Rendered more hooks than during the previous render」⇒ 整页白屏。
     expect(modal).toMatch(/export function OpencodeProxyModal\(/)
     expect(modal).toMatch(/export function OpencodeKeyModal\(/)
+    // ⚠️ 2026-10-18（Gitee IKLTZ2）：Gemini 也有账号出口代理弹窗
+    // （`GeminiProxyModal`）。**同样必须**是组件 —— 它内部也有 useState。
+    expect(modal).toMatch(/export function GeminiProxyModal\(/)
     expect(modal).not.toMatch(/export function renderOpencode/)
   })
 
   it('⚠️ 调用点一律用 React.createElement（不得直接函数调用）', () => {
-    expect(hub).toMatch(/React\.createElement\(OpencodeProxyModal, \{/)
     expect(hub).toMatch(/React\.createElement\(OpencodeKeyModal, \{/)
+    // ⚠️ 2026-10-18：代理弹窗改成按 provider 三元选择
+    // （`proxyModal.provider === 'gemini' ? GeminiProxyModal : OpencodeProxyModal`），
+    // 逐字串 `React.createElement(OpencodeProxyModal, {` 因此消失。
+    // ⇒ 断言改为「**createElement 的第一个实参是三元选择**，且两个弹窗都在其中」
+    // —— 这比逐字串更强：它同时锁住「用了 createElement」与「没漏掉任一弹窗」。
+    expect(hub).toMatch(
+      /React\.createElement\(\s*proxyModal\.provider\s*===\s*'gemini'\s*\?\s*GeminiProxyModal\s*:\s*OpencodeProxyModal,\s*\{/,
+    )
     // 直接调用形态必须消失
     expect(hub).not.toMatch(/\?\s*renderOpencode/)
-    expect(hub).not.toMatch(/\?\s*Opencode(?:Proxy|Key)Modal\(\{/)
+    expect(hub).not.toMatch(/\?\s*(?:Opencode|Gemini)(?:Proxy|Key)Modal\(\{/)
+  })
+
+  it('⚠️ Gemini 弹窗的宿主 facade 也由 props 传入（不得退回位置参数）', () => {
+    expect(modal).toMatch(/export function GeminiProxyModal\(\{ ctx,/)
   })
 
   it('⚠️ 弹窗的宿主 facade 由 props 传入（不再是位置参数）', () => {

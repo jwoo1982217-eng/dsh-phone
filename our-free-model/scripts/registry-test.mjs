@@ -5,7 +5,8 @@
  * a record that loses a field (or a whole provider) degrades the picker without
  * erroring, and a composite id that stops round-tripping breaks routing only at
  * the moment a request is sent. So the checks below are shape, uniqueness,
- * round-trip and exact-count assertions — no network, no fixtures.
+ * round-trip and exact-count assertions. Transport regressions use a local
+ * HTTP receiver; no external provider or credential is needed.
  *
  * The three wire formats are pinned to their real suffixes here because that is
  * the contract the aggregate lane sends on: openai-chat -> /chat/completions,
@@ -16,7 +17,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import assert from 'node:assert/strict'
+import http from 'node:http'
 import { fileURLToPath } from 'node:url'
+import { postAggregateStreamed } from '../src/aggregate.js'
 import {
   PROVIDERS,
   PROVIDER_IDS,
@@ -43,9 +46,12 @@ const raw = fs.readFileSync(path.join(repo, 'src/providers/registry.json'), 'utf
 
 // Tripwires, not preferences: bump them together with a deliberate data change
 // so an accidental truncation of registry.json cannot pass as a smaller catalog.
-const EXPECTED_PROVIDERS = 76
-const EXPECTED_BY_CATEGORY = { apikey: 60, free: 1, 'free-tier': 10, local: 3, oauth: 2 }
-const EXPECTED_MODELS = 504
+// The `free` category is empty on purpose: OpenCode's keyless pool needs a
+// per-request fingerprint the aggregate transport cannot carry, so it is not a
+// row here (see README's aggregate section) — the free lane serves it instead.
+const EXPECTED_PROVIDERS = 75
+const EXPECTED_BY_CATEGORY = { apikey: 60, 'free-tier': 10, local: 3, oauth: 2 }
+const EXPECTED_MODELS = 500
 
 const byCategory = {}
 for (const provider of PROVIDERS) byCategory[provider.category] = (byCategory[provider.category] ?? 0) + 1
@@ -250,7 +256,6 @@ check('chatEndpoint covers the three formats on real records', () => {
 
 check('modelsEndpoint returns a declared listing URL or null', () => {
   assert.equal(modelsEndpoint('nvidia_nim'), 'https://integrate.api.nvidia.com/v1/models')
-  assert.equal(modelsEndpoint('opencode'), 'https://opencode.ai/zen/v1/models')
   assert.equal(modelsEndpoint('groq'), 'https://api.groq.com/openai/v1/models')
   assert.equal(modelsEndpoint('anthropic'), null)
   assert.equal(modelsEndpoint('no-such-provider'), null)
@@ -270,6 +275,9 @@ check('defaultHeaders attaches a bearer token for apiKey providers only', () => 
         assert.equal(headers.authorization, 'Bearer k-test', `${provider.id}: bearer`)
       }
     } else {
+      // A keyless row never gains a credential: the aggregate transport is
+      // generic, and a provider that needs its own fingerprint cannot be driven
+      // through it — see the note on the removed OpenCode row in registry.json.
       assert.equal(headers.authorization, undefined, `${provider.id}: unexpected bearer`)
       assert.equal(headers['x-api-key'], undefined, `${provider.id}: unexpected x-api-key`)
     }
@@ -280,8 +288,6 @@ check('defaultHeaders attaches a bearer token for apiKey providers only', () => 
 
 check('defaultHeaders without a key never invents one, and merges declared headers', () => {
   assert.equal(defaultHeaders('nvidia_nim').authorization, undefined)
-  assert.equal(defaultHeaders('opencode', 'ignored').authorization, undefined)
-  assert.equal(defaultHeaders('opencode')['x-opencode-client'], 'desktop')
   assert.equal(defaultHeaders('minimax-cn', 'k')['anthropic-beta'], 'claude-code-20250219,interleaved-thinking-2025-05-14')
   assert.equal(defaultHeaders('kimchi', 'k')['user-agent'], 'kimchi/0.1.50')
   assert.deepEqual(defaultHeaders('no-such-provider', 'k'), {})
@@ -290,7 +296,6 @@ check('defaultHeaders without a key never invents one, and merges declared heade
 // ── lookups and filters ───────────────────────────────────────────────────────
 check('getProvider finds records and refuses unknown ids', () => {
   assert.equal(getProvider('nvidia_nim').name, 'NVIDIA NIM')
-  assert.equal(getProvider(' opencode ').name, 'OpenCode Free')
   assert.equal(getProvider('no-such-provider'), null)
   assert.equal(getProvider(undefined), null)
 })
@@ -299,7 +304,9 @@ check('listProviders filters by category, format and auth kind', () => {
   assert.equal(listProviders().length, EXPECTED_PROVIDERS)
   for (const category of CATEGORY_VALUES) {
     const rows = listProviders({ category })
-    assert.equal(rows.length, EXPECTED_BY_CATEGORY[category], `category ${category}`)
+    // A category with no rows today (`free`) still has to be a legal filter that
+    // answers empty, not an error — the picker offers it either way.
+    assert.equal(rows.length, EXPECTED_BY_CATEGORY[category] ?? 0, `category ${category}`)
     assert.ok(rows.every(provider => provider.category === category), `category ${category} leaked`)
   }
   const responses = listProviders({ format: 'openai-responses' })
@@ -307,7 +314,7 @@ check('listProviders filters by category, format and auth kind', () => {
   const messages = listProviders({ format: 'anthropic-messages' })
   assert.deepEqual(messages.map(provider => provider.id).sort(), ['anthropic', 'glm', 'minimax-cn'])
   const keyless = listProviders({ authKind: 'none' })
-  assert.deepEqual(keyless.map(provider => provider.id).sort(), ['llamacpp', 'lmstudio', 'ollama', 'opencode'])
+  assert.deepEqual(keyless.map(provider => provider.id).sort(), ['llamacpp', 'lmstudio', 'ollama'])
   const oauth = listProviders({ authKind: 'oauth' })
   assert.deepEqual(oauth.map(provider => provider.id).sort(), ['github_copilot', 'openai'])
   const adc = listProviders({ authKind: 'adc' })
@@ -328,6 +335,86 @@ check('filters combine, and the returned rows are the frozen shared records', ()
   assert.equal(rows[0], getProvider(rows[0].id))
   assert.throws(() => { rows[0].notes = 'mutated' }, TypeError)
 })
+
+const received = []
+const receiver = http.createServer((req, res) => {
+  const chunks = []
+  req.on('data', chunk => chunks.push(chunk))
+  req.on('end', () => {
+    const raw = Buffer.concat(chunks).toString('utf8')
+    received.push({ path: req.url, raw, body: JSON.parse(raw) })
+    res.writeHead(200, { 'content-type': 'text/event-stream' })
+    res.end('data: [DONE]\n\n')
+  })
+})
+try {
+  await new Promise((resolve, reject) => {
+    receiver.once('error', reject)
+    receiver.listen(0, '127.0.0.1', resolve)
+  })
+  const baseUrl = `http://127.0.0.1:${receiver.address().port}/v1`
+  const cases = [
+    ['open_router', 'google/gemma-4-31b-it:free', '/v1/chat/completions'],
+    ['openai_api', 'gpt-5.5', '/v1/responses'],
+    ['anthropic', 'claude-sonnet-4-20250514', '/v1/messages'],
+  ]
+  for (const [providerId, modelId, expectedPath] of cases) {
+    const prompt = [{ role: 'user', content: 'local routing audit' }]
+    const body = {
+      model: providerModelId(providerId, modelId),
+      ...(providerId === 'openai_api' ? { input: prompt, max_output_tokens: 64 } : { messages: prompt, max_tokens: 64 }),
+    }
+    for (const encoding of ['object', 'json']) {
+      const input = encoding === 'json' ? JSON.stringify({ ...body, stream: false }) : body
+      const original = structuredClone(input)
+      try {
+        await postAggregateStreamed({
+          config: { providers: { [providerId]: { enabled: true, apiKey: 'synthetic-local-key', baseUrl } } },
+          providerId, modelId, body: input, timeoutMs: 3000, onData: () => {},
+        })
+        check(`aggregate transport sends the bare model id for ${providerId}, ${encoding} (#323)`, () => {
+          const actual = received.at(-1)
+          assert.equal(actual.path, expectedPath)
+          assert.deepEqual(actual.body, { ...body, model: modelId, stream: true })
+          assert.deepEqual(input, original, 'the caller body stays unchanged')
+        })
+      } catch (error) {
+        failures++
+        console.error(`FAIL  aggregate transport for ${providerId}, ${encoding} — ${error.message}`)
+      }
+    }
+  }
+  const compatibilityBody = { model: 'google/gemma-4-31b-it:free', messages: [{ role: 'user', content: 'local audit' }], stream: false }
+  for (const body of [compatibilityBody, JSON.stringify(compatibilityBody, null, 2)]) {
+    await postAggregateStreamed({
+      config: { providers: { open_router: { enabled: true, apiKey: 'synthetic-local-key', baseUrl } } },
+      providerId: 'open_router', body, timeoutMs: 3000, onData: () => {},
+    })
+    check(`omitting modelId preserves the ${typeof body === 'string' ? 'raw JSON' : 'object'} body contract`, () => {
+      if (typeof body === 'string') assert.equal(received.at(-1).raw, body)
+      else assert.deepEqual(received.at(-1).body, { ...body, stream: true })
+      assert.equal(compatibilityBody.stream, false, 'the original object is not mutated')
+    })
+  }
+  for (const body of ['{broken', 'null', '[]', '"text"']) {
+    const before = received.length
+    let failure
+    try {
+      await postAggregateStreamed({
+        config: { providers: { open_router: { enabled: true, apiKey: 'synthetic-local-key', baseUrl } } },
+        providerId: 'open_router', modelId: 'google/gemma-4-31b-it:free', body,
+        timeoutMs: 3000, onData: () => {},
+      })
+    } catch (error) { failure = error }
+    check(`a routed serialized body must be a JSON object: ${body}`, () => {
+      assert.equal(failure?.code, 'CLIENT_ERROR')
+      assert.equal(received.length, before, 'invalid JSON must not reach the provider')
+    })
+  }
+} finally {
+  receiver.closeAllConnections()
+  await new Promise(resolve => receiver.close(resolve))
+}
 
 if (failures > 0) console.error(`registry-test: ${failures} failure(s)`)
 else console.log(`registry-test: ${PROVIDERS.length} providers, ${allModels.length} model ids, every wire path resolves`)

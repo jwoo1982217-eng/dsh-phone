@@ -22,7 +22,7 @@ test('caller cancellation starts no request; failure and subsequent retry preser
 });
 test('real HTTP browser disconnect cancels only its benchmark, then next call succeeds',async()=>{
  let started,cancelled;const start=new Promise(r=>started=r),stop=new Promise(r=>cancelled=r);let count=0;
- const route=createApiRoutes({testModel:async(_id,_effort,signal)=>{count++;if(count===1){started();await new Promise((_r,reject)=>signal.addEventListener('abort',()=>{cancelled();reject(Error('caller cancelled'))},{once:true}));}return {ok:true,sample:'OK'};}});
+ const route=createApiRoutes({testModel:async(_id,_effort,{signal})=>{count++;if(count===1){started();await new Promise((_r,reject)=>signal.addEventListener('abort',()=>{cancelled();reject(Error('caller cancelled'))},{once:true}));}return {ok:true,sample:'OK'};}});
  const server=http.createServer((req,res)=>{void route(req,res)});await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port+'/api/our-free-model/bench';
  try{const controller=new AbortController();const request=fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({model:'fixture'}),signal:controller.signal});await start;controller.abort();await assert.rejects(request);await stop;const valid=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({model:'fixture'})});assert.equal(valid.status,200);assert.equal((await valid.json()).sample,'OK');assert.equal(count,2);}finally{server.closeAllConnections();await new Promise(r=>server.close(r))}
 });

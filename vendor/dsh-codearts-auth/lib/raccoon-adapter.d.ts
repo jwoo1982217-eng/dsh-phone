@@ -68,6 +68,42 @@ export declare function raccoonThinkingExtraBody(effort: string | undefined): {
     };
 } | undefined;
 /**
+ * 从「已声明的档位」里挑出**默认档**（Issue IKLIDV 的方向取反修复）。
+ *
+ * ## 为什么单独抽成入参化的纯函数
+ *
+ * 原实现的兜底分支是 `RACCOON_REASONING_EFFORTS[0] ?? RACCOON_EFFORT_ON`
+ * —— 把「数组第一项」当成了「默认档」。那个等价关系**只在旧顺序下偶然成立**
+ *（`['on','off']` 的首项恰是 `on`）。顺序按强度序规整成 `['off','on']` 后，
+ * 该分支会静默回退成 **`off`（关闭思考）**：与「实测服务端默认即开启」相反，
+ * 且是无人察觉的行为变更。
+ *
+ * ⚠️ **该分支在生产里不可达**（`RACCOON_DEFAULT_EFFORT` 恒在列表内）
+ * ⇒ 任何「喂真实常量」的断言都**恒真**，抓不到它。
+ * 故这里把 `declared` / `preferred` 都做成**入参**，让用例能构造
+ * 「首选档不在列表里」这一格，从而真正锁住兜底方向。
+ *
+ * ⚠️ 兜底值是**语义上正确的「开启」**，与顺序彻底解耦：
+ * 有序数组的下标表达位置，不表达语义。
+ *
+ * ⚠️⚠️ **取舍（已实测，审计登记）**：兜底值 `RACCOON_EFFORT_ON` 可能**不在
+ * `declared` 里**（若将来有人把该常量删掉）。那一刻新旧两种写法的失败形态不同：
+ * - 旧式 `declared[0]`：返回值**恒在列表内**，但会静默给出 `off`（**错档**）；
+ * - 本式：返回列表外的 `on` ⇒ `dsh-llm` 的 `normalizeModelInfo` 抛
+ *   **`INVALID_MODEL_REASONING`**（**响亮报错**，实测确认）。
+ *
+ * 本函数**刻意选后者**：这是「静默给错档」与「响亮的配置错误」之间的取舍，
+ * 而后者更容易被发现。⚠️ 又因该分支**生产不可达**（`RACCOON_DEFAULT_EFFORT`
+ * 恒在列表内），这个取舍当前无任何现实影响 —— 记在这里是为了避免下一个人
+ * 看到「返回值可能不在列表内」时误以为是漏了防御而改回去。
+ *
+ * @param declared - 该模型声明的档位 id。
+ * @param preferred - 期望的默认档。
+ * @returns `preferred`（若它确实被声明），否则为 `RACCOON_EFFORT_ON`（**可能不在
+ *   `declared` 内** —— 见上方取舍）。
+ */
+export declare function raccoonDefaultEffort(declared: readonly string[], preferred: string): string;
+/**
  * 该模型在 UI 上可选的思考档位。
  *
  * ⚠️ **所有模型都返回同样两档** —— 实测 `extra_body.thinking` 是 **provider 级
@@ -102,6 +138,13 @@ export interface RaccoonAdapterOptions {
     refresh: () => Promise<void>;
     /** 拉取远端模型目录；失败时适配器回退兜底表。 */
     fetchRemoteModels?: () => Promise<RaccoonRemoteModel[]>;
+    /**
+     * 「现在」的注入点（**只供单测**推进 TTL；生产缺省 `Date.now()`）。
+     *
+     * ⚠️ 为何要注入：TTL 是本 Task 的核心判据，而真实时间无法在用例里推进 ——
+     *    只能靠 `sleep` 的用例会 flaky 且慢。既有同形态先例：`auto-adapter` 的 `now`。
+     */
+    now?(): number;
     /** 读取图片附件的原始字节（内联为 data URL 用）。 */
     readImage?: (attachment: unknown) => Promise<{
         data: Uint8Array;
@@ -129,6 +172,17 @@ export interface RaccoonAdapterOptions {
     product?: RaccoonProduct;
     /** 注入的 fetch（测试用）。 */
     fetchImpl?: typeof fetch;
+    /**
+     * 远端目录**落地后**的通知回调（issue IKJVTF）。
+     *
+     * 由 `registerRaccoonLlm` 注入为 `broadcastCatalogChanged(ctx)`。适配器本身
+     * 拿不到 `ctx`，故必须由接线层桥接（与 `readImage` 等回调同一模式）。
+     *
+     * ⚠️ 必要性：客户端 `ModelCatalogDirectory` 在 `status === 'ready'` 时**短路
+     * 返回缓存**，只在宿主事件上 `refresh()`。没有本回调时，冷启动首拉失败
+     * 缓存的**兜底表**会永久留在对话框里，远端目录真的落地也不重读。
+     */
+    onCatalogLoaded?: () => void;
 }
 /**
  * raccoon 的失败类别。**「要不要换号」与「要不要写冷却」是两件事**，
@@ -201,8 +255,22 @@ export declare class RaccoonAdapter extends LlmAdapter {
     private readonly fallbackIndex;
     /** 远端模型缓存；未拉取时为 undefined。 */
     private remoteModels;
+    /**
+     * ⚠️ 上次**成功**读到远端目录的时刻（0 = 从未成功过）。
+     *
+     * ⚠️ 与 `remoteModels` **并存**、不是替代：`remoteModels` 存「有哪些模型」，
+     *    本字段存「何时读到的」。两者缺一都会坏：只有 `remoteModels` 则目录永不更新
+     *    （现状）；只有 `catalogAt` 则无内容可展示。
+     */
+    private catalogAt;
     /** 目录加载闸门：并发去重 + 失败/空结果冷却（见 `remote-catalog-gate.ts`）。 */
     private readonly catalogGate;
+    /**
+     * ⚠️ **2026-10-08 Task 7a：三个方法收敛到共享骨架** `createModelCatalog`。
+     * 原先 `listModels` / `resolveModel` / `listAllModels` 各写一遍骨架
+     * （实测与 `loomy` / `minimax` 归一化后逐字相同），现在只剩 `toCatalogEntry`。
+     */
+    private readonly catalog;
     constructor(options: RaccoonAdapterOptions);
     /**
      * 描述本适配器拥有的 provider 路由。
@@ -217,11 +285,35 @@ export declare class RaccoonAdapter extends LlmAdapter {
      *
      * 设置页需要它渲染被关闭的模型 —— 否则那些条目只能凭 `disabledMap` 的 key
      * 补回，而那条路径拿不到展示名，会退化成裸 id（倍率与模型名随之丢失）。
+     *
+     * ⚠️ **2026-10-08 Task 7a**：骨架（含上面这条理由）已上移到共享实现
+     * `src/model-catalog.ts`，此处只剩委托。
      */
+    /**
+     * ★ **后台目录刷新器入口**（`src/index.ts` 的 `refreshOf` 调 `adapter.refresh?.()`）。
+     *
+     * ⚠️⚠️ 必须由适配器**显式转发** `catalog.refresh`：`ModelCatalog`（`model-catalog.ts`）
+     *    上的这个成员**不会**自动变成适配器的成员 —— `pruned()` 的 Proxy 只透传
+     *    **适配器自己的**成员（`dead-model-store.ts:748-749`）。
+     *    漏转发 ⇒ 刷新器「已武装」却对这家**空转**，且**零日志**（`refreshOf` 返回
+     *    `undefined` 时静默跳过 —— `index.ts` 的装配注释写着这件事）。
+     *    ⚠️ 与 `options.refresh`（HTTP 401 后的**凭据**重取）**不是同一件事**，
+     *    两者同名纯属巧合，**不得合并**。
+     */
+    refresh(): Promise<void>;
     listAllModels(): readonly {
         id: string;
         name: string;
     }[];
+    /**
+     * 把本家私有条目转成共享骨架的中间结构。
+     *
+     * ⚠️ 这里是**唯一**还认识「倍率格式」与 `supportsImage` 的地方 ——
+     * 骨架不认识它们（各家格式不同）。
+     */
+    private toCatalogEntry;
+    private loadCatalogEntries;
+    private syncCatalogEntries;
     /**
      * 取远端模型目录；**失败时不把兜底表写进缓存**。
      *
@@ -234,7 +326,7 @@ export declare class RaccoonAdapter extends LlmAdapter {
     private loadModels;
     private inputModalitiesFor;
     listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
-    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
+    resolveModel(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;
     /**
      * 兼容 0.1.1-rc.2：新版 `LlmRuntime.prepareCall()` 会调用
      * `registration.adapter.prepareCall(...)`，而本仓库链接的 dsh-llm 副本

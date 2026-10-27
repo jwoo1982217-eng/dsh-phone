@@ -6,7 +6,7 @@ import {
   RACCOON_EFFORT_ON,
   RACCOON_REASONING_EFFORTS,
 } from '../../src/raccoon-product.js'
-import { RaccoonAdapter, raccoonReasoningInfo, raccoonThinkingExtraBody } from '../../src/raccoon-adapter.js'
+import { RaccoonAdapter, raccoonDefaultEffort, raccoonReasoningInfo, raccoonThinkingExtraBody } from '../../src/raccoon-adapter.js'
 import type { RaccoonCredential } from '../../src/raccoon.js'
 
 /**
@@ -78,10 +78,14 @@ describe('raccoonThinkingExtraBody', () => {
 })
 
 describe('raccoonReasoningInfo', () => {
-  it('**恰好两档**：开与关（不是 high/minimal/... 多档）', () => {
+  it('**恰好两档**：关与开（不是 high/minimal/... 多档）', () => {
     const info = raccoonReasoningInfo()
     expect(info.efforts).toHaveLength(2)
-    expect(info.efforts.map((e) => String(e.id))).toEqual([RACCOON_EFFORT_ON, RACCOON_EFFORT_OFF])
+    // ⚠️ **顺序 = 强度序（弱 → 强）**（Issue IKLIDV）：DSH 把该数组当**展示顺序**
+    //（`dsh-llm` 类型注释 `adapter-preferred display order`），客户端直接 `map`
+    // 不排序 ⇒ 把默认档 `on` 排在最前会让「开启」落在横向轴的最左。
+    // 权威是本仓库 `REASONING_EFFORT_RANK`（`off: 0` / `on: 5`）。
+    expect(info.efforts.map((e) => String(e.id))).toEqual([RACCOON_EFFORT_OFF, RACCOON_EFFORT_ON])
   })
 
   it('档位 id 不含 high（避免让用户以为能选强度）', () => {
@@ -89,10 +93,10 @@ describe('raccoonReasoningInfo', () => {
     expect(JSON.stringify(raccoonReasoningInfo())).not.toContain('"high"')
   })
 
-  it('展示名用「开启 / 关闭」（用户要求：如实表达只有开关一个维度）', () => {
+  it('展示名用「关闭 / 开启」（用户要求：如实表达只有开关一个维度）', () => {
     const info = raccoonReasoningInfo()
-    expect(info.efforts[0]?.name).toBe('开启')
-    expect(info.efforts[1]?.name).toBe('关闭')
+    expect(info.efforts[0]?.name).toBe('关闭')
+    expect(info.efforts[1]?.name).toBe('开启')
     // 与常量表一致
     for (const e of info.efforts) {
       expect(e.name).toBe(RACCOON_EFFORT_NAMES[String(e.id)])
@@ -102,6 +106,49 @@ describe('raccoonReasoningInfo', () => {
   it('默认档是 on（实测服务端默认即开启）', () => {
     const info = raccoonReasoningInfo()
     expect(String(info.defaultEffort)).toBe(RACCOON_EFFORT_ON)
+  })
+
+  /**
+   * ⚠️ **默认档与数组位置必须解耦**（Issue IKLIDV 审计发现的「方向取反」）。
+   *
+   * `raccoonReasoningInfo()` 的兜底分支原先是 `RACCOON_REASONING_EFFORTS[0]`
+   * —— 把「数组首项」当成了「默认档」。那个等价关系**只在旧顺序下偶然成立**
+   *（`['on','off']` 的首项恰是 `on`）。顺序规整成 `['off','on']` 后，若不改它，
+   * 就会静默回退成 **`off`（关闭思考）**，与「实测服务端默认即开启」相反。
+   *
+   * ⚠️⚠️ **该分支在生产里不可达**（`RACCOON_DEFAULT_EFFORT` 恒在列表内）
+   * ⇒ 我第一版写的「断言 `defaultEffort` 是 `on` 且不等于 `[0]`」是**恒真的
+   * 同义反复**：实测把实现改回 `[0]` 后它**照样全绿**（反向验证当场证伪）。
+   * 故改用**入参化的纯函数** `raccoonDefaultEffort` 直接构造那一格：
+   * 只有真能构造出「首选档不在列表里」，这条断言才有判别力。
+   */
+  it('⚠️ 兜底恒为「开启」而非「数组首项」——首项是 off 也不许取反', () => {
+    // 真实顺序下首项就是 `off`：若实现取首项，下面第一条会得到 `off` 而变红。
+    expect(raccoonDefaultEffort([RACCOON_EFFORT_OFF, RACCOON_EFFORT_ON], 'not-declared'))
+      .toBe(RACCOON_EFFORT_ON)
+    expect(raccoonDefaultEffort([RACCOON_EFFORT_OFF, RACCOON_EFFORT_ON], 'not-declared'))
+      .not.toBe(RACCOON_EFFORT_OFF)
+    // 空列表也必须给「开启」（不许崩、不许返回 undefined）。
+    expect(raccoonDefaultEffort([], 'whatever')).toBe(RACCOON_EFFORT_ON)
+    /**
+     * ⚠️⚠️ **「首选档被采纳」必须用一个 ≠ 兜底值的首选档来验**（审计发现的假绿）。
+     *
+     * 原先这条写的是 `(RACCOON_REASONING_EFFORTS, RACCOON_DEFAULT_EFFORT)`
+     * —— 而 `RACCOON_DEFAULT_EFFORT` **恰好就是** `RACCOON_EFFORT_ON`，
+     * 即兜底值本身 ⇒ 把函数体换成 `return RACCOON_EFFORT_ON`（**完全忽略入参**）
+     * 它**照样全绿**。那正是「恒真断言」的教科书形态。
+     * 故这里改用 `off` 作为首选档（它 ≠ 兜底值 `on`），才真正锁住主路径。
+     */
+    expect(raccoonDefaultEffort([RACCOON_EFFORT_OFF, RACCOON_EFFORT_ON], RACCOON_EFFORT_OFF))
+      .toBe(RACCOON_EFFORT_OFF)
+    expect(raccoonDefaultEffort(['low', 'on'], 'low')).toBe('low')
+    // 首选档**在**列表里 ⇒ 原样采纳（生产路径的常规情形）。
+    expect(raccoonDefaultEffort(RACCOON_REASONING_EFFORTS, RACCOON_DEFAULT_EFFORT))
+      .toBe(RACCOON_DEFAULT_EFFORT)
+    // 生产路径仍然自洽：默认档必须落在声明内（DSH 会拿它直接发请求）。
+    const info = raccoonReasoningInfo()
+    expect(String(info.defaultEffort)).toBe(RACCOON_EFFORT_ON)
+    expect(info.efforts.map((e) => String(e.id))).toContain(String(info.defaultEffort))
   })
 
   /**

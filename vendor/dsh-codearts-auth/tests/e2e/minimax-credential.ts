@@ -31,6 +31,11 @@ import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { MinimaxCredential } from '../../src/minimax.js'
+import {
+  CREDENTIALS_PATH,
+  extractYamlScalar,
+  readCredentialsFile,
+} from './workbuddy-credential.js'
 
 /** 客户端登录态路径（Windows / macOS / Linux 同构，均在 home 下）。 */
 export function minimaxClientAuthPath(): string {
@@ -104,5 +109,104 @@ export function readMinimaxProbeCredential(): MinimaxProbeCredential {
     describe: expired
       ? `已过期（${expiresAtMs === undefined ? '未记录到期时间' : `${-remainingMin!} 分钟前`}）`
       : `有效（剩余约 ${remainingMin} 分钟）`,
+  }
+}
+
+// ── 下面这一段读的是**插件自己的**凭据存储（供国际站探针用） ──────────────
+//
+// ⚠️ 与上面 `readMinimaxProbeCredential`（读客户端登录态）**刻意分开**：
+//
+// - **中国版**探针读客户端登录态：那是本机现成可用的真实凭据，而该 provider
+//   早期「尚未在任何机器上完成过插件登录」；
+// - **国际版**探针没有客户端可读（本机未装国际站客户端）⇒ 只能读**插件自己**
+//   的凭据（先在 Jet Hub 面板登录一个国际站账号）。
+//
+// 两段共用 `workbuddy-credential.ts` 那套**已实测的 YAML 解析**（折行还原、
+// 引号转义、双引号硬续行的奇偶性判定）—— 它处理的是 DSH 的 YAML writer 行为，
+// 与 provider 无关，重写一遍只会引入新偏差。
+
+/** 默认的 ref 前缀（国际站）。 */
+const MINIMAXINTL_ACCOUNT_REF = /^[ \t]*(MINIMAXINTL_ACCOUNT_[A-Z0-9]+):/gm
+/** 国际站的单账号回退 ref。 */
+const MINIMAXINTL_DEFAULT_REF = 'MINIMAXINTL_ACCESS_TOKEN'
+
+/** 从插件凭据存储读国际站（或任意 prefix）凭据的选项。 */
+export interface ReadPluginCredentialOptions {
+  /**
+   * ref 前缀（`'MINIMAXINTL'` 国际版 / `'MINIMAX'` 中国版）。
+   *
+   * ⚠️ 必传且**必须精确**：`MINIMAX` 是 `MINIMAXINTL` 的前缀，用宽松匹配会把
+   * 两站账号混在一起（本仓库 `QODER` / `QODERCN` 同款坑）。
+   */
+  refPrefix: string
+  /** 覆盖凭据文件路径。 */
+  path?: string
+}
+
+/**
+ * 从 DSH 凭据存储读**插件自己**的 MiniMax 凭据（供国际站探针）。
+ *
+ * 优先级：`DSH_<PREFIX>_CREDENTIAL_JSON`（直接给 JSON）→
+ * `DSH_<PREFIX>_ACCOUNT_REF`（指定 ref）→ 文件里全部 `<PREFIX>_ACCOUNT_*`
+ * → 默认 ref `<PREFIX>_ACCESS_TOKEN`。
+ *
+ * ⚠️ 读不到时**返回 undefined 而不是抛错**：探针据此打印「请先登录」的可操作
+ * 指引，而不是抛一个与用户操作无关的 ENOENT。
+ */
+export function readMinimaxPluginCredential(
+  options: ReadPluginCredentialOptions,
+): MinimaxProbeCredential | undefined {
+  const prefix = options.refPrefix
+  const fromEnv = process.env[`DSH_${prefix}_CREDENTIAL_JSON`]
+  /** 命中的 ref 名（供日志显示；env 直给 JSON 时是一个标记串）。 */
+  let ref = `DSH_${prefix}_CREDENTIAL_JSON`
+  const raw = (() => {
+    if (fromEnv !== undefined && fromEnv.length > 0) return fromEnv
+    let text: string
+    try {
+      text = readCredentialsFile(options.path ?? CREDENTIALS_PATH)
+    } catch {
+      return undefined
+    }
+    // ⚠️ 前缀必须**逐字**匹配账号 ref 形态：`(MINIMAXINTL|MINIMAX)_ACCOUNT_…`。
+    //    用宽松匹配会因 `MINIMAX` ⊂ `MINIMAXINTL` 而误捞另一站的账号
+    //（本仓库 `QODER` / `QODERCN` 同款坑）。
+    const accountRef = new RegExp(`^[ \\t]*(${prefix}_ACCOUNT_[A-Z0-9]+):`, 'gm')
+    const declared = [...text.matchAll(accountRef)].map((m) => m[1]!)
+    const explicit = process.env[`DSH_${prefix}_ACCOUNT_REF`]
+    ref = explicit !== undefined && explicit.length > 0
+      ? explicit
+      : (declared.length > 0 ? declared[declared.length - 1]! : `${prefix}_ACCESS_TOKEN`)
+    try {
+      return extractYamlScalar(text, ref)
+    } catch {
+      return undefined
+    }
+  })()
+  if (raw === undefined) return undefined
+
+  let credential: MinimaxCredential
+  try {
+    const parsed = JSON.parse(raw) as MinimaxCredential
+    if (typeof parsed?.access_token !== 'string' || parsed.access_token.length === 0) return undefined
+    credential = parsed
+  } catch {
+    return undefined
+  }
+
+  const expiresAt = credential.expires_at === undefined ? undefined : Number(credential.expires_at)
+  const expired = !Number.isFinite(expiresAt) || (expiresAt as number) <= Date.now()
+  const remainingMin = Number.isFinite(expiresAt)
+    ? Math.round(((expiresAt as number) - Date.now()) / 60_000)
+    : undefined
+
+  return {
+    credential,
+    expired,
+    // ⚠️ 只打印有效期状态与 **ref 名**，绝不打印 token。
+    describe: `${ref} · `
+      + (expired
+        ? `已过期（${remainingMin === undefined ? '未记录到期时间' : `${-remainingMin!} 分钟前`}）`
+        : `有效（剩余约 ${remainingMin} 分钟）`),
   }
 }

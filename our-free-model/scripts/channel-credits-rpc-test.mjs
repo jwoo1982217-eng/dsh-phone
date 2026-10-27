@@ -67,6 +67,7 @@ export async function verifyChannelCreditsRpc({ ctx, call, creds }) {
     const freshQuota = await call('credits.balances', { provider: 'gemini', force: true })
     assert.equal(quotaRequests, 2, '手动重试必须真正查询上游替身')
     assert.equal(freshQuota.value.accounts[0].balance.total, 60)
+    await verifyRefreshDispatch({ ctx, call })
   } finally {
     ctx.credentials.resolve = originalResolve
     globalThis.fetch = originalFetch
@@ -75,4 +76,37 @@ export async function verifyChannelCreditsRpc({ ctx, call, creds }) {
       creds.delete(`FIXTURE_CREDITS_${provider.toUpperCase()}`)
     }
   }
+}
+
+async function verifyRefreshDispatch({ ctx, call }) {
+  const providers = [
+    'codearts', 'buddy', 'workbuddy', 'lobsterai', 'qoder', 'qodercn', 'trae',
+    'cline', 'loomy', 'raccoon', 'minimax', 'zcode', 'gemini',
+  ]
+  for (const provider of providers) {
+    const service = ctx[`${provider}Auth`]
+    assert.ok(service, `${provider} auth service is mounted`)
+    const saved = service.refreshAccountCredential
+    const accountId = `fixture-refresh-${provider}`, ref = `FIXTURE_REFRESH_${provider.toUpperCase()}`
+    const calls = []
+    try {
+      await ctx.accountPool.addAccount({
+        id: accountId, provider, nickname: 'offline-refresh', credentialRef: ref,
+        enabled: false, refreshable: true, createdAt: 1,
+      })
+      service.refreshAccountCredential = async (...args) => { calls.push(args) }
+      const result = await call('account.refresh', { accountId })
+      assert.deepEqual(result, { ok: true, value: { success: true } }, provider)
+      assert.equal(calls.length, 1, provider)
+      assert.deepEqual(calls[0], [ref, ctx.accountPool, accountId], `${provider}: exact ref, pool and id`)
+      service.refreshAccountCredential = async () => { throw new Error('offline refresh rejected') }
+      const rejected = await call('account.refresh', { accountId })
+      assert.equal(rejected.ok, false, `${provider}: refresh failure is not success`)
+      assert.match(rejected.error.message, /offline refresh rejected/)
+    } finally {
+      service.refreshAccountCredential = saved
+      await ctx.accountPool.removeAccount(accountId)
+    }
+  }
+  console.log('ok  refresh RPC: all 13 providers pass exact ref/pool/id; disabled accounts refresh; failures return ok:false')
 }

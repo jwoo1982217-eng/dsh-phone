@@ -36,7 +36,7 @@ function fixture(t, {window=16384, output=1024, stream, persistent=false, config
       yield {type:'text-delta',index:0,text:answer};yield {type:'finish',reason:{kind:'stop'}};}
   });
   const engine=new BasicCompactionEngine(ctx,{auto:false,maxTokens:output,...config});
-  const agent={options:{provider:'fixture',model:'small'},session:{id:'test-'+Math.random(),requestHeader:()=>({config:{provider:'fixture',model:'small'}}),toolHistory:()=>[]}};
+  const agent={options:{provider:'fixture',model:'small'},session:{id:'test-'+Math.random(),requestHeader:()=>({config:{provider:'fixture',model:'small'}}),toolHistory:()=>({tools:[],updates:[]})}};
   if(persistent){const old=process.env.DSH_HOME,home=fs.mkdtempSync(path.join(os.tmpdir(),'dsh-summary-'));process.env.DSH_HOME=home;agent.session.header={cwd:home};
     t.after(()=>{if(old===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=old;fs.rmSync(home,{recursive:true,force:true});});}
   t.after(()=>ctx.fiber.dispose());
@@ -57,7 +57,7 @@ test('an oversized CJK transcript is split into bounded requests and merged',asy
   assert(f.calls.length>2);assert.match(r.summary[0].text,/LocalAudioBookImporter/);
   const requests=f.calls.map(c=>JSON.stringify(c.messages));
   for(let i=0;i<52;i++)assert(requests.some(s=>s.includes(`SOURCE-${i} `)),`source ${i} retained`);
-  for(const c of f.calls){assert(Buffer.byteLength(JSON.stringify(c.messages))<262144*2);assert.equal(c.purpose,'compaction');assert(!c.tools);assert.deepEqual(c.toolHistory,[]);}
+  for(const c of f.calls){assert(Buffer.byteLength(JSON.stringify(c.messages))<262144*2);assert.equal(c.purpose,'compaction');assert(!c.tools);assert.equal(c.toolHistory,undefined);}
 });
 
 test('provider-confirmed overflow halves the input instead of retrying the same request',async t=>{

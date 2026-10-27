@@ -309,7 +309,14 @@ describe('先探后取的可观测性', () => {
   it('★ 一次「先探即成功」的请求：probeFirst 计数 +1、命中计数 0、mint 0 次', async () => {
     const { adapter, mintCalls } = makeAdapter([okSse()])
     await drain(adapter.stream(streamOptions()))
-    expect(captchaRequirementObservability()).toEqual({ probeFirstCount: 1, knownRequiredCount: 0 })
+    // ⚠ `upfrontCaptchaCount` 是 2026-10-12 新增的第三种开局形态。本用例
+    //   没注入 captcha 配置（`captchaConfig === undefined`）⇒ 它必为 0；
+    //   断言留着是为了守住「没配置时不得走主动带那条路」。
+    expect(captchaRequirementObservability()).toEqual({
+      probeFirstCount: 1,
+      knownRequiredCount: 0,
+      upfrontCaptchaCount: 0,
+    })
     expect(mintCalls()).toBe(0)
   })
 
@@ -317,7 +324,11 @@ describe('先探后取的可观测性', () => {
     const { adapter } = makeAdapter([captchaRequiredError(), okSse(), okSse()])
     await drain(adapter.stream(streamOptions()))   // 探 + 拒
     await drain(adapter.stream(streamOptions()))   // 命中记忆
-    expect(captchaRequirementObservability()).toEqual({ probeFirstCount: 1, knownRequiredCount: 1 })
+    expect(captchaRequirementObservability()).toEqual({
+      probeFirstCount: 1,
+      knownRequiredCount: 1,
+      upfrontCaptchaCount: 0,
+    })
   })
 
   it('日志给出三段前置耗时，且「未带 captcha」时 captcha 为 0ms', async () => {

@@ -7,7 +7,8 @@
  * 不是凭空编的 —— 尤其 `thinking` / `signature_delta` / `input_json_delta`
  * 三个块，它们在真实响应里都出现过。
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { BlockAssembler } from '@deepseek-ai/dsh-llm'
 import {
   buildMinimaxMessagesPayload,
   consumeMinimaxSse,
@@ -670,17 +671,63 @@ describe('consumeMinimaxSse', () => {
     expect(finish.reason.kind).toBe('tool-calls')
   })
 
-  it('⚠️ tool-call-delta 的 id 来自 block-start（不是空串）', async () => {
+  it('⚠️ tool-call-delta 的 id 来自 block-start（不是空串），且必须携带 name', async () => {
     const chunks = await collect([
       'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-9","name":"f","input":{}}}',
       '',
       'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{}"}}',
     ].join('\n'))
     const delta = chunks.find(
-      (c): c is { type: 'tool-call-delta'; id: string } =>
+      (c): c is { type: 'tool-call-delta'; id: string; name?: string } =>
         (c as { type: string }).type === 'tool-call-delta',
     )
     expect(delta?.id).toBe('call-9')
+    expect(delta?.name).toBe('f')
+  })
+
+  /**
+   * 下游网关（`openai-gateway/stream.ts`）的 `tool.name` **只**从
+   * `tool-call-delta` 的 `name` 填，而 `block-start` / `block-end` 在网关侧
+   * **直接 `return undefined`（不消费）** ⇒ `tool-call-delta` 是
+   * `function.name` 的**唯一来源**。故「每一片都带 name」不是冗余：漏掉任何
+   * 一片，标准 OpenAI 客户端（openai-node 的 zod 校验 / Codex / Cursor）都会
+   * 在**首个** tool-call 分片上抛 `Expected 'function.name' to be a string`。
+   *
+   * ⚠️ 这条用例的价值在于**多分片**：原用例只有一片，故「只发首片 name」
+   *（或只发最后一片）的实现也能通过 —— 变异验证实测：把 name 改成只在
+   * 首个 `input_json_delta` 上发时，原用例**仍全绿**。
+   */
+  it('★★ 每一片 tool-call-delta 都必须携带 name（网关侧 name 的唯一来源）', async () => {
+    const chunks = await collect([
+      'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-1","name":"read_file","input":{}}}',
+      '',
+      'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\\"path\\":"}}',
+      '',
+      'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"\\"a\\"}"}}',
+      '',
+      'data: {"type":"content_block_stop","index":0}',
+    ].join('\n'))
+
+    const deltas = chunks.filter(
+      (c): c is { type: 'tool-call-delta'; name?: string } =>
+        (c as { type: string }).type === 'tool-call-delta',
+    )
+    expect(deltas).toHaveLength(2)
+    for (const delta of deltas) expect(delta.name).toBe('read_file')
+  })
+
+  it('⚠️ 名字为空串时**省略该键**（写空串会让消费侧解析出空名工具）', async () => {
+    // 空名帧整块被丢弃，故这里用「合法帧」验证「合法时不缺 name」，
+    // 并单独锁住「空名 ⇒ 一个 chunk 都不产出」（见下一组用例）。
+    const chunks = await collect([
+      'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-1","name":"f","input":{}}}',
+      '',
+      'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{}"}}',
+    ].join('\n'))
+    const delta = chunks.find(
+      (c): c is Record<string, unknown> => (c as { type: string }).type === 'tool-call-delta',
+    )
+    expect(Object.hasOwn(delta!, 'name')).toBe(true)
   })
 
   it('⚠️ event:error 必须抛错（不能静默结束）', async () => {
@@ -689,6 +736,74 @@ describe('consumeMinimaxSse', () => {
       'data: {"type":"error","error":{"type":"invalid_request_error","message":"invalid params, model requires adaptive thinking (2013)"}}',
       '',
     ].join('\n'))).rejects.toThrow(/requires adaptive thinking/)
+  })
+
+  /**
+   * ⚠️ 下面四条锁的都是**生产端**（`consumeMinimaxSse` 真的产出了什么文案），
+   * 不是消费端判据 —— 变异验证实测：把 `kind` / `code` / 原文样本 / `cancel()`
+   * 任何一处改坏，此前 **0 条用例变红**（消费端那些断言喂的是测试自己拼的字符串）。
+   */
+  it('★★ 自家信封的流内错误必须带 `code=`（适配器的确定性通道）', async () => {
+    /**
+     * 实测（2026-10-11 真机）：401 的体就是自家信封 `{"code":401,"message":"auth failed"}`
+     * —— 它**没有 `error` 对象**。若这里退化成「未知错误」，额度信息整段丢失
+     *（适配器拿到的只有 `未知错误`）⇒ 判 `other` ⇒ 换号静默失效。
+     */
+    await expect(collect([
+      'event: error',
+      'data: {"code":402,"message":"request rejected"}',
+      '',
+    ].join('\n'))).rejects.toThrow(/code=402/)
+    // 自家信封的 message 也要原样带出（不能只看 `frame.error.message`）。
+    await expect(collect([
+      'event: error',
+      'data: {"code":402,"message":"request rejected"}',
+      '',
+    ].join('\n'))).rejects.toThrow(/request rejected/)
+  })
+
+  it('★★ 流内错误的 `error.type` 必须进文案（message 无关键词时它是唯一线索）', async () => {
+    // ⚠️ `message` 刻意**不含**任何额度/限流措辞：只有 `error.type` 能把它判成额度。
+    await expect(collect([
+      'event: error',
+      'data: {"type":"error","error":{"type":"insufficient_balance_error","message":"request rejected"}}',
+      '',
+    ].join('\n'))).rejects.toThrow(/insufficient_balance_error/)
+  })
+
+  it('★★ 「模型未返回任何内容块」必须带**响应原文**（网关 HTML / 非标准信封的唯一线索）', async () => {
+    // ⚠️ 不带原文时适配器只能判 `other` ⇒ 不换号，且用户看不到服务端说了什么。
+    await expect(collect('<html><body>502 Bad Gateway</body></html>')).rejects
+      .toThrow(/响应原文：.*502 Bad Gateway/)
+  })
+
+  it('★★ 提前离开流（流内错误）时必须 `cancel()` 响应体，不能只 `releaseLock()`', async () => {
+    /**
+     * ⚠️ 请求级轮换会在**流内错误**时提前离开这条流（换号重发），只释放锁会把
+     * 未读完的响应体留在连接上（一次请求最多 7 条）。本仓既有约定见
+     * `src/sse.ts` 的 `readWithIdleTimeout`（`await reader.cancel().catch(() => {})`）。
+     */
+    const cancel = vi.fn(async () => {})
+    const releaseLock = vi.fn()
+    const bytes = new TextEncoder().encode([
+      'event: error',
+      'data: {"type":"error","error":{"type":"insufficient_balance_error","message":"x"}}',
+      '',
+    ].join('\n'))
+    const body = {
+      getReader: () => ({
+        read: async () => ({ done: false, value: bytes }),
+        cancel,
+        releaseLock,
+      }),
+    } as unknown as ReadableStream<Uint8Array>
+
+    await expect((async () => {
+      for await (const _chunk of consumeMinimaxSse({ body })) void _chunk
+    })()).rejects.toThrow(/流内错误/)
+
+    expect(cancel).toHaveBeenCalled()
+    expect(releaseLock).toHaveBeenCalled()
   })
 
   it('⚠️ 只有 ping、没有内容块 ⇒ 抛错（EMPTY 不得静默结束）', async () => {
@@ -820,5 +935,218 @@ describe('consumeMinimaxSse', () => {
       '',
     ].join('\n'))
     expect(chunks).toContainEqual({ type: 'text-delta', index: 0, text: 'z' })
+  })
+})
+
+/**
+ * 名称为空的 `tool_use` **不得产出任何 chunk**。
+ *
+ * ## 守的是什么（与 PR #93 同一条缺陷的另一半）
+ *
+ * PR #93 的说明书写着「⚠️ `name` 为空时**省略该键**，不写空串 —— 空串会让
+ * 消费侧解析出一个空名工具」，但同函数 `content_block_stop` 分支当时仍在
+ * `name: state.toolName ?? ''` 回退成**空串**，且 `content_block_start` 无条件
+ * 发射 `block-start`。于是「上游下发一个没有 name 的 tool_use」时，本模块
+ * 仍会产出一个 `name:''` 的块。
+ *
+ * ## 后果（本仓库已有完整事故记录，AGENTS.md / `docs/agent-notes/dev-tasks.md`）
+ *
+ * 1. harness 执行得到 `unknown tool ""`；
+ * 2. 该坏块被**持久化进会话历史**；
+ * 3. 用户切到别的 provider（如 workbuddy）后坏块被**每次请求原样重放** ⇒
+ *    **HTTP 400 code 11133**，整条会话报废。
+ *
+ * 实测最小复现（wire 上的 `function.name` → 上游结果）：
+ * `"read"` / `"unknown_tool"` → 200（**只校验非空，不校验存在性**）；
+ * `""` / `null` / 缺失 → **400 code 11133**。
+ *
+ * ## ⚠️ 为什么判据必须落在**真实 `BlockAssembler`** 上
+ *
+ * 「只跳过收尾的 `block-end`」是**不够**的：`BlockAssembler.assemble()` 对
+ * **没有 `block-end`** 的 partial 同样会组装出 `name: partial.toolCallName ?? ''`。
+ * 故只断言「没有 block-end」会是一组**能通过却仍然犯错**的同义反复 ——
+ * 必须让该块**一个 chunk 都不产出**（连同 `block-start`），assembler 才看不见它。
+ *
+ * 与 `zcode-anthropic.ts` / `openai-compat.ts` 的同款约定，也是
+ * `tests/unit/qoder-silent-stop.spec.ts` 针对 openai-compat 锁的同一件事。
+ */
+describe('名称为空的 tool_use 不得产出任何 chunk', () => {
+  /** 上游只给 id、**完全没有 name 字段**的 tool_use（qoder 实测过这种畸形帧）。 */
+  const NAMELESS = [
+    'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-9","input":{}}}',
+    '',
+    'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{}"}}',
+    '',
+    'data: {"type":"content_block_stop","index":0}',
+    '',
+    'data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}',
+    '',
+  ].join('\n')
+
+  it('★★ 真实 BlockAssembler 必须看不到任何块（否则 name:"" 会污染会话）', async () => {
+    const assembler = new BlockAssembler()
+    for await (const chunk of consumeMinimaxSse({ body: sseStream(NAMELESS) })) assembler.push(chunk)
+    // ⚠️ 判据必须看 assembler 的**最终块**，不能只看有没有 block-end：
+    //    只跳过 block-end 时 partial 照样会被组装出来。
+    expect(assembler.blocks()).toEqual([])
+  })
+
+  it('不发 block-start / tool-call-delta / block-end（三者缺一都不够）', async () => {
+    const chunks = await collect(NAMELESS)
+    expect(chunks.filter(c => (c as { type: string }).type === 'block-start')).toEqual([])
+    expect(chunks.filter(c => (c as { type: string }).type === 'tool-call-delta')).toEqual([])
+    expect(chunks.filter(c => (c as { type: string }).type === 'block-end')).toEqual([])
+  })
+
+  it('name 为**空串**（不是缺失）时同样丢弃', async () => {
+    const assembler = new BlockAssembler()
+    for await (const chunk of consumeMinimaxSse({
+      body: sseStream([
+        'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-9","name":"","input":{}}}',
+        '',
+        'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{}"}}',
+        '',
+        'data: {"type":"content_block_stop","index":0}',
+        '',
+      ].join('\n')),
+    })) assembler.push(chunk)
+    expect(assembler.blocks()).toEqual([])
+  })
+
+  /**
+   * ⚠️ 丢弃了唯一的工具调用 ⇒ 不能报 `tool-calls`。
+   *
+   * 上游报 `tool_use`、harness 却收到「`finish=tool-calls` 但一个 tool-call 块
+   * 都没有」是自相矛盾的状态 —— harness 会等一个永远不存在的工具调用，表现为
+   * 又一次「**没有任何报错就停住**」。报 `max-tokens`（不完整、**可重试**）
+   * 才是与「坏块已丢弃」自洽的结局（与 `openai-compat.ts` 的
+   * `droppedUnnamedCalls && toolOrder.length === 0` 同款）。
+   */
+  it('★ 丢弃了唯一的工具调用 ⇒ finish 报 max-tokens（不得报 tool-calls）', async () => {
+    const chunks = await collect(NAMELESS)
+    expect(chunks.at(-1)).toEqual({ type: 'finish', reason: { kind: 'max-tokens' } })
+  })
+
+  /**
+   * ⚠️ 反向边界：**没有丢弃过任何块**时必须原样保留 `tool-calls`。
+   *
+   * 这条防的是「改写范围过宽」——若判据写成「`stop_reason` 是 `tool_use` 就一律
+   * 报 `max-tokens`」，正常路径（成功下发工具调用）会被误判成「不完整」，
+   * harness 于是**重跑该步** ⇒ 工具可能被**重复执行**（本仓库已登记该风险：
+   * 「误报 max-tokens 触发重试（工具可能重复执行）」）。变异验证：把判据里的
+   * `droppedAnyTool` 去掉，本用例即变红。
+   */
+  it('★ 未丢弃任何块时 tool-calls 必须原样保留（不得误报 max-tokens 致重复执行）', async () => {
+    const chunks = await collect([
+      'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-1","name":"read","input":{}}}',
+      '',
+      'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{}"}}',
+      '',
+      'data: {"type":"content_block_stop","index":0}',
+      '',
+      'data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}',
+      '',
+    ].join('\n'))
+    expect(chunks.at(-1)).toEqual({ type: 'finish', reason: { kind: 'tool-calls' } })
+  })
+
+  /**
+   * ⚠️ **反向边界（刻意不改的那一格）**：上游报 `tool_use` 但**压根没发**工具块，
+   * 且本次**没有丢弃过任何块** ⇒ 必须原样保留 `tool-calls`。
+   *
+   * ## 为什么要显式锁住「不改」
+   *
+   * 本次修复的判据是 `droppedAnyTool && !emittedToolCall`（**窄**），而不是
+   * 泛化的「`stop_reason` 是 `tool_use` 却没有 tool-call 块」（**宽**）。
+   * 宽判据会把这一格也改写成 `max-tokens` ⇒ harness 重跑该步 ⇒
+   * **工具可能被重复执行**。窄判据与 `openai-compat.ts` 的既有口径
+   *（`droppedUnnamedCalls && toolOrder.length === 0`）一致。
+   *
+   * ⚠️ 本用例的存在意义是**区分那半个条件**：变异验证实测——把判据里的
+   * `droppedAnyTool` 去掉（改成宽判据）时，只有本用例变红；其余用例全绿。
+   * 没有它，`droppedAnyTool` 就是一段**零守卫**的死代码。
+   */
+  it('★ 未丢弃任何块且上游没发工具块时：tool-calls 原样保留（窄判据的边界）', async () => {
+    const chunks = await collect([
+      'data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}',
+      '',
+      'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"让我看一下"}}',
+      '',
+      'data: {"type":"content_block_stop","index":0}',
+      '',
+      // 上游报 tool_use，但全程没有任何 tool_use 块（畸形/上游抖动）。
+      'data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}',
+      '',
+    ].join('\n'))
+    expect(chunks.at(-1)).toEqual({ type: 'finish', reason: { kind: 'tool-calls' } })
+  })
+
+  it('一个无名 + 一个合法调用：保留合法者，照常报 tool-calls（不得连累好块）', async () => {
+    const assembler = new BlockAssembler()
+    for await (const chunk of consumeMinimaxSse({
+      body: sseStream([
+        'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-bad","input":{}}}',
+        '',
+        'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{}"}}',
+        '',
+        'data: {"type":"content_block_stop","index":0}',
+        '',
+        'data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call-good","name":"pwsh","input":{}}}',
+        '',
+        'data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"command\\":\\"ls\\"}"}}',
+        '',
+        'data: {"type":"content_block_stop","index":1}',
+        '',
+        'data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}',
+        '',
+      ].join('\n')),
+    })) assembler.push(chunk)
+
+    // 只留合法的那一个（坏块连 partial 都不得存在）。
+    expect(assembler.blocks()).toEqual([
+      { type: 'tool-call', id: 'call-good', name: 'pwsh', arguments: '{"command":"ls"}' },
+    ])
+    const chunks = await collect([
+      'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-bad","input":{}}}',
+      '',
+      'data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call-good","name":"pwsh","input":{}}}',
+      '',
+      'data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{}"}}',
+      '',
+      'data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}',
+      '',
+    ].join('\n'))
+    expect(chunks.at(-1)).toEqual({ type: 'finish', reason: { kind: 'tool-calls' } })
+  })
+
+  /**
+   * ⚠️ **畸形上游复用 index**：同一个 index 先发一个无名的 `tool_use`、
+   * 再发一个合法的。
+   *
+   * 这条锁的是「丢弃标记必须被后到的合法块清掉」——否则
+   * `content_block_stop` 的闸门会把**合法块的 `block-end` 一起吞掉**，
+   * 表现为 `BlockAssembler` 里那个块只有 partial、没有收尾。
+   * 变异验证：把 `content_block_start` 里的 `droppedToolIndexes.delete(index)`
+   * 删掉、或把 stop 闸门放宽成「只判标记」，本用例即变红。
+   */
+  it('★ 同一 index 先无名后合法：收尾不得被丢弃标记吞掉', async () => {
+    const assembler = new BlockAssembler()
+    for await (const chunk of consumeMinimaxSse({
+      body: sseStream([
+        'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-bad","input":{}}}',
+        '',
+        'data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"call-good","name":"pwsh","input":{}}}',
+        '',
+        'data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\\"command\\":\\"ls\\"}"}}',
+        '',
+        'data: {"type":"content_block_stop","index":0}',
+        '',
+      ].join('\n')),
+    })) assembler.push(chunk)
+
+    // 合法块必须被**完整收尾**（有 block-end ⇒ assembler 拿到名字与参数）。
+    expect(assembler.blocks()).toEqual([
+      { type: 'tool-call', id: 'call-good', name: 'pwsh', arguments: '{"command":"ls"}' },
+    ])
   })
 })

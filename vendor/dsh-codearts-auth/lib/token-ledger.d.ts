@@ -68,9 +68,21 @@ export interface TokenLedgerEntry {
     /**
      * **首个内容块耗时**（毫秒）—— 用户口中的「首字用时」。
      *
-     * 口径与 `cline-request-log.ttftMs` 一致：**收到任何一块**（含思考增量）
-     * 的时刻 − 请求发起。0 = 整个流没有产出任何块（失败 / 秒回空），展示层
-     * 按「不可测」处理（显示 `—`），不显示 0。
+     * 口径 = 收到**内容帧**（文本 / 思考 / 图片 / 工具调用，含各自的 delta 形态）的
+     * 时刻 − 请求发起。⚠️ **刻意忽略 `block-start` / `block-end` / `usage` / `finish`
+     * 等结构帧与元数据帧**：它们不代表「模型开始说话」，算进去会把首字用时记成
+     * 「适配器建流的时刻」（真实缺陷，本次修复；见 `llm-register-compat.ts` 的
+     * `isContentChunk`）。
+     *
+     * ⚠️ **与 `cline-request-log.ttftMs` 有已知分叉**（不要照着这里的措辞去断言两者
+     * 一致）：Cline 那一份（`src/cline-adapter.ts` 的 `if (ttftMs === 0) ttftMs = …`）
+     * 仍是「**任何** chunk 到达即计时」的旧口径，故「只有结构帧 / 只有 usage 的
+     * 空响应」在两处的读数不同（本处省字段、展示为 `—`；Cline 处给出一个非 0 值）。
+     * 分叉方向是**本处更严**（更贴近「首字」语义）；Cline 那份的同步属于独立改动，
+     * 需连带核对其请求表的展示，本次未动。
+     *
+     * 0 = 整个流没有产出任何内容帧（失败 / 秒回空），展示层按「不可测」处理
+     * （显示 `—`），不显示 0。
      */
     ttftMs?: number;
     /**
@@ -99,6 +111,8 @@ export interface TokenLedgerModelRow {
     cacheReadTokens: number;
     cacheWriteTokens: number;
     reasoningTokens: number;
+    /** 总处理量 = 未命中缓存的输入 + 缓存命中输入 + 输出；缓存写入不重复计入。 */
+    totalTokens: number;
     /** 失败请求数。 */
     errors: number;
     /**
@@ -112,15 +126,16 @@ export interface TokenLedgerModelRow {
      * 「每笔请求的速率」的算术平均，口径与用户直觉一致）。无可测请求时
      * `undefined`。
      *
-     * ⚠️ **是算术均值，对离群样本敏感**（用户 2026-10-07 报障）：虽然源头已
-     * 丢弃 `decodeMs` 过短的样本（见 {@link MIN_DECODE_MS_FOR_TPS}），但「一笔
-     * 极快 + 大量极慢」的混合分布下算术均值仍缺乏代表性。要改用中位数需新增
-     * 分位数存储字段并迁移 `token-ledger.json`，风险更高，另行处理。
+     * ⚠️ **是算术均值，对离群样本敏感**：保留该字段以兼容既有口径；同时提供
+     * 基于持久化直方图估算的 P50/P90，便于观察典型速度和慢速尾部。
      *
-     * ⚠️ 已落盘的 `tpsSum/tpsCount` 是**修复前**的累加值（含离群样本），
-     * 重启后读到的历史视图仍会显示被污染的均值 —— 见 flush/迁移说明。
+     * ⚠️ 已落盘的 `tpsSum/tpsCount` 仍可能含早期离群样本；P50/P90 从直方图完整
+     * 覆盖样本后才显示，避免把不完整的分布误当成完整统计。
      */
     avgTps?: number;
+    /** 日志 TPS 直方图估算的中位数与 P90；旧账本没有样本时省略。 */
+    p50Tps?: number;
+    p90Tps?: number;
 }
 /** 一个 provider 下、某个账号的聚合（模型行 + 自身小计）。 */
 export interface TokenLedgerAccountRow {
@@ -163,14 +178,88 @@ export declare const TOKEN_LEDGER_LIMIT = 500;
  */
 export declare const MIN_DECODE_MS_FOR_TPS = 100;
 /**
- * 回报「该 provider 最近解析出的账号」（凭据解析点调用）。
+ * 关闭上游流时的**等待上限**（毫秒），见 {@link withTokenLedgerAccountContext}。
+ *
+ * ⚠️ 为什么必须有：关闭动作挂起时，`finally` 永不返回，会把「本层已捕获的错误」
+ * 一起吞掉 —— 消费方永久卡在 `for await` 里（与「停止按钮无效」同型的症状）。
+ *
+ * ⚠️⚠️ **超时的确切语义（实测，勿再写错）**：它是**放弃等待**，**不是取消动作**。
+ * 实测时间线（上游关闭耗时 3s）：
+ * ```
+ * return() 开始      @1ms     ← break 后本层立刻转发了关闭信号
+ * 消费方 break 返回   @2004ms  ← 2s 超时到，不再等
+ * 上游清理完成        @3009ms  ← 被"放弃"等待的那个 promise 仍在后台跑完
+ * ```
+ * ⇒ 上游清理（`releaseLock()` / `removeEventListener()` / `sigStore.flush()`）
+ * **最终仍会执行**，只是消费方不再阻塞等它。
+ * ⚠️ **本注释曾错误地写成「清理永不执行 / 永久停在 await 上」**（首版实现 + 两轮
+ * 审计都这么写，属未经验证的推断）；实测推翻了它，故按事实更正。
+ *
+ * ⚠️ 真实代价因此是**有界**的：清理完成前上游资源（连接 / reader / 监听器）仍占着，
+ * 且高频取消时会有若干个清理在后台并发堆积 —— 但不会永久泄漏。
+ * ⚠️ 也**不要**因为「偶尔超时也不报错」就忽略它：若日志里频繁出现，说明某些适配器
+ * 的清理动作确实很慢甚至挂起，应去修那个适配器，而不是调大这个值。
+ */
+export declare const CLOSE_STREAM_TIMEOUT_MS = 2000;
+/** 稀疏对数直方图：每八分之一倍频程一个桶，覆盖 0.1 到约 1.5M tok/s。 */
+export declare const TPS_HISTOGRAM_BINS = 192;
+/** 为一次调用创建可跨 prepareCall 与 stream 传递的账号上下文。 */
+export declare function createTokenLedgerAccountContext(): {
+    accountId: string;
+};
+/** 在指定调用上下文中执行同步或异步工作。 */
+export declare function runWithTokenLedgerAccountContext<T>(context: {
+    accountId: string;
+}, action: () => T): T;
+/**
+ * 回报本请求解析出的账号（凭据解析点调用）。
  *
  * ⚠️ 绝不抛错：它与 {@link recordTokenUsage} 同在推理关键路径上。
  * 空串 / 非串入参直接忽略（不清空旧值 —— 清空语义属于 {@link clearLedgerAccount}）。
  */
 export declare function reportLedgerAccount(provider: string, accountId: string): void;
-/** 读取该 provider 当前记录的账号（包装层在 usage 帧到达时调用）。 */
+/**
+ * 读取该 provider 当前记录的账号。
+ *
+ * ⚠️ **生产路径已不再调用本函数**（`recordThroughStream` 改为只读 ALS 上下文的
+ * `accountContext`）—— 它现在只服务单测，以及「上下文外回报」的防御性回退读
+ * （见 {@link reportedAccounts} 的长注释）。保留理由与代价写在那里，**不要**
+ * 因为「只有测试用」就删掉：删了会让上下文外的回报彻底无处可读。
+ */
 export declare function peekLedgerAccount(provider: string): string;
+/**
+ * 每次推进异步流时绑定独立上下文，避免并发请求串用账号归属。
+ *
+ * ⚠️⚠️ **必须转发 `return()` / `throw()` 到内层迭代器**（真实缺陷，本包装器首版
+ * 漏了这一层）。手写 `while + yield` 的生成器**不会**自动把消费方的关闭信号传给
+ * 它包着的迭代器 —— V8 在 `yield` 处收到 `return()` 时只关闭**本**生成器，`finally`
+ * 之后的 `iterator.return()`（如果没写）根本不存在。后果：消费方提前关流时，
+ * 上游适配器的 `finally` **永不执行** ⇒ SSE `reader.releaseLock()` 不执行、
+ * zcode 的 `clearTimeout` / `removeEventListener` 不执行 ⇒ 用户点「停止」后连接与
+ * 定时器一齐泄漏（与 `providers-zcode` 的「卡住 + 停止按钮无效」同型）。
+ *
+ * ⚠️ 消费侧确实会调它：`dsh-llm` 在流未读完时 `finally { await iterator.return() }`；
+ * `dsh-agent-loop` 的取消路径是 `signal.throwIfAborted()` 在循环体内**抛错**。
+ * 两条路径都要求这里转发 —— 只转发 `return()` 挡不住 `throw()`，故用 `try/finally`
+ * 兜住「未正常结束」的所有情形（正常 `done` 时 `return()` 是 no-op）。
+ *
+ * ⚠️ 转发动作本身**也要在 ALS 上下文内**执行：清理期间若有 `reportLedgerAccount`
+ * 回报，落回全局表会污染其他并发请求的归属。
+ *
+ * ⚠️⚠️ **关闭阶段必须有超时**：`finally` 里若直接 `await iterator.return()`，而上游的
+ * 关闭动作**迟迟不 resolve**（例如适配器 `finally` 里 `await reader.cancel()` 卡在一个
+ * 已经断开的连接上），那么 `finally` 永不返回 ⇒ **本层已经捕获到的错误永远传不出去**，
+ * 消费方（`dsh-agent-loop`）会卡在 `for await` 里。实测：上游 `next()` 抛
+ * `upstream-500` + `return()` 挂起时，无超时版本判为 `HUNG`（错误被吞），加超时后
+ * 原始错误照常上抛。这与 `providers-zcode` 的「卡住 + 停止按钮无效」同型，故不能省。
+ *
+ * ⚠️ 超时是**放弃等待**而非**取消动作**（实测语义，详见 {@link CLOSE_STREAM_TIMEOUT_MS}
+ * 的注释）：转发出去的关闭 promise 仍在后台跑完，上游清理最终仍会发生。故本层
+ * 只保证「消费方不被关流拖住 + 原始错误不被吞」，**不保证**清理此刻已完成。
+ */
+export declare function withTokenLedgerAccountContext<T>(iterable: AsyncIterable<T>, context: {
+    accountId: string;
+}): AsyncIterable<T>;
 /** 诊断用：注册表当前条数。 */
 export declare function ledgerAccountCount(): number;
 /** 测试专用：清空回报表。 */
@@ -186,6 +275,8 @@ export interface TokenLedgerBackend {
     append(entry: TokenLedgerEntry): void;
     /** 读取日聚合表（**纯内存读**，不碰磁盘 —— 见 store 的注释）。 */
     load(): TokenLedgerDayMap;
+    /** 删除单个 UTC+8 日期的历史累计。 */
+    deleteDay?(day: string): boolean;
 }
 /**
  * 注入日聚合后端，返回**该次挂载专属的 disposer**。
@@ -205,6 +296,13 @@ export interface TokenLedgerBackend {
 export declare function attachTokenLedgerStore(next: TokenLedgerBackend | undefined): () => void;
 /** RPC 侧读取日聚合表；未挂载（headless 等）返回空表。 */
 export declare function readTokenLedgerDayMap(): TokenLedgerDayMap;
+/** 日期键必须是真实日历日期，避免把任意值传入持久化删除接口。 */
+export declare function isValidTokenLedgerDayKey(day: unknown): day is string;
+/**
+ * 删除历史日累计，不改进程内实时流水（`entries`）及其他任何状态。
+ * 持久化后端同步完成删除；没有可删除能力或日期无效时返回 false。
+ */
+export declare function deleteTokenLedgerDay(day: string): boolean;
 /**
  * **UTC+8 日键**（`YYYY-MM-DD`）。
  *
@@ -220,11 +318,12 @@ export declare function utc8DayKey(ts: number): string;
  */
 export declare function recordTokenUsage(entry: Omit<TokenLedgerEntry, 'ts'>): void;
 /** 聚合行的内部形态：均值以 Σ/份数 累加，最终快照前收尾成 `avgXxx`。 */
-export interface AccumulatingTotals extends Omit<TokenLedgerModelRow, 'model'> {
+export interface AccumulatingTotals extends Omit<TokenLedgerModelRow, 'model' | 'totalTokens' | 'p50Tps' | 'p90Tps'> {
     ttftSumMs: number;
     ttftCount: number;
     tpsSum: number;
     tpsCount: number;
+    tpsHistogram: Record<string, number>;
 }
 /**
  * 读取账本快照（聚合树 + 全局小计 + 最近明细）。
@@ -276,6 +375,8 @@ export interface TokenLedgerDayBucket {
     /** Σ(TPS) 与样本数（同上）。 */
     tpsSum: number;
     tpsCount: number;
+    /** 稀疏对数直方图；v1 历史桶缺此字段时保留均值、分位数从升级后开始累计。 */
+    tpsHistogram?: Record<string, number>;
 }
 /** 每日聚合表：`日键 → (桶键 → 桶)`。序列化形态由 store 负责。 */
 export type TokenLedgerDayMap = Map<string, Map<string, TokenLedgerDayBucket>>;
@@ -283,6 +384,23 @@ export type TokenLedgerDayMap = Map<string, Map<string, TokenLedgerDayBucket>>;
 export declare function dayBucketKeyOf(key: TokenLedgerDayKey): string;
 /** 把一笔记录累加进日聚合表（store 的 load/merge 共用）。 */
 export declare function mergeDayEntry(days: TokenLedgerDayMap, entry: TokenLedgerEntry): void;
+/**
+ * 解析日聚合桶键（`channel|provider|account|model`）为结构化键。
+ *
+ * ⚠️⚠️ **这是「桶键是否合法」的唯一定义**，`token-ledger-store.ts` 的落盘读取
+ * 必须调用它、**不得**再写一份自己的校验（真实缺陷：store 首版另写了一个
+ * 要求 model 非空的 `isValidBucketKey`，与这里分叉 ⇒ `model` 为空串的桶写盘后
+ * 重启读不回，该日用量静默消失）。
+ *
+ * ⚠️ **`model` 允许为空串**：写入侧的 `options.model` 可能缺失/垃圾值，仓库既有
+ * 用例 `token-ledger-wiring.spec.ts` 的「model 缺失/垃圾值记空串不抛错」把该行为
+ * 锁为**既定语义**。故这里不能要求它非空 —— 单方面加严会让**已经写进盘**的数据
+ * 读不回来。`accountId` 同理允许为空（单账号 provider 的合法取值）。
+ *
+ * 判据只保证「段数与 channel 取值合法」，不保证各段内容可信 —— 那是调用方
+ * （store 的字段钳制）的事。
+ */
+export declare function parseDayBucketKey(key: string): TokenLedgerDayKey | undefined;
 /** 一天的历史用量行（`readTokenLedgerHistory` 的返回元素）。 */
 export interface TokenLedgerHistoryDay {
     /** UTC+8 日键（`YYYY-MM-DD`）。 */
@@ -300,9 +418,12 @@ export interface TokenLedgerHistoryDay {
  * @param days - 日聚合表（store 的 `load()` 结果，含启动时从盘上加载的历史）。
  * @param options.sinceDays - 只看最近 N 天（**含今天**，UTC+8 日界）；
  *   省略 = 全部历史（上限 {@link TOKEN_LEDGER_HISTORY_MAX_DAYS}）。
+ * @param options.fromDay / options.toDay - 按 UTC+8 日键筛选闭区间。
  */
 export declare function readTokenLedgerHistory(days: TokenLedgerDayMap, options?: {
     sinceDays?: number;
+    fromDay?: string;
+    toDay?: string;
 }): {
     days: TokenLedgerHistoryDay[];
     totals: Omit<TokenLedgerModelRow, 'model'>;

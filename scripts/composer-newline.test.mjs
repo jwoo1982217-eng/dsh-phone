@@ -1,3 +1,4 @@
+import {frontendShared} from './fixtures/frontend-shared.mjs';
 import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -7,30 +8,21 @@ import { createRequire } from 'node:module';
 
 // 从实际覆盖产物取出编辑器和输入栏，仅在测试副本暴露内部符号。
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const dist=path.join(root,'runtime/node_modules/@deepseek-ai/dsh-web-frontend/dist');const {shared:sharedFrontend}=await frontendShared(dist);
 const report = process.argv[2] ?? path.join(os.tmpdir(), 'dsh-composer-newline');
 await mkdir(report, { recursive: true });
 const require = createRequire(path.join(root, 'vendor/dsh-codearts-auth/package.json'));
 const { build } = require('esbuild');
 const playwright = process.env.DSH_PLAYWRIGHT_MODULE ?? path.join(os.homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs');
 const { chromium } = await import(pathToFileURL(playwright));
-const source = await readFile(path.join(root, 'runtime/overlays/@deepseek-ai/dsh-client-ui-conversation/lib/client.js'), 'utf8');
+const source = await readFile(process.env.DSH_TEST_CONVERSATION_CLIENT ?? path.join(root, 'runtime/overlays/@deepseek-ai/dsh-client-ui-conversation/lib/client.js'), 'utf8');
 assert.equal(source.split('return module.exports;').length, 2);
 const tested = source.replace('return module.exports;', 'module.exports.test = { InputBar, DraftEditorRuntime, registerComposerKeymap, enterCommand: cn$1 }; return module.exports;');
 const bundled = await build({ stdin: { resolveDir: path.join(root, 'vendor/dsh-codearts-auth'), loader: 'js', contents: `
-import React from 'react'; import * as jsx from 'react/jsx-runtime';
-import * as ReactDOM from 'react-dom'; import { createRoot } from 'react-dom/client';
+const shared=window.__TEST_SHARED__,React=shared.react,jsx=shared['react/jsx-runtime'],ReactDOM=shared['react-dom'],createRoot=shared['react-dom/client'].createRoot;
 window.__ModuleLoader__ = { load({factory}) {
   window.conversation = factory(id => {
-    if (id === 'react') return React;
-    if (id === 'react/jsx-runtime') return jsx;
-    if (id === 'react-dom') return ReactDOM;
-    if (id === '@deepseek-ai/cordis') return { Service: class Service {} };
-    if (id === '@deepseek-ai/dsh-client-ui-primitives') return {
-      Tooltip: ({children}) => children, Toast: ({text}) => React.createElement('div', {role:'alert'}, text),
-      IconPlusOutlineMedium: () => React.createElement('span', {}, '+'),
-      useAnchoredPosition: () => ({}), useDismissOnOutsidePointer: () => {}
-    };
-    return {};
+    if(!(id in shared))throw Error('missing shipped builtin '+id);return shared[id];
   });
 }};
 ${tested}
@@ -69,7 +61,7 @@ try {
     const context = await browser.newContext({ viewport: mobile ? {width:393,height:852} : {width:1280,height:850}, hasTouch:mobile, isMobile:mobile });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
-    await context.route('http://127.0.0.1:32181/**', route => route.fulfill({ contentType:'text/html', body:'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:20px;font:14px system-ui;--dsh-composer-side-clearance:8px;--dsh-composer-card-max-width:760px;--dsh-composer-text-max-height:160px;--dsw-alias-button-info-fill:#2563eb;--dsw-specific-input-major:#f2f5fa;--dsw-alias-label-primary:#18243b;--dsw-radius-panel:16px;--dsw-font-family:system-ui}'+(mobile?phoneCSS:'')+'</style><div id="app"></div><script>'+bundled.outputFiles[0].text+'</script>' }));
+    await context.route('http://127.0.0.1:32181/**', async route => { const u=new URL(route.request().url()); if(u.pathname==='/assets/shared.js')return route.fulfill({contentType:'text/javascript',body:sharedFrontend}); if(u.pathname.startsWith('/assets/'))return route.fulfill({contentType:'text/javascript',body:await readFile(path.join(dist,u.pathname),'utf8')}); return route.fulfill({ contentType:'text/html', body:'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:20px;font:14px system-ui;--dsh-composer-side-clearance:8px;--dsh-composer-card-max-width:760px;--dsh-composer-text-max-height:160px;--dsw-alias-button-info-fill:#2563eb;--dsw-specific-input-major:#f2f5fa;--dsw-alias-label-primary:#18243b;--dsw-radius-panel:16px;--dsw-font-family:system-ui}'+(mobile?phoneCSS:'')+'</style><div id="app"></div><script type="module">import "/assets/shared.js";'+bundled.outputFiles[0].text+'</script>' }); });
     await page.goto('http://127.0.0.1:32181/');
     const input = page.locator('[data-composer-input]'), send = page.locator('[data-composer-send]');
     await input.waitFor();

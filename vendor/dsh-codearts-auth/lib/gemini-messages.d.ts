@@ -27,7 +27,7 @@
  * `finishReason` 与 `usageMetadata` 的末帧被静默丢弃。故 `processFrame` 抽成
  * 嵌套生成器，收尾时把余量按整行再走一遍。
  */
-import type { ContentBlock, FinishReason, RequestMessage as Message, StreamChunk, TokenUsage, ToolSchema } from '@deepseek-ai/dsh-llm';
+import type { ContentBlock, FinishReason, RequestMessage, StreamChunk, TokenUsage, ToolSchema } from '@deepseek-ai/dsh-llm';
 import type { GeminiInlineImage, GeminiModelSpec } from './gemini.js';
 /** 一个 `part`。字段名与上游逐字一致。 */
 export interface GeminiPart {
@@ -111,7 +111,16 @@ export declare function canonicalArgs(args: unknown): string;
 export interface TranslateGeminiRequestOptions {
     modelId: string;
     spec: GeminiModelSpec;
-    messages: readonly Message[];
+    /**
+     * 待翻译的历史。
+     *
+     * ⚠️ 类型是 **`RequestMessage`**（= `Message | RequestUserInput`）而不是
+     * `Message`：0.2.0 的 `GenerateOptions.messages` 就是这个联合 —— 一次性
+     * 调用方（标题生成、子请求）可以传**无 id / 无 source** 的用户输入。
+     * 本函数的第 1 步就会把它喂给 `normalizeHarnessMessages`（按结构读取），
+     * 全程不触碰 `id` / `source`，故放宽是**如实**而非绕过。
+     */
+    messages: readonly RequestMessage[];
     system?: string;
     tools?: readonly ToolSchema[];
     toolChoice?: unknown;
@@ -199,7 +208,7 @@ export interface ConsumeGeminiSseOptions {
      *
      * ⚠️ **必须主动掐**：上游在生成大 functionCall 参数期间可能长时间不 flush
      * 任何字节，裸 `reader.read()` 会**无限期挂起** —— 适配器的 generator
-     * 永不返回，harness 当前步骤既不出结果也不报错（见 `src/sse.ts:1-10`）。
+     * 永不返回，harness 当前步骤既不出结果也不报错（见 `src/sse.ts`）。
      */
     idleTimeoutMs?: number;
     /** 首 token 单独的超时（缺省同 `idleTimeoutMs`）。 */

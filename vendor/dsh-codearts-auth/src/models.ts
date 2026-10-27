@@ -1,3 +1,4 @@
+import { directFetch } from './direct-fetch.js'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { signRequestHuawei } from './sign.js'
 import type { CodeArtsCredential } from './types.js'
@@ -60,6 +61,32 @@ export const MODEL_REFRESH_INTERVAL_MS = 2 * 3_600_000
 export interface RemoteModel {
   id: string
   name: string
+}
+
+/**
+ * 一次远端目录拉取的**完整性**结果（issue IKJVTF，审计 I3）。
+ *
+ * ## 为什么需要它
+ *
+ * CodeArts 的目录来自**两个独立端点**（`opengw gateway/config` 给 benefit 模型、
+ * `snap-access /v1/model/builtin` 给常规模型），而两处的失败路径都是
+ * `fetchSignedGet` **静默返回 `undefined`**。于是「一个成功、一个失败」时
+ * `models.length > 0` ⇒ 适配器判成「已拿到目录」⇒ **永久缓存**（
+ * `if (this.remoteModels !== undefined) return` 短路）⇒ 残缺目录固化，
+ * 只有重启 DSH 才能恢复（与 Cline 的缺陷② 完全同构）。
+ *
+ * ⇒ 取数函数必须**显式**回报「每个来源到底成功没有」，适配器据此决定
+ * 「只展示（`got`）」还是「也永久缓存（`complete`）」。
+ */
+export interface RemoteCatalogOutcome {
+  /** 各来源的成败（`gateway` / `builtin`），供适配器判完整性。 */
+  gatewayOk: boolean
+  builtinOk: boolean
+}
+
+/** 两个来源是否**都**取到了。 */
+export function isRemoteCatalogComplete(outcome: RemoteCatalogOutcome): boolean {
+  return outcome.gatewayOk && outcome.builtinOk
 }
 
 /** 模块级内存缓存：远端拉取或磁盘加载后填充；availableCodeArtsModels 优先读取。 */
@@ -158,10 +185,25 @@ async function fetchSignedGet(
  */
 export async function fetchCodeArtsRemoteModels(
   credential: CodeArtsCredential,
-  fetcher: typeof fetch = fetch,
+  fetcher: typeof fetch = directFetch,
+  /**
+   * 各来源成败的**出参**（issue IKJVTF，审计 I3）。
+   *
+   * ⚠️ 用出参而非改返回值：本函数的既有调用方与 10 条单测都按「返回数组」用，
+   * 改形状会波及它们；而完整性只对**适配器**有意义（它决定要不要永久缓存）。
+   * 不传即不关心完整性，行为逐字节不变。
+   */
+  outcome?: RemoteCatalogOutcome,
 ): Promise<RemoteModel[]> {
   const { access_key_id: ak, secret_access_key: sk, security_token: st } = credential
-  if (!ak || !sk) return []
+  if (!ak || !sk) {
+    // 无凭据时**两个来源都没取到** —— 不能默认成 true（否则残缺被判成完整）。
+    if (outcome !== undefined) {
+      outcome.gatewayOk = false
+      outcome.builtinOk = false
+    }
+    return []
+  }
 
   const models: RemoteModel[] = []
   const seen = new Set<string>()
@@ -177,20 +219,25 @@ export async function fetchCodeArtsRemoteModels(
   const benefitIds: string[] = []
 
   // 1. opengw gateway/config — benefit 模型（glm-5.3-flash 等）
+  //
+  // ⚠️ 成功判据是「**请求成功且形状可识别**」，不是「解析出非空列表」：
+  // 上游把 benefit 模型全部下架时 `result.models: []` 是**合法**状态，
+  // 把它当失败会让冷却永不清理（与 Cline 的 `isClineRecommendedShape` 同口径）。
   const gatewayText = await fetchSignedGet(fetcher, OPENGW_GATEWAY_CONFIG_URL, ak, sk, st)
-  if (gatewayText !== undefined) {
-    const arr = extractJsonArray(gatewayText, ['result', 'models'])
-    if (arr !== undefined) {
-      for (const item of arr) {
-        if (typeof item === 'object' && item !== null) {
-          const entry = item as Record<string, unknown>
-          const rawId = typeof entry['model_id'] === 'string' ? entry['model_id'] : ''
-          const mi = parseModelInfo(entry, seen)
-          if (mi) {
-            // 仅当归一化未改写 id 时才记为 benefit（见上方说明）
-            if (rawId.length > 0 && normalizeModelId(rawId) === rawId) benefitIds.push(mi.id)
-            models.push(mi)
-          }
+  const gatewayArr = gatewayText === undefined
+    ? undefined
+    : extractJsonArray(gatewayText, ['result', 'models'])
+  if (outcome !== undefined) outcome.gatewayOk = gatewayArr !== undefined
+  if (gatewayArr !== undefined) {
+    for (const item of gatewayArr) {
+      if (typeof item === 'object' && item !== null) {
+        const entry = item as Record<string, unknown>
+        const rawId = typeof entry['model_id'] === 'string' ? entry['model_id'] : ''
+        const mi = parseModelInfo(entry, seen)
+        if (mi) {
+          // 仅当归一化未改写 id 时才记为 benefit（见上方说明）
+          if (rawId.length > 0 && normalizeModelId(rawId) === rawId) benefitIds.push(mi.id)
+          models.push(mi)
         }
       }
     }
@@ -204,14 +251,15 @@ export async function fetchCodeArtsRemoteModels(
     'Agent-Type': 'PromptCenter',
     'X-Language': 'zh-cn',
   })
-  if (snapText !== undefined) {
-    const arr = extractJsonArray(snapText, ['builtinModels'])
-    if (arr !== undefined) {
-      for (const item of arr) {
-        if (typeof item === 'object' && item !== null) {
-          const mi = parseModelInfo(item as Record<string, unknown>, seen)
-          if (mi) models.push(mi)
-        }
+  const snapArr = snapText === undefined
+    ? undefined
+    : extractJsonArray(snapText, ['builtinModels'])
+  if (outcome !== undefined) outcome.builtinOk = snapArr !== undefined
+  if (snapArr !== undefined) {
+    for (const item of snapArr) {
+      if (typeof item === 'object' && item !== null) {
+        const mi = parseModelInfo(item as Record<string, unknown>, seen)
+        if (mi) models.push(mi)
       }
     }
   }

@@ -1,41 +1,7 @@
 /**
- * OpenCode Zen 凭据结构、指纹派生与代理地址归一。
- *
- * ## 指纹依据（设计文档 §0 + 2026-10-15 真机 1.19.0 抓包复核）
- *
- * `session/llm/request.ts`（1.18.22）/ 等价注入点（1.19.0）对 opencode provider 发：
- * `x-opencode-project` / `x-opencode-session` / `x-opencode-session-id`（1.19.0 新增，
- * 值与 session 相同）/ `x-opencode-request` / `x-opencode-client` / `User-Agent`。
- *
- * ⚠️ 1.19.0 实测变更（MITM 抓包，2026-10-15）：
- * - `x-opencode-request` 是**消息 id 形状** `msg_` + 12 位 hex 时间戳 + 14 位 base62
- *   （1.18.22 时代注释猜的 `req_` + 32 hex 被证伪）。
- * - UA 是复合串 `opencode/<ver> ai-sdk/provider-utils/<x> runtime/bun/<y>`，不再裸版本。
- *
- * ⚠️ **不发** `x-session-affinity` / `X-Session-Id` —— 那是非 opencode provider 分支的头。
- *
- * ## 2026-10-15 鉴权门禁（本轮适配的根因）
- *
- * Zen 免费模型新增**传输指纹门禁**：免费模型 + `Bearer public`（或任意 key 走免费档）
- * 时，非官方 CLI 的 TLS/HTTP 栈（Node fetch、curl、python、甚至 npm 版 Bun 反代、
- * Bun 裸 TLS + 完全复刻的头序）一律 403 FreeTierError；官方 CLI 1.19.0 直连 200。
- * 付费模型路径无此门禁（假 key 能走到上游凭据校验拿 401 Invalid credential）。
- * ⇒ 匿名通道（`public`）从 DSH 直发已死，只能绑定付费 key 或走官方 CLI 跳板；
- *   头部形状修正是保真必需，但**救不回**匿名通道。
- *
- * ## 为什么 project id 用 40 hex
- *
- * 真实取值是 `sha1("git-remote:" + 归一化 remote URL)`
- * （`packages/core/src/project.ts` 的 `resolve()`），本机 opencode.db 实测
- * 形如 `895debfe16b1fcca5ebfa2e24b7b914797e632ec`。
- * opencode2dsh 用的是 `prj_<24hex>`（无依据的服务端形状猜测），我们跟真实 CLI 同形。
- *
- * ## session id 的形状不是随意选的
- *
- * Zen 的 FreeTier 门禁（2026-09-16 起）对 session id 做了正则校验：
- * `ses_` + 12 位小写 hex + 26 位 base62（opencode2dsh ids.ts 的
- * `CANONICAL_SESSION_PATTERN`，其「12 hex = 6 字节时间戳」与官方
- * `id/index.ts` 的 `timeBytes` 同构）。形状不对就是 403 FreeTierError。
+ * OpenCode V2 凭据、会话标识与代理地址归一。
+ * session 不仅校验外形，还校验 descending 时间算法；V2 请求头与旧 CLI 不同。
+ * project 仍按账号/匿名条目与代次派生 40hex，不改变账号池的指纹隔离语义。
  */
 
 import { createHash, randomBytes } from 'node:crypto'
@@ -97,79 +63,57 @@ export function deriveProjectId(identity: string, generation: number): string {
 }
 
 /**
- * 派生 session id：`ses_` + 12 位小写 hex（6 字节时间戳）+ **14** 位 base62。
- *
- * ## ⚠️⚠️ 尾段是 14 而不是 26（真实报障 2026-10-01）
- *
- * 官方 `id/index.ts` 里写的是 `const LENGTH = 26`，但那是**整段尾部长度**
- * （`randomBase62(LENGTH - 12)`），不是随机段长度。我第一版误读成「随机 26 位」，
- * 产出 `ses_` + 38 字符，形状不对 ⇒ 匿名通道一律 403 `FreeTierError`
- * （"free tier can only be used from within OpenCode"）。
- *
- * 证据（本机官方 CLI 1.18.22 真实 session id，日志实证）：
- *   ses_f078262d9ffeFwtz1QB7VnN4kM   ← 12 hex + 14 base62 = 26
- * 与 opencode2dsh 记录的门禁正则 `ses_[0-9a-f]{12}[0-9A-Za-z]{14}` 一致。
- *
- * ⚠️ **每次调用都是新值**：调用方负责在**一次 DSH 会话内**缓存复用
- * （见 `opencode-adapter.ts` 的 `sessionIds`）。每次都随机会让同一会话
- * 在服务端被看成多个独立会话，反而破坏亲和。
+ * ses_ + 12hex + 14base62；时间段为 ~(timestamp * 0x1000 + counter) 的低 48 位。
+ * 使用 counter=1，随机段区分同毫秒生成的 ID；调用方缓存复用。
+ * 旧实现把裸时间戳按小端写入，即使外形正确仍被上游算法校验拒绝。
  */
-export function deriveSessionId(): string {
-  const time = Buffer.alloc(6)
-  let now = BigInt(Date.now())
-  for (let i = 0; i < 6; i++) {
-    time[i] = Number(now & 0xffn)
-    now >>= 8n
-  }
-  // ⚠️ 随机段固定 14 位（26 - 12）；写成 26 会让总长变成 38 而被门禁拒绝。
-  return `ses_${time.toString('hex')}${randomBase62(SESSION_RANDOM_LENGTH)}`
+export function deriveSessionId(timestamp = Date.now()): string {
+  const value = ~(BigInt(timestamp) * 0x1000n + 1n) & 0xffffffffffffn
+  return `ses_${value.toString(16).padStart(12, '0')}${randomBase62(SESSION_RANDOM_LENGTH)}`
+}
+
+/** 派生 request id（每请求一个，官方形态 `msg_` 前缀改 `req_`）。 */
+export function deriveRequestId(): string {
+  return `req_${randomBytes(16).toString('hex')}`
 }
 
 /**
- * 派生 request id：`msg_` + 12 位小写 hex（6 字节时间戳）+ **14** 位 base62。
+ * V2 UA 外形为 `opencode/<channel>/<version>/<client>`。
  *
- * ⚠️ 2026-10-15 真机 1.19.0 抓包实证（MITM，见 capture.log）：
- *   x-opencode-request: msg_13d406f1e001nIXjoKZX2ugXUi
- * 形状与官方消息 id 完全一致（`msg_` + 12hex + 14base62）。1.18.22 时代
- * 「`msg_` 前缀改 `req_`」的旧注释是错的——那是当时对服务端形状的猜测，被证伪。
- * 每次调用都是新值（一次 DSH 会话内的每个请求各带各的，与官方语义一致）。
+ * ⚠️ 实测（2026-10-15，逐变量对照 2×2×2，每格 2 次）：UA **不参与**聊天门禁 ——
+ * `user-agent: opencode/1.18.22`（本机 1.x CLI 的真实值）在其余两项正确时照样
+ * HTTP 200。故这里把 2.x 覆盖成 `latest/<v>/cli`、把 1.x 回落成默认 V2 串，
+ * 只是**外形一致**，不是过门禁的必要条件；别再把它写成「不换就 403」。
+ * （真正必需的是 `x-opencode-session-id` 与降序 session 算法。）
  */
-export function deriveRequestId(): string {
-  return `msg_${timeHex12()}${randomBase62(SESSION_RANDOM_LENGTH)}`
-}
-
-/** 6 字节小端时间戳的 12 位 hex（与 session id 时间段同构）。 */
-function timeHex12(): string {
-  let now = BigInt(Date.now())
-  const bytes = Buffer.alloc(6)
-  for (let i = 0; i < 6; i++) {
-    bytes[i] = Number(now & 0xffn)
-    now >>= 8n
-  }
-  return bytes.toString('hex')
-}
-
-/** UA：缺省用产品常量（`opencode/<version>`），接线层用真机安装版本覆盖。 */
 export function opencodeUserAgent(override?: string): string {
-  const value = override?.trim()
-  return value !== undefined && value.length > 0 ? value : OPENCODE.defaultUserAgent
+  const value = override?.trim() ?? ''
+  if (/^opencode\/[A-Za-z0-9_-]+\/2\.\d+\.\d+\/cli$/.test(value)) return value
+  const version = /^(?:opencode\/)?(2\.\d+\.\d+)$/.exec(value)?.[1]
+  return version === undefined ? OPENCODE.defaultUserAgent : `opencode/latest/${version}/cli`
 }
 
-/** 构造发往 Zen 的完整指纹头集。 */
+/** 构造发往 V2（`/inference`）的完整指纹头集。 */
 export function opencodeHeaders(
   fingerprint: OpencodeFingerprint,
   sessionId: string,
-  requestId: string,
+  _requestId: string,
   userAgent: string,
 ): Record<string, string> {
+  // 保留旧调用签名但**绝不**发送 x-opencode-request。逐头实测（2026-10-15，每格 2 次）：
+  // - 只带 project/session/client 三头（无 request、无 affinity）→ 403；
+  // - 只加 `x-opencode-session-id` → **200**（唯一必需的那一个）；
+  // - 只加 `x-session-affinity` 或只加 `X-Session-Id` → 403；
+  // - 带上 `x-opencode-request`（即使三个 affinity 头都在）→ 403（旧客户端标记即毒药）。
+  // 三个 affinity 头保留冗余只为贴合真实 CLI 外形，判定依据是上面这组对照。
   return {
     'x-opencode-project': fingerprint.projectId,
     'x-opencode-session': sessionId,
-    // ⚠️ 1.19.0 新增，值与 `x-opencode-session` 相同（真机抓包实证）。
     'x-opencode-session-id': sessionId,
-    'x-opencode-request': requestId,
+    'x-session-affinity': sessionId,
+    'X-Session-Id': sessionId,
     'x-opencode-client': 'cli',
-    'user-agent': userAgent,
+    'user-agent': opencodeUserAgent(userAgent),
   }
 }
 

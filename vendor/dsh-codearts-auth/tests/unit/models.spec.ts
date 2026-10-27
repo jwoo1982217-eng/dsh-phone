@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
-  fetchCodeArtsRemoteModels, isCodeArtsBenefitModel, loadBenefitCache, loadModelsCache,
+  fetchCodeArtsRemoteModels, isCodeArtsBenefitModel, isRemoteCatalogComplete,
+  loadBenefitCache, loadModelsCache,
   OPENGW_GATEWAY_CONFIG_URL, saveBenefitCache, saveModelsCache, setBenefitMemoryCache,
   SNAP_MODEL_BUILTIN_URL,
 } from '../../src/models.js'
@@ -145,6 +146,116 @@ describe('fetchCodeArtsRemoteModels', () => {
     const models = await fetchCodeArtsRemoteModels(cred, fetcher)
     expect(models).toEqual([])
     expect(calls).toHaveLength(0)
+  })
+})
+
+/**
+ * ★ **各来源成败上报**（issue IKJVTF 复审，审计 I3）。
+ *
+ * CodeArts 的目录来自**两个**独立端点，失败路径都是 `fetchSignedGet`
+ * **静默返回 undefined**。故「一个成功、一个失败」时 `models.length > 0`，
+ * 旧判据（适配器只看长度）会判成「已拿到目录」⇒ **永久缓存** ⇒ 残缺目录固化，
+ * 只有重启 DSH 才能恢复。
+ *
+ * ⚠️ 完整性判据必须是「**请求成功且形状可识别**」，不是「解析出非空列表」：
+ * 上游把某个来源的模型**全部下架**时，`result.models: []` / `builtinModels: []`
+ * 是**合法**状态 —— 把它当失败会让冷却永不清理。
+ */
+describe('fetchCodeArtsRemoteModels 的各来源成败（★ IKJVTF I3）', () => {
+  const GATEWAY_BODY = JSON.stringify({
+    result: { models: [{ model_id: 'glm-5.3-flash', model_name: 'glm-5.3-flash' }] },
+  })
+  const BUILTIN_BODY = JSON.stringify({
+    builtinModels: [{ model_id: 'GLM-5.2', model_name: 'GLM-5.2' }],
+  })
+
+  it('★ 两个端点都成功 ⇒ gatewayOk + builtinOk 皆为 true（完整）', async () => {
+    const { fetcher } = makeFetcher({
+      [OPENGW_GATEWAY_CONFIG_URL]: { body: GATEWAY_BODY },
+      [SNAP_MODEL_BUILTIN_URL]: { body: BUILTIN_BODY },
+    })
+    const outcome = { gatewayOk: false, builtinOk: false }
+    const models = await fetchCodeArtsRemoteModels(makeCredential(), fetcher, outcome)
+    expect(models.length).toBeGreaterThan(0)
+    expect(outcome).toEqual({ gatewayOk: true, builtinOk: true })
+    expect(isRemoteCatalogComplete(outcome)).toBe(true)
+  })
+
+  it('★ gateway 成功 + builtin 失败（404）⇒ **不算完整**', async () => {
+    // `makeFetcher` 对未登记路由回 404 ⇒ builtin 走 `!response.ok` 分支。
+    const { fetcher } = makeFetcher({
+      [OPENGW_GATEWAY_CONFIG_URL]: { body: GATEWAY_BODY },
+    })
+    const outcome = { gatewayOk: false, builtinOk: false }
+    const models = await fetchCodeArtsRemoteModels(makeCredential(), fetcher, outcome)
+    // 目录**非空**（gateway 那一份拿到了）—— 旧判据据此判成「完整」。
+    expect(models.length).toBeGreaterThan(0)
+    // ★ 但完整性必须是 false，否则残缺目录被永久缓存。
+    expect(outcome).toEqual({ gatewayOk: true, builtinOk: false })
+    expect(isRemoteCatalogComplete(outcome)).toBe(false)
+  })
+
+  it('★ builtin 成功 + gateway 失败 ⇒ **不算完整**（镜像格）', async () => {
+    const { fetcher } = makeFetcher({
+      [SNAP_MODEL_BUILTIN_URL]: { body: BUILTIN_BODY },
+    })
+    const outcome = { gatewayOk: false, builtinOk: false }
+    const models = await fetchCodeArtsRemoteModels(makeCredential(), fetcher, outcome)
+    expect(models.length).toBeGreaterThan(0)
+    expect(outcome).toEqual({ gatewayOk: false, builtinOk: true })
+    expect(isRemoteCatalogComplete(outcome)).toBe(false)
+  })
+
+  it('★ 两个端点都失败 ⇒ 两者皆 false', async () => {
+    const { fetcher } = makeFetcher({})
+    const outcome = { gatewayOk: false, builtinOk: false }
+    const models = await fetchCodeArtsRemoteModels(makeCredential(), fetcher, outcome)
+    expect(models).toEqual([])
+    expect(outcome).toEqual({ gatewayOk: false, builtinOk: false })
+  })
+
+  it('★ 形状可识别但**合法为空**（两边都是空数组）⇒ 仍算**取到了**（完整）', async () => {
+    // 「上游把模型全撤」与「端点挂掉」在**是否有内容**上都表现为空，
+    // 但在**形状**上可区分。本层的取舍：形状可识别即算取到，
+    // 由**适配器**的 `models.length === 0` 决定「不落缓存」。
+    const { fetcher } = makeFetcher({
+      [OPENGW_GATEWAY_CONFIG_URL]: { body: JSON.stringify({ result: { models: [] } }) },
+      [SNAP_MODEL_BUILTIN_URL]: { body: JSON.stringify({ builtinModels: [] }) },
+    })
+    const outcome = { gatewayOk: false, builtinOk: false }
+    await fetchCodeArtsRemoteModels(makeCredential(), fetcher, outcome)
+    expect(outcome).toEqual({ gatewayOk: true, builtinOk: true })
+  })
+
+  it('★ 形状不可识别（HTTP 200 + 错误 JSON）⇒ **不算取到**', async () => {
+    const { fetcher } = makeFetcher({
+      [OPENGW_GATEWAY_CONFIG_URL]: { body: JSON.stringify({ unexpected: true }) },
+      [SNAP_MODEL_BUILTIN_URL]: { body: BUILTIN_BODY },
+    })
+    const outcome = { gatewayOk: false, builtinOk: false }
+    await fetchCodeArtsRemoteModels(makeCredential(), fetcher, outcome)
+    // gateway 的 `extractJsonArray(['result','models'])` 拿不到数组 ⇒ 不算取到
+    expect(outcome.gatewayOk).toBe(false)
+    expect(outcome.builtinOk).toBe(true)
+  })
+
+  it('★ 无 AK/SK（早退）⇒ 两者皆 false（不能默认成 true）', async () => {
+    const { fetcher } = makeFetcher({})
+    const cred = makeCredential()
+    cred.access_key_id = ''
+    const outcome = { gatewayOk: true, builtinOk: true }
+    await fetchCodeArtsRemoteModels(cred, fetcher, outcome)
+    expect(outcome).toEqual({ gatewayOk: false, builtinOk: false })
+  })
+
+  it('不传 outcome ⇒ 行为与既有完全一致（返回数组）', async () => {
+    const { fetcher } = makeFetcher({
+      [OPENGW_GATEWAY_CONFIG_URL]: { body: GATEWAY_BODY },
+      [SNAP_MODEL_BUILTIN_URL]: { body: BUILTIN_BODY },
+    })
+    const models = await fetchCodeArtsRemoteModels(makeCredential(), fetcher)
+    expect(models.map((m) => m.id)).toContain('glm-5.3-flash')
+    expect(models.map((m) => m.id)).toContain('GLM-5.2')
   })
 })
 

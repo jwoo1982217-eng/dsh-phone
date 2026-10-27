@@ -40,8 +40,20 @@ import { describe, expect, it } from 'vitest'
 import { buildLinuxSkipTaskbarArgs, parseWmctrlList } from '../../src/zcode-captcha.js'
 import { sourceScope } from '../helpers/source-scope.js'
 
+/**
+ * ⚠ 扫描 `chromium-session.ts` 而不是 `zcode-captcha.ts`（2026-10-08 抽共享模块）。
+ *
+ * 「把窗口从任务栏移除」的三条平台实现、Windows 的 `TOOLWINDOW` 样式位脚本、
+ * macOS 的 osascript 最小化、以及**发起隐藏的时机**（`launch()` 里、页面渲染
+ * 之前）全部搬到了共享会话类。本文件的全部分支断言的**唯一合法落点**就是它。
+ *
+ * ⚠ 若这里仍指着 `zcode-captcha.ts`：`fnSource('hideWindowWindows')` 会抛
+ * 「找不到 function/method」，而 `SRC.toMatch(/let macosHideWarned = false/)`
+ * 这类整文件断言会**静默恒假** —— 后者是本仓库最危险的失效形态（断言在跑，
+ * 守的是空气）。改实现文件时**必须同时改这里**。
+ */
 const SRC = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), '../../src/zcode-captcha.ts'),
+  resolve(dirname(fileURLToPath(import.meta.url)), '../../src/chromium-session.ts'),
   'utf8',
 )
 
@@ -54,7 +66,7 @@ const SRC = readFileSync(
  * 落在列 0）⇒ Windows 侧 7 条源码契约假失败。**两个方向都错**（issue IKJMG1），
  * 完整缘由见 `tests/helpers/source-scope.ts` 的文件头。
  */
-const scope = sourceScope(SRC, 'zcode-captcha.ts')
+const scope = sourceScope(SRC, 'chromium-session.ts')
 const fnSource = scope.fn
 
 describe('Linux：parseWmctrlList 解析 wmctrl -lp', () => {
@@ -258,6 +270,22 @@ describe('Linux：源码契约', () => {
     expect(lin).toContain("list.on('error'")
     // 每个设置子进程也容忍失败
     expect(lin).toMatch(/child\.on\('error'/)
+    /**
+     * ⚠⚠ **光断言「error 处理器被接上了」是守不住本用例标题的**
+     * （2026-10-08 反向验证实测）：
+     *
+     * 把第二个处理器改成
+     * `child.on('error', () => { throw new Error('wmctrl missing') })`
+     * —— 上面两条断言**照样全绿**（`child.on('error'` 这个文本还在），
+     * 而这一抛**根本不会被附近的 `try/catch` 兜住**：处理器是**异步**触发的，
+     * 等它跑起来时 `list.on('exit')` 那个回调早已返回、`try` 块已经出栈
+     * ⇒ 未捕获异常，正是标题说的「让 captcha 挂掉」。
+     *
+     * ⇒ 判据必须落到**处理器体**上：整个 `hideWindowLinux` 是**尽力而为**的
+     * 优化路径，里面**不该出现任何 `throw`**。这条同时封住「改天有人往
+     * 这两个处理器里加显式抛错」的改法。
+     */
+    expect(lin, '尽力而为的优化路径里不得抛错（异步处理器逃得出 try/catch）').not.toContain('throw')
   })
 
   it('★ 不引入 npm 依赖 / 不手写 X11 协议（体积与风险）', () => {

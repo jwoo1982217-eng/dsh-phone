@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-session",
   "description": "Event-sourced session store for the DeepSeek Harness",
-  "version": "0.2.1-alpha.1",
+  "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
@@ -32,12 +32,14 @@
       "types": "./lib/types/surface.d.ts",
       "default": "./lib/types/surface.js"
     },
+    "./locale/*.json": "./locale/*.json",
     "./conversation-edit": {
       "types": "./lib/conversation-edit.d.ts",
       "default": "./lib/conversation-edit.js"
     }
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts",
@@ -46,18 +48,18 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-scope": "0.2.1-alpha.1",
-    "@deepseek-ai/cordis": "~4.0.5-alpha.1"
+    "@deepseek-ai/dsh-scope": "0.2.1-rc.2",
+    "@deepseek-ai/cordis": "~4.0.5"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-scope": "0.2.1-alpha.1",
-    "@deepseek-ai/dsh-typert-protocol": "0.2.1-alpha.1",
-    "@deepseek-ai/dsh-typert-registry": "0.2.1-alpha.1",
-    "@deepseek-ai/cordis": "~4.0.5-alpha.1"
+    "@deepseek-ai/dsh-scope": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-typert-registry": "0.2.1-rc.2",
+    "@deepseek-ai/cordis": "~4.0.5"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-llm": "0.2.1-alpha.1",
-    "@deepseek-ai/dsh-brand": "0.2.1-alpha.1",
-    "@deepseek-ai/dsh-util-values": "0.2.1-alpha.1"
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-brand": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-util-values": "0.2.1-rc.2"
   }
 }

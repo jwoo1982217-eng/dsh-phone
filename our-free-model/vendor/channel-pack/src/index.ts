@@ -70,10 +70,12 @@ import {
   ensureDefaultAnonymousSlot, listIdentitySlots, type PoolEntrySnapshot,
 } from './opencode-auth.js'
 import { OPENCODE } from './opencode-product.js'
-import { deriveProjectId, opencodeUserAgent } from './opencode.js'
+import { deriveProjectId, opencodeUserAgent, opencodeUserAgentForVersion } from './opencode.js'
 import { primeOpencodeCapabilities, refreshOpencodeCapabilities } from './opencode-capability.js'
 import { closeAllProxyDispatchers } from './opencode-proxy.js'
-import { createChannelFetch, type ChannelOutlet } from './channel-fetch.js'
+import { createChannelFetch } from './channel-fetch.js'
+import { attachDirectFetch, createDirectFetch, type SignedChannelOutlet } from './direct-fetch.js'
+export { directFetch, directLane, createDirectFetch, closeDirectFetch } from './direct-fetch.js'
 export { createChannelFetch, parseWindowsProxy, channelProxyBypassed } from './channel-fetch.js'
 import { execFile } from 'node:child_process'
 
@@ -97,7 +99,10 @@ function lazyOpencodeUserAgent(): () => string {
     })
       .then((out) => {
         const version = out.match(/(\d+\.\d+\.\d+)/)?.[1]
-        return version === undefined ? OPENCODE.defaultUserAgent : `opencode/${version}`
+        // ⚠️ 探测值必须转成 **v2 形状**（`opencode/latest/<version>/cli`）：
+        // 旧实现直接拼 `opencode/<version>` 是 v1 形状，v2 门禁一律 403
+        // （见 `opencode.ts` 模块头）。
+        return opencodeUserAgentForVersion(version) ?? OPENCODE.defaultUserAgent
       })
       .catch(() => OPENCODE.defaultUserAgent)
     // 同步取值：缓存命中时立刻有值；未命中时用产品默认（不阻塞首个请求）。
@@ -268,8 +273,11 @@ export function makeReadImageRequest(ctx: Context) {
 }
 
 /** 注册 codeartsAuth 服务与 codearts LLM 路由（不注册斜杠命令）。 */
-export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?: ChannelOutlet } = {}): void {
+export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?: SignedChannelOutlet } = {}): void {
   const network = createChannelFetch({ outlet: config.outlet })
+  const signedNetwork = createDirectFetch({ outlet: config.outlet })
+  const detachSignedNetwork = attachDirectFetch(signedNetwork.fetch)
+  ctx.effect(() => () => { detachSignedNetwork(); void signedNetwork.close() })
   ctx.effect(() => () => { void network.close() })
   // 本插件自带 Channel Pack 设置页，关闭 0.1.7 起由 Config schema 反渲染的自动表单
   // （老契约没有 configure()，静默跳过）。
@@ -291,7 +299,7 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
     'llm-qoder', 'llm-qodercn', 'llm-trae', 'llm-cline', 'llm-loomy', 'llm-raccoon',
     'llm-minimax', 'llm-zcode', 'llm-gemini',
   )
-  const service = new CodeArtsAuth(ctx)
+  const service = new CodeArtsAuth(ctx, { fetcher: signedNetwork.fetch })
   const pool = new AccountPool(ctx)
 
   // 「已失效模型」剔除：注入 ctx 只为把日志接进 DSH logger 并复用同一份 home
@@ -341,6 +349,7 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
   // `codearts-refresh` 三个已删除）：登录、状态与续期统一在 Channel Pack 设置页完成，
   // 与 buddy / workbuddy / lobsterai / qoder / trae 的既有做法一致。
   const codearts = registerCodeArtsLlm(ctx, {
+    fetchImpl: signedNetwork.fetch,
     credentialRef: credentialRef(CODEARTS_CREDENTIAL_REF),
     resolveCredential: async () => {
       // CodeArts **只认账号池**，与其余五个 provider 一致。
@@ -743,6 +752,7 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
       }
       // 回退到单凭据路径：没有账号条目可标记，清空以免标记到过期的 id。
       activeQoderAccountId.set(QODER.id, undefined)
+      throwIfAllAccountsRateLimited(QODER, modelId)
       const resolved = await ctx.credentials.resolve(credentialRef(QODER.defaultCredentialRef))
       if (!resolved) return undefined
       try {
@@ -801,6 +811,7 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
         return available.credential as QoderCredential
       }
       activeQoderAccountId.set(QODER_CN.id, undefined)
+      throwIfAllAccountsRateLimited(QODER_CN, modelId)
       const resolved = await ctx.credentials.resolve(credentialRef(QODER_CN.defaultCredentialRef))
       if (!resolved) return undefined
       try {
@@ -1053,6 +1064,7 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
         }
       }
 
+      throwIfAllAccountsRateLimited(LOOMY, modelId)
       // 兜底：账号池为空/全部不可解析时，退回单凭据 ref。
       const resolved = await ctx.credentials.resolve(credentialRef(LOOMY.defaultCredentialRef))
       if (!resolved) return undefined
@@ -1062,15 +1074,27 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
         return undefined
       }
     },
-    refresh: async () => {
-      // ⚠️ Loomy **没有 refresh 端点**，这里的 `refresh` 语义是
-      // 「探测凭据是否仍有效」，失效时抛错提示重新登录。
-      //
-      // 仍须刷新**解析凭据时所用的那一个**账号，而不是默认单凭据 ref ——
-      // 否则探测的是另一份凭据，用户会看到「刚登录好却一直认证失败」。
-      const available = await pool.getAvailableAccount(LOOMY.id, '')
-      if (available) await loomy.refreshAccountCredential(available.entry.credentialRef, pool, available.entry.id)
+    refresh: async (accountId?: string) => {
+      const entry = accountId === undefined ? undefined
+        : pool.listAccountsByProvider(LOOMY.id).find(account => account.id === accountId)
+      if (accountId !== undefined && entry === undefined) throw new Error('loomy: account no longer exists')
+      if (entry) await loomy.refreshAccountCredential(entry.credentialRef, pool, entry.id)
       else await loomy.refresh()
+      const resolved = await ctx.credentials.resolve(credentialRef(entry?.credentialRef ?? LOOMY.defaultCredentialRef))
+      if (!resolved) throw new Error('loomy: credential no longer exists')
+      return JSON.parse(resolved.value) as LoomyCredential
+    },
+    nextAccount: async (modelId, tried) => {
+      const candidates = pool.listAccountsByProvider(LOOMY.id)
+        .filter(account => account.enabled && !tried.has(account.id))
+        .filter(account => !account.modelRateLimits?.[modelId] || Date.now() >= account.modelRateLimits[modelId]!)
+        .map(account => ({ id: account.id, credentialRef: account.credentialRef }))
+      const picked = await loomyBalanceSelector.select(candidates, { allowPermanent: !pool.permanentLocked(LOOMY.id) })
+      if (!picked.ok) return undefined
+      const credential = await resolveLoomyCredentialByRef(picked.account.credentialRef)
+      if (!credential) return undefined
+      reportLedgerAccount(LOOMY.id, picked.account.id)
+      return { accountId: picked.account.id, credential }
     },
     // 远端模型目录：GET /api/v1/models。
     // ⚠️ 必须用 **token 头**（业务端点），不是 Bearer —— 带错会得到
@@ -1130,6 +1154,7 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
         reportLedgerAccount(RACCOON.id, available.entry.id)
         return available.credential as unknown as RaccoonCredential
       }
+      throwIfAllAccountsRateLimited(RACCOON, modelId)
       const resolved = await ctx.credentials.resolve(credentialRef(RACCOON.defaultCredentialRef))
       if (!resolved) return undefined
       try {
@@ -1138,23 +1163,21 @@ export function apply(ctx: Context, config: { disableOpencode?: boolean; outlet?
         return undefined
       }
     },
-    refresh: async () => {
-      // ⚠️ raccoon **有** refresh 端点（与 Loomy 恒 false 不同），这里是真续期。
-      //
-      // 仍须刷新**解析凭据时所用的那一个**账号，而不是默认单凭据 ref ——
-      // 否则续期的是另一份凭据，用户会看到「刚登录好却一直认证失败」。
-      const available = await pool.getAvailableAccount(RACCOON.id, '')
-      if (available) {
-        // ⚠️ **必须传 pool + entry.id**：续期成功后要把新的 `expiresAt` 写回
-        // 账号池，否则 UI 会一直显示「已过期」而实际能正常发消息
-        //（真实缺陷：JWT 已续到 15:09、账号池仍是 12:02，相差 3.1 小时）。
-        // 这条路径正是「发消息时按需续期」，故它是最常触发回写的地方。
-        await raccoon.refreshAccountCredential(
-          available.entry.credentialRef, pool, available.entry.id,
-        )
-      } else {
-        await raccoon.refresh()
-      }
+    refresh: async (accountId?: string) => {
+      const entry = accountId === undefined ? undefined
+        : pool.listAccountsByProvider(RACCOON.id).find(account => account.id === accountId)
+      if (accountId !== undefined && entry === undefined) throw new Error('raccoon: account no longer exists')
+      if (entry) await raccoon.refreshAccountCredential(entry.credentialRef, pool, entry.id)
+      else await raccoon.refresh()
+      const resolved = await ctx.credentials.resolve(credentialRef(entry?.credentialRef ?? RACCOON.defaultCredentialRef))
+      if (!resolved) throw new Error('raccoon: credential no longer exists')
+      return JSON.parse(resolved.value) as RaccoonCredential
+    },
+    nextAccount: async (modelId, tried) => {
+      const next = await pool.getAvailableAccount(RACCOON.id, modelId, tried)
+      if (!next) return undefined
+      reportLedgerAccount(RACCOON.id, next.entry.id)
+      return { accountId: next.entry.id, credential: next.credential as unknown as RaccoonCredential }
     },
     // 远端模型目录：委托给 RaccoonAuth.fetchModels（它负责 Bearer 头与
     // visible 过滤 + raccoonDisplayName 生成含倍率的展示名）。
@@ -1955,7 +1978,10 @@ const zcodeAdapter = registerZcodeLlm(ctx, {
   // 丢的却是「下一轮工具调用能不能带上签名」。
   ctx.effect(() => () => { void geminiSigStore.flush().catch(() => {}) })
 
-  registerChannelPackRpc(ctx, pool, service, buddy, workbuddy, lobsterai, qoder, qoderCn, trae, cline, loomy, raccoon, minimax, zcode, gemini, modelAdapters, config)
+  registerChannelPackRpc(ctx, pool, service, buddy, workbuddy, lobsterai, qoder, qoderCn, trae, cline, loomy, raccoon, minimax, zcode, gemini, modelAdapters, {
+    ...config,
+    codeartsFetcher: signedNetwork.fetch,
+  })
   // 网关是旁路功能：这里传 `pool` 只为读设置页里的开关，其内部任何失败都已
   // 自行降级为日志，绝不会让插件 apply() 失败。
   mountOpenAiGateway(ctx, pool)

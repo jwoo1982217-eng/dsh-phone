@@ -1,7 +1,9 @@
 /**
  * Qoder **中国版**登录与端点探针。
  *
- * ⚠️ 会真实发网络请求，但**全部只读**（不发消息、不领取），故零额度。
+ * ⚠️ 会真实发网络请求。**除「续期」那一条外全部只读**（不发消息、不领取），
+ * 故零额度；「续期」是**写操作**（轮换 refresh_token）且**需二次确认**，
+ * 理由见该用例的注释。
  *
  * 它要回答设计文档 §15 里那个**最高风险**问题：
  * `client_id = 732aef47-…`（取自 CN asar 的 `authClientIds.prod`）是否真被
@@ -21,6 +23,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { QODER_CN } from '../../src/qoder-product.js'
+import { fetchQoderRemoteModels } from '../../src/qoder-catalog.js'
 import {
   QODER_REFRESH_PATH,
   QODER_USERINFO_PATH,
@@ -92,7 +95,25 @@ suite('QoderCN 登录与端点探针（只读，零额度）', () => {
     expect(body).toContain("Request method 'GET' not supported")
   })
 
-  it('已登录凭据可续期（若已在中国版面板登录）', async () => {
+  /**
+   * ⚠️⚠️ **这是一条写操作，不是只读探针**（2026-10-20 修正）。
+   *
+   * `/device_token/refresh` 会**轮换** `refresh_token`（实测每次响应都回新值：
+   * `drt-…`，且旧值是否仍然有效**未验证**）。本探针拿到新值后**不落盘**，
+   * 于是「跑一次探针」= 把凭据存储里的 refresh_token 变旧 —— 真实代价是
+   * 该账号日后续期失败、需重新登录。
+   *
+   * 故与其余写探针同款：必须显式二次确认
+   * （`DSH_QODERCN_E2E_REFRESH_CONFIRM=yes`）。要「验证续期且不破坏现场」，
+   * 应走插件自身的 `QoderAuth.refreshAccountCredential`
+   * —— 它会回写凭据与池的有效期（`expiry-sync` 那条链）。
+   */
+  it('已登录凭据可续期（⚠️ 写操作：轮换 refresh_token，需二次确认）', async () => {
+    if (process.env.DSH_QODERCN_E2E_REFRESH_CONFIRM !== 'yes') {
+      console.log('  跳过：该用例会轮换 refresh_token（写操作），'
+        + '需要 DSH_QODERCN_E2E_REFRESH_CONFIRM=yes 才执行')
+      return
+    }
     const entries = readQoderCredentialsFromDshStore({ refPrefix: 'QODERCN' })
     if (entries.length === 0) {
       console.log('  跳过：未找到 QODERCN_ACCOUNT_* 凭据（先在面板登录一次）')
@@ -112,5 +133,32 @@ suite('QoderCN 登录与端点探针（只读，零额度）', () => {
     const body = await response.text()
     console.log(`  refresh ${response.status} ${body.slice(0, 300)}`)
     expect(response.status, '续期被拒 —— 检查 CN 是否校验 machine_id 来源').toBe(200)
+  })
+
+  /**
+   * 远端模型目录（2026-10-20 接入）。
+   *
+   * ⚠️ **只读、不计费**。判据是**结构不变式**（非空 / id 与 name 非空 / 无重复 id），
+   * 不写死具体倍率 —— 上游随时调价，写死会让探针在下次调价时假红。
+   * 硬编码的只有「用户点名的那个模型还在不在」（`dfmodel`）。
+   */
+  it('远端模型目录可拉取（CN 走自己的 gateway，结构完整）', async () => {
+    const entries = readQoderCredentialsFromDshStore({ refPrefix: 'QODERCN' })
+    if (entries.length === 0) {
+      console.log('  跳过：未找到 QODERCN_ACCOUNT_* 凭据（先在面板登录一次）')
+      return
+    }
+    const models = await fetchQoderRemoteModels(entries[0]!.credential, QODER_CN)
+    expect(models.length, '远端目录为空 —— 检查该账号是否已开通').toBeGreaterThan(0)
+    const ids = new Set<string>()
+    for (const model of models) {
+      expect(model.id, '模型 id 不能为空').toBeTruthy()
+      expect(model.name, `${model.id} 的展示名不能为空`).toBeTruthy()
+      expect(ids.has(model.id), `远端目录出现重复 id ${model.id}`).toBe(false)
+      ids.add(model.id)
+    }
+    expect(models.some((m) => m.id === 'dfmodel'), '目录里没有 dfmodel').toBe(true)
+    console.log(`[qodercn] 远端目录 ${models.length} 条：`
+      + models.map((m) => `${m.id}=${m.name}`).join(', '))
   })
 })

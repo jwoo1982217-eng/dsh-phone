@@ -132,8 +132,13 @@ interface CapabilityCacheFile {
    * ⚠️ 2026-10-02 从 1 升到 **2**（issue IKJJ0V：新增 `efforts` 字段）。
    * 旧版本缓存**没有** `efforts`，若沿用 version:1 会被当成有效数据继续用，
    * 思考档位在 TTL 内（最长 60 分钟）持续缺失 —— 表现为「改了没用，重启才好」。
+   *
+   * ⚠️ 2026-10-16 从 2 升到 **3**：`toggle` 形态不再翻成 `['none','low']`
+   * （见 {@link normalizeEfforts}）。v2 缓存里存着那对**编出来的**档位，
+   * 沿用会让旧档位菜单在 TTL 内继续出现 —— 用户选了「关闭思考」而线上发的是
+   * 一个上游没声明过的值。同一理由，同一处理。
    */
-  version: 2
+  version: 3
   at: number
   entries: readonly OpencodeModelCapability[]
 }
@@ -172,13 +177,21 @@ export function opencodeEffortName(id: string): string {
 /**
  * 从 `reasoning_options` 提取思考档位。
  *
- * ## 三种形态的处置（issue IKJJ0V）
+ * ## 只认 `effort` 形态（2026-10-16 重写，对齐官方客户端）
  *
- * - `type:'effort'` + `values` → **原序**产出，值就是上游认的 id。
- * - `type:'toggle'`（只能开/关）→ 产出 `['none', 'low']` 两档：
- *   `none`=关闭思考、`low`=开启（最低档即「开」）。这是与 Qoder 的
- *   `supportsDisable` 独立维度等价的表达 —— 在本形态里「关」就是全部语义。
- * - `type:'budget_tokens'`（预算制）→ **不声明**。DSH 的 `reasoning.efforts`
+ * 官方 CLI 的档位表就是 `reasoning_options` 里 `effort.values` 的机械投影
+ * （`packages/core/src/variant.ts` 的 `resolve()`：对 opencode 所用的
+ * `@ai-sdk/openai-compatible` 包走 `openaiChat` 协议，只有 `effort` 形态产出
+ * 变体，`toggle`/`budget_tokens` 都产出空表），而**线上的唯一表达就是
+ * `reasoning_effort`**（同文件的 `settings.reasoningEffort`）。故：
+ *
+ * - `type:'effort'` + `values` → **原序**产出，值就是上游认的 id；
+ * - `type:'toggle'` → **不声明**。旧实现把它翻成 `['none','low']`（关/开），
+ *   那是**语义发明**：官方客户端对这类模型一个档位都不给，而线上的
+ *   `reasoning_effort` 也表达不了「开关」。更糟的是上游会**校验**这个字段
+ *   （2026-10-02 实测：非法值回 `[400] reasoning_…`），发一个它没声明过的
+ *   档位等于拿整轮对话赌运气。
+ * - `type:'budget_tokens'`（预算制）→ 同理不声明。DSH 的 `reasoning.efforts`
  *   表达不了预算，编一档等于谎报能力。
  *
  * @returns 档位 id 数组；为空表示**不声明** `reasoning`（UI 不出现）。
@@ -193,10 +206,7 @@ function normalizeEfforts(entry: RawModelDevEntry): readonly string[] {
       for (const v of option.values) {
         if (typeof v === 'string' && v.length > 0 && !out.includes(v)) out.push(v)
       }
-    } else if (option.type === 'toggle' && !out.includes('none')) {
-      out.push('none', 'low')
     }
-    // `budget_tokens` 刻意不处理（见上方说明）
   }
   return out
 }
@@ -254,7 +264,7 @@ async function ensureDiskLoaded(): Promise<void> {
   try {
     const raw = await readFile(cacheFilePath(), 'utf8')
     const parsed = JSON.parse(raw) as CapabilityCacheFile
-    if (parsed?.version === 2 && Array.isArray(parsed.entries) && parsed.entries.length > 0) {
+    if (parsed?.version === 3 && Array.isArray(parsed.entries) && parsed.entries.length > 0) {
       memory = parsed.entries
       cacheFileAt = typeof parsed.at === 'number' ? parsed.at : 0
     }
@@ -294,7 +304,7 @@ function loadDiskCacheSync(): void {
   try {
     const raw = readFileSync(cacheFilePath(), 'utf8')
     const parsed = JSON.parse(raw) as CapabilityCacheFile
-    if (parsed?.version === 2 && Array.isArray(parsed.entries) && parsed.entries.length > 0) {
+    if (parsed?.version === 3 && Array.isArray(parsed.entries) && parsed.entries.length > 0) {
       memory = parsed.entries
       cacheFileAt = typeof parsed.at === 'number' ? parsed.at : 0
     }
@@ -307,7 +317,7 @@ async function writeDiskCache(entries: readonly OpencodeModelCapability[]): Prom
   try {
     const path = cacheFilePath()
     await mkdir(join(path, '..'), { recursive: true })
-    const payload: CapabilityCacheFile = { version: 2, at: Date.now(), entries }
+    const payload: CapabilityCacheFile = { version: 3, at: Date.now(), entries }
     await writeFile(path, JSON.stringify(payload), 'utf8')
   } catch {
     // 缓存写失败不影响功能（下次仍会从网络补齐）

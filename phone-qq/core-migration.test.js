@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
 import { migratePhoneCore } from './core-migration.js';
+import {installNativeLockFixture} from './migration.test-support.js';
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'phone-core-upgrade-'));
@@ -30,6 +31,7 @@ async function fixture(t) {
     const target = path.join(home, file); await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, JSON.stringify({ marker: 'preserve ' + file }));
   }
+  await installNativeLockFixture(tree);
   return { tree, home, profile, probe, personal };
 }
 
@@ -138,6 +140,8 @@ for (const upgraded of [false, true]) {
     const f = await fixture(t);
     if (!upgraded) await rm(path.join(f.profile, 'node_modules/@deepseek-ai/dsh-llm'), { recursive: true });
     await writeFile(path.join(f.tree, 'core-migration.mjs'), await readFile(new URL('./core-migration.js', import.meta.url)));
+    for (const helper of ['core-transaction.js','private-sdk-v2.js','compatibility-packages.js']) await writeFile(path.join(f.tree,helper),await readFile(new URL('./'+helper,import.meta.url)));
+    await writeFile(path.join(f.tree,'package.json'),JSON.stringify({type:'module'}));
     const alias = path.join(path.dirname(f.tree), 'tree-alias');
     await symlink(f.tree, alias, 'dir');
     const output = execFileSync(process.execPath, [path.join(alias, 'core-migration.mjs')], {
@@ -153,6 +157,8 @@ for (const upgraded of [false, true]) {
 test('a directory alias cannot silently bypass CLI SDK validation', async t => {
   const f = await fixture(t);
   await writeFile(path.join(f.tree, 'core-migration.mjs'), await readFile(new URL('./core-migration.js', import.meta.url)));
+    for (const helper of ['core-transaction.js','private-sdk-v2.js','compatibility-packages.js']) await writeFile(path.join(f.tree,helper),await readFile(new URL('./'+helper,import.meta.url)));
+    await writeFile(path.join(f.tree,'package.json'),JSON.stringify({type:'module'}));
   await writeFile(path.join(f.tree, 'node_modules/@deepseek-ai/dsh-llm/package.json'), JSON.stringify({ name: '@deepseek-ai/dsh-llm', version: '0.1.0-rc.8' }));
   const alias = path.join(path.dirname(f.tree), 'tree-alias');
   await symlink(f.tree, alias, 'dir');

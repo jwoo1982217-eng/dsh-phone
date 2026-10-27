@@ -33,6 +33,13 @@
  */
 import type { ZcodeCredential } from './zcode.js';
 import type { ZcodeRemoteModelLike } from './zcode-product.js';
+/**
+ * ⚠ **只取类型**：`zcode-captcha.ts` 反过来不 import 本文件，故无循环。
+ * 用 `import type` 是为了在编译后**不产生运行时依赖** —— captcha 那侧会拉起
+ * `chromium-session.js`（含 `node:child_process`），而本文件的调用方里有
+ * 只需要「读配置」的纯网络路径。
+ */
+import type { ZcodeCaptchaConfig } from './zcode-captcha.js';
 /** ZCode 平台 origin（官方默认）。 */
 export declare const ZCODE_ORIGIN = "https://zcode.z.ai";
 /** 免费额度通道的 Anthropic 端点。 */
@@ -102,6 +109,48 @@ export interface ZcodeBalanceBucket {
     availableUnits?: number;
     /** 到期时间（Unix 秒）。 */
     expiresAt?: number;
+    /**
+     * ★★ **该桶专属的模型**（上游 `capabilities`，实测形状 `["model:glm-5.3"]`）。
+     *
+     * ## 为什么必须读它（真实缺陷，用户报障 2026-10-12）
+     *
+     * **用户报障原文**：「智谱账号送的 8m 算力其中分为 5.3-3m 和 5.3flsh-5m，
+     * 插件判断这个账号没用完，就不会切换下一个账号使用」。
+     *
+     * 本机**只读实测**（`scripts/probe-zcode-plan-buckets.mjs`，启用账号）：
+     *
+     * ```json
+     * [bucket] show_name=GLM-5.3        capabilities=["model:glm-5.3"]
+     *          total_units=3000000   remaining_units=3000000
+     * [bucket] show_name=GLM-5.3-Flash  capabilities=["model:glm-5.3-flash"]
+     *          total_units=5000000   remaining_units=5000000
+     * ```
+     *
+     * ⇒ **8M 就是这两个桶（3M + 5M），且上游明确下发了模型归属。**
+     * 而此前本类型**没有这个字段**，`fetchZcodeBalance` 把它整体丢弃 ⇒
+     * 插件只知道「总剩余 8M」，于是 GLM-5.3 的 3M 烧光、Flash 的 5M 还在时，
+     * 折算层仍判「这账号有额度」（判据是全桶汇总的 `remaining > 0`）⇒
+     * **该模型的标记永远不写**，auto/aggregate 继续把它当可用候选派发 GLM-5.3。
+     *
+     * ⚠️ **缺失/为空 ⇒ 视为「通用桶」**（覆盖所有模型），**不要**当成「不覆盖任何模型」：
+     * 后者会让一个仍有余额的通用桶（如赠送的 1 亿 token）被忽略 ⇒ 一个**确实可用**
+     * 的账号被判成「该模型已耗尽」而被**误封**（方向相反的错误，代价更大）。
+     * 判据见 `zcode-entitlements.ts` 的 `bucketCoversModel`。
+     */
+    capabilities?: readonly string[];
+    /**
+     * 权益 id（实测 `ent_2_0817_glm_5p3` / `ent_2_0817_glm_5p3f`）。
+     *
+     * ⚠ **不参与任何判定** —— 判定一律走 {@link capabilities}
+     *（它是上游下发的**语义**字段；`entitlement_id` 是命名约定，改版就可能变）。
+     *
+     * ⚠️⚠️ **它当前是「只写不读」的数据**（审计指出 2026-10-12）：`src/` 与
+     * `plugin-src/client/` 里**零消费方**（唯一读者是本模块的单测）。
+     * 保留它的理由是**排查留证**：出问题时能一眼看出「是哪个 entitlement
+     * 在起作用」，而 `capabilities` 只给模型维度、给不出计划维度。
+     * ⇒ 别把它当「已接线」的字段用；要用它请先加消费者（并删掉这句说明）。
+     */
+    entitlementId?: string;
 }
 /** 余额查询结果。 */
 export interface ZcodeBalanceResult {
@@ -173,6 +222,15 @@ export interface ZcodeClaimOutcome {
     alreadyClaimed?: boolean;
     httpStatus?: number;
     message?: string;
+    /**
+     * 上游的 `logid`（排障凭据，2026-10-12 新增）。
+     *
+     * ⚠ 与推理侧同源：由 {@link extractZcodeLogId} **双来源**取
+     * （体顶层 `logid` 优先，HTTP 头 `x-request-id` 兜底）——
+     * 后者让**边缘 HTML 页**也有凭据可取。
+     * ⚠ 取不到即 `undefined`，不编造（诊断行会整项省略）。
+     */
+    logId?: string;
 }
 /**
  * 查余额。
@@ -236,11 +294,7 @@ export declare function claimZcodePlan(credential: ZcodeCredential, planId: stri
  * 失败返回 `undefined`，由调用方回退到内置兜底值
  * （{@link ZCODE_CAPTCHA_FALLBACK}）—— **不让配置拉取失败阻塞推理**。
  */
-export declare function fetchZcodeCaptchaConfig(credential: ZcodeCredential, fetchImpl?: typeof fetch): Promise<{
-    region: string;
-    prefix: string;
-    sceneId: string;
-} | undefined>;
+export declare function fetchZcodeCaptchaConfig(credential: ZcodeCredential, fetchImpl?: typeof fetch): Promise<ZcodeCaptchaConfig | undefined>;
 /**
  * 从上游拉**模型目录**（含上下文窗口、最大输出、思考档位、视觉能力）。
  *

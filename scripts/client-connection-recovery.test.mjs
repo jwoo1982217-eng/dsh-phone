@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const fixed = await readFile(new URL('../runtime/overlays/@deepseek-ai/dsh-client-connection/lib/client.js', import.meta.url), 'utf8');
+const fixed = await readFile(new URL('../runtime/overlays/@deepseek-ai/dsh-client-connection/lib/client.browser.js', import.meta.url), 'utf8');
 const originalWatcher = await readFile(new URL('./fixtures/client-connection-network-0.2.1.js', import.meta.url), 'utf8');
 const start = fixed.indexOf('\t\tfunction watchBrowserNetwork(');
 const end = fixed.indexOf('\n\t\t/**\n\t\t* Install one Context-owned', start);

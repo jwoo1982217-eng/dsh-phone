@@ -22,7 +22,7 @@ import org.json.JSONArray
  */
 object NodeRunner {
     private const val TAG = "dsh-phone"
-        const val ASSET_VERSION = "117"
+        const val ASSET_VERSION = "118"
     const val GATEWAY_PORT = 8326
     const val WEB_PORT = 3080
 
@@ -36,12 +36,19 @@ object NodeRunner {
     @Synchronized
     fun ensureExtracted(ctx: Context) {
         RecoveryManager.recoverInterruptedRestore(ctx)
+        PhoneJetHubUpgrade.recover(ctx.filesDir)
+        PhoneCompactionUpgrade.recover(ctx.filesDir)
+        PhonePeerUpgrade.recover(ctx.filesDir)
         val alreadyOk = runCatching {
             versionFile(ctx).readText().trim() == ASSET_VERSION
         }.getOrDefault(false) &&
             binJs(ctx).exists() &&
             File(homeDir(ctx), "profiles/phone/package.json").exists()
-        if (alreadyOk) return
+        if (alreadyOk) { PhoneJetHubAlias.prepare(ctx.filesDir); return }
+        PhoneJetHubAlias.preflight(ctx.filesDir)
+        if (PhonePeerUpgrade.applyIfSupported(ctx, ASSET_VERSION)) return
+        if (PhoneCompactionUpgrade.applyIfSupported(ctx, ASSET_VERSION)) return
+        if (PhoneJetHubUpgrade.applyIfSupported(ctx, ASSET_VERSION)) return
 
         Log.i(TAG, "extracting dsh assets v$ASSET_VERSION")
         // 只替换程序树。账号、令牌、会话与用户设置都在 dsh-home，升级必须保留。
@@ -80,7 +87,7 @@ object NodeRunner {
                 val packages = if (module.name.startsWith("@")) module.listFiles()?.toList().orEmpty() else listOf(module)
                 packages.forEach packageLoop@ { bundled ->
                     if (bundled.name in preservedPackages) {
-                        Log.i(TAG, "Keeping newer independent plugin: ${bundled.name}")
+                        Log.i(TAG, "Keeping independently managed plugin for guarded migration: ${bundled.name}")
                         return@packageLoop
                     }
                     val target = if (module.name.startsWith("@")) File(installedModules, "${module.name}/${bundled.name}") else File(installedModules, bundled.name)
@@ -120,6 +127,7 @@ object NodeRunner {
             check(template.copyRecursively(homeDir(ctx), overwrite = true)) { "Cannot install prepared phone profile" }
         }
         template.deleteRecursively()
+        PhoneJetHubAlias.prepare(ctx.filesDir)
         makeHomeLink(ctx)
         versionFile(ctx).writeText(ASSET_VERSION)
         previousTree.deleteRecursively()
@@ -151,7 +159,7 @@ object NodeRunner {
         } finally { log.delete() }
     }
 
-    private fun extractAsset(ctx: Context, name: String, target: File) {
+    internal fun extractAsset(ctx: Context, name: String, target: File) {
         val tmp = File(ctx.filesDir, name)
         ctx.assets.open(name).use { input ->
             tmp.outputStream().use { output -> input.copyTo(output, 1 shl 20) }
@@ -248,7 +256,8 @@ object NodeRunner {
     }
 
     @Synchronized
-    fun start(ctx: Context): Process {
+    fun start(ctx: Context, cancelled: () -> Boolean = { false }): Process {
+        check(!cancelled()) { "Engine start cancelled" }
         ensureExtracted(ctx)
         makeHomeLink(ctx)
         val bin = binJs(ctx)
@@ -281,18 +290,34 @@ object NodeRunner {
             DshService.appendLog("正在检查内置运行库…")
             migration.redirectOutput(migrationLog)
             val migrationChild = migration.start()
-            if (!migrationChild.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)) {
-                migrationChild.destroyForcibly()
-                throw IllegalStateException("Phone core migration timed out")
+            val deadline = android.os.SystemClock.elapsedRealtime()+600_000
+            var reportedAt = android.os.SystemClock.elapsedRealtime()
+            while (!migrationChild.waitFor(2,java.util.concurrent.TimeUnit.SECONDS)) {
+                val stopped = cancelled()
+                if (stopped || android.os.SystemClock.elapsedRealtime() >= deadline) {
+                    migrationChild.destroy()
+                    if (!migrationChild.waitFor(3,java.util.concurrent.TimeUnit.SECONDS)) {
+                        migrationChild.destroyForcibly(); migrationChild.waitFor(3,java.util.concurrent.TimeUnit.SECONDS)
+                    }
+                    throw IllegalStateException(if(stopped) "Phone core migration cancelled; next startup will recover the transaction" else "Phone core migration timed out; next startup will recover the transaction")
+                }
+                if (android.os.SystemClock.elapsedRealtime()-reportedAt >= 30_000) {
+                    DshService.appendLog("正在迁移内置运行库并保留私有扩展，请稍候；可以停止，下次启动会恢复事务")
+                    reportedAt = android.os.SystemClock.elapsedRealtime()
+                }
             }
-            val output = migrationLog.readText()
+            val output = java.io.RandomAccessFile(migrationLog,"r").use { file ->
+                val start = (file.length()-256*1024).coerceAtLeast(0); file.seek(start)
+                val bytes = ByteArray((file.length()-start).toInt()); file.readFully(bytes); String(bytes,Charsets.UTF_8)
+            }
             if (migrationChild.exitValue() != 0) {
                 DshService.appendLog("运行库检查失败：${output.takeLast(1800)}")
                 throw IllegalStateException("Phone core migration failed; original data retained")
             }
             check(output.isNotBlank()) { "运行库检查未返回结果（exit=0），请更新应用运行资源" }
             val report = try {
-                JSONObject(output.trim()).getJSONObject("phoneCoreMigration")
+                output.lineSequence().mapNotNull { line -> runCatching { JSONObject(line).optJSONObject("phoneCoreMigration") }.getOrNull() }.lastOrNull()
+                    ?: throw IllegalStateException("Migration receipt missing")
             } catch (error: org.json.JSONException) {
                 throw IllegalStateException("运行库检查返回了无效的结果", error)
             }
@@ -316,6 +341,7 @@ object NodeRunner {
         }
         OfmCompatibility.prepare(ctx, node, pb.environment())
         Log.i(TAG, "spawning node: $cmd")
+        check(!cancelled()) { "Engine start cancelled" }
         return pb.start()
     }
 

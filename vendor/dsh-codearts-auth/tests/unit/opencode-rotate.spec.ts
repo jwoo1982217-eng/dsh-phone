@@ -5,8 +5,24 @@ import {
 import { listIdentitySlots, newAccountFingerprint, type IdentitySlot } from '../../src/opencode-auth.js'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 
+/**
+ * ⚠️ **有代理**的请求走外部 undici 自带的 fetch（与 dispatcher 同源，见 IKK4BY），
+ * 全局 `vi.stubGlobal('fetch')` **拦不到**。这里只替换 `fetch`，
+ * 其余（`ProxyAgent` / `Pool`）保持真实，否则 `buildProxyDispatcher` 会失效。
+ */
+const undiciFetchSpy = vi.hoisted(() => vi.fn())
+vi.mock('undici', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('undici')>()),
+  fetch: undiciFetchSpy,
+}))
+
 beforeEach(() => clearOpencodeCatalogCache())
-afterEach(() => vi.unstubAllGlobals())
+// ⚠️ `undiciFetchSpy.mockReset()` 也放在 `afterEach`（而不是各用例内手写）：
+// 手写版一旦某条断言中途抛错就会被跳过，被污染的替身**泄漏到下一条用例**。
+afterEach(() => {
+  undiciFetchSpy.mockReset()
+  vi.unstubAllGlobals()
+})
 
 /**
  * 构造一个账号槽。
@@ -115,12 +131,10 @@ describe('轮换：限流与额度', () => {
       identitySlots: async () => [account('a', 'sk-a'), ANON()],
       markLimited: async (slot, model, at) => { limited.push([slot, model, at]) },
     })
-    // 用旧 /zen lane 的免费模型：本用例验证的是「槽轮换 + key/public 交替」，
-    // 而 big-pickle 现在属 /inference lane（固定 public 凭证）。
-    await run(a, 'mimo-v2.5-free')
+    await run(a)
     expect(bearers).toEqual(['Bearer sk-a', 'Bearer public'])
     expect(limited[0]![0]).toBe('a')
-    expect(limited[0]![1]).toBe('mimo-v2.5-free')
+    expect(limited[0]![1]).toBe('big-pickle')
     expect(limited[0]![2]).toBeGreaterThan(Date.now())
   })
 
@@ -157,7 +171,7 @@ describe('轮换：限流与额度', () => {
       identitySlots: async () => [account('a', 'sk-a'), account('b', 'sk-b')],
       markLimited: async (slot) => { kinds.push(slot) },
     })
-    await run(a, 'mimo-v2.5-free')
+    await run(a)
     expect(bearers).toEqual(['Bearer sk-a', 'Bearer sk-b'])
     expect(kinds).toEqual(['a'])
   })
@@ -189,7 +203,7 @@ describe('轮换：认证与形状门禁', () => {
       identitySlots: async () => [account('a', 'sk-a'), account('b', 'sk-b')],
       markLimited: async () => {},
     })
-    await run(a, 'mimo-v2.5-free')
+    await run(a)
     expect(bearers).toEqual(['Bearer sk-a', 'Bearer sk-b'])
   })
 
@@ -206,7 +220,7 @@ describe('轮换：认证与形状门禁', () => {
       identitySlots: async () => [account('a', 'sk-a'), account('b', 'sk-b')],
       markLimited: async (slot) => { marks.push(slot) },
     })
-    await run(a, 'mimo-v2.5-free')
+    await run(a)
     expect(bearers).toEqual(['Bearer sk-a', 'Bearer sk-b'])
     expect(marks).toContain('a')
   })
@@ -220,11 +234,11 @@ describe('轮换：认证与形状门禁', () => {
     await expect(run(a)).rejects.toMatchObject({ code: 'QUOTA_EXCEEDED' })
   })
 
-  it('⚠️⚠️ FreeTierError 是**传输指纹门禁**、换槽无用（2026-10-15 上游更新）', async () => {
-    // 真机 1.19.0 抓包矩阵（2026-10-15）：官方 CLI 直连 200；Node/curl/python/
-    // npm-Bun 反代/Bun 裸 TLS + 完全复刻的头序全部 403 FreeTierError。
-    // 免费模型只认官方客户端传输指纹 ⇒ **换 key / 换出口都无效**
-    // （每槽同一套栈），故不重试也不切槽，只如实透传 + 提示绑定付费 key。
+  it('⚠️⚠️ FreeTierError 是**形状门禁**、换槽无用（根因：session id 形状）', async () => {
+    // 真实定位（2026-10-01）：session id 尾段写成 38 字符时全线 403；
+    // 改成官方真实的 26 字符后同一请求立刻成功。
+    // 形状没修好时**换 key / 换出口都无效**（每槽发的形状完全相同），
+    // 故不重试也不切槽，只如实透传 + 提示形状线索。
     let count = 0
     vi.stubGlobal('fetch', async () => {
       count += 1
@@ -239,10 +253,46 @@ describe('轮换：认证与形状门禁', () => {
       markLimited: async () => {},
       warn: (m) => warns.push(m),
     })
-    // 旧 /zen 免费模型（不在 /inference 实测表）：传输指纹门禁，不重试。
-    await expect(run(a, 'mimo-v2.5-free')).rejects.toThrow(/付费 key/)
+    await expect(run(a)).rejects.toThrow(/协议门禁/)
     expect(count).toBe(1)
-    expect(warns.join()).toContain('指纹门禁')
+    expect(warns.join()).toContain('session 算法')
+    expect(warns.join()).toContain('工具 schema')
+  })
+
+  /**
+   * ★★ **FreeTierError 的错误码绝不能取 `AUTH`**（Gitee issue IKLBSH）。
+   *
+   * `AUTH` 会让 DSH 客户端**丢弃本条 message、换成固定文案「API 密钥无效」**
+   *（`dsh-client-ui-chat/lib/client.js` 的 `failureMessage`）。而本条文案恰好是
+   * **唯一**能指路的那句（「根因是 session id **形状**、换 key 或换出口都无效」）
+   * —— 换成「API 密钥无效」后用户会去换 key / 重新登录，**全是无效动作**。
+   *
+   * ⚠️ **有真实流量取证的缺陷**（`scripts/tmp-scan-iklbsh.mjs` 扫 866 个会话）：
+   * 两条真实 `turn/end` 失败事件的 code 就是 `AUTH`，message 正是本支路的
+   * `opencode: HTTP 403 — {"type":"error","error":{"type":"FreeTierError",…}}`
+   *（会话 `session-d7c80d34`，2026-10-02）—— 即该缺陷**在真实流量上发生过**。
+   *
+   * 修法与 `buddy` 的 `11140`（同样从 `AUTH` 改成 `PERMISSION_DENIED`）同款：
+   * ① 客户端不替换该码 ⇒ 文案完整送达；② `dead-model-store` 的 `IGNORED_CODES`
+   * 收它 ⇒ 模型不会被误记成下架 30 天；③ 它不在 `DEFAULT_RETRYABLE_CODES`
+   * 里 ⇒ 仍是「确定性、不白退避」，与「不重试也不换槽」的设计一致。
+   */
+  it('★★ FreeTierError 的错误码必须是 PERMISSION_DENIED，不能是 AUTH（否则文案被客户端吞掉）', async () => {
+    vi.stubGlobal('fetch', async () => new Response(
+      '{"type":"error","error":{"type":"FreeTierError","message":"OpenCode\'s free tier can only be used from within OpenCode"}}',
+      { status: 403 },
+    ))
+    const a = new OpencodeAdapter({
+      identitySlots: async () => [account('a', 'sk-a')],
+      markLimited: async () => {},
+    })
+    const error = await run(a).catch((e: unknown) => e as { code?: unknown; message?: unknown })
+    // ① 码不对就会吞文案 —— 这是本用例的主诉。
+    expect(error).toMatchObject({ code: 'PERMISSION_DENIED' })
+    expect(error.code).not.toBe('AUTH')
+    // ② 指路的文案必须还在（客户端对 `PERMISSION_DENIED` 原样透传 message）。
+    expect(String(error.message)).toContain('协议门禁')
+    expect(String(error.message)).toContain('换 API key 或换出口都无效')
   })
 
   it('⚠️ 认证失败且只有一个槽时直接透传（不报「所有通道均受限」）', async () => {
@@ -311,22 +361,23 @@ describe('请求指纹', () => {
     expect(seen[0]).not.toBe(seen[1])
   })
 
-  it('⚠️ 不发 x-session-affinity（真实 CLI 不发，多发是可检测差异）', async () => {
+  it('V2 关联头使用同一 session，不发旧版 request ID', async () => {
     let seen: Record<string, string> = {}
     vi.stubGlobal('fetch', async (_u: string, init: RequestInit) => {
       seen = init.headers as Record<string, string>
       return sseOk()
     })
     const a = new OpencodeAdapter({ identitySlots: async () => [account('a', 'sk-a')] })
-    // 旧 /zen lane 不发 affinity；/inference lane 必须发（见 opencode-inference.spec.ts）。
-    await run(a, 'mimo-v2.5-free')
-    expect(seen['x-session-affinity']).toBeUndefined()
-    expect(seen['X-Session-Id']).toBeUndefined()
+    await run(a)
+    expect(seen['x-session-affinity']).toBe(seen['x-opencode-session'])
+    expect(seen['X-Session-Id']).toBe(seen['x-opencode-session'])
+    expect(seen['x-opencode-session-id']).toBe(seen['x-opencode-session'])
+    expect(seen['x-opencode-request']).toBeUndefined()
     expect(seen['x-opencode-session']).toMatch(/^ses_/)
     expect(seen['x-opencode-client']).toBe('cli')
   })
 
-  it('body 恒带 stream:true 与 bash/read 门禁工具', async () => {
+  it('body 恒带 stream:true 与 read 门禁工具（不注入 shell）', async () => {
     let body: Record<string, unknown> = {}
     vi.stubGlobal('fetch', async (_u: string, init: RequestInit) => {
       body = JSON.parse(String(init.body)) as Record<string, unknown>
@@ -336,8 +387,7 @@ describe('请求指纹', () => {
     await run(a)
     expect(body.stream).toBe(true)
     const names = (body.tools as Array<{ function: { name: string } }>).map((t) => t.function.name)
-    expect(names).toContain('bash')
-    expect(names).toContain('read')
+    expect(names).toEqual(['read'])
   })
 
   it('同一会话内 session id 稳定（跨请求不漂移）', async () => {
@@ -359,10 +409,12 @@ describe('请求指纹', () => {
 describe('代理出口', () => {
   it('配了代理的账号走 per-request dispatcher（不动全局）', async () => {
     let seen: Record<string, unknown> = {}
-    vi.stubGlobal('fetch', async (_u: string, init: RequestInit) => {
+    // ⚠️ 有代理时生产走的是**外部 undici 自带的 fetch**（与 dispatcher 同源，
+    // 见 issue IKK4BY），全局 fetch 拦不到它 —— 故必须替换 undici 的 fetch。
+    undiciFetchSpy.mockImplementation((async (_u: string, init: RequestInit) => {
       seen = init as Record<string, unknown>
       return sseOk()
-    })
+    }) as never)
     const withProxy: IdentitySlot = { ...account('p', 'sk-p'), proxy: { kind: 'http', url: 'http://127.0.0.1:7897', label: '' } }
     const a = new OpencodeAdapter({ identitySlots: async () => [withProxy] })
     await run(a)
@@ -371,6 +423,7 @@ describe('代理出口', () => {
 
   it('无代理的账号不带 dispatcher（走默认直连）', async () => {
     let seen: Record<string, unknown> = {}
+    // ⚠️ **无代理**时生产刻意保留全局 fetch（不改变既有直连行为），故这条用全局 stub。
     vi.stubGlobal('fetch', async (_u: string, init: RequestInit) => {
       seen = init as Record<string, unknown>
       return sseOk()
